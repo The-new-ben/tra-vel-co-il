@@ -1,6 +1,6 @@
 # Tra-Vel WordPress API Status
 
-Updated: 2026-05-26
+Updated: 2026-05-27
 
 ## Access
 
@@ -31,6 +31,14 @@ Both REST route styles work:
 | 93 | `travel-insurance-europe` | draft | Travel insurance affiliate/lead page |
 
 These are intentionally drafts. Before publishing, add current prices, route data, useful itinerary details, affiliate disclosures, and active partner links/forms.
+
+## Draft content upgraded
+
+Updated: 2026-05-27 05:25 UTC
+
+The six draft Europe travel-commerce pages were upgraded through the WordPress REST API with Hebrew conversion copy, affiliate/partner disclosure gates, official-source boxes, price/availability caveats, CRM-ready CTA routing, and no-guarantee language for insurance, flights, hotels, attractions, routes, refunds, and passenger-rights context. All six remain `draft`.
+
+See `docs/WP_DRAFT_UPDATE_LOG.md` for the full operational log.
 
 ## Research anchors
 
