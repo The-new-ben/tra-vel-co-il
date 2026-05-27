@@ -67,3 +67,9 @@ When the stored-lead redirect reaches `?lead=received`, the theme pushes a priva
 Payload fields: `event`, `lead_form`, `portfolio_site`, `lead_result`, and `conversion_source`.
 
 No personally identifiable information, destination, travel dates, budget, service need, or message text is sent in this browser event. Configure GTM/GA4 to treat `generate_lead` as the lead key event after production deployment.
+
+## 2026-05-27 Admin Source Columns
+
+The Travel Leads admin list shows `UTM source` and `Landing URL` beside the core triage fields so operators can quickly spot which campaigns and pages are producing leads.
+
+Open the private lead detail screen for the full attribution record, including referrer URL and the complete UTM set.

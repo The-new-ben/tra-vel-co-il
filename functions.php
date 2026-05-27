@@ -195,6 +195,8 @@ function travel_revenue_lead_columns(array $columns): array {
             $new_columns['destination'] = __('Destination', 'travel-revenue');
             $new_columns['budget_range'] = __('Budget', 'travel-revenue');
             $new_columns['lead_status'] = __('Status', 'travel-revenue');
+            $new_columns['utm_source'] = __('UTM source', 'travel-revenue');
+            $new_columns['landing_url'] = __('Landing URL', 'travel-revenue');
         }
     }
     return $new_columns;
@@ -202,7 +204,7 @@ function travel_revenue_lead_columns(array $columns): array {
 add_filter('manage_travel_lead_posts_columns', 'travel_revenue_lead_columns');
 
 function travel_revenue_lead_column_content(string $column, int $post_id): void {
-    if (in_array($column, ['lead_phone', 'destination', 'budget_range'], true)) {
+    if (in_array($column, ['lead_phone', 'destination', 'budget_range', 'utm_source', 'landing_url'], true)) {
         echo esc_html((string) get_post_meta($post_id, $column, true));
         return;
     }
