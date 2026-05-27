@@ -98,7 +98,15 @@ h1 { max-width: 850px; margin: 0 0 18px; font-size: clamp(2rem, 4vw, 4rem); line
 .field select,
 .field textarea { width: 100%; min-height: 44px; border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; background: #fff; font: inherit; }
 .field textarea { min-height: 86px; resize: vertical; }
-.hp-field { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+.hp-field {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
 .consent-field { display: flex; align-items: flex-start; gap: 10px; color: var(--muted); font-size: .9rem; }
 .consent-field input { flex: 0 0 auto; margin-top: 6px; }
 .notice { font-size: .88rem; color: var(--muted); }
