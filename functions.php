@@ -216,6 +216,7 @@ function travel_revenue_render_lead_meta_box(WP_Post $post): void {
         __('Services', 'travel-revenue') => get_post_meta($post->ID, 'services_needed', true),
         __('Timeline', 'travel-revenue') => get_post_meta($post->ID, 'lead_timeline', true),
         __('Landing URL', 'travel-revenue') => get_post_meta($post->ID, 'landing_url', true),
+        __('Referrer URL', 'travel-revenue') => get_post_meta($post->ID, 'referrer_url', true),
         __('UTM source', 'travel-revenue') => get_post_meta($post->ID, 'utm_source', true),
         __('UTM campaign', 'travel-revenue') => get_post_meta($post->ID, 'utm_campaign', true),
     ];
