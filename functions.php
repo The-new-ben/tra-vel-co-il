@@ -281,6 +281,113 @@ function travel_revenue_save_lead_status(int $post_id): void {
 }
 add_action('save_post_travel_lead', 'travel_revenue_save_lead_status');
 
+function travel_revenue_lead_board_menu(): void {
+    add_submenu_page(
+        'edit.php?post_type=travel_lead',
+        __('Revenue Board', 'travel-revenue'),
+        __('Revenue Board', 'travel-revenue'),
+        'edit_posts',
+        'travel-revenue-board',
+        'travel_revenue_render_lead_board'
+    );
+}
+add_action('admin_menu', 'travel_revenue_lead_board_menu');
+
+function travel_revenue_render_lead_board(): void {
+    $statuses = travel_revenue_lead_statuses();
+    $leads = get_posts([
+        'post_type' => 'travel_lead',
+        'post_status' => 'private',
+        'numberposts' => 50,
+        'orderby' => 'date',
+        'order' => 'DESC',
+    ]);
+
+    $status_counts = array_fill_keys(array_values($statuses), 0);
+    $source_counts = [];
+    $landing_counts = [];
+
+    foreach ($leads as $lead) {
+        $status_key = (string) get_post_meta($lead->ID, 'lead_status', true);
+        $status_label = $statuses[$status_key ?: 'new'] ?? $status_key;
+        $status_counts[$status_label] = ($status_counts[$status_label] ?? 0) + 1;
+
+        $source = trim((string) get_post_meta($lead->ID, 'utm_source', true)) ?: __('Direct / unknown', 'travel-revenue');
+        $landing = trim((string) get_post_meta($lead->ID, 'landing_url', true)) ?: __('Home / unknown', 'travel-revenue');
+        $source_counts[$source] = ($source_counts[$source] ?? 0) + 1;
+        $landing_counts[$landing] = ($landing_counts[$landing] ?? 0) + 1;
+    }
+
+    $status_counts = array_filter($status_counts, static function ($count): bool {
+        return (int) $count > 0;
+    });
+    arsort($status_counts);
+    arsort($source_counts);
+    arsort($landing_counts);
+
+    $render_counts = static function (array $counts, string $empty_label): void {
+        if (!$counts) {
+            echo '<tr><td colspan="2">' . esc_html($empty_label) . '</td></tr>';
+            return;
+        }
+
+        foreach (array_slice($counts, 0, 10, true) as $label => $count) {
+            echo '<tr><td style="word-break: break-word;">' . esc_html((string) $label) . '</td><td>' . esc_html(number_format_i18n((int) $count)) . '</td></tr>';
+        }
+    };
+    ?>
+    <div class="wrap">
+        <h1><?php esc_html_e('Revenue Board', 'travel-revenue'); ?></h1>
+        <p><?php esc_html_e('Last 50 private leads by status, source, and landing page for weekly revenue triage.', 'travel-revenue'); ?></p>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin: 16px 0;">
+            <div class="card" style="max-width: none;">
+                <h2><?php esc_html_e('Status', 'travel-revenue'); ?></h2>
+                <table class="widefat striped"><tbody><?php $render_counts($status_counts, __('No leads yet.', 'travel-revenue')); ?></tbody></table>
+            </div>
+            <div class="card" style="max-width: none;">
+                <h2><?php esc_html_e('UTM source', 'travel-revenue'); ?></h2>
+                <table class="widefat striped"><tbody><?php $render_counts($source_counts, __('No source data yet.', 'travel-revenue')); ?></tbody></table>
+            </div>
+            <div class="card" style="max-width: none;">
+                <h2><?php esc_html_e('Landing URL', 'travel-revenue'); ?></h2>
+                <table class="widefat striped"><tbody><?php $render_counts($landing_counts, __('No landing data yet.', 'travel-revenue')); ?></tbody></table>
+            </div>
+        </div>
+        <h2><?php esc_html_e('Latest leads', 'travel-revenue'); ?></h2>
+        <table class="widefat striped">
+            <thead>
+                <tr>
+                    <th scope="col"><?php esc_html_e('Date', 'travel-revenue'); ?></th>
+                    <th scope="col"><?php esc_html_e('Lead', 'travel-revenue'); ?></th>
+                    <th scope="col"><?php esc_html_e('Status', 'travel-revenue'); ?></th>
+                    <th scope="col"><?php esc_html_e('UTM source', 'travel-revenue'); ?></th>
+                    <th scope="col"><?php esc_html_e('Landing URL', 'travel-revenue'); ?></th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php if (!$leads) : ?>
+                    <tr><td colspan="5"><?php esc_html_e('No leads yet.', 'travel-revenue'); ?></td></tr>
+                <?php endif; ?>
+                <?php foreach ($leads as $lead) : ?>
+                    <?php
+                    $status_key = (string) get_post_meta($lead->ID, 'lead_status', true);
+                    $landing_url = (string) get_post_meta($lead->ID, 'landing_url', true);
+                    $lead_title = get_the_title($lead) ?: sprintf(__('Lead #%d', 'travel-revenue'), $lead->ID);
+                    ?>
+                    <tr>
+                        <td><?php echo esc_html(get_the_date('', $lead)); ?></td>
+                        <td><a href="<?php echo esc_url((string) get_edit_post_link($lead->ID)); ?>"><?php echo esc_html($lead_title); ?></a></td>
+                        <td><?php echo esc_html($statuses[$status_key ?: 'new'] ?? $status_key); ?></td>
+                        <td><?php echo esc_html((string) get_post_meta($lead->ID, 'utm_source', true)); ?></td>
+                        <td style="word-break: break-all;"><?php echo $landing_url ? '<a href="' . esc_url($landing_url) . '" target="_blank" rel="noopener">' . esc_html($landing_url) . '</a>' : esc_html__('Home / unknown', 'travel-revenue'); ?></td>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+    <?php
+}
+
 function travel_revenue_disclosure(): string {
     return '<aside class="travel-disclosure">' . esc_html__('גילוי מסחרי: חלק מהעמודים עשויים לכלול קישורי שותפים, הפניות לספקים או הצעות בתשלום. אם תבוצע הזמנה דרך קישור כזה ייתכן שנקבל עמלה. מחירים, זמינות, תנאי ביטול, כבודה, ויזה וביטוח חייבים להיבדק מול הספק לפני רכישה.', 'travel-revenue') . '</aside>';
 }
