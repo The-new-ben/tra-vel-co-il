@@ -331,3 +331,24 @@ function travel_revenue_attribution_script(): void {
     <?php
 }
 add_action('wp_footer', 'travel_revenue_attribution_script');
+
+function travel_revenue_conversion_event_script(): void {
+    if (!is_front_page() || !isset($_GET['lead']) || sanitize_text_field(wp_unslash($_GET['lead'])) !== 'received') {
+        return;
+    }
+
+    $payload = [
+        'event' => 'generate_lead',
+        'lead_form' => 'travel_lead',
+        'portfolio_site' => 'tra-vel.co.il',
+        'lead_result' => 'received',
+        'conversion_source' => 'wordpress_thank_you_query',
+    ];
+    ?>
+    <script>
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push(<?php echo wp_json_encode($payload); ?>);
+    </script>
+    <?php
+}
+add_action('wp_footer', 'travel_revenue_conversion_event_script');

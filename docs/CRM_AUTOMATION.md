@@ -59,3 +59,11 @@ New leads no longer all start as `new`.
 - Flight, package, or offer requests start as `offer_needed`.
 - Insurance, eSIM, hotel, or destination-qualified leads start as `qualified`.
 - Everything else remains `new` for manual review.
+
+## 2026-05-27 Conversion Measurement
+
+When the stored-lead redirect reaches `?lead=received`, the theme pushes a privacy-safe `generate_lead` event into `window.dataLayer`.
+
+Payload fields: `event`, `lead_form`, `portfolio_site`, `lead_result`, and `conversion_source`.
+
+No personally identifiable information, destination, travel dates, budget, service need, or message text is sent in this browser event. Configure GTM/GA4 to treat `generate_lead` as the lead key event after production deployment.
