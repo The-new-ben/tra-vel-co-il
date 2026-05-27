@@ -339,6 +339,7 @@ function travel_revenue_render_lead_board(): void {
     <div class="wrap">
         <h1><?php esc_html_e('Revenue Board', 'travel-revenue'); ?></h1>
         <p><?php esc_html_e('Last 50 private leads by status, source, and landing page for weekly revenue triage.', 'travel-revenue'); ?></p>
+        <p><a class="button button-primary" href="<?php echo esc_url(wp_nonce_url(admin_url('admin-post.php?action=travel_export_lead_board'), 'travel_export_lead_board')); ?>"><?php esc_html_e('Export board CSV', 'travel-revenue'); ?></a></p>
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin: 16px 0;">
             <div class="card" style="max-width: none;">
                 <h2><?php esc_html_e('Status', 'travel-revenue'); ?></h2>
@@ -387,6 +388,52 @@ function travel_revenue_render_lead_board(): void {
     </div>
     <?php
 }
+
+function travel_revenue_export_lead_board(): void {
+    if (!current_user_can('edit_posts')) {
+        wp_die(esc_html__('You are not allowed to export this board.', 'travel-revenue'));
+    }
+
+    check_admin_referer('travel_export_lead_board');
+
+    $statuses = travel_revenue_lead_statuses();
+    $leads = get_posts([
+        'post_type' => 'travel_lead',
+        'post_status' => 'private',
+        'numberposts' => 50,
+        'orderby' => 'date',
+        'order' => 'DESC',
+    ]);
+
+    nocache_headers();
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename="travel-lead-board-' . gmdate('Y-m-d') . '.csv"');
+
+    $output = fopen('php://output', 'w');
+    if ($output === false) {
+        wp_die(esc_html__('Could not open CSV output stream.', 'travel-revenue'));
+    }
+
+    fputcsv($output, ['lead_id', 'date', 'status', 'utm_source', 'utm_medium', 'utm_campaign', 'landing_url', 'edit_url']);
+
+    foreach ($leads as $lead) {
+        $status_key = (string) get_post_meta($lead->ID, 'lead_status', true);
+        fputcsv($output, [
+            $lead->ID,
+            get_the_date('Y-m-d H:i:s', $lead),
+            $statuses[$status_key ?: 'new'] ?? $status_key,
+            get_post_meta($lead->ID, 'utm_source', true),
+            get_post_meta($lead->ID, 'utm_medium', true),
+            get_post_meta($lead->ID, 'utm_campaign', true),
+            get_post_meta($lead->ID, 'landing_url', true),
+            get_edit_post_link($lead->ID, 'raw'),
+        ]);
+    }
+
+    fclose($output);
+    exit;
+}
+add_action('admin_post_travel_export_lead_board', 'travel_revenue_export_lead_board');
 
 function travel_revenue_disclosure(): string {
     return '<aside class="travel-disclosure">' . esc_html__('גילוי מסחרי: חלק מהעמודים עשויים לכלול קישורי שותפים, הפניות לספקים או הצעות בתשלום. אם תבוצע הזמנה דרך קישור כזה ייתכן שנקבל עמלה. מחירים, זמינות, תנאי ביטול, כבודה, ויזה וביטוח חייבים להיבדק מול הספק לפני רכישה.', 'travel-revenue') . '</aside>';
