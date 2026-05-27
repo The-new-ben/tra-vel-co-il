@@ -24,6 +24,18 @@ function travel_revenue_assets(): void {
 }
 add_action('wp_enqueue_scripts', 'travel_revenue_assets');
 
+function travel_revenue_preload_front_page_assets(): void {
+    if (!is_front_page()) {
+        return;
+    }
+
+    $hero_large = get_theme_file_uri('assets/img/hero-budapest-1600.webp');
+    $hero_mobile = get_theme_file_uri('assets/img/hero-budapest-900.webp');
+
+    echo '<link rel="preload" as="image" href="' . esc_url($hero_large) . '" imagesrcset="' . esc_url($hero_mobile) . ' 900w, ' . esc_url($hero_large) . ' 1600w" imagesizes="100vw">' . "\n";
+}
+add_action('wp_head', 'travel_revenue_preload_front_page_assets', 1);
+
 function travel_revenue_lead_statuses(): array {
     return [
         'new' => __('New', 'travel-revenue'),
@@ -113,6 +125,24 @@ function travel_revenue_initial_status(string $destination, string $trip_type, s
     return 'new';
 }
 
+function travel_revenue_initial_status_v2(string $destination, string $trip_type, string $services_needed, string $budget_range): string {
+    $context = $destination . ' ' . $trip_type . ' ' . $services_needed . ' ' . $budget_range;
+
+    if ((strpos($context, 'בודפשט') !== false && strpos($context, 'פראג') !== false) || (strpos($context, 'וינה') !== false && strpos($context, 'מסלול') !== false) || strpos($context, 'תכנון') !== false) {
+        return 'supplier_research';
+    }
+
+    if (strpos($context, 'טיסה') !== false || strpos($context, 'טיסות') !== false || strpos($context, 'חבילה') !== false || strpos($context, 'הצעה') !== false) {
+        return 'offer_needed';
+    }
+
+    if (strpos($context, 'ביטוח') !== false || strpos($context, 'eSIM') !== false || strpos($context, 'מלון') !== false || $destination !== '') {
+        return 'qualified';
+    }
+
+    return 'new';
+}
+
 function travel_revenue_priority_from_score(int $score): string {
     if ($score >= 80) {
         return 'Hot';
@@ -183,7 +213,7 @@ function travel_revenue_handle_lead(): void {
         exit;
     }
 
-    $initial_status = travel_revenue_initial_status($destination, $trip_type, $services_needed, $budget_range);
+    $initial_status = travel_revenue_initial_status_v2($destination, $trip_type, $services_needed, $budget_range);
     $lead_score = travel_revenue_score_lead($destination, $trip_type, $departure_month, $traveler_count, $budget_range, $services_needed, $timeline);
     $lead_priority = travel_revenue_priority_from_score($lead_score);
 
@@ -507,6 +537,85 @@ function travel_revenue_schema(): void {
     echo '<script type="application/ld+json">' . wp_json_encode($schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . '</script>';
 }
 add_action('wp_head', 'travel_revenue_schema');
+
+function travel_revenue_public_disclosure(): string {
+    return '<aside class="travel-disclosure">' . esc_html__('גילוי נאות: חלק מהקישורים באתר עשויים להפנות לאתרי הזמנה חיצוניים. מחירים, זמינות, תנאי ביטול, כבודה, ויזה וביטוח חייבים להיבדק באתר ההזמנה או מול חברת השירות לפני רכישה.', 'travel-revenue') . '</aside>';
+}
+add_shortcode('travel_commercial_disclosure', 'travel_revenue_public_disclosure');
+
+function travel_revenue_front_page_schema(): void {
+    if (!is_front_page()) {
+        return;
+    }
+
+    $faq_items = [
+        [
+            'name' => 'איך בוחרים יעד ראשון לחופשה קצרה באירופה?',
+            'text' => 'בודפשט בדרך כלל מתאימה למחיר נוח וחופשה קלילה, פראג מתאימה לאווירה רומנטית ומרכז עתיק, ווינה מתאימה למי שמעדיף עיר אלגנטית, נקייה ומסודרת. אם יש לכם ארבעה עד שבעה לילות, אפשר לבדוק גם מסלול משולב.',
+        ],
+        [
+            'name' => 'כמה ימים מומלץ להקדיש לבודפשט, פראג או וינה?',
+            'text' => 'לחופשה עירונית ראשונה כדאי לתכנן שלושה עד ארבעה לילות בכל עיר. במסלול של בודפשט, פראג ווינה כדאי להקדיש לפחות שבעה לילות כדי לא להפוך את הטיול למעבר בין תחנות בלבד.',
+        ],
+        [
+            'name' => 'מתי כדאי להזמין טיסות זולות לאירופה?',
+            'text' => 'כדאי לבדוק כמה חלונות תאריך, לצאת באמצע שבוע אם אפשר, להשוות שדות תעופה קרובים ולבדוק היטב כבודה ותנאי שינוי. מחיר זול לא תמיד משתלם אם שעות הטיסה קשות או אם צריך להוסיף מזוודה יקרה.',
+        ],
+        [
+            'name' => 'האם צריך ביטוח נסיעות לאירופה?',
+            'text' => 'כן. ביטוח נסיעות חשוב גם לחופשה קצרה, במיוחד בגלל כיסוי רפואי, כבודה, ביטול או קיצור נסיעה ופעילויות מיוחדות. לפני רכישה חשוב לבדוק חריגים, מצב רפואי קודם ותקרות כיסוי.',
+        ],
+    ];
+
+    $schema = [
+        '@context' => 'https://schema.org',
+        '@graph' => [
+            [
+                '@type' => 'TravelAgency',
+                '@id' => home_url('/#organization'),
+                'name' => 'Tra-Vel',
+                'url' => home_url('/'),
+                'areaServed' => 'IL',
+                'inLanguage' => 'he-IL',
+                'image' => get_theme_file_uri('assets/img/hero-budapest-1600.webp'),
+            ],
+            [
+                '@type' => 'WebSite',
+                '@id' => home_url('/#website'),
+                'url' => home_url('/'),
+                'name' => 'Tra-Vel',
+                'inLanguage' => 'he-IL',
+                'publisher' => [
+                    '@id' => home_url('/#organization'),
+                ],
+                'potentialAction' => [
+                    '@type' => 'SearchAction',
+                    'target' => home_url('/?s={search_term_string}'),
+                    'query-input' => 'required name=search_term_string',
+                ],
+            ],
+            [
+                '@type' => 'FAQPage',
+                '@id' => home_url('/#faq'),
+                'inLanguage' => 'he-IL',
+                'mainEntity' => array_map(static function (array $item): array {
+                    return [
+                        '@type' => 'Question',
+                        'name' => $item['name'],
+                        'acceptedAnswer' => [
+                            '@type' => 'Answer',
+                            'text' => $item['text'],
+                        ],
+                    ];
+                }, $faq_items),
+            ],
+        ],
+    ];
+
+    echo '<script type="application/ld+json">' . wp_json_encode($schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . '</script>';
+}
+remove_action('wp_head', 'travel_revenue_schema');
+add_action('wp_head', 'travel_revenue_front_page_schema');
 
 function travel_revenue_attribution_script(): void {
     if (!is_front_page()) {

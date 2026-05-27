@@ -19,24 +19,39 @@ Both REST route styles work:
 - `https://tra-vel.co.il/wp-json/wp/v2/...`
 - `https://tra-vel.co.il/?rest_route=/wp/v2/...`
 
-## Draft money pages created
+## Published travel-commerce pages
 
 | ID | Slug | Status | Intent |
 | --- | --- | --- | --- |
-| 88 | `budapest-vacation` | draft | Budapest flights/hotels/packages |
-| 89 | `prague-vacation` | draft | Prague city-break funnel |
-| 90 | `vienna-vacation` | draft | Vienna packages and hotels |
-| 91 | `budapest-prague-vienna-trip` | draft | Multi-city Central Europe trip leads |
-| 92 | `cheap-flights-europe` | draft | Cheap Europe flights pillar |
-| 93 | `travel-insurance-europe` | draft | Travel insurance affiliate/lead page |
+| 88 | `budapest-vacation` | publish | Budapest city-break planning and package inquiry |
+| 89 | `prague-vacation` | publish | Prague city-break planning and package inquiry |
+| 90 | `vienna-vacation` | publish | Vienna city-break planning and package inquiry |
+| 91 | `budapest-prague-vienna-trip` | publish | Multi-city Central Europe route pillar |
+| 92 | `cheap-flights-europe` | publish | Cheap Europe flights and real-cost decision guide |
+| 93 | `travel-insurance-europe` | publish | Europe travel-insurance checklist and comparison guide |
 
-These are intentionally drafts. Before publishing, add current prices, route data, useful itinerary details, affiliate disclosures, and active partner links/forms.
+Live URLs:
 
-## Draft content upgraded
+- https://tra-vel.co.il/budapest-vacation/
+- https://tra-vel.co.il/prague-vacation/
+- https://tra-vel.co.il/vienna-vacation/
+- https://tra-vel.co.il/budapest-prague-vienna-trip/
+- https://tra-vel.co.il/cheap-flights-europe/
+- https://tra-vel.co.il/travel-insurance-europe/
 
-Updated: 2026-05-27 05:25 UTC
+## Published content upgraded
 
-The six draft Europe travel-commerce pages were upgraded through the WordPress REST API with Hebrew conversion copy, affiliate/partner disclosure gates, official-source boxes, price/availability caveats, CRM-ready CTA routing, and no-guarantee language for insurance, flights, hotels, attractions, routes, refunds, and passenger-rights context. All six remain `draft`.
+Updated: 2026-05-27 07:17 UTC
+
+The six Europe travel-commerce pages were rewritten and published through the WordPress REST API with public-facing Hebrew copy. The rewrite removed internal operating language such as CRM, UTM, supplier handoff, paid leads, money page, and revenue language from visible content.
+
+Verification after publish:
+
+- All six URLs returned HTTP 200.
+- REST status returned `publish` for all six pages.
+- Visible rendered text scan found no internal operating terms.
+- Pages include source/caveat sections and avoid invented live prices.
+- Travel-insurance copy is general information only and avoids coverage, claim, medical, or legal guarantees.
 
 See `docs/WP_DRAFT_UPDATE_LOG.md` for the full operational log.
 
