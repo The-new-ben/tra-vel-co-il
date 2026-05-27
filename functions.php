@@ -93,6 +93,24 @@ function travel_revenue_clean_url(string $key): string {
     return isset($_POST[$key]) ? esc_url_raw(wp_unslash($_POST[$key])) : '';
 }
 
+function travel_revenue_initial_status(string $destination, string $trip_type, string $services_needed, string $budget_range): string {
+    $context = $destination . ' ' . $trip_type . ' ' . $services_needed . ' ' . $budget_range;
+
+    if ((strpos($context, 'בודפשט') !== false && strpos($context, 'פראג') !== false) || (strpos($context, 'וינה') !== false && strpos($context, 'מסלול') !== false) || strpos($context, 'תכנון') !== false) {
+        return 'supplier_research';
+    }
+
+    if (strpos($context, 'טיסה') !== false || strpos($context, 'חבילה') !== false || strpos($context, 'הצעה') !== false) {
+        return 'offer_needed';
+    }
+
+    if (strpos($context, 'ביטוח') !== false || strpos($context, 'eSIM') !== false || strpos($context, 'מלון') !== false || $destination !== '') {
+        return 'qualified';
+    }
+
+    return 'new';
+}
+
 function travel_revenue_handle_lead(): void {
     if (!isset($_POST['travel_nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['travel_nonce'])), 'travel_lead')) {
         wp_safe_redirect(add_query_arg('lead', 'bad_nonce', home_url('/')));
@@ -122,6 +140,8 @@ function travel_revenue_handle_lead(): void {
         exit;
     }
 
+    $initial_status = travel_revenue_initial_status($destination, $trip_type, $services_needed, $budget_range);
+
     $title = sprintf('%s - %s - %s', $name, $destination, current_time('Y-m-d H:i'));
     $lead_id = wp_insert_post([
         'post_type' => 'travel_lead',
@@ -142,7 +162,7 @@ function travel_revenue_handle_lead(): void {
             'budget_range' => $budget_range,
             'services_needed' => $services_needed,
             'lead_timeline' => $timeline,
-            'lead_status' => 'new',
+            'lead_status' => $initial_status,
             'lead_consent' => $consent,
             'landing_url' => travel_revenue_clean_url('landing_url') ?: home_url('/'),
             'referrer_url' => travel_revenue_clean_url('referrer_url') ?: esc_url_raw(wp_get_referer() ?: ''),

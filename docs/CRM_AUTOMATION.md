@@ -50,3 +50,12 @@ Updated: 2026-05-27
   - Email notification reaches admin.
   - UTM fields persist from URL query parameters.
   - Commercial disclosure appears near offer/affiliate sections.
+
+## 2026-05-27 Initial Status Routing
+
+New leads no longer all start as `new`.
+
+- Multi-city or paid-planning signals start as `supplier_research`.
+- Flight, package, or offer requests start as `offer_needed`.
+- Insurance, eSIM, hotel, or destination-qualified leads start as `qualified`.
+- Everything else remains `new` for manual review.
