@@ -61,6 +61,8 @@ function travel_revenue_register_lead_type(): void {
         'services_needed',
         'lead_timeline',
         'lead_status',
+        'lead_score',
+        'lead_priority',
         'lead_consent',
         'landing_url',
         'referrer_url',
@@ -111,6 +113,47 @@ function travel_revenue_initial_status(string $destination, string $trip_type, s
     return 'new';
 }
 
+function travel_revenue_priority_from_score(int $score): string {
+    if ($score >= 80) {
+        return 'Hot';
+    }
+
+    if ($score >= 50) {
+        return 'Warm';
+    }
+
+    return 'Watch';
+}
+
+function travel_revenue_score_lead(string $destination, string $trip_type, string $departure_month, string $traveler_count, string $budget_range, string $services_needed, string $timeline): int {
+    $score = 20;
+    $context = $destination . ' ' . $trip_type . ' ' . $budget_range . ' ' . $services_needed . ' ' . $timeline;
+
+    if ($destination !== '') {
+        $score += 15;
+    }
+    if ($trip_type !== '') {
+        $score += 10;
+    }
+    if ($departure_month !== '') {
+        $score += 10;
+    }
+    if ($traveler_count !== '') {
+        $score += 10;
+    }
+    if ($budget_range !== '') {
+        $score += 15;
+    }
+    if ($services_needed !== '') {
+        $score += 10;
+    }
+    if (preg_match('/10,000|5,000|eSIM|full|package/i', $context)) {
+        $score += 10;
+    }
+
+    return min(100, $score);
+}
+
 function travel_revenue_handle_lead(): void {
     if (!isset($_POST['travel_nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['travel_nonce'])), 'travel_lead')) {
         wp_safe_redirect(add_query_arg('lead', 'bad_nonce', home_url('/')));
@@ -141,6 +184,8 @@ function travel_revenue_handle_lead(): void {
     }
 
     $initial_status = travel_revenue_initial_status($destination, $trip_type, $services_needed, $budget_range);
+    $lead_score = travel_revenue_score_lead($destination, $trip_type, $departure_month, $traveler_count, $budget_range, $services_needed, $timeline);
+    $lead_priority = travel_revenue_priority_from_score($lead_score);
 
     $title = sprintf('%s - %s - %s', $name, $destination, current_time('Y-m-d H:i'));
     $lead_id = wp_insert_post([
@@ -163,6 +208,8 @@ function travel_revenue_handle_lead(): void {
             'services_needed' => $services_needed,
             'lead_timeline' => $timeline,
             'lead_status' => $initial_status,
+            'lead_score' => (string) $lead_score,
+            'lead_priority' => $lead_priority,
             'lead_consent' => $consent,
             'landing_url' => travel_revenue_clean_url('landing_url') ?: home_url('/'),
             'referrer_url' => travel_revenue_clean_url('referrer_url') ?: esc_url_raw(wp_get_referer() ?: ''),
@@ -195,6 +242,7 @@ function travel_revenue_lead_columns(array $columns): array {
             $new_columns['destination'] = __('Destination', 'travel-revenue');
             $new_columns['budget_range'] = __('Budget', 'travel-revenue');
             $new_columns['lead_status'] = __('Status', 'travel-revenue');
+            $new_columns['lead_priority'] = __('Priority', 'travel-revenue');
             $new_columns['utm_source'] = __('UTM source', 'travel-revenue');
             $new_columns['landing_url'] = __('Landing URL', 'travel-revenue');
         }
@@ -204,7 +252,7 @@ function travel_revenue_lead_columns(array $columns): array {
 add_filter('manage_travel_lead_posts_columns', 'travel_revenue_lead_columns');
 
 function travel_revenue_lead_column_content(string $column, int $post_id): void {
-    if (in_array($column, ['lead_phone', 'destination', 'budget_range', 'utm_source', 'landing_url'], true)) {
+    if (in_array($column, ['lead_phone', 'destination', 'budget_range', 'lead_priority', 'utm_source', 'landing_url'], true)) {
         echo esc_html((string) get_post_meta($post_id, $column, true));
         return;
     }
@@ -237,6 +285,8 @@ function travel_revenue_render_lead_meta_box(WP_Post $post): void {
         __('Budget', 'travel-revenue') => get_post_meta($post->ID, 'budget_range', true),
         __('Services', 'travel-revenue') => get_post_meta($post->ID, 'services_needed', true),
         __('Timeline', 'travel-revenue') => get_post_meta($post->ID, 'lead_timeline', true),
+        __('Priority', 'travel-revenue') => get_post_meta($post->ID, 'lead_priority', true),
+        __('Lead score', 'travel-revenue') => get_post_meta($post->ID, 'lead_score', true),
         __('Landing URL', 'travel-revenue') => get_post_meta($post->ID, 'landing_url', true),
         __('Referrer URL', 'travel-revenue') => get_post_meta($post->ID, 'referrer_url', true),
         __('UTM source', 'travel-revenue') => get_post_meta($post->ID, 'utm_source', true),
@@ -414,7 +464,7 @@ function travel_revenue_export_lead_board(): void {
         wp_die(esc_html__('Could not open CSV output stream.', 'travel-revenue'));
     }
 
-    fputcsv($output, ['lead_id', 'date', 'status', 'utm_source', 'utm_medium', 'utm_campaign', 'landing_url', 'edit_url']);
+    fputcsv($output, ['lead_id', 'date', 'status', 'priority', 'score', 'utm_source', 'utm_medium', 'utm_campaign', 'landing_url', 'edit_url']);
 
     foreach ($leads as $lead) {
         $status_key = (string) get_post_meta($lead->ID, 'lead_status', true);
@@ -422,6 +472,8 @@ function travel_revenue_export_lead_board(): void {
             $lead->ID,
             get_the_date('Y-m-d H:i:s', $lead),
             $statuses[$status_key ?: 'new'] ?? $status_key,
+            get_post_meta($lead->ID, 'lead_priority', true),
+            get_post_meta($lead->ID, 'lead_score', true),
             get_post_meta($lead->ID, 'utm_source', true),
             get_post_meta($lead->ID, 'utm_medium', true),
             get_post_meta($lead->ID, 'utm_campaign', true),
