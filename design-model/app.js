@@ -90,10 +90,20 @@ function initMap() {
     });
   });
 
-  const filterButton = document.querySelector('[data-filter-toggle]');
   const filterPanel = document.querySelector('.filter-panel');
-  filterButton?.addEventListener('click', () => filterPanel?.classList.toggle('is-open'));
-  document.querySelector('[data-filter-close]')?.addEventListener('click', () => filterPanel?.classList.remove('is-open'));
+  document.addEventListener('click', event => {
+    const filterButton = event.target.closest?.('[data-filter-toggle]');
+    if (filterButton) {
+      const opening = !filterPanel?.classList.contains('is-open');
+      filterPanel?.classList.toggle('is-open', opening);
+      filterButton.setAttribute('aria-expanded', String(opening));
+      return;
+    }
+    if (event.target.closest?.('[data-filter-close]')) {
+      filterPanel?.classList.remove('is-open');
+      document.querySelector('[data-filter-toggle]')?.setAttribute('aria-expanded', 'false');
+    }
+  });
 }
 
 function initControls() {
