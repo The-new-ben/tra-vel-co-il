@@ -727,6 +727,237 @@ function initInsuranceQuote() {
   searchInsuranceQuotes(form);
 }
 
+let packageComparisonPayload = null;
+
+function packageRiskLabel(risk) {
+  return {low: 'סיכון תפעולי נמוך', medium: 'דורש יותר תשומת לב', high: 'סיכון תפעולי גבוה'}[risk] || 'סיכון דורש בדיקה';
+}
+
+function selectTripPackage(packageId, shouldFocus = false) {
+  if (!packageComparisonPayload) return;
+  const tripPackage = packageComparisonPayload.packages.find(item => item.id === packageId);
+  if (!tripPackage) return;
+  document.querySelectorAll('[data-package-card]').forEach(card => card.classList.toggle('is-selected', card.dataset.packageCard === packageId));
+  document.querySelectorAll('[data-package-pin]').forEach(pin => {
+    const selected = pin.dataset.packagePin === packageId;
+    pin.classList.toggle('is-active', selected);
+    pin.setAttribute('aria-pressed', String(selected));
+  });
+  const fields = {
+    '[data-package-map-title]': tripPackage.name,
+    '[data-package-map-route]': `${tripPackage.flight.airline} · ${tripPackage.flight.stops_label} · ${tripPackage.stay.name} · ${tripPackage.stay.area_name}`,
+    '[data-package-map-total]': tripPackage.pricing.total_party_formatted,
+    '[data-package-map-nights]': String(packageComparisonPayload.trip.nights),
+    '[data-package-map-score]': `${tripPackage.score}/100`
+  };
+  Object.entries(fields).forEach(([selector, value]) => {
+    const element = document.querySelector(selector);
+    if (element) element.textContent = value;
+  });
+  if (shouldFocus) document.querySelector('[data-package-map-detail]')?.scrollIntoView({behavior: 'smooth', block: 'center'});
+}
+
+function renderPackageMap(payload) {
+  const pins = document.querySelector('[data-package-map-pins]');
+  if (!pins) return;
+  pins.replaceChildren();
+  payload.packages.forEach(tripPackage => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'package-map-pin';
+    button.dataset.packagePin = tripPackage.id;
+    button.style.left = `${tripPackage.stay.position.x}%`;
+    button.style.top = `${tripPackage.stay.position.y}%`;
+    button.setAttribute('aria-label', `${tripPackage.name}: ${tripPackage.pricing.total_party_formatted} לכל ההרכב, ${tripPackage.stay.area_name}`);
+    button.setAttribute('aria-pressed', 'false');
+    appendTextElement(button, 'strong', tripPackage.pricing.total_party_formatted);
+    appendTextElement(button, 'span', tripPackage.stay.area_name);
+    button.addEventListener('click', () => selectTripPackage(tripPackage.id));
+    pins.append(button);
+  });
+}
+
+function appendPackageBreakdownRow(parent, label, value, icon) {
+  const row = document.createElement('div');
+  if (icon) {
+    const iconElement = document.createElement('i');
+    iconElement.dataset.lucide = icon;
+    row.append(iconElement);
+  }
+  appendTextElement(row, 'span', label);
+  appendTextElement(row, 'strong', value);
+  parent.append(row);
+}
+
+function renderTripPackages(payload) {
+  packageComparisonPayload = payload;
+  const container = document.querySelector('[data-package-results]');
+  if (!container) return;
+  container.replaceChildren();
+  if (!payload.packages.length) {
+    const empty = document.createElement('div');
+    empty.className = 'package-empty';
+    appendTextElement(empty, 'strong', 'לא נמצאה חבילה שעומדת בכל התנאים.');
+    appendTextElement(empty, 'span', 'הסירו מגבלת תקציב, הגדילו מספר חדרים או בטלו מסנן אחד ונסו שוב.');
+    container.append(empty);
+    return;
+  }
+  payload.packages.forEach(tripPackage => {
+    const card = document.createElement('article');
+    card.className = `trip-package-card${tripPackage.id === payload.recommended ? ' is-recommended' : ''}`;
+    card.dataset.packageCard = tripPackage.id;
+
+    const head = document.createElement('div');
+    head.className = 'package-card-head';
+    const identity = document.createElement('div');
+    appendTextElement(identity, 'small', tripPackage.badge, 'package-card-badge');
+    appendTextElement(identity, 'h3', tripPackage.name);
+    appendTextElement(identity, 'span', `${tripPackage.stay.area_name} · ${tripPackage.stay.route_minutes} דקות למסלול`);
+    head.append(identity);
+    const score = appendTextElement(head, 'strong', `${tripPackage.score}`, 'package-match-score');
+    score.setAttribute('aria-label', `ציון התאמה ${tripPackage.score} מתוך 100`);
+    card.append(head);
+
+    const journey = document.createElement('div');
+    journey.className = 'package-journey-summary';
+    appendPackageBreakdownRow(journey, `${tripPackage.flight.airline} · ${tripPackage.flight.departure_time}–${tripPackage.flight.return_time}`, `${tripPackage.flight.stops_label} · ${tripPackage.flight.duration_label}`, 'plane-takeoff');
+    appendPackageBreakdownRow(journey, `${tripPackage.stay.name} · ${tripPackage.stay.stars}★`, `${payload.trip.nights} לילות · ${tripPackage.stay.guest_score}/10`, 'hotel');
+    appendPackageBreakdownRow(journey, tripPackage.insurance.name, tripPackage.insurance.tier === 'none' ? 'לא נכלל' : 'הדגמה בלבד', 'shield-check');
+    card.append(journey);
+
+    const chips = document.createElement('div');
+    chips.className = 'package-inclusion-chips';
+    const inclusionLabels = [
+      [tripPackage.inclusions.baggage, 'כבודה'],
+      [tripPackage.inclusions.breakfast, 'ארוחת בוקר'],
+      [tripPackage.inclusions.free_cancellation, 'ביטול גמיש'],
+      [tripPackage.inclusions.transfers_requested, 'העברה'],
+      [tripPackage.inclusions.insurance_in_calculation, 'ביטוח בחישוב']
+    ];
+    inclusionLabels.forEach(([included, label]) => appendTextElement(chips, 'span', `${included ? '✓' : '+'} ${label}`, included ? 'is-included' : 'is-extra'));
+    card.append(chips);
+
+    const traits = document.createElement('div');
+    traits.className = 'package-trait-grid';
+    [['נוחות', tripPackage.traits.comfort], ['גמישות', tripPackage.traits.flexibility], ['מיקום', tripPackage.traits.location]].forEach(([label, value]) => {
+      const trait = document.createElement('span');
+      appendTextElement(trait, 'small', label);
+      const meter = document.createElement('i');
+      meter.style.setProperty('--package-score', `${value}%`);
+      trait.append(meter);
+      appendTextElement(trait, 'b', `${value}`);
+      traits.append(trait);
+    });
+    card.append(traits);
+
+    const pricing = document.createElement('div');
+    pricing.className = 'package-price-panel';
+    const breakdown = document.createElement('div');
+    breakdown.className = 'package-price-breakdown';
+    appendPackageBreakdownRow(breakdown, 'טיסות', tripPackage.pricing.flight_formatted);
+    appendPackageBreakdownRow(breakdown, 'לינה', tripPackage.pricing.stay_formatted);
+    appendPackageBreakdownRow(breakdown, 'ביטוח', tripPackage.pricing.insurance_formatted);
+    appendPackageBreakdownRow(breakdown, 'העברות', tripPackage.pricing.transfers_formatted);
+    appendPackageBreakdownRow(breakdown, 'תוספות', tripPackage.pricing.addons_formatted);
+    pricing.append(breakdown);
+    const total = document.createElement('div');
+    total.className = 'package-price-total';
+    appendTextElement(total, 'small', `סך הכול ל-${payload.trip.travelers} נוסעים`);
+    appendTextElement(total, 'strong', tripPackage.pricing.total_party_formatted);
+    appendTextElement(total, 'span', `${tripPackage.pricing.per_person_formatted} לאדם · להמחשה`);
+    pricing.append(total);
+    card.append(pricing);
+
+    const tradeoffs = document.createElement('div');
+    tradeoffs.className = 'package-tradeoffs';
+    appendTextElement(tradeoffs, 'span', `✓ ${tripPackage.pros[0]}`, 'package-pro');
+    appendTextElement(tradeoffs, 'span', `△ ${tripPackage.cons[0]}`, 'package-con');
+    appendTextElement(tradeoffs, 'small', packageRiskLabel(tripPackage.traits.risk));
+    card.append(tradeoffs);
+
+    const details = document.createElement('details');
+    appendTextElement(details, 'summary', 'כל הרכיבים והתנאים לבדיקה');
+    const list = document.createElement('ul');
+    appendTextElement(list, 'li', `כרטיס: ${tripPackage.flight.ticket_mode} · כבודה ${tripPackage.flight.baggage_included ? 'כלולה' : 'מחושבת כתוספת'}`);
+    appendTextElement(list, 'li', `מלון: ${tripPackage.stay.room} · ${tripPackage.stay.free_cancellation ? 'ביטול גמיש בדוגמה' : 'ללא ביטול גמיש'}`);
+    appendTextElement(list, 'li', `ביטוח: תוכנית בדיונית ולא פוליסה · גבול רפואי מוצג ${tripPackage.insurance.medical_limit_formatted}`);
+    appendTextElement(list, 'li', `בסיס המחיר: סכום רכיבים; לא מוצגת הנחת חבילה לא מאומתת.`);
+    details.append(list);
+    card.append(details);
+
+    const actions = document.createElement('div');
+    actions.className = 'package-card-actions';
+    const mapAction = document.createElement('button');
+    mapAction.type = 'button';
+    mapAction.textContent = 'הציגו על המפה';
+    mapAction.addEventListener('click', () => selectTripPackage(tripPackage.id, true));
+    const checkout = document.createElement('button');
+    checkout.type = 'button';
+    checkout.disabled = !tripPackage.booking.bookable;
+    checkout.textContent = tripPackage.booking.bookable ? 'עברו להזמנה מאומתת' : 'הדגמה · הזמנה תיפתח עם ספקים מחוברים';
+    actions.append(mapAction, checkout);
+    card.append(actions);
+    container.append(card);
+  });
+  renderPackageMap(payload);
+  selectTripPackage(payload.recommended);
+  renderIcons();
+}
+
+async function searchTripPackages(form) {
+  const endpoint = window.traVelV2?.packageSearchUrl;
+  const status = document.querySelector('[data-package-status]');
+  const submit = form.querySelector('[type="submit"]');
+  if (!endpoint) return;
+  const params = new URLSearchParams(new FormData(form));
+  ['baggage', 'breakfast', 'free_cancellation', 'transfers', 'direct_only'].forEach(name => {
+    if (!params.has(name)) params.set(name, 'false');
+  });
+  submit.disabled = true;
+  form.dataset.state = 'loading';
+  if (status) status.textContent = 'מחבר טיסה, לינה, תנאים, העברות, כיסוי ועלות מלאה...';
+  try {
+    const response = await fetch(`${endpoint}?${params.toString()}`, {headers: {Accept: 'application/json'}});
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.message || `Package search failed: ${response.status}`);
+    renderTripPackages(payload);
+    const modeLabels = {live: 'נתוני ספקים מחוברים', mixed: 'נתונים חיים והדגמה', demo: 'רכיבי הדגמה שקופים'};
+    const cacheLabels = {miss: 'עודכן עכשיו', fresh: 'תוצאה שמורה ועדכנית', stale_refreshing: 'מתעדכן ברקע', stale_error: 'תוצאה אחרונה תקינה', degraded_fallback: 'ספק חלקי'};
+    if (status) status.textContent = `${payload.meta.result_count} חלופות · ${payload.trip.nights} לילות · מחיר לכל ${payload.trip.travelers} הנוסעים · ${modeLabels[payload.meta.data_mode] || modeLabels.demo} · ${cacheLabels[payload.meta.cache_state] || 'עודכן'}`;
+    form.dataset.state = payload.meta.data_mode;
+  } catch (error) {
+    document.querySelector('[data-package-results]')?.replaceChildren();
+    document.querySelector('[data-package-map-pins]')?.replaceChildren();
+    if (status) status.textContent = 'לא הצלחנו להרכיב חלופות. בדקו תאריכים, תקציב והרכב חדרים ונסו שוב.';
+    form.dataset.state = 'error';
+    console.warn(error);
+  } finally {
+    submit.disabled = false;
+  }
+}
+
+function initTripPackageSearch() {
+  const form = document.querySelector('[data-package-search]');
+  if (!form) return;
+  const departure = form.querySelector('[name="departure_date"]');
+  const returnDate = form.querySelector('[name="return_date"]');
+  departure?.addEventListener('change', () => {
+    if (!returnDate) return;
+    returnDate.min = departure.value;
+    if (returnDate.value <= departure.value) {
+      const next = new Date(`${departure.value}T12:00:00`);
+      next.setDate(next.getDate() + 4);
+      returnDate.value = next.toISOString().slice(0, 10);
+    }
+  });
+  form.addEventListener('submit', event => {
+    event.preventDefault();
+    searchTripPackages(form);
+  });
+  document.querySelector('[data-package-map-reset]')?.addEventListener('click', () => selectTripPackage(packageComparisonPayload?.recommended));
+  searchTripPackages(form);
+}
+
 function initNavigation() {
   const triggers = document.querySelectorAll('.nav-trigger');
   const closeAll = except => triggers.forEach(trigger => {
@@ -812,6 +1043,8 @@ function initControls() {
   document.querySelectorAll('.product-tabs button').forEach(button => button.addEventListener('click', () => {
     document.querySelectorAll('.product-tabs button').forEach(item => item.classList.remove('is-active'));
     button.classList.add('is-active');
+    const searchDock = document.querySelector('.search-dock');
+    if (searchDock && button.dataset.productAction) searchDock.action = button.dataset.productAction;
   }));
   document.querySelectorAll('[data-filter-kind] button').forEach(button => button.addEventListener('click', () => {
     button.closest('[data-filter-kind]').querySelectorAll('button').forEach(item => item.classList.remove('is-active'));
@@ -834,6 +1067,7 @@ function initTraVelV2() {
   initFlightSearch();
   initHotelSearch();
   initInsuranceQuote();
+  initTripPackageSearch();
   const query = new URLSearchParams(window.location.search).get('q') || '';
   hydrateDiscovery({ q: query, layer: activeLayer });
 }
