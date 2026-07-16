@@ -16,7 +16,12 @@ Every destination owns one primary search intent and one clean canonical path be
 - at least three decision tables before a flagship guide can become `publish-ready`;
 - public language checks that reject em dashes, en dashes and internal project terminology.
 
-The first packet, `budapest-2026.sources.json`, uses Budapest city tourism, BKK, Budapest Airport, Hungarian Police, the Hungarian central bank, Israel's National Security Council and the Israeli Embassy in Hungary as primary sources.
+The first two publish-ready packets are:
+
+- `budapest-2026.sources.json`, covering a focused European city break with official city, transport, airport, entry, currency and Israeli safety sources.
+- `thailand-2026.sources.json`, covering a multi-region long-haul decision with official immigration, airport, rail, health, tourism, currency, police and Israeli safety sources.
+
+Both hubs live below `/destinations/`, expose visible source evidence and connect their editorial decisions to the globe and commercial comparison pages.
 
 ## Publication states
 
@@ -72,3 +77,5 @@ Private draft synchronization:
 ```powershell
 & "C:\Users\janana\Documents\tra-vel-co-il\scripts\wp\sync-guide.ps1" -GuideId budapest-2026 -Status draft -Apply -ProductionConfirmation "SYNC TRA-VEL GUIDE"
 ```
+
+Replace the guide ID with `thailand-2026` to validate or synchronize the Thailand hub. A publish write additionally uses `-Status publish` and still requires the explicit production confirmation.
