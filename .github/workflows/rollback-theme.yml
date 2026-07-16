@@ -1,0 +1,58 @@
+name: Tra-Vel Theme Rollback
+
+on:
+  workflow_dispatch:
+    inputs:
+      backup_name:
+        description: Backup directory name, or latest
+        required: true
+        default: latest
+        type: string
+      confirmation:
+        description: Enter ROLLBACK TRA-VEL V2
+        required: true
+        default: ""
+        type: string
+
+permissions:
+  contents: read
+  deployments: write
+
+concurrency:
+  group: tra-vel-production-theme
+  cancel-in-progress: false
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: production
+      url: ${{ vars.WP_SITE_URL }}
+    env:
+      WP_SITE_URL: ${{ vars.WP_SITE_URL }}
+      SITE_URL: ${{ vars.WP_SITE_URL }}
+      SMOKE_PATHS: ${{ vars.SMOKE_PATHS }}
+      EXPECT_THEME_MARKER: ${{ vars.EXPECT_THEME_MARKER }}
+      WP_USERNAME: ${{ secrets.WP_USERNAME }}
+      WP_APP_PASSWORD: ${{ secrets.WP_APP_PASSWORD }}
+      BACKUP_NAME: ${{ inputs.backup_name }}
+      ROLLBACK_CONFIRMATION: ${{ inputs.confirmation }}
+    steps:
+      - name: Check out deployment scripts
+        uses: actions/checkout@v4
+
+      - name: Validate rollback gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$ROLLBACK_CONFIRMATION" == "ROLLBACK TRA-VEL V2" ]] || { echo "Rollback confirmation did not match." >&2; exit 1; }
+          [[ "$WP_SITE_URL" =~ ^https:// ]] || { echo "WP_SITE_URL must use HTTPS." >&2; exit 1; }
+          [[ -n "$WP_USERNAME" && -n "$WP_APP_PASSWORD" ]] || { echo "WordPress deployment secrets are missing." >&2; exit 1; }
+          [[ "$BACKUP_NAME" == "latest" || "$BACKUP_NAME" =~ ^tra-vel-v2-[0-9]{8}T[0-9]{6}Z-[A-Za-z0-9]+$ ]] || { echo "Backup name is invalid." >&2; exit 1; }
+
+      - name: Restore selected backup
+        run: bash scripts/deploy/rollback-theme.sh "$BACKUP_NAME"
+
+      - name: Smoke test restored website
+        run: bash scripts/deploy/smoke-test.sh "$WP_SITE_URL"

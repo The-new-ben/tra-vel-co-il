@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="מודל עיצוב Tra-Vel V2 — חיפוש, השוואה ותכנון נסיעות על מפה חכמה.">
+  <title>Tra-Vel V2 — כל העולם על מפה אחת</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <main>
+    <section class="home-hero">
+      <header class="site-header">
+        <div class="header-inner page-width">
+          <a class="brand" href="./home.html" aria-label="Tra-Vel דף הבית">
+            <span class="brand-mark"><i data-lucide="navigation"></i></span>
+            <span class="brand-word">tra<b>־vel</b></span>
+          </a>
+          <nav class="main-nav" aria-label="ניווט ראשי">
+            <div class="nav-item">
+              <button class="nav-trigger" aria-expanded="false" aria-controls="mega-book">מזמינים <i data-lucide="chevron-down"></i></button>
+              <div class="mega-menu" id="mega-book">
+                <div class="mega-column"><strong>נסיעה</strong><a href="#search"><i data-lucide="plane"></i><span>טיסות<small>ישירות, קונקשנים ו־Multi-city</small></span></a><a href="#deals"><i data-lucide="hotel"></i><span>מלונות<small>השוואה לפי מחיר כולל</small></span></a><a href="#search"><i data-lucide="package"></i><span>טיסה + מלון<small>חבילות דינמיות במקום אחד</small></span></a></div>
+                <div class="mega-column"><strong>שקט נפשי</strong><a href="#insurance"><i data-lucide="shield-check"></i><span>ביטוח נסיעות<small>כיסוי שמותאם ליעד ולפעילות</small></span></a><a href="#"><i data-lucide="car-front"></i><span>רכב והעברות<small>מהנחיתה עד המלון</small></span></a><a href="#"><i data-lucide="ticket-check"></i><span>אטרקציות<small>כרטיסים וסיורים מקומיים</small></span></a></div>
+                <a class="mega-feature" href="./map.html"><span>המסלול החכם של השבוע</span><strong>תאילנד דרך דובאי — פחות $157</strong><small>השוו זמן, כבודה, סיכון ועלות כוללת</small><b>פתחו במפה <i data-lucide="arrow-left"></i></b></a>
+              </div>
+            </div>
+            <a class="nav-link" href="./map.html">מפת המחירים</a>
+            <div class="nav-item">
+              <button class="nav-trigger" aria-expanded="false" aria-controls="mega-explore">מגלים <i data-lucide="chevron-down"></i></button>
+              <div class="mega-menu" id="mega-explore">
+                <div class="mega-column"><strong>לפי עולם</strong><a href="./destination-thailand.html"><i data-lucide="palmtree"></i><span>אסיה<small>תאילנד, יפן, וייטנאם ועוד</small></span></a><a href="#"><i data-lucide="landmark"></i><span>אירופה<small>עיר, תרבות ומסלולים</small></span></a><a href="#"><i data-lucide="waves"></i><span>איים וחופים<small>מתי ואיפה הכי משתלם</small></span></a></div>
+                <div class="mega-column"><strong>לפי צורך</strong><a href="#"><i data-lucide="baby"></i><span>משפחות<small>מלונות, טיסות וקצב נכון</small></span></a><a href="#"><i data-lucide="heart"></i><span>זוגות<small>חופשות קצרות וירח דבש</small></span></a><a href="#"><i data-lucide="backpack"></i><span>טיול גדול<small>מסלול, תקציב ועונות</small></span></a></div>
+                <a class="mega-feature" href="./destination-thailand.html"><span>מדריך עומק</span><strong>תאילנד 2026: לפני שסוגרים</strong><small>עונות, אזורים, עלויות, מסלולים והמלצות</small><b>למדריך <i data-lucide="arrow-left"></i></b></a>
+              </div>
+            </div>
+            <a class="nav-link" href="#guides">מדריכים</a>
+            <a class="nav-link" href="#ai">מתכנן AI</a>
+          </nav>
+          <div class="header-actions">
+            <button class="round-button" aria-label="שמורים"><i data-lucide="heart"></i></button>
+            <a class="header-cta" href="#search">מצאו לי חופשה</a>
+            <button class="mobile-menu-button" aria-expanded="false" aria-label="פתיחת תפריט"><i data-lucide="menu"></i></button>
+          </div>
+          <div class="mobile-drawer"><a href="#search">טיסות, מלונות וחבילות</a><a href="./map.html">מפת המחירים החכמה</a><a href="./destination-thailand.html">יעדים ומדריכים</a><a href="#insurance">ביטוח נסיעות</a><a href="#ai">מתכנן AI</a></div>
+        </div>
+      </header>
+
+      <div class="hero-grid page-width">
+        <div class="hero-copy">
+          <span class="kicker"><i data-lucide="sparkles"></i> Tra-Vel Intelligence · מודל אינטראקטיבי</span>
+          <h1>כל העולם.<br><em>על מפה אחת.</em></h1>
+          <p>לא עוד עשרות טאבים. בוחרים מקום על הגלובוס ומקבלים טיסות, מלונות, מסלולים, ביטוח ועלות אמיתית — עם הסבר מה עדיף ולמה.</p>
+          <a class="ai-prompt" href="#ai"><i data-lucide="bot"></i><span>אפשר גם לכתוב:</span><strong>“שבועיים בתאילנד עד ₪9,000 לזוג”</strong><i data-lucide="arrow-left"></i></a>
+        </div>
+        <div class="globe-panel" aria-label="מפת מחירים אינטראקטיבית">
+          <div class="globe-halo"></div>
+          <div class="globe">
+            <span class="origin-point" title="תל אביב"></span>
+            <span class="route-curve curve-one"></span><span class="route-curve curve-two"></span>
+            <button class="price-pin pin-budapest" data-destination="budapest">$214</button>
+            <button class="price-pin pin-athens" data-destination="athens">$189</button>
+            <button class="price-pin pin-dubai" data-destination="dubai">$236</button>
+            <button class="price-pin pin-bangkok is-active" data-destination="bangkok">$742</button>
+            <button class="price-pin pin-tokyo" data-destination="tokyo">$918</button>
+            <button class="price-pin pin-lisbon" data-destination="lisbon">$327</button>
+          </div>
+          <div class="globe-tools"><button data-map-zoom="in" aria-label="הגדלה"><i data-lucide="plus"></i></button><button data-map-zoom="out" aria-label="הקטנה"><i data-lucide="minus"></i></button><a href="./map.html" aria-label="מפה מלאה"><i data-lucide="maximize-2"></i></a></div>
+          <article class="map-result" data-map-result>
+            <img class="map-result-image" data-result-image src="./assets/thailand.jpg" alt="בנגקוק, תאילנד">
+            <div class="map-result-body"><div class="result-top"><div><small>ההצעה החכמה עכשיו</small><h3 data-result-city>בנגקוק, תאילנד</h3></div><button class="save-button" aria-label="שמירה"><i data-lucide="heart"></i></button></div><div class="result-tags" data-result-tags><span>12 לילות</span><span>עצירה אחת</span><span>כולל כבודה</span></div><div class="result-price"><div><small>לאדם, הלוך ושוב</small><strong data-result-price>$742</strong></div><p data-result-note>חיסכון של $157 דרך דובאי</p></div></div>
+          </article>
+          <small class="demo-label">מחירים להמחשה בלבד · בחיבור הספקים יוצגו מחיר וזמינות בזמן אמת</small>
+        </div>
+      </div>
+    </section>
+
+    <section class="search-zone" id="search">
+      <div class="page-width">
+        <div class="product-tabs"><button class="is-active"><i data-lucide="package"></i> טיסה + מלון</button><button><i data-lucide="plane"></i> טיסות</button><button><i data-lucide="hotel"></i> מלונות</button><button><i data-lucide="palmtree"></i> חבילות</button><button><i data-lucide="shield-check"></i> ביטוח</button></div>
+        <form class="search-dock">
+          <label class="search-field"><span class="field-icon"><i data-lucide="map-pin"></i></span><span><small>מאיפה ולאן</small><strong>תל אביב ← תאילנד</strong></span></label>
+          <label class="search-field"><span class="field-icon"><i data-lucide="calendar-range"></i></span><span><small>מתי</small><strong>גמיש · אוקטובר–נובמבר</strong></span></label>
+          <label class="search-field"><span class="field-icon"><i data-lucide="users"></i></span><span><small>מי נוסע</small><strong>2 מבוגרים</strong></span></label>
+          <button class="search-submit" type="button"><i data-lucide="search"></i><span>השוו הכל</span></button>
+        </form>
+        <div class="quick-links"><span>רעיונות מהירים:</span><a href="./map.html">עד ₪2,500</a><a href="./map.html">טיסות ישירות</a><a href="./map.html">עם ילדים</a><a href="./map.html">סוכות בחו״ל</a><a href="./map.html">לא משנה לאן</a></div>
+        <div class="intelligence-strip">
+          <div><span class="strip-icon"><i data-lucide="trending-down"></i></span><span><small>מחיר טוב באמת</small><strong>נמדד מול 90 הימים האחרונים</strong></span></div>
+          <div><span class="strip-icon"><i data-lucide="calculator"></i></span><span><small>עלות כוללת</small><strong>כבודה, העברות וביטוח בפנים</strong></span></div>
+          <div><span class="strip-icon"><i data-lucide="route"></i></span><span><small>מסלולים חכמים</small><strong>ישיר, קונקשן ותחנות בדרך</strong></span></div>
+          <div><span class="strip-icon"><i data-lucide="badge-check"></i></span><span><small>למה זה מתאים</small><strong>יתרונות, חסרונות ורמת סיכון</strong></span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="routes">
+      <div class="page-width">
+        <div class="section-heading"><div><span class="eyebrow">אותו יעד, שלוש החלטות שונות</span><h2>מהי הדרך החכמה לבנגקוק?</h2><p>אנחנו לא בוחרים בשבילכם רק את הזול — אנחנו מסבירים את המחיר של כל בחירה בזמן, נוחות וגמישות.</p></div><a class="text-link" href="./map.html">השוואה מלאה במפה <i data-lucide="arrow-left"></i></a></div>
+        <div class="route-board">
+          <header class="route-board-head"><div class="route-airports"><b class="airport-code">TLV</b><span><i data-lucide="plane"></i></span><b class="airport-code">BKK</b><small>12–26 בנובמבר · 2 נוסעים</small></div><span class="updated"><i data-lucide="radio"></i> עודכן לפני 4 דקות · הדגמה</span></header>
+          <div class="route-cards">
+            <button class="route-card" data-route data-route-summary="ישיר עם EL AL — הכי נוח, במחיר גבוה יותר"><div class="route-card-top"><span class="route-badge">הכי נוח</span><strong class="price">$899</strong></div><h3>ישיר עם EL AL</h3><p>11:20 שעות · ללא החלפה</p><div class="route-data"><span><i data-lucide="clock-3"></i> חוסך 5 שעות</span><span><i data-lucide="briefcase"></i> כבודה כלולה</span><span><i data-lucide="shield"></i> סיכון נמוך</span></div></button>
+            <button class="route-card recommended is-selected" data-route data-route-summary="דרך דובאי — הבחירה המאוזנת: $157 פחות ורק 2:40 שעות יותר"><div class="route-card-top"><span class="route-badge">הבחירה החכמה</span><strong class="price">$742</strong></div><h3>דרך דובאי</h3><p>14:00 שעות · עצירה של 1:55</p><div class="route-data"><span><i data-lucide="piggy-bank"></i> חיסכון $157</span><span><i data-lucide="coffee"></i> עצירה נוחה</span><span><i data-lucide="shield-check"></i> כרטיס אחד</span></div></button>
+            <button class="route-card" data-route data-route-summary="דרך אתונה — המחיר הנמוך ביותר, אך זמן ארוך וכרטיסים נפרדים"><div class="route-card-top"><span class="route-badge">הכי זול</span><strong class="price">$621</strong></div><h3>עצירת לילה באתונה</h3><p>24:30 שעות · כרטיסים נפרדים</p><div class="route-data"><span><i data-lucide="badge-dollar-sign"></i> חיסכון $278</span><span><i data-lucide="bed-double"></i> לילה בדרך</span><span><i data-lucide="triangle-alert"></i> סיכון בינוני</span></div></button>
+          </div>
+          <p class="updated" data-route-summary>דרך דובאי — הבחירה המאוזנת: $157 פחות ורק 2:40 שעות יותר</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section soft" id="deals">
+      <div class="page-width">
+        <div class="section-heading"><div><span class="eyebrow">לא “מבצע” — הזדמנות שנבדקה</span><h2>מחירים שכדאי לפעול עליהם</h2><p>כל הצעה מקבלת הקשר: מה כלול, מול מה הושוותה ועד מתי כדאי להחליט.</p></div><a class="text-link" href="./map.html">כל המחירים על המפה <i data-lucide="arrow-left"></i></a></div>
+        <div class="deal-grid">
+          <article class="deal-card"><div class="deal-media" style="background-image:url('../assets/img/city-budapest.webp')"><span class="deal-tag">ירד 14%</span><button class="save-button"><i data-lucide="heart"></i></button></div><div class="deal-body"><div class="deal-meta">בודפשט · 4 לילות · 4★</div><h3 class="deal-title">סופ״ש אורבני במרכז העיר</h3><div class="deal-footer"><div class="deal-price"><small>לאדם בחדר זוגי</small><strong>€389</strong></div><a href="#">לפרטים <i data-lucide="arrow-left"></i></a></div></div></article>
+          <article class="deal-card"><div class="deal-media" style="background-image:url('./assets/thailand.jpg')"><span class="deal-tag">טיסה + מלון</span><button class="save-button"><i data-lucide="heart"></i></button></div><div class="deal-body"><div class="deal-meta">קוסמוי · 10 לילות · 5★</div><h3 class="deal-title">איים, ספא וביטול גמיש</h3><div class="deal-footer"><div class="deal-price"><small>לאדם בחדר זוגי</small><strong>$1,420</strong></div><a href="./destination-thailand.html">לפרטים <i data-lucide="arrow-left"></i></a></div></div></article>
+          <article class="deal-card"><div class="deal-media" style="background-image:url('../assets/img/city-vienna.webp')"><span class="deal-tag">ישיר</span><button class="save-button"><i data-lucide="heart"></i></button></div><div class="deal-body"><div class="deal-meta">וינה · 3 לילות · 4★</div><h3 class="deal-title">תרבות, אוכל ומלון ליד הרינג</h3><div class="deal-footer"><div class="deal-price"><small>לאדם בחדר זוגי</small><strong>€449</strong></div><a href="#">לפרטים <i data-lucide="arrow-left"></i></a></div></div></article>
+          <article class="deal-card" id="insurance"><div class="deal-media" style="background:linear-gradient(135deg,#0d3440,#0b6d7e)"><span class="deal-tag">המלצה לפי מסלול</span><span class="field-icon" style="position:absolute;inset:50% auto auto 50%;transform:translate(-50%,-50%);width:72px;height:72px"><i data-lucide="shield-check"></i></span></div><div class="deal-body"><div class="deal-meta">ביטוח נסיעות · השוואת כיסויים</div><h3 class="deal-title">כיסוי רפואי, כבודה וספורט — בלי לנחש</h3><div class="deal-footer"><div class="deal-price"><small>הצעה מותאמת לנסיעה</small><strong>בדיקה</strong></div><a href="#">השוו <i data-lucide="arrow-left"></i></a></div></div></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section dark" id="ai">
+      <div class="page-width ai-panel">
+        <div><span class="kicker"><i data-lucide="sparkles"></i> Tra-Vel AI Planner</span><h2>ספרו לנו איך אתם רוצים להרגיש. אנחנו נבנה את הדרך.</h2><p>המתכנן משלב תקציב, מזג אוויר, זמני טיסה, קצב, ילדים, מלון, תחבורה וביטוח — ומציג כל החלטה על המפה.</p><div class="ai-input"><i data-lucide="message-circle-more"></i><span>“טיול זוגי רגוע באסיה, 12 יום, בלי יותר מעצירה אחת...”</span><button>בנו לי מסלול</button></div></div>
+        <div class="ai-visual"><span class="ai-orb"><i data-lucide="sparkles"></i></span><article class="suggestion one"><i data-lucide="plane-takeoff"></i><span><small>טיסה</small><strong>דרך דובאי חוסכת ₪580</strong></span></article><article class="suggestion two"><i data-lucide="cloud-sun"></i><span><small>מזג אוויר</small><strong>קוסמוי פחות מתאימה בנובמבר</strong></span></article><article class="suggestion three"><i data-lucide="route"></i><span><small>שינוי חכם</small><strong>התחילו בצ׳יאנג מאי וסיימו בפוקט</strong></span></article></div>
+      </div>
+    </section>
+
+    <section class="section" id="guides">
+      <div class="page-width">
+        <div class="section-heading"><div><span class="eyebrow">ידע שאפשר להזמין ממנו</span><h2>מדריכים עמוקים, מחוברים למחירים</h2><p>התוכן לא מסתיים בעצה: כל אזור, עונה ומסלול מתחברים למפה ולהצעה הרלוונטית.</p></div><a class="text-link" href="./destination-thailand.html">כל מדריכי היעדים <i data-lucide="arrow-left"></i></a></div>
+        <div class="guide-layout"><a class="featured-guide" href="./destination-thailand.html" style="background-image:linear-gradient(0deg,rgba(4,17,23,.9),transparent 65%),url('./assets/thailand.jpg')"><div class="featured-guide-content"><span>מדריך הדגל · 18 פרקים</span><h3>תאילנד 2026: המסלול, התקציב והעונה שמתאימים לכם</h3><p>מפת אזורים, טיסות, איים, מלונות, ביטוח וטעויות יקרות שכדאי למנוע.</p><b>למדריך המלא <i data-lucide="arrow-left"></i></b></div></a><div class="guide-stack"><a class="guide-row" href="#"><span class="guide-number">01</span><div><small>תכנון</small><h3>איך קוראים מחיר טיסה — ומה באמת כלול</h3></div><i data-lucide="arrow-left"></i></a><a class="guide-row" href="#"><span class="guide-number">02</span><div><small>כסף</small><h3>כבודה, המרה והעברות: העלויות שמתחבאות</h3></div><i data-lucide="arrow-left"></i></a><a class="guide-row" href="#"><span class="guide-number">03</span><div><small>ביטחון</small><h3>ביטוח נסיעות שמתאים למסלול — לא רק למחיר</h3></div><i data-lucide="arrow-left"></i></a></div></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer"><div class="footer-grid page-width"><div class="footer-brand"><a class="brand" href="./home.html"><span class="brand-mark"><i data-lucide="navigation"></i></span><span class="brand-word">tra<b>־vel</b></span></a><p>מגלים, משווים ומתכננים את כל הנסיעה על מפה אחת — בשקיפות, בהקשר ובקצב שלכם.</p></div><div class="footer-column"><strong>מזמינים</strong><a href="#search">טיסות</a><a href="#deals">מלונות וחבילות</a><a href="#insurance">ביטוח נסיעות</a><a href="#">רכב ואטרקציות</a></div><div class="footer-column"><strong>מגלים</strong><a href="./map.html">מפת המחירים</a><a href="./destination-thailand.html">יעדים</a><a href="#guides">מדריכים</a><a href="#ai">מתכנן AI</a></div><div class="footer-column"><strong>Tra-Vel</strong><a href="#">אודות</a><a href="#">איך אנחנו משווים</a><a href="#">גילוי נאות</a><a href="#">יצירת קשר</a></div></div><div class="footer-bottom page-width"><span>© 2026 Tra-Vel · מודל V2 לאישור עיצוב</span><span>פרטיות · נגישות · תנאי שימוש</span></div></footer>
+  <nav class="mobile-bottom-nav" aria-label="ניווט מהיר"><a class="active" href="./home.html"><i data-lucide="house"></i>בית</a><a href="./map.html"><i data-lucide="earth"></i>מפה</a><a href="#search"><i data-lucide="search"></i>חיפוש</a><a href="#ai"><i data-lucide="sparkles"></i>מתכנן AI</a></nav>
+  <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>
