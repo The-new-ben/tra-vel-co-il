@@ -1143,8 +1143,8 @@ h3.deal-title { display: block; margin: 6px 0 12px; font-size: 22px; line-height
   .flight-airports { grid-template-columns: 1fr 22px 1fr; }
   .flight-date-grid { grid-template-columns: 1fr 1fr; }
   .flight-options-grid { grid-template-columns: 1fr 1fr; }
-  .flight-results-grid { display: flex; overflow-x: auto; padding: 2px 1px 12px; scroll-snap-type: x mandatory; scrollbar-width: none; }
-  .flight-offer { min-width: 88%; scroll-snap-align: start; }
+  .flight-results-grid { display: flex; direction: ltr; overflow-x: auto; contain: inline-size paint; padding: 2px 1px 12px; scroll-snap-type: x mandatory; scrollbar-width: none; }
+  .flight-offer { width: 88%; min-width: 0; max-width: 88%; flex: 0 0 88%; direction: rtl; scroll-snap-align: start; }
   .flight-search-section .section-heading { align-items: flex-start; }
   .flight-search-status { align-self: flex-start; }
   .flight-cost-legend { display: grid; }
@@ -1157,8 +1157,8 @@ h3.deal-title { display: block; margin: 6px 0 12px; font-size: 22px; line-height
   .hotel-area-pin strong { font-size: 14px; }
   .hotel-area-detail { right: 10px; bottom: 10px; left: 10px; padding: 14px; }
   .hotel-area-detail h3 { font-size: 21px; }
-  .hotel-results-grid { display: flex; overflow-x: auto; padding: 2px 1px 12px; scroll-snap-type: x mandatory; scrollbar-width: none; }
-  .hotel-offer { min-width: 88%; scroll-snap-align: start; }
+  .hotel-results-grid { display: flex; direction: ltr; overflow-x: auto; contain: inline-size paint; padding: 2px 1px 12px; scroll-snap-type: x mandatory; scrollbar-width: none; }
+  .hotel-offer { width: 88%; min-width: 0; max-width: 88%; flex: 0 0 88%; direction: rtl; scroll-snap-align: start; }
   .hotel-search-section .section-heading { align-items: flex-start; }
   .hotel-search-status { align-self: flex-start; }
   .hotel-cost-legend { display: grid; }
@@ -1194,8 +1194,8 @@ h3.deal-title { display: block; margin: 6px 0 12px; font-size: 22px; line-height
   .insurance-risk-pin strong { font-size: 9px; }
   .insurance-risk-detail { right: 10px; bottom: 10px; left: 10px; padding: 14px; }
   .insurance-risk-detail h3 { font-size: 21px; }
-  .insurance-plan-grid { display: flex; overflow-x: auto; padding: 2px 1px 12px; scroll-snap-type: x mandatory; scrollbar-width: none; }
-  .insurance-plan { min-width: 88%; scroll-snap-align: start; }
+  .insurance-plan-grid { display: flex; direction: ltr; overflow-x: auto; contain: inline-size paint; padding: 2px 1px 12px; scroll-snap-type: x mandatory; scrollbar-width: none; }
+  .insurance-plan { width: 88%; min-width: 0; max-width: 88%; flex: 0 0 88%; direction: rtl; scroll-snap-align: start; }
   .insurance-quote-section .section-heading { align-items: flex-start; }
   .insurance-quote-status { align-self: flex-start; }
   .experience-proof { grid-template-columns: 1fr 1fr; margin-top: -20px; padding: 10px; }
