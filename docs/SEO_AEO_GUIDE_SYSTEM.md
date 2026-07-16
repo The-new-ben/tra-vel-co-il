@@ -1,0 +1,51 @@
+# Tra-Vel SEO/AEO destination-guide system
+
+Tra-Vel does not publish destination pages merely because they reach a word count. A flagship guide targets at least 5,000 Hebrew words, but it can become `publish-ready` only after its claims, sources, canonical intent and freshness data pass the repository gate.
+
+## Editorial contract
+
+Every destination owns one primary search intent and one clean canonical path. A source packet in `content/guides/*.sources.json` records:
+
+- the canonical topic and route;
+- the interactive map state used by the page;
+- at least 12 decision-oriented sections;
+- at least 10 sources, including six first-party or official sources;
+- factual claims mapped to source IDs;
+- volatile facts that must be rechecked immediately before publication;
+- a minimum word target of 5,000 for flagship guides.
+
+The first packet, `budapest-2026.sources.json`, uses Budapest city tourism, BKK, Budapest Airport, Hungarian Police, the Hungarian central bank, Israel's National Security Council and the Israeli Embassy in Hungary as primary sources.
+
+## Publication states
+
+- `research`: sources and angles are still being collected.
+- `source-ready`: the source packet passes, but the article is not yet approved.
+- `editorial-review`: the complete article is being checked for accuracy, usefulness and duplication.
+- `publish-ready`: the packet must point to the final article file; CI verifies that it meets its 5,000-word minimum.
+
+No automation may move an article to `publish-ready` solely because text was generated. Current fares, entry rules, transport details, flight availability and security guidance always require a publish-time recheck.
+
+## WordPress metadata
+
+The theme registers authenticated REST-editable metadata for pages using `page-destination.php`:
+
+- `_tra_vel_primary_topic`
+- `_tra_vel_source_checked`
+- `_tra_vel_reviewer`
+- `_tra_vel_review_method`
+- `_tra_vel_map_state`
+- `_tra_vel_sources_json`
+- `_tra_vel_flight_time`, `_tra_vel_daily_budget`, `_tra_vel_best_season`, `_tra_vel_best_for`
+
+The public guide shows author, reviewer, check date, source count, methodology and source links. An incomplete guide is visibly marked `Source review pending`; it is never presented as reviewed.
+
+## Search behavior
+
+- Destination guides use a clean singular canonical URL even when opened from a configured map.
+- Personal saved-trip pages are `noindex, follow`.
+- Flight, hotel, package and map filter parameters are `noindex, follow` to prevent faceted crawl traps.
+- The native schema graph contains `WebSite`, `TravelAgency`, `WebPage`, `Article` and `BreadcrumbList` entities. Destination articles can expose `lastReviewed`, `citation` and a `TouristDestination` topic.
+- When Yoast is active, the theme enriches Yoast's Article node and suppresses its own duplicate graph.
+- The theme does not emit `FAQPage`, demo `Product` or demo `Offer` markup. Travel FAQ rich results are not a viable target, and commercial schema is reserved for verified supplier inventory.
+
+Run `node scripts/ci/validate-guide-packets.mjs` before publishing or changing a guide packet. The same check runs in pull requests and production packaging.

@@ -57,6 +57,7 @@ const requiredFiles = [
   'inc/handoffs/bootstrap.php',
   'inc/handoffs/class-supplier-handoff-controller.php',
   'inc/template-tags.php',
+  'inc/guides.php',
   'inc/seo.php',
   'assets/css/app.css',
   'assets/js/app.js',
@@ -72,6 +73,7 @@ const requiredFiles = [
   'assets/data/trip-package.schema.json',
   'assets/data/traveler-workspace.schema.json',
   'assets/data/supplier-handoff.schema.json',
+  'assets/data/guide-source-packet.schema.json',
   'assets/vendor/lucide.min.js',
   'assets/images/earth-blue-marble.jpg',
   'assets/images/thailand.jpg'
@@ -132,6 +134,16 @@ if (!appJs.includes('initTripPackageSearch')) failures.push('The app script does
 if (!appJs.includes('workspaceUrl')) failures.push('The app script is not connected to the private traveler workspace contract.');
 if (!appJs.includes('initTravelerWorkspace')) failures.push('The app script does not initialize the saved-trip workspace.');
 if (!appJs.includes('createSaveOfferButton')) failures.push('Comparison cards cannot save decisions into the traveler workspace.');
+
+const seoSource = readFileSync(join(themeRoot, 'inc/seo.php'), 'utf8');
+if (!seoSource.includes('BreadcrumbList')) failures.push('Destination guides are missing breadcrumb structured data.');
+if (!seoSource.includes('lastReviewed')) failures.push('Destination guide schema is missing source-review freshness.');
+if (seoSource.includes("'FAQPage'") || seoSource.includes('"FAQPage"')) failures.push('Travel guides must not chase unavailable FAQ rich results.');
+if (!seoSource.includes("$robots['noindex']")) failures.push('Faceted and personal routes are missing an explicit noindex policy.');
+
+const destinationPage = readFileSync(join(themeRoot, 'page-destination.php'), 'utf8');
+if (!destinationPage.includes('tra_vel_v2_render_guide_evidence')) failures.push('Destination guides do not expose their evidence and freshness status.');
+if (/[$₪]\s?\d/.test(destinationPage)) failures.push('Destination templates must not hard-code demo prices that can be mistaken for live inventory.');
 
 const discoveryController = readFileSync(join(themeRoot, 'inc/discovery.php'), 'utf8');
 if (/function\s+get_items\s*\(\s*WP_REST_Request\b/.test(discoveryController)) {
