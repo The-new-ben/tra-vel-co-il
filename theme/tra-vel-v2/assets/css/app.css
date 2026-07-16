@@ -1206,3 +1206,42 @@ h3.deal-title { display: block; margin: 6px 0 12px; font-size: 22px; line-height
   .workspace-auth-card { flex-wrap: wrap; }
   .workspace-toast { right: 12px; bottom: 78px; left: 12px; max-width: none; }
 }
+
+/* Destination evidence and freshness contract */
+.guide-evidence { position: relative; z-index: 4; display: grid; grid-template-columns: auto 1fr auto; gap: 22px; align-items: center; margin-top: 22px; margin-bottom: 34px; padding: 18px 20px; border: 1px solid #d6e0dc; border-radius: 22px; background: rgba(255,255,255,.96); box-shadow: 0 14px 38px rgba(8,31,38,.08); }
+.guide-evidence-status { min-width: 190px; display: flex; gap: 11px; align-items: center; padding: 12px 14px; border-radius: 15px; }
+.guide-evidence-status.is-reviewed { color: #18383d; background: #edfad1; }
+.guide-evidence-status.is-pending { color: #684f15; background: #fff5d8; }
+.guide-evidence-status > i { width: 24px; height: 24px; flex: 0 0 auto; }
+.guide-evidence-status small,.guide-evidence-status strong { display: block; }
+.guide-evidence-status small { opacity: .68; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+.guide-evidence-status strong { margin-top: 2px; font-size: 14px; }
+.guide-evidence-facts { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 1px; overflow: hidden; border: 1px solid #e1e7e4; border-radius: 15px; background: #e1e7e4; }
+.guide-evidence-facts span { min-width: 0; display: grid; gap: 3px; align-content: center; padding: 11px 13px; background: #f8faf8; }
+.guide-evidence-facts small { color: #718187; font-size: 9px; font-weight: 700; }
+.guide-evidence-facts strong { overflow: hidden; font-size: 12px; white-space: nowrap; text-overflow: ellipsis; }
+.guide-evidence-details { position: relative; }
+.guide-evidence-details summary { padding: 10px 13px; border: 1px solid #d4dedb; border-radius: 12px; cursor: pointer; font-size: 11px; font-weight: 800; white-space: nowrap; }
+.guide-evidence-details[open] { position: absolute; z-index: 12; top: calc(100% - 10px); left: 20px; right: 20px; padding: 18px; border: 1px solid #d4dedb; border-radius: 18px; background: #fff; box-shadow: var(--shadow); }
+.guide-evidence-details[open] summary { display: inline-block; margin-bottom: 10px; }
+.guide-evidence-details p { margin: 0 0 12px; color: var(--muted); font-size: 12px; }
+.guide-evidence-details ul { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 6px 18px; margin: 0; padding: 0; list-style: none; }
+.guide-evidence-details li { min-width: 0; display: flex; gap: 8px; align-items: baseline; }
+.guide-evidence-details a { overflow: hidden; color: #0b596d; font-size: 11px; font-weight: 700; white-space: nowrap; text-overflow: ellipsis; text-decoration: underline; }
+.guide-evidence-details li small { direction: ltr; color: #819094; font-size: 9px; }
+
+@media (max-width: 1000px) {
+  .guide-evidence { grid-template-columns: auto 1fr; }
+  .guide-evidence-details { grid-column: 1/-1; }
+  .guide-evidence-details[open] { top: 100%; }
+}
+
+@media (max-width: 680px) {
+  .guide-evidence { grid-template-columns: 1fr; gap: 10px; margin-top: 14px; margin-bottom: 24px; padding: 13px; border-radius: 18px; }
+  .guide-evidence-status { min-width: 0; }
+  .guide-evidence-facts { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .guide-evidence-details { grid-column: auto; }
+  .guide-evidence-details summary { width: 100%; text-align: center; }
+  .guide-evidence-details[open] { position: static; padding: 13px; }
+  .guide-evidence-details ul { grid-template-columns: 1fr; }
+}

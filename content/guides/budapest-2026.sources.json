@@ -1,0 +1,260 @@
+{
+  "schemaVersion": 1,
+  "id": "budapest-2026",
+  "locale": "he-IL",
+  "primaryTopic": "Budapest travel guide for Israelis",
+  "canonicalPath": "/budapest/",
+  "status": "source-ready",
+  "wordTargetMin": 5000,
+  "checkedAt": "2026-07-16",
+  "mapState": "budapest",
+  "reviewer": "Tra-Vel editorial desk",
+  "reviewMethod": "Prioritize government, city, airport, transport operator and official tourism sources. Recheck all fares, opening details, entry rules, flight availability and security guidance immediately before publication.",
+  "sections": [
+    "Decision summary",
+    "Who Budapest suits",
+    "When to travel",
+    "Flight and route trade-offs from Israel",
+    "Airport to city total-cost comparison",
+    "Where to stay by neighborhood",
+    "Three, four and five-day visual routes",
+    "Public transport and ticket validation",
+    "Daily budget by travel style",
+    "Baths, museums and city-card decision",
+    "Food, markets and Jewish Budapest",
+    "Families and accessibility",
+    "Safety and current Israeli guidance",
+    "Booking checklist",
+    "Source log and change history"
+  ],
+  "sources": [
+    {
+      "id": "budapest-tourism-districts",
+      "title": "Learn more: Budapest districts and neighborhoods",
+      "publisher": "Budapest Brand / Budapestinfo",
+      "url": "https://www.budapestinfo.hu/en/learn-more",
+      "type": "official",
+      "checkedAt": "2026-07-16",
+      "supports": ["city structure", "district overview", "official tourism context"]
+    },
+    {
+      "id": "budapest-card-benefits",
+      "title": "The benefits of buying Budapest Card",
+      "publisher": "Budapest Brand / Budapestinfo",
+      "url": "https://www.budapestinfo.hu/en/the-benefits-of-buying-budapest-card",
+      "type": "official",
+      "checkedAt": "2026-07-16",
+      "supports": ["city card durations", "included transport", "included and discounted programs"]
+    },
+    {
+      "id": "budapest-sightseeing",
+      "title": "Sightseeing in Budapest",
+      "publisher": "Budapest Brand / Budapestinfo",
+      "url": "https://www.budapestinfo.hu/en/sightseeing-1",
+      "type": "official",
+      "checkedAt": "2026-07-16",
+      "supports": ["official suggested routes", "visitor itinerary context"]
+    },
+    {
+      "id": "bkk-tickets",
+      "title": "Tickets and passes",
+      "publisher": "BKK Centre for Budapest Transport",
+      "url": "https://bkk.hu/en/tickets-and-passes/",
+      "type": "official",
+      "checkedAt": "2026-07-16",
+      "supports": ["ticket categories", "validation", "official fare finder"]
+    },
+    {
+      "id": "bkk-current-prices",
+      "title": "Types and prices",
+      "publisher": "BKK Centre for Budapest Transport",
+      "url": "https://bkk.hu/en/tickets-and-passes/prices/single-tickets-valid-for-one-ride/airport-shuttle-bus-single-ticket",
+      "type": "official",
+      "checkedAt": "2026-07-16",
+      "supports": ["single-ticket price", "travelcard prices", "airport bus fare"]
+    },
+    {
+      "id": "bkk-airport-100e",
+      "title": "Airport shuttle bus single ticket",
+      "publisher": "BKK Centre for Budapest Transport",
+      "url": "https://bkk.hu/en/tickets-and-passes/prices/airport-shuttle-bus-single-ticket/",
+      "type": "official",
+      "checkedAt": "2026-07-16",
+      "supports": ["100E validity", "fare", "purchase and validation rules"]
+    },
+    {
+      "id": "bkk-paygo",
+      "title": "Budapest Pay&GO",
+      "publisher": "BKK Centre for Budapest Transport",
+      "url": "https://bkk.hu/en/tickets-and-passes/pay-and-go/",
+      "type": "official",
+      "checkedAt": "2026-07-16",
+      "supports": ["contactless purchase", "metro coverage", "inspection process"]
+    },
+    {
+      "id": "bkk-budapestgo",
+      "title": "BudapestGO public transport app",
+      "publisher": "BKK Centre for Budapest Transport",
+      "url": "https://bkk.hu/en/tickets-and-passes/budapestgo",
+      "type": "official",
+      "checkedAt": "2026-07-16",
+      "supports": ["journey planning", "digital tickets", "NFC validation"]
+    },
+    {
+      "id": "bkk-night-network",
+      "title": "Night transport",
+      "publisher": "BKK Centre for Budapest Transport",
+      "url": "https://bkk.hu/en/travel-information/night-tranpsort/",
+      "type": "official",
+      "checkedAt": "2026-07-16",
+      "supports": ["night network", "late-night route planning"]
+    },
+    {
+      "id": "bud-airport-public-transport",
+      "title": "Budapest public transportation",
+      "publisher": "Budapest Airport",
+      "url": "https://www.bud.hu/en/passengers/transport/public_transportation/budapest_public_transportation",
+      "type": "official",
+      "checkedAt": "2026-07-16",
+      "supports": ["airport bus options", "airport transport context"]
+    },
+    {
+      "id": "bud-airport-train",
+      "title": "Public transportation by train",
+      "publisher": "Budapest Airport",
+      "url": "https://www.bud.hu/en/parking-transport/transportation/public-transportation/public-transportation-by-train",
+      "type": "official",
+      "checkedAt": "2026-07-16",
+      "supports": ["Ferihegy rail connection", "200E interchange", "ticket limitations"]
+    },
+    {
+      "id": "visit-hungary",
+      "title": "Official tourism portal of Hungary",
+      "publisher": "Hungarian Tourism Agency",
+      "url": "https://visithungary.com/en/",
+      "type": "official",
+      "checkedAt": "2026-07-16",
+      "supports": ["national tourism context", "trip planning"]
+    },
+    {
+      "id": "hungarian-police-entry",
+      "title": "Hungarian Police information for third-country nationals",
+      "publisher": "Hungarian Police",
+      "url": "https://www.police.hu/en/home",
+      "type": "official",
+      "checkedAt": "2026-07-16",
+      "supports": ["passport validity rules", "border-system updates"]
+    },
+    {
+      "id": "israel-travel-warnings",
+      "title": "Travel warnings",
+      "publisher": "Israel National Security Council",
+      "url": "https://www.gov.il/en/departments/dynamiccollectors/travel-warnings-nsc?skip=0",
+      "type": "official",
+      "checkedAt": "2026-07-16",
+      "supports": ["current Israeli security guidance", "warning-level definitions", "hotline"]
+    },
+    {
+      "id": "israel-embassy-hungary",
+      "title": "Embassy of Israel in Budapest",
+      "publisher": "Israel Ministry of Foreign Affairs",
+      "url": "https://embassies.gov.il/hungary/en",
+      "type": "official",
+      "checkedAt": "2026-07-16",
+      "supports": ["consular contact", "official announcements for Israelis"]
+    },
+    {
+      "id": "mnb-foreign-currency",
+      "title": "Foreign currencies",
+      "publisher": "Magyar Nemzeti Bank",
+      "url": "https://www.mnb.hu/en/banknotes-and-coins/cashier-services-for-general-public/foreign-currencies",
+      "type": "official",
+      "checkedAt": "2026-07-16",
+      "supports": ["authorized currency exchange context", "central-bank limitations"]
+    }
+  ],
+  "facts": [
+    {
+      "id": "budapest-23-districts",
+      "claim": "Budapest has 23 districts, while the city centre and Castle District are the best-known visitor areas.",
+      "sourceIds": ["budapest-tourism-districts"],
+      "volatile": false
+    },
+    {
+      "id": "city-card-durations",
+      "claim": "The official Budapest Card is offered in multiple durations including 24, 48, 72, 96 and 120 hours.",
+      "sourceIds": ["budapest-card-benefits"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "city-card-transport",
+      "claim": "The official Budapest Card includes public transportation within Budapest under its current terms.",
+      "sourceIds": ["budapest-card-benefits", "bkk-tickets"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "airport-bus-fare",
+      "claim": "The 100E Airport Express single ticket is listed at 2,500 HUF as checked on 2026-07-16.",
+      "sourceIds": ["bkk-current-prices", "bkk-airport-100e"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "airport-bus-no-transfer",
+      "claim": "The 100E airport ticket covers one uninterrupted one-way journey and does not include transfers to other lines.",
+      "sourceIds": ["bkk-airport-100e"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "paygo-coverage",
+      "claim": "Pay&GO supports bank-card ticket purchase and validation on the metro network and the 100E Airport Express.",
+      "sourceIds": ["bkk-paygo"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "budapestgo-functions",
+      "claim": "BudapestGO combines real-time journey planning, digital-ticket purchase and ticket validation features.",
+      "sourceIds": ["bkk-budapestgo"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "ferihegy-connection",
+      "claim": "The closest railway station to Terminal 2 is Ferihegy, connected to the airport by bus 200E.",
+      "sourceIds": ["bud-airport-train"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "third-country-passport-rule",
+      "claim": "Hungarian Police states that qualifying third-country passports must extend at least three months after intended Schengen departure and have been issued within the previous ten years.",
+      "sourceIds": ["hungarian-police-entry"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "israel-warning-source",
+      "claim": "Israeli travelers should verify Hungary in the National Security Council dynamic warning system immediately before travel.",
+      "sourceIds": ["israel-travel-warnings"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "consular-source",
+      "claim": "The Embassy of Israel in Budapest is the primary official source in this packet for local consular announcements.",
+      "sourceIds": ["israel-embassy-hungary"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "currency-exchange-source",
+      "claim": "The Hungarian central bank does not itself buy or sell foreign currency and points travelers to authorized credit institutions and money changers.",
+      "sourceIds": ["mnb-foreign-currency"],
+      "volatile": false
+    }
+  ]
+}
