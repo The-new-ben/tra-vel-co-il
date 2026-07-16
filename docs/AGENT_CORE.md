@@ -2,7 +2,7 @@
 
 Status: first production-safe vertical slice in implementation  
 Contract version: `1.0.0`  
-Plugin: `plugin/tra-vel-agent-core/`
+Plugin: `plugin/tra-vel-agent-core/` version `0.1.1`
 
 ## What this slice does
 

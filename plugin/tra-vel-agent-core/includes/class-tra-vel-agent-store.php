@@ -278,13 +278,15 @@ class Tra_Vel_Agent_Store {
 	public function append_event( $run_id, $event ) {
 		global $wpdb;
 		$sequence = 1 + (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COALESCE(MAX(sequence_no),0) FROM ' . self::events_table() . ' WHERE run_id = %d', absint( $run_id ) ) );
+		$event_type = strtolower( (string) $event['type'] );
+		$event_type = preg_replace( '/[^a-z0-9._-]/', '', $event_type );
 		$inserted = $wpdb->insert(
 			self::events_table(),
 			array(
 				'run_id'      => absint( $run_id ),
 				'sequence_no' => $sequence,
 				'event_uuid'  => wp_generate_uuid4(),
-				'event_type'  => sanitize_key( str_replace( '.', '_', (string) $event['type'] ) ),
+				'event_type'  => $event_type,
 				'phase'       => sanitize_key( (string) $event['phase'] ),
 				'status'      => sanitize_key( (string) $event['status'] ),
 				'source'      => sanitize_key( (string) $event['source'] ),
@@ -368,12 +370,23 @@ class Tra_Vel_Agent_Store {
 
 	private function hydrate_event( $row ) {
 		$payload = json_decode( (string) $row['payload'], true );
+		$legacy_types = array(
+			'run_created'                    => 'run.created',
+			'request_interpretation_started' => 'request.interpretation.started',
+			'request_interpretation_failed'  => 'request.interpretation.failed',
+			'request_interpreted'            => 'request.interpreted',
+			'clarification_required'         => 'clarification.required',
+			'request_ready'                  => 'request.ready',
+			'supplier_search_not_started'    => 'supplier.search.not_started',
+			'approval_decided'               => 'approval.decided',
+		);
+		$stored_type = (string) $row['event_type'];
 		return array(
 			'contract_version' => '1.0.0',
 			'event_id'        => $row['event_uuid'],
 			'sequence'        => (int) $row['sequence_no'],
 			'occurred_at'     => gmdate( 'c', strtotime( $row['created_at'] . ' UTC' ) ),
-			'type'            => str_replace( '_', '.', $row['event_type'] ),
+			'type'            => isset( $legacy_types[ $stored_type ] ) ? $legacy_types[ $stored_type ] : $stored_type,
 			'phase'           => $row['phase'],
 			'status'          => $row['status'],
 			'source'          => $row['source'],
