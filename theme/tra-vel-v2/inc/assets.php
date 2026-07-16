@@ -32,7 +32,7 @@ function tra_vel_v2_enqueue_assets() {
 		true
 	);
 
-	if ( is_page_template( 'page-map.php' ) ) {
+	if ( is_page_template( 'page-map.php' ) || is_page_template( 'page-destination.php' ) || is_singular( 'destination' ) ) {
 		wp_enqueue_script(
 			'tra-vel-v2-globe-3d',
 			TRA_VEL_V2_URI . '/assets/js/globe-3d.js',

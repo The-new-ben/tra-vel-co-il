@@ -4,7 +4,7 @@ Tra-Vel does not publish destination pages merely because they reach a word coun
 
 ## Editorial contract
 
-Every destination owns one primary search intent and one clean canonical path. A source packet in `content/guides/*.sources.json` records:
+Every destination owns one primary search intent and one clean canonical path below `/destinations/`. A source packet in `content/guides/*.sources.json` records:
 
 - the canonical topic and route;
 - the interactive map state used by the page;
@@ -13,6 +13,8 @@ Every destination owns one primary search intent and one clean canonical path. A
 - factual claims mapped to source IDs;
 - volatile facts that must be rechecked immediately before publication;
 - a minimum word target of 5,000 for flagship guides.
+- at least three decision tables before a flagship guide can become `publish-ready`;
+- public language checks that reject em dashes, en dashes and internal project terminology.
 
 The first packet, `budapest-2026.sources.json`, uses Budapest city tourism, BKK, Budapest Airport, Hungarian Police, the Hungarian central bank, Israel's National Security Council and the Israeli Embassy in Hungary as primary sources.
 
@@ -43,11 +45,15 @@ The public guide shows author, reviewer, check date, source count, methodology a
 ## Search behavior
 
 - Destination guides use a clean singular canonical URL even when opened from a configured map.
+- Destination hubs use nested routes such as `/destinations/budapest/`, with a real WordPress parent page and visible breadcrumbs.
+- The directory and every published guide use crawlable HTML links. Interactive map state supplements those links instead of replacing them.
 - Personal saved-trip pages are `noindex, follow`.
 - Flight, hotel, package and map filter parameters are `noindex, follow` to prevent faceted crawl traps.
 - The native schema graph contains `WebSite`, `TravelAgency`, `WebPage`, `Article` and `BreadcrumbList` entities. Destination articles can expose `lastReviewed`, `citation` and a `TouristDestination` topic.
 - When Yoast is active, the theme enriches Yoast's Article node and suppresses its own duplicate graph.
 - The theme does not emit `FAQPage`, demo `Product` or demo `Offer` markup. Travel FAQ rich results are not a viable target, and commercial schema is reserved for verified supplier inventory.
+
+Google's current JavaScript SEO guidance recommends server-rendered content where practical and requires discoverable links to use real `<a href>` elements. Its breadcrumb documentation recommends visible hierarchy plus `BreadcrumbList` markup. The Tra-Vel destination system follows those constraints while retaining the interactive globe as a planning tool.
 
 Run `node scripts/ci/validate-guide-packets.mjs` before publishing or changing a guide packet. The same check runs in pull requests and production packaging.
 

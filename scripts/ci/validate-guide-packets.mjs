@@ -45,7 +45,7 @@ for (const file of packetFiles) {
   if (typeof packet.author !== 'string' || packet.author.trim().length < 2) fail(file, 'author is required.');
   if (typeof packet.reviewer !== 'string' || packet.reviewer.trim().length < 2) fail(file, 'reviewer is required.');
   if (!/^[a-z0-9-]+$/.test(packet.id || '')) fail(file, 'id must be a lowercase slug.');
-  if (!/^\/[a-z0-9-]+\/$/.test(packet.canonicalPath || '')) fail(file, 'canonicalPath must be one clean, trailing-slash route.');
+  if (!/^\/(?:[a-z0-9-]+\/)+$/.test(packet.canonicalPath || '')) fail(file, 'canonicalPath must be a clean, trailing-slash route.');
   if (!['research', 'source-ready', 'editorial-review', 'publish-ready'].includes(packet.status)) fail(file, 'status is invalid.');
   if (!Number.isInteger(packet.wordTargetMin) || packet.wordTargetMin < 5000) fail(file, 'wordTargetMin must be at least 5000.');
   if (!isIsoDate(packet.checkedAt)) fail(file, 'checkedAt must be a valid ISO date.');
@@ -104,12 +104,16 @@ for (const file of packetFiles) {
       const h2Count = (content.match(/<h2\b/gi) || []).length;
       const internalLinks = (content.match(/<a\s+[^>]*href="\//gi) || []).length;
       const sourcedLinks = (content.match(/rel="external noopener"/gi) || []).length;
+      const decisionTables = (content.match(/<table\b/gi) || []).length;
       const externalUrls = [...content.matchAll(/<a\s+[^>]*href="(https:\/\/[^"#]+)"[^>]*rel="external noopener"/gi)].map((match) => match[1]);
       if (words.length < packet.wordTargetMin) fail(file, `content has ${words.length} words; ${packet.wordTargetMin} required.`);
       if (hebrewWords.length / Math.max(words.length, 1) < 0.75) fail(file, 'flagship content must be predominantly Hebrew.');
       if (h2Count < 12) fail(file, `content has ${h2Count} H2 sections; at least 12 required.`);
       if (internalLinks < 4) fail(file, `content has ${internalLinks} internal decision links; at least 4 required.`);
       if (sourcedLinks < 6) fail(file, `content has ${sourcedLinks} visible source links; at least 6 required.`);
+      if (packet.status === 'publish-ready' && decisionTables < 3) fail(file, `publish-ready content has ${decisionTables} decision tables; at least 3 required.`);
+      if (/[—–]/u.test(content)) fail(file, 'public guide content must not use em dash or en dash punctuation.');
+      if (/מפת העריכה|במחקר|בדיקת מערכת|מדריך דגל/u.test(content)) fail(file, 'public guide content contains internal project language.');
       for (const url of externalUrls) {
         if (!sourceUrls.has(url)) fail(file, `content cites an external URL that is absent from the source packet: ${url}.`);
       }

@@ -15,24 +15,17 @@ $is_guides     = 'guides' === $page_slug;
 $manifest_path = TRA_VEL_V2_PATH . '/assets/data/editorial-directory.json';
 $manifest      = file_exists( $manifest_path ) ? json_decode( file_get_contents( $manifest_path ), true ) : array();
 $destinations  = isset( $manifest['destinations'] ) && is_array( $manifest['destinations'] ) ? $manifest['destinations'] : array();
-$review_count  = count(
-	array_filter(
-		$destinations,
-		static function ( $destination ) {
-			return 'editorial-review' === ( $destination['guide_status'] ?? '' );
-		}
-	)
-);
+$region_count  = count( array_unique( array_column( $destinations, 'region' ) ) );
 $hero = $is_guides
 	? array(
 		'eyebrow' => __( 'Tra-Vel Guides', 'tra-vel-v2' ),
 		'title'   => __( 'מדריכים שמובילים להחלטה. לא לעוד לשונית.', 'tra-vel-v2' ),
-		'copy'    => __( 'כל יעד נבנה ממקורות, מפה, מסלול, עלות כוללת והצעד הבא. מדריך שלא עבר בדיקה אינו מוצג כמוכן.', 'tra-vel-v2' ),
+		'copy'    => __( 'כל מדריך מחבר בין עונות, אזורי לינה, מסלולים, עלויות והזמנה. מתחילים בהחלטה שמעסיקה אתכם וממשיכים לכלים המתאימים.', 'tra-vel-v2' ),
 	)
 	: array(
 		'eyebrow' => __( 'Tra-Vel Destinations', 'tra-vel-v2' ),
 		'title'   => __( 'בחרו חופשה לפי ההחלטה שחשובה לכם.', 'tra-vel-v2' ),
-		'copy'    => __( 'עיר או חוף, סוף שבוע או טיול גדול, קצב מהיר או רגוע — כל יעד מתחבר למפה, למדריך ולהשוואה המתאימה.', 'tra-vel-v2' ),
+		'copy'    => __( 'עיר או חוף, סוף שבוע או טיול גדול, קצב מהיר או רגוע. כל יעד מתחבר למפה, למדריך ולהשוואה המתאימה.', 'tra-vel-v2' ),
 	);
 
 get_header();
@@ -45,7 +38,7 @@ get_header();
 				<h1><?php echo esc_html( $hero['title'] ); ?></h1>
 				<p><?php echo esc_html( $hero['copy'] ); ?></p>
 				<div class="directory-hero-actions"><a class="header-cta" href="#directory-grid"><i data-lucide="layout-grid"></i><?php esc_html_e( 'גלו יעדים', 'tra-vel-v2' ); ?></a><a href="<?php echo esc_url( home_url( '/travel-map/' ) ); ?>"><i data-lucide="earth"></i><?php esc_html_e( 'פתחו את מפת המסע', 'tra-vel-v2' ); ?></a></div>
-				<div class="directory-proof"><span><strong><?php echo esc_html( count( $destinations ) ); ?></strong><?php esc_html_e( 'יעדים במפת העריכה', 'tra-vel-v2' ); ?></span><span><strong><?php echo esc_html( $review_count ); ?></strong><?php esc_html_e( 'מדריכי דגל בבדיקה', 'tra-vel-v2' ); ?></span><span><strong>0</strong><?php esc_html_e( 'מחירים מומצאים', 'tra-vel-v2' ); ?></span></div>
+				<div class="directory-proof"><span><strong><?php echo esc_html( count( $destinations ) ); ?></strong><?php esc_html_e( 'יעדים לבחירה', 'tra-vel-v2' ); ?></span><span><strong><?php echo esc_html( $region_count ); ?></strong><?php esc_html_e( 'אזורי עולם', 'tra-vel-v2' ); ?></span><span><strong>4</strong><?php esc_html_e( 'שכבות השוואה', 'tra-vel-v2' ); ?></span></div>
 			</div>
 			<div class="directory-orbit" aria-label="<?php esc_attr_e( 'מפת יעדים אינטראקטיבית', 'tra-vel-v2' ); ?>">
 				<div class="directory-orbit-globe"></div><span class="directory-origin">TLV<small><?php esc_html_e( 'מתחילים כאן', 'tra-vel-v2' ); ?></small></span>
@@ -77,16 +70,15 @@ get_header();
 				?>
 				<article class="directory-card" data-directory-card data-region="<?php echo esc_attr( $destination['region'] ); ?>" data-experience="<?php echo esc_attr( $destination['experience'] ); ?>" data-search="<?php echo esc_attr( $search_text ); ?>">
 					<div class="directory-card-image" style="background-image:linear-gradient(0deg,rgba(4,20,27,.82),transparent 68%),url('<?php echo esc_url( tra_vel_v2_asset_uri( 'images/' . $destination['image'] ) ); ?>')"><span><?php echo esc_html( $destination['region_label'] ); ?></span><div><small><?php echo esc_html( $destination['country'] ); ?></small><h3><?php echo esc_html( $destination['city'] ); ?></h3></div></div>
-					<div class="directory-card-body"><div class="directory-status <?php echo esc_attr( 'status-' . $status ); ?>"><i data-lucide="<?php echo 'editorial-review' === $status ? 'badge-check' : 'flask-conical'; ?>"></i><?php echo esc_html( 'editorial-review' === $status ? __( 'בבדיקת מערכת', 'tra-vel-v2' ) : __( 'במחקר', 'tra-vel-v2' ) ); ?></div><p><?php echo esc_html( $destination['decision'] ); ?></p><div class="directory-meta"><span><i data-lucide="calendar-range"></i><?php echo esc_html( $destination['duration'] ); ?></span><span><i data-lucide="users"></i><?php echo esc_html( $destination['best_for'] ); ?></span></div>
-					<?php if ( $destination['word_count'] ) : ?><div class="directory-evidence"><span><strong><?php echo esc_html( number_format_i18n( $destination['word_count'] ) ); ?>+</strong><?php esc_html_e( 'מילים', 'tra-vel-v2' ); ?></span><span><strong><?php echo esc_html( number_format_i18n( $destination['source_count'] ) ); ?></strong><?php esc_html_e( 'מקורות', 'tra-vel-v2' ); ?></span></div><?php endif; ?>
-					<div class="directory-card-actions"><a href="<?php echo esc_url( $map_url ); ?>"><i data-lucide="map"></i><?php esc_html_e( 'פתחו במפה', 'tra-vel-v2' ); ?></a><?php if ( 'published' === $status && ! empty( $destination['guide_path'] ) ) : ?><a class="is-primary" href="<?php echo esc_url( home_url( $destination['guide_path'] ) ); ?>"><?php esc_html_e( 'למדריך', 'tra-vel-v2' ); ?><i data-lucide="arrow-left"></i></a><?php else : ?><span><?php esc_html_e( 'המדריך ייפתח אחרי בדיקה', 'tra-vel-v2' ); ?></span><?php endif; ?></div></div>
+					<div class="directory-card-body"><div class="directory-status"><i data-lucide="compass"></i><?php echo esc_html( $destination['experience_label'] ); ?></div><p><?php echo esc_html( $destination['decision'] ); ?></p><div class="directory-meta"><span><i data-lucide="calendar-range"></i><?php echo esc_html( $destination['duration'] ); ?></span><span><i data-lucide="users"></i><?php echo esc_html( $destination['best_for'] ); ?></span></div>
+					<div class="directory-card-actions"><a href="<?php echo esc_url( $map_url ); ?>"><i data-lucide="map"></i><?php esc_html_e( 'פתחו במפה', 'tra-vel-v2' ); ?></a><?php if ( 'published' === $status && ! empty( $destination['guide_path'] ) ) : ?><a class="is-primary" href="<?php echo esc_url( home_url( $destination['guide_path'] ) ); ?>"><?php esc_html_e( 'למדריך המלא', 'tra-vel-v2' ); ?><i data-lucide="arrow-left"></i></a><?php else : ?><a class="is-primary" href="<?php echo esc_url( $map_url . '#map-support' ); ?>"><?php esc_html_e( 'השוו מסלולים', 'tra-vel-v2' ); ?><i data-lucide="arrow-left"></i></a><?php endif; ?></div></div>
 				</article>
 			<?php endforeach; ?>
 		</div>
 		<div class="directory-empty" data-directory-empty hidden><i data-lucide="search-x"></i><h3><?php esc_html_e( 'לא מצאנו התאמה מדויקת', 'tra-vel-v2' ); ?></h3><p><?php esc_html_e( 'נסו אזור אחר או פתחו את המפה כדי לגלות יעד לפי זמן ותקציב.', 'tra-vel-v2' ); ?></p><a href="<?php echo esc_url( home_url( '/travel-map/' ) ); ?>"><?php esc_html_e( 'למפת המסע', 'tra-vel-v2' ); ?></a></div>
 	</section>
 
-	<section class="directory-standard"><div class="page-width directory-standard-grid"><div><span class="eyebrow"><?php esc_html_e( 'הבטחת העריכה', 'tra-vel-v2' ); ?></span><h2><?php esc_html_e( 'עומק לפני פרסום. פעולה אחרי כל פרק.', 'tra-vel-v2' ); ?></h2><p><?php esc_html_e( 'מדריך דגל עובר בדיקת מקורות, תאריך, קניבליזציה, מבנה ושימושיות. סטטוס המחקר מוצג בגלוי.', 'tra-vel-v2' ); ?></p></div><div class="directory-standard-list"><span><i data-lucide="file-check-2"></i><strong>5,000+</strong><?php esc_html_e( 'מילים למדריך דגל', 'tra-vel-v2' ); ?></span><span><i data-lucide="database"></i><strong>10+</strong><?php esc_html_e( 'מקורות עם מיפוי עובדות', 'tra-vel-v2' ); ?></span><span><i data-lucide="refresh-cw"></i><strong>48–72</strong><?php esc_html_e( 'שעות לבדיקה חוזרת של מידע תנודתי', 'tra-vel-v2' ); ?></span></div></div></section>
+	<section class="directory-standard"><div class="page-width directory-standard-grid"><div><span class="eyebrow"><?php esc_html_e( 'מה מקבלים בכל יעד', 'tra-vel-v2' ); ?></span><h2><?php esc_html_e( 'תמונה מלאה לפני שעוברים להזמנה.', 'tra-vel-v2' ); ?></h2><p><?php esc_html_e( 'המפה, המדריך וכלי ההשוואה מחוברים למסע אחד. אפשר להבין את החלופות, לבדוק את התנאים ולהמשיך למוצר שמתאים להרכב.', 'tra-vel-v2' ); ?></p></div><div class="directory-standard-list"><span><i data-lucide="map"></i><strong>1</strong><?php esc_html_e( 'מפת מסע מחוברת', 'tra-vel-v2' ); ?></span><span><i data-lucide="layers-3"></i><strong>4</strong><?php esc_html_e( 'שכבות החלטה', 'tra-vel-v2' ); ?></span><span><i data-lucide="badge-check"></i><strong>LIVE</strong><?php esc_html_e( 'מחיר רק לאחר בדיקה', 'tra-vel-v2' ); ?></span></div></div></section>
 
 	<section class="directory-next page-width"><div><span class="eyebrow"><?php esc_html_e( 'מה עושים עכשיו?', 'tra-vel-v2' ); ?></span><h2><?php esc_html_e( 'הפכו השראה למסלול שאפשר להשוות.', 'tra-vel-v2' ); ?></h2></div><div><a href="<?php echo esc_url( home_url( '/travel-map/' ) ); ?>"><i data-lucide="earth"></i><span><strong><?php esc_html_e( 'מפת המסע', 'tra-vel-v2' ); ?></strong><?php esc_html_e( 'יעדים ומסלולים חזותיים', 'tra-vel-v2' ); ?></span></a><a href="<?php echo esc_url( home_url( '/flights/' ) ); ?>"><i data-lucide="plane-takeoff"></i><span><strong><?php esc_html_e( 'טיסות', 'tra-vel-v2' ); ?></strong><?php esc_html_e( 'מחיר כולל ופשרות', 'tra-vel-v2' ); ?></span></a><a href="<?php echo esc_url( home_url( '/hotels/' ) ); ?>"><i data-lucide="bed-double"></i><span><strong><?php esc_html_e( 'מלונות', 'tra-vel-v2' ); ?></strong><?php esc_html_e( 'אזור, חדר ותנאים', 'tra-vel-v2' ); ?></span></a><a href="<?php echo esc_url( home_url( '/travel-insurance/' ) ); ?>"><i data-lucide="shield-check"></i><span><strong><?php esc_html_e( 'ביטוח', 'tra-vel-v2' ); ?></strong><?php esc_html_e( 'כיסוי לפי המסלול', 'tra-vel-v2' ); ?></span></a></div></section>
 </main>
