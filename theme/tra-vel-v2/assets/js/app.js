@@ -43,6 +43,8 @@ function normalizeDestination(item) {
     hotelPrice: item.hotel.nightly_formatted,
     weather: `${item.weather.temperature_c}°C`,
     weatherCondition: item.weather.condition,
+    latitude: item.geo.latitude,
+    longitude: item.geo.longitude,
     x: item.position.x,
     y: item.position.y
   };
@@ -60,11 +62,17 @@ function updatePins() {
     const data = destinationData[pin.dataset.destination];
     pin.hidden = !data;
     if (!data) return;
-    pin.textContent = pinLabel(data);
-    pin.style.left = `${data.x}%`;
-    pin.style.top = `${data.y}%`;
-    pin.setAttribute('aria-label', `${data.city}, ${pinLabel(data)}`);
+    const label = pinLabel(data);
+    pin.textContent = label;
+    if (Number.isFinite(Number(data.latitude))) pin.dataset.latitude = String(data.latitude);
+    if (Number.isFinite(Number(data.longitude))) pin.dataset.longitude = String(data.longitude);
+    if (!pin.closest('[data-globe-3d]')) {
+      pin.style.left = `${data.x}%`;
+      pin.style.top = `${data.y}%`;
+    }
+    pin.setAttribute('aria-label', label === data.city ? data.city : `${data.city}, ${label}`);
   });
+  window.traVelGlobe3D?.setDestinations(destinationData);
 }
 
 function setActiveDestination(key, pin) {
@@ -75,6 +83,7 @@ function setActiveDestination(key, pin) {
   activeDestination = key;
   document.querySelectorAll('.price-pin').forEach(item => item.classList.toggle('is-active', item.dataset.destination === key));
   pin?.classList.add('is-active');
+  window.traVelGlobe3D?.focusDestination(key, Boolean(pin));
 
   document.querySelectorAll('[data-map-result]').forEach(card => {
     const image = card.querySelector('[data-result-image]');
@@ -1426,6 +1435,10 @@ function initMap() {
   document.querySelectorAll('[data-map-zoom]').forEach(button => button.addEventListener('click', () => {
     const globe = button.closest('.globe-panel, .compact-map, .world-canvas')?.querySelector('.globe');
     if (!globe) return;
+    if (globe.matches('[data-globe-3d]') && window.traVelGlobe3D) {
+      window.traVelGlobe3D.zoom(button.dataset.mapZoom);
+      return;
+    }
     const current = Number(globe.dataset.scale || 1);
     const next = button.dataset.mapZoom === 'in' ? Math.min(current + .12, 1.45) : Math.max(current - .12, .78);
     globe.dataset.scale = next;
