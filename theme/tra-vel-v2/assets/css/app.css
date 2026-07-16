@@ -502,6 +502,7 @@ input[type="range"] { width: 100%; accent-color: #7da000; }
 .destination-hero > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .destination-hero::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg,rgba(4,17,23,.18),rgba(4,17,23,.88) 70%),linear-gradient(transparent 55%,rgba(4,17,23,.68)); }
 .destination-hero-content { position: relative; z-index: 2; padding-top: 90px; }
+.destination-image-credit { position: absolute; z-index: 3; bottom: 50px; left: 24px; padding: 5px 8px; border-radius: 8px; background: rgba(4,17,23,.68); color: #d6e2e4; font-size: 10px; text-decoration: underline; }
 .breadcrumbs { display: flex; align-items: center; gap: 7px; color: #d3dee0; font-size: 13px; }
 .destination-badge { margin-top: 52px; display: inline-flex; align-items: center; gap: 7px; padding: 7px 11px; background: rgba(217,255,89,.13); border: 1px solid rgba(217,255,89,.3); color: var(--lime); border-radius: 99px; font-size: 12px; font-weight: 700; }
 .destination-hero h1 { font-size: clamp(56px,7vw,94px); letter-spacing: -4px; line-height: .95; margin: 16px 0 20px; }
@@ -1235,6 +1236,7 @@ h3.deal-title { display: block; margin: 6px 0 12px; font-size: 22px; line-height
   .destination-hero { min-height: 600px; }
   .destination-hero::after { background: linear-gradient(transparent 4%,rgba(4,17,23,.86) 72%); }
   .destination-hero-content { padding-top: 55px; }
+  .destination-image-credit { bottom: 36px; left: 14px; max-width: calc(100% - 28px); }
   .destination-badge { margin-top: 150px; }
   .destination-hero h1 { font-size: 56px; letter-spacing: -2.6px; }
   .destination-hero p { font-size: 17px; }
