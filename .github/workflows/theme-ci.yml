@@ -36,7 +36,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Validate theme structure and policy
-        run: node scripts/ci/validate-theme.mjs
+        run: |
+          node scripts/ci/validate-theme.mjs
+          node scripts/ci/validate-discovery-contract.mjs
 
       - name: Lint WordPress PHP
         shell: bash

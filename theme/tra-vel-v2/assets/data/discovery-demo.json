@@ -1,0 +1,142 @@
+{
+  "contract_version": "1.0.0",
+  "data_mode": "demo",
+  "currency": "USD",
+  "origin": {
+    "code": "TLV",
+    "name": "Ben Gurion Airport",
+    "city": "Tel Aviv",
+    "country": "Israel",
+    "latitude": 32.0005,
+    "longitude": 34.8708
+  },
+  "provider_status": {
+    "flights": { "connected": false, "adapter": "amadeus_or_duffel", "readiness": "contract_ready" },
+    "hotels": { "connected": false, "adapter": "booking_or_expedia_rapid", "readiness": "contract_ready" },
+    "insurance": { "connected": false, "adapter": "israeli_broker_or_insurer", "readiness": "contract_ready" },
+    "weather": { "connected": false, "adapter": "weather_provider", "readiness": "contract_ready" }
+  },
+  "destinations": [
+    {
+      "id": "budapest",
+      "city": "בודפשט",
+      "country": "הונגריה",
+      "position": { "x": 43, "y": 32 },
+      "airport": { "code": "BUD", "name": "Budapest Ferenc Liszt", "direct": true, "flight_minutes": 210, "transfer_minutes": 35 },
+      "deal": { "headline_price": 214, "total_per_person": 596, "currency": "USD", "trend_pct": -14, "nights": 4, "insight": "מלון 4★ במרכז והעברות כלולים בחישוב", "bookable": false },
+      "hotel": { "name": "Danube Central Hotel", "area": "District V", "rating": 4.4, "nightly": 130, "nights": 4, "room_total": 520, "per_person_total": 260, "currency": "USD", "tour_ready": false },
+      "weather": { "temperature_c": 17, "condition": "נעים", "season_fit": "טוב" },
+      "tags": ["טיסה ישירה", "4 לילות", "ארוחת בוקר"],
+      "image": "city-budapest.webp"
+    },
+    {
+      "id": "athens",
+      "city": "אתונה",
+      "country": "יוון",
+      "position": { "x": 48, "y": 43 },
+      "airport": { "code": "ATH", "name": "Athens International", "direct": true, "flight_minutes": 135, "transfer_minutes": 40 },
+      "deal": { "headline_price": 189, "total_per_person": 534, "currency": "USD", "trend_pct": -7, "nights": 3, "insight": "המחיר הנמוך ביותר השבוע לחופשה קצרה", "bookable": false },
+      "hotel": { "name": "Plaka View", "area": "Plaka", "rating": 4.2, "nightly": 145, "nights": 3, "room_total": 435, "per_person_total": 218, "currency": "USD", "tour_ready": false },
+      "weather": { "temperature_c": 23, "condition": "שמשי", "season_fit": "מצוין" },
+      "tags": ["טיסה ישירה", "3 לילות", "ביטול גמיש"],
+      "image": "city-vienna.webp"
+    },
+    {
+      "id": "dubai",
+      "city": "דובאי",
+      "country": "איחוד האמירויות",
+      "position": { "x": 59, "y": 53 },
+      "airport": { "code": "DXB", "name": "Dubai International", "direct": true, "flight_minutes": 205, "transfer_minutes": 25 },
+      "deal": { "headline_price": 236, "total_per_person": 690, "currency": "USD", "trend_pct": -11, "nights": 4, "insight": "המחיר ירד היום; טרולי והעברה מחושבים", "bookable": false },
+      "hotel": { "name": "Creek Design Hotel", "area": "Dubai Creek", "rating": 4.5, "nightly": 170, "nights": 4, "room_total": 680, "per_person_total": 340, "currency": "USD", "tour_ready": false },
+      "weather": { "temperature_c": 31, "condition": "חם ויבש", "season_fit": "טוב" },
+      "tags": ["טיסה ישירה", "סופ״ש", "טרולי כלול"],
+      "image": "hero-budapest-900.webp"
+    },
+    {
+      "id": "bangkok",
+      "city": "בנגקוק",
+      "country": "תאילנד",
+      "position": { "x": 72, "y": 61 },
+      "airport": { "code": "BKK", "name": "Suvarnabhumi Airport", "direct": true, "flight_minutes": 680, "transfer_minutes": 45 },
+      "deal": { "headline_price": 742, "total_per_person": 1347, "currency": "USD", "trend_pct": -8, "nights": 12, "insight": "חיסכון של $157 דרך דובאי מול טיסה ישירה", "bookable": false },
+      "hotel": { "name": "Siam Riverside", "area": "Siam", "rating": 4.6, "nightly": 65, "nights": 12, "room_total": 780, "per_person_total": 390, "currency": "USD", "tour_ready": false },
+      "weather": { "temperature_c": 29, "condition": "חם עם ממטרים", "season_fit": "טוב" },
+      "tags": ["12 לילות", "עצירה אחת", "כבודה כלולה"],
+      "image": "thailand.jpg"
+    },
+    {
+      "id": "tokyo",
+      "city": "טוקיו",
+      "country": "יפן",
+      "position": { "x": 84, "y": 39 },
+      "airport": { "code": "HND", "name": "Tokyo Haneda", "direct": false, "flight_minutes": 930, "transfer_minutes": 35 },
+      "deal": { "headline_price": 918, "total_per_person": 1810, "currency": "USD", "trend_pct": -4, "nights": 10, "insight": "חלון מחיר טוב לנובמבר עם עצירה אחת", "bookable": false },
+      "hotel": { "name": "Shinjuku Base", "area": "Shinjuku", "rating": 4.3, "nightly": 148, "nights": 10, "room_total": 1480, "per_person_total": 740, "currency": "USD", "tour_ready": false },
+      "weather": { "temperature_c": 18, "condition": "קריר ובהיר", "season_fit": "מצוין" },
+      "tags": ["עצירה אחת", "10 לילות", "כבודה כלולה"],
+      "image": "city-prague.webp"
+    },
+    {
+      "id": "lisbon",
+      "city": "ליסבון",
+      "country": "פורטוגל",
+      "position": { "x": 29, "y": 43 },
+      "airport": { "code": "LIS", "name": "Humberto Delgado", "direct": false, "flight_minutes": 470, "transfer_minutes": 25 },
+      "deal": { "headline_price": 327, "total_per_person": 910, "currency": "USD", "trend_pct": -6, "nights": 7, "insight": "שילוב טיסות חכם דרך רומא עם כרטיס אחד", "bookable": false },
+      "hotel": { "name": "Baixa Story Hotel", "area": "Baixa", "rating": 4.5, "nightly": 132, "nights": 7, "room_total": 924, "per_person_total": 462, "currency": "USD", "tour_ready": false },
+      "weather": { "temperature_c": 21, "condition": "נעים ורוחי", "season_fit": "טוב" },
+      "tags": ["7 לילות", "עצירה אחת", "מלון מומלץ"],
+      "image": "city-prague.webp"
+    }
+  ],
+  "route_sets": {
+    "bangkok": [
+      {
+        "id": "bangkok-direct",
+        "label": "ישיר עם EL AL",
+        "badge": "הכי נוח",
+        "duration_minutes": 680,
+        "stops": 0,
+        "via": null,
+        "ticket_mode": "single",
+        "risk": "low",
+        "emissions_kg": 1840,
+        "score": 82,
+        "costs": { "flight": 899, "baggage": 90, "hotel": 390, "transfers": 55, "insurance": 72, "overnight": 0, "total": 1506 },
+        "pros": ["המסלול הקצר ביותר", "ללא החלפת מטוס", "כרטיס אחד"],
+        "cons": ["המחיר הכולל הגבוה ביותר", "פחות גמישות בשעות"]
+      },
+      {
+        "id": "bangkok-dubai",
+        "label": "דרך דובאי",
+        "badge": "הבחירה החכמה",
+        "duration_minutes": 840,
+        "stops": 1,
+        "via": "DXB",
+        "ticket_mode": "single",
+        "risk": "low",
+        "emissions_kg": 1690,
+        "score": 93,
+        "costs": { "flight": 742, "baggage": 88, "hotel": 390, "transfers": 55, "insurance": 72, "overnight": 0, "total": 1347 },
+        "pros": ["חיסכון של $159", "כרטיס אחד", "עצירה נוחה של 1:55"],
+        "cons": ["2:40 שעות יותר", "החלפת מטוס אחת"]
+      },
+      {
+        "id": "bangkok-athens",
+        "label": "עצירת לילה באתונה",
+        "badge": "הכי זול",
+        "duration_minutes": 1470,
+        "stops": 1,
+        "via": "ATH",
+        "ticket_mode": "separate",
+        "risk": "medium",
+        "emissions_kg": 1775,
+        "score": 71,
+        "costs": { "flight": 621, "baggage": 110, "hotel": 390, "transfers": 55, "insurance": 72, "overnight": 75, "total": 1323 },
+        "pros": ["המחיר הכולל הנמוך ביותר", "אפשר להוסיף ערב באתונה"],
+        "cons": ["כרטיסים נפרדים", "סיכון בהחמצת המשך", "לילה נוסף בדרך"]
+      }
+    ]
+  }
+}
