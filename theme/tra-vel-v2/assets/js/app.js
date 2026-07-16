@@ -12,6 +12,7 @@ let destinationData = { ...fallbackDestinations };
 let discoveryRoutes = [];
 let activeLayer = 'deals';
 let activeDestination = 'bangkok';
+let discoveryDataMode = 'demo';
 
 function renderIcons() {
   if (window.lucide) window.lucide.createIcons({ attrs: { 'stroke-width': 1.8 } });
@@ -48,10 +49,10 @@ function normalizeDestination(item) {
 }
 
 function pinLabel(data) {
-  if (activeLayer === 'hotels') return data.hotelPrice || data.total;
+  if (activeLayer === 'hotels') return discoveryDataMode === 'live' ? (data.hotelPrice || data.total) : data.city;
   if (activeLayer === 'airports') return data.airportCode || data.airport;
   if (activeLayer === 'weather') return data.weather;
-  return data.price;
+  return discoveryDataMode === 'live' ? data.price : data.city;
 }
 
 function updatePins() {
@@ -69,6 +70,7 @@ function updatePins() {
 function setActiveDestination(key, pin) {
   const data = destinationData[key];
   if (!data) return;
+  const hasLivePrices = discoveryDataMode === 'live';
   activeDestination = key;
   document.querySelectorAll('.price-pin').forEach(item => item.classList.toggle('is-active', item.dataset.destination === key));
   pin?.classList.add('is-active');
@@ -81,9 +83,9 @@ function setActiveDestination(key, pin) {
     }
     const fields = {
       '[data-result-city]': `${data.city}, ${data.country}`,
-      '[data-result-price]': data.price,
-      '[data-result-total]': data.total,
-      '[data-result-note]': data.note,
+      '[data-result-price]': hasLivePrices ? data.price : 'בדיקה חיה',
+      '[data-result-total]': hasLivePrices ? data.total : 'בדיקה חיה',
+      '[data-result-note]': hasLivePrices ? data.note : 'המחיר יופיע לאחר חיפוש מול ספקים מחוברים.',
       '[data-result-airport]': data.airport,
       '[data-result-hotel]': data.hotel,
       '[data-result-weather]': `${data.weather} · ${data.weatherCondition || ''}`
@@ -96,7 +98,7 @@ function setActiveDestination(key, pin) {
   });
 
   const routeTitle = document.querySelector('[data-route-title]');
-  if (routeTitle) routeTitle.textContent = `תל אביב ← ${data.city} · השוואת עלות מלאה`;
+  if (routeTitle) routeTitle.textContent = `תל אביב אל ${data.city}: השוואת מסלולים`;
 }
 
 function appendTextElement(parent, tag, text, className = '') {
@@ -259,11 +261,12 @@ function renderRoutes(routes) {
   }
   const bestScore = Math.max(...routes.map(route => route.score));
   routes.forEach(route => {
+    const routePrice = discoveryDataMode === 'live' ? route.costs.total_formatted : 'בדיקת מחיר';
     const button = document.createElement('button');
     button.className = `mini-route${route.score === bestScore ? ' is-selected' : ''}`;
     button.type = 'button';
     button.dataset.route = route.id;
-    button.dataset.routeSummary = `${route.label} · ${route.costs.total_formatted}`;
+    button.dataset.routeSummary = `${route.label} · ${routePrice}`;
     appendTextElement(button, 'small', route.badge);
     appendTextElement(button, 'strong', `${route.label} · ${route.duration_label}`);
     appendTextElement(button, 'span', `${route.stops ? `${route.stops} עצירה` : 'ישיר'} · ${route.ticket_mode === 'single' ? 'כרטיס אחד' : 'כרטיסים נפרדים'}`);
@@ -272,8 +275,8 @@ function renderRoutes(routes) {
     appendTextElement(tradeoffs, 'span', `✓ ${route.pros[0]}`, 'route-pro');
     appendTextElement(tradeoffs, 'span', `△ ${route.cons[0]}`, 'route-con');
     button.append(tradeoffs);
-    appendTextElement(button, 'b', route.costs.total_formatted);
-    appendTextElement(button, 'em', 'עלות מלאה לאדם');
+    appendTextElement(button, 'b', routePrice);
+    appendTextElement(button, 'em', discoveryDataMode === 'live' ? 'עלות מלאה לאדם' : 'מחיר סופי יוצג בחיפוש חי');
     button.addEventListener('click', () => selectRoute(button));
     list.append(button);
   });
@@ -312,11 +315,12 @@ async function hydrateDiscovery(params = {}) {
   Object.entries(params).forEach(([key, value]) => {
     if (value !== '' && value !== undefined && value !== false) url.searchParams.set(key, String(value));
   });
-  setDiscoveryStatus('loading', 'מעדכן מחירים, מלונות ומסלולים...');
+  setDiscoveryStatus('loading', 'מעדכן יעדים ומסלולים...');
   try {
     const response = await fetch(url, { headers: { Accept: 'application/json' } });
     if (!response.ok) throw new Error(`Discovery request failed: ${response.status}`);
     const payload = await response.json();
+    discoveryDataMode = payload.meta?.data_mode || 'demo';
     destinationData = Object.fromEntries(payload.destinations.map(item => [item.id, normalizeDestination(item)]));
     discoveryRoutes = payload.routes || [];
     updateWeatherAttribution(payload.provider_status);
@@ -324,15 +328,18 @@ async function hydrateDiscovery(params = {}) {
     const selected = destinationData[params.destination] ? params.destination : (destinationData[activeDestination] ? activeDestination : Object.keys(destinationData)[0]);
     if (selected) setActiveDestination(selected, document.querySelector(`[data-destination="${selected}"]`));
     renderRoutes(discoveryRoutes);
-    const layerName = payload.layers?.find(layer => layer.id === activeLayer)?.label || 'מחירים';
-    const modeLabel = payload.meta.data_mode === 'live' ? 'נתוני ספקים חיים' : (payload.meta.data_mode === 'mixed' ? 'שילוב נתונים חיים והדגמה' : 'נתוני הדגמה שקופים');
-    setDiscoveryStatus(payload.meta.data_mode, `${layerName} · ${payload.meta.result_count} יעדים · ${modeLabel}`);
+    const layerName = activeLayer === 'deals' && discoveryDataMode !== 'live'
+      ? 'יעדים'
+      : (payload.layers?.find(layer => layer.id === activeLayer)?.label || 'יעדים');
+    const modeLabel = discoveryDataMode === 'live' ? 'מחירים מעודכנים' : 'מחירים יופיעו בחיפוש חי';
+    setDiscoveryStatus(discoveryDataMode, `${layerName} · ${payload.meta.result_count} יעדים · ${modeLabel}`);
   } catch (error) {
+    discoveryDataMode = 'demo';
     destinationData = { ...fallbackDestinations };
     updateWeatherAttribution(null);
     updatePins();
     setActiveDestination(activeDestination, document.querySelector(`[data-destination="${activeDestination}"]`));
-    setDiscoveryStatus('fallback', 'מצב הדגמה מקומי · החיבור לספקים עדיין לא פעיל');
+    setDiscoveryStatus('fallback', '6 יעדים זמינים · מחירים יופיעו בחיפוש חי');
     console.warn(error);
   }
 }
@@ -1528,8 +1535,10 @@ function initTraVelV2() {
   initInsuranceQuote();
   initTripPackageSearch();
   initTravelerWorkspace();
-  const query = new URLSearchParams(window.location.search).get('q') || '';
-  hydrateDiscovery({ q: query, layer: activeLayer });
+  const urlParams = new URLSearchParams(window.location.search);
+  const query = urlParams.get('q') || '';
+  const destination = urlParams.get('destination') || activeDestination;
+  hydrateDiscovery({ q: query, destination, layer: activeLayer });
 }
 
 if (document.readyState === 'loading') {
