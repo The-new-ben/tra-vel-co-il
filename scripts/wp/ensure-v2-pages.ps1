@@ -35,6 +35,12 @@ $headers = @{ Authorization = "Basic $encodedPair" }
 
 $pages = @(
     [pscustomobject]@{
+        Slug = 'saved'
+        Title = 'הנסיעות השמורות שלי'
+        Template = 'page-saved.php'
+        Excerpt = 'סביבת עבודה אישית לשמירת מסלולים, השוואות, העדפות ומעקב מחירים.'
+    },
+    [pscustomobject]@{
         Slug = 'travel-map'
         Title = 'מפת המסע החכמה'
         Template = 'page-map.php'

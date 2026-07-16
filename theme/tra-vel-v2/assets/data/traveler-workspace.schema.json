@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tra-vel.co.il/schemas/traveler-workspace-v1.json",
+  "title": "Tra-Vel traveler workspace",
+  "type": "object",
+  "required": ["version", "items", "preferences", "meta"],
+  "properties": {
+    "version": { "const": 1 },
+    "items": {
+      "type": "array",
+      "maxItems": 50,
+      "items": {
+        "type": "object",
+        "required": ["id", "kind", "external_id", "title", "price_amount", "currency", "data_mode", "href", "saved_at", "watch"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^(destination|route|flight|hotel|package):[A-Za-z0-9._:-]{1,60}$" },
+          "kind": { "enum": ["destination", "route", "flight", "hotel", "package"] },
+          "external_id": { "type": "string", "minLength": 1, "maxLength": 60 },
+          "title": { "type": "string", "minLength": 1, "maxLength": 160 },
+          "subtitle": { "type": "string", "maxLength": 240 },
+          "destination": { "type": "string", "maxLength": 80 },
+          "route": { "type": "string", "maxLength": 160 },
+          "price_label": { "type": "string", "maxLength": 40 },
+          "price_amount": { "type": "number", "minimum": 0, "maximum": 1000000 },
+          "currency": { "enum": ["USD", "EUR", "ILS"] },
+          "data_mode": { "enum": ["demo", "mixed", "live", "editorial"] },
+          "href": { "type": "string" },
+          "saved_at": { "type": "string", "format": "date-time" },
+          "watch": {
+            "type": "object",
+            "required": ["enabled", "target_amount", "delivery_enabled", "status"],
+            "properties": {
+              "enabled": { "type": "boolean" },
+              "target_amount": { "type": "number", "minimum": 0, "maximum": 1000000 },
+              "delivery_enabled": { "const": false },
+              "status": { "enum": ["off", "awaiting_live_supplier"] }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "preferences": {
+      "type": "object",
+      "required": ["home_airport", "currency", "budget", "max_stops", "party_style", "priorities"],
+      "properties": {
+        "home_airport": { "type": "string", "pattern": "^[A-Z]{3}$" },
+        "currency": { "enum": ["USD", "EUR", "ILS"] },
+        "budget": { "type": "integer", "minimum": 0, "maximum": 1000000 },
+        "max_stops": { "type": "integer", "minimum": 0, "maximum": 3 },
+        "party_style": { "enum": ["solo", "couple", "family", "friends"] },
+        "priorities": { "type": "array", "maxItems": 6, "uniqueItems": true, "items": { "enum": ["price", "comfort", "flexibility", "location", "direct", "family"] } }
+      },
+      "additionalProperties": false
+    },
+    "meta": {
+      "type": "object",
+      "required": ["storage", "max_items", "price_watch_delivery_enabled", "sensitive_data_allowed"],
+      "properties": {
+        "storage": { "type": "string" },
+        "max_items": { "const": 50 },
+        "price_watch_delivery_enabled": { "const": false },
+        "sensitive_data_allowed": { "const": false }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
