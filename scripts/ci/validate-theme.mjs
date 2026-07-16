@@ -39,6 +39,12 @@ const requiredFiles = [
   'inc/hotels/class-hotel-search-registry.php',
   'inc/hotels/class-hotel-search-repository.php',
   'inc/hotels/class-hotel-search-controller.php',
+  'inc/insurance/bootstrap.php',
+  'inc/insurance/interface-insurance-quote-adapter.php',
+  'inc/insurance/class-demo-insurance-quote-adapter.php',
+  'inc/insurance/class-insurance-quote-registry.php',
+  'inc/insurance/class-insurance-quote-repository.php',
+  'inc/insurance/class-insurance-quote-controller.php',
   'inc/template-tags.php',
   'inc/seo.php',
   'assets/css/app.css',
@@ -49,6 +55,8 @@ const requiredFiles = [
   'assets/data/flight-search.schema.json',
   'assets/data/hotel-search-demo.json',
   'assets/data/hotel-search.schema.json',
+  'assets/data/insurance-quote-demo.json',
+  'assets/data/insurance-quote.schema.json',
   'assets/vendor/lucide.min.js',
   'assets/images/earth-blue-marble.jpg',
   'assets/images/thailand.jpg'
@@ -102,6 +110,8 @@ if (!appJs.includes('flightSearchUrl')) failures.push('The app script is not con
 if (!appJs.includes('initFlightSearch')) failures.push('The app script does not initialize the flight comparison product.');
 if (!appJs.includes('hotelSearchUrl')) failures.push('The app script is not connected to the hotel search REST contract.');
 if (!appJs.includes('initHotelSearch')) failures.push('The app script does not initialize the hotel comparison product.');
+if (!appJs.includes('insuranceQuoteUrl')) failures.push('The app script is not connected to the insurance quote REST contract.');
+if (!appJs.includes('initInsuranceQuote')) failures.push('The app script does not initialize the insurance comparison product.');
 
 const discoveryController = readFileSync(join(themeRoot, 'inc/discovery.php'), 'utf8');
 if (/function\s+get_items\s*\(\s*WP_REST_Request\b/.test(discoveryController)) {
@@ -134,12 +144,31 @@ for (const method of ['get_id', 'is_configured', 'get_mode', 'get_cache_version'
   if (!hotelInterface.includes(`function ${method}(`)) failures.push(`Hotel adapter contract is missing ${method}().`);
 }
 
+const insuranceController = readFileSync(join(themeRoot, 'inc/insurance/class-insurance-quote-controller.php'), 'utf8');
+if (/function\s+get_items\s*\(\s*WP_REST_Request\b/.test(insuranceController)) {
+  failures.push('Insurance REST controller overrides must keep the untyped WP_REST_Controller method signature for PHP 8 compatibility.');
+}
+if (!insuranceController.includes("'/insurance/cache'")) failures.push('The insurance cache administration route is missing.');
+if (!insuranceController.includes("current_user_can( 'manage_options' )")) failures.push('Insurance cache mutation lacks a manage_options capability check.');
+if (!insuranceController.includes("'policy_wording_controls' => true")) failures.push('Insurance responses must state that policy wording controls.');
+if (!insuranceController.includes('tra_vel_insurance_sensitive_requires_post')) failures.push('Insurance assessment flags must be rejected over query-string GET.');
+if (!insuranceController.includes("'private, no-store'")) failures.push('Sensitive insurance responses must disable storage.');
+if (!appJs.includes("method: 'POST'")) failures.push('The browser must submit insurance quote inputs in a request body.');
+
+const insuranceInterface = readFileSync(join(themeRoot, 'inc/insurance/interface-insurance-quote-adapter.php'), 'utf8');
+for (const method of ['get_id', 'is_configured', 'get_mode', 'get_cache_version', 'quote']) {
+  if (!insuranceInterface.includes(`function ${method}(`)) failures.push(`Insurance adapter contract is missing ${method}().`);
+}
+
 const experiencePage = readFileSync(join(themeRoot, 'page-experience.php'), 'utf8');
 if (!experiencePage.includes('data-flight-search')) failures.push('The flights page is missing its functional search form.');
 if (!experiencePage.includes('data-flight-results')) failures.push('The flights page is missing its dynamic results region.');
 if (!experiencePage.includes('data-hotel-search')) failures.push('The hotels page is missing its functional search form.');
 if (!experiencePage.includes('data-hotel-area-map')) failures.push('The hotels page is missing its neighborhood map.');
 if (!experiencePage.includes('data-hotel-results')) failures.push('The hotels page is missing its dynamic results region.');
+if (!experiencePage.includes('data-insurance-quote')) failures.push('The insurance page is missing its functional comparison form.');
+if (!experiencePage.includes('data-insurance-risk-map')) failures.push('The insurance page is missing its destination/activity coverage map.');
+if (!experiencePage.includes('data-insurance-results')) failures.push('The insurance page is missing its dynamic plan results region.');
 
 const supplierInterface = readFileSync(join(themeRoot, 'inc/suppliers/interface-supplier-adapter.php'), 'utf8');
 for (const method of ['get_id', 'get_verticals', 'is_configured', 'get_mode', 'get_cache_version', 'fetch']) {
