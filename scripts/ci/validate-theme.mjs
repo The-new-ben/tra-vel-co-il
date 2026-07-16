@@ -62,6 +62,7 @@ const requiredFiles = [
   'inc/seo.php',
   'assets/css/app.css',
   'assets/js/app.js',
+  'assets/js/globe-3d.js',
   'assets/data/discovery-demo.json',
   'assets/data/discovery.schema.json',
   'assets/data/flight-search-demo.json',
@@ -78,6 +79,7 @@ const requiredFiles = [
   'assets/data/editorial-directory.json',
   'assets/vendor/lucide.min.js',
   'assets/images/earth-blue-marble.jpg',
+  'assets/images/earth-blue-marble-2048.jpg',
   'assets/images/thailand.jpg'
 ];
 
@@ -142,13 +144,24 @@ if (!appJs.includes("hasLiveRouteData = discoveryDataMode === 'live'")) failures
 if (!appJs.includes('מחיר ותנאים יאומתו בחיפוש חי')) failures.push('Non-live route tradeoffs can expose unsupported savings or conditions.');
 
 const mapPage = readFileSync(join(themeRoot, 'page-map.php'), 'utf8');
-for (const marker of ['map-view-layout', 'map-support-section', 'map-destination-panel', 'map-depth-section']) {
+for (const marker of ['map-view-layout', 'map-support-section', 'map-destination-panel', 'map-depth-section', 'data-globe-3d', 'data-globe-canvas', 'data-globe-route']) {
   if (!mapPage.includes(marker)) failures.push(`The unobstructed map architecture is missing ${marker}.`);
 }
 if (mapPage.includes('map-search-floating')) failures.push('The map search must not float over the globe.');
 if (mapPage.includes('style="left:') || mapPage.includes('style="right:')) failures.push('Map information must not use inline overlay positioning.');
 if (!appCss.includes('.theme-map-shell .route-sheet { position: static')) failures.push('Route comparison must remain below the globe in document flow.');
 if (!appCss.includes('.map-mobile-controls { display: none !important; }')) failures.push('The legacy fixed mobile map bar is still allowed to cover the globe.');
+
+const globeJs = readFileSync(join(themeRoot, 'assets/js/globe-3d.js'), 'utf8');
+for (const marker of ['getContext(\'webgl\'', 'pointerdown', 'IntersectionObserver', 'ResizeObserver', 'prefers-reduced-motion', 'focusDestination', 'boxesOverlap']) {
+  if (!globeJs.includes(marker)) failures.push(`The production 3D globe is missing ${marker}.`);
+}
+if (/https?:\/\//.test(globeJs)) failures.push('The 3D globe must not load unapproved third-party runtime code or textures.');
+const globeTextureSize = statSync(join(themeRoot, 'assets/images/earth-blue-marble-2048.jpg')).size;
+if (globeTextureSize > 500000) failures.push(`The mobile globe texture is too large (${globeTextureSize} bytes).`);
+
+const assetSource = readFileSync(join(themeRoot, 'inc/assets.php'), 'utf8');
+if (!assetSource.includes("is_page_template( 'page-map.php' )") || !assetSource.includes('tra-vel-v2-globe-3d')) failures.push('The WebGL globe must load only on the map template.');
 
 const seoSource = readFileSync(join(themeRoot, 'inc/seo.php'), 'utf8');
 if (!seoSource.includes('BreadcrumbList')) failures.push('Destination guides are missing breadcrumb structured data.');

@@ -15,6 +15,8 @@ function tra_vel_v2_asset_version( $relative_path ) {
 }
 
 function tra_vel_v2_enqueue_assets() {
+	$app_dependencies = array( 'tra-vel-v2-lucide' );
+
 	wp_enqueue_style(
 		'tra-vel-v2-app',
 		TRA_VEL_V2_URI . '/assets/css/app.css',
@@ -30,10 +32,21 @@ function tra_vel_v2_enqueue_assets() {
 		true
 	);
 
+	if ( is_page_template( 'page-map.php' ) ) {
+		wp_enqueue_script(
+			'tra-vel-v2-globe-3d',
+			TRA_VEL_V2_URI . '/assets/js/globe-3d.js',
+			array(),
+			tra_vel_v2_asset_version( '/assets/js/globe-3d.js' ),
+			true
+		);
+		$app_dependencies[] = 'tra-vel-v2-globe-3d';
+	}
+
 	wp_enqueue_script(
 		'tra-vel-v2-app',
 		TRA_VEL_V2_URI . '/assets/js/app.js',
-		array( 'tra-vel-v2-lucide' ),
+		$app_dependencies,
 		tra_vel_v2_asset_version( '/assets/js/app.js' ),
 		true
 	);
@@ -60,7 +73,7 @@ function tra_vel_v2_enqueue_assets() {
 add_action( 'wp_enqueue_scripts', 'tra_vel_v2_enqueue_assets' );
 
 function tra_vel_v2_script_attributes( $tag, $handle ) {
-	if ( 'tra-vel-v2-app' !== $handle ) {
+	if ( ! in_array( $handle, array( 'tra-vel-v2-app', 'tra-vel-v2-globe-3d' ), true ) ) {
 		return $tag;
 	}
 	return str_replace( ' src=', ' defer src=', $tag );

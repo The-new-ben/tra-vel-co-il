@@ -93,22 +93,25 @@ $search_value = isset( $_GET['q'] ) ? sanitize_text_field( wp_unslash( $_GET['q'
 				</nav>
 
 				<div class="world-canvas" data-map-canvas data-data-mode="loading" aria-label="<?php esc_attr_e( 'גלובוס יעדים אינטראקטיבי', 'tra-vel-v2' ); ?>">
-					<div class="globe" aria-label="<?php esc_attr_e( 'בחרו יעד על פני הגלובוס', 'tra-vel-v2' ); ?>">
-						<span class="origin-point" aria-label="<?php esc_attr_e( 'תל אביב, נקודת מוצא', 'tra-vel-v2' ); ?>"></span>
-						<span class="route-curve curve-one" aria-hidden="true"></span><span class="route-curve curve-two" aria-hidden="true"></span>
-						<button class="price-pin pin-budapest" data-destination="budapest" type="button"><?php esc_html_e( 'בודפשט', 'tra-vel-v2' ); ?></button>
-						<button class="price-pin pin-athens" data-destination="athens" type="button"><?php esc_html_e( 'אתונה', 'tra-vel-v2' ); ?></button>
-						<button class="price-pin pin-dubai" data-destination="dubai" type="button"><?php esc_html_e( 'דובאי', 'tra-vel-v2' ); ?></button>
-						<button class="price-pin pin-bangkok is-active" data-destination="bangkok" type="button"><?php esc_html_e( 'בנגקוק', 'tra-vel-v2' ); ?></button>
-						<button class="price-pin pin-tokyo" data-destination="tokyo" type="button"><?php esc_html_e( 'טוקיו', 'tra-vel-v2' ); ?></button>
-						<button class="price-pin pin-lisbon" data-destination="lisbon" type="button"><?php esc_html_e( 'ליסבון', 'tra-vel-v2' ); ?></button>
+					<div class="globe globe-webgl" data-globe-3d data-origin-latitude="32.0005" data-origin-longitude="34.8708" data-texture="<?php echo esc_url( tra_vel_v2_asset_uri( 'images/earth-blue-marble-2048.jpg' ) ); ?>" tabindex="0" role="group" aria-label="<?php esc_attr_e( 'גלובוס תלת ממדי. גררו לסיבוב, השתמשו בחצים במקלדת ובחרו יעד.', 'tra-vel-v2' ); ?>">
+						<canvas data-globe-canvas aria-hidden="true"></canvas>
+						<svg class="globe-route-layer" data-globe-routes width="100%" height="100%" aria-hidden="true"><path data-globe-route></path></svg>
+						<span class="origin-point" data-globe-origin aria-label="<?php esc_attr_e( 'תל אביב, נקודת מוצא', 'tra-vel-v2' ); ?>"></span>
+						<button class="price-pin pin-budapest" data-destination="budapest" data-latitude="47.4979" data-longitude="19.0402" aria-pressed="false" type="button"><?php esc_html_e( 'בודפשט', 'tra-vel-v2' ); ?></button>
+						<button class="price-pin pin-athens" data-destination="athens" data-latitude="37.9838" data-longitude="23.7275" aria-pressed="false" type="button"><?php esc_html_e( 'אתונה', 'tra-vel-v2' ); ?></button>
+						<button class="price-pin pin-dubai" data-destination="dubai" data-latitude="25.2048" data-longitude="55.2708" aria-pressed="false" type="button"><?php esc_html_e( 'דובאי', 'tra-vel-v2' ); ?></button>
+						<button class="price-pin pin-bangkok is-active" data-destination="bangkok" data-latitude="13.7563" data-longitude="100.5018" aria-pressed="true" type="button"><?php esc_html_e( 'בנגקוק', 'tra-vel-v2' ); ?></button>
+						<button class="price-pin pin-tokyo" data-destination="tokyo" data-latitude="35.6762" data-longitude="139.6503" aria-pressed="false" type="button"><?php esc_html_e( 'טוקיו', 'tra-vel-v2' ); ?></button>
+						<button class="price-pin pin-lisbon" data-destination="lisbon" data-latitude="38.7223" data-longitude="-9.1393" aria-pressed="false" type="button"><?php esc_html_e( 'ליסבון', 'tra-vel-v2' ); ?></button>
+						<span class="sr-only" data-globe-live aria-live="polite"></span>
 					</div>
 				</div>
 			</div>
 
 			<div class="map-status-row">
-				<div class="map-canvas-guidance"><i data-lucide="move-3d"></i><span><strong><?php esc_html_e( 'הגלובוס נשאר פנוי', 'tra-vel-v2' ); ?></strong><?php esc_html_e( 'בחרו נקודה או שכבה. כל הפרטים נפתחים מתחת למפה.', 'tra-vel-v2' ); ?></span></div>
+				<div class="map-canvas-guidance"><i data-lucide="move-3d"></i><span><strong><?php esc_html_e( 'גררו כדי לסובב את העולם', 'tra-vel-v2' ); ?></strong><?php esc_html_e( 'בחרו נקודה או שכבה. כל הפרטים נפתחים מתחת למפה.', 'tra-vel-v2' ); ?></span></div>
 				<p class="map-data-status" data-layer-status role="status"><?php esc_html_e( 'מעדכן יעדים ומסלולים', 'tra-vel-v2' ); ?></p>
+				<a class="map-imagery-attribution" href="https://visibleearth.nasa.gov/images/74218/december-blue-marble-next-generation/74226l" target="_blank" rel="noopener noreferrer">NASA Blue Marble</a>
 				<a class="map-weather-attribution" data-weather-attribution href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer" hidden>Weather data by Open-Meteo · CC BY 4.0</a>
 			</div>
 		</section>

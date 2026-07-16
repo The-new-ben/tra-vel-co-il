@@ -1526,3 +1526,30 @@ h3.deal-title { display: block; margin: 6px 0 12px; font-size: 22px; line-height
   .theme-map-shell .world-canvas .price-pin.is-active { max-width: 92px; font-size: 11px; padding: 6px 8px; }
   .theme-map-shell .route-sheet { padding: 15px; border-radius: 20px; }
 }
+
+/* Native WebGL globe enhancement. The existing Earth image remains the accessible fallback. */
+.theme-map-shell .globe-webgl { isolation: isolate; touch-action: pan-y; background-image: url('../images/earth-blue-marble-2048.jpg'); outline: none; }
+.theme-map-shell .globe-webgl:focus-visible { box-shadow: inset 0 0 0 4px var(--lime),0 38px 90px rgba(0,0,0,.48); }
+.theme-map-shell .globe-webgl.is-dragging { cursor: grabbing; }
+.theme-map-shell .globe-webgl [data-globe-canvas] { position: absolute; z-index: 1; inset: 0; width: 100%; height: 100%; display: block; border-radius: 50%; opacity: 0; transition: opacity .35s ease; }
+.theme-map-shell .globe-webgl.is-webgl-ready [data-globe-canvas] { opacity: 1; }
+.theme-map-shell .globe-webgl.globe-3d-unavailable [data-globe-canvas] { display: none; }
+.theme-map-shell .globe-webgl::before { z-index: 4; }
+.theme-map-shell .globe-webgl::after { z-index: 3; }
+.theme-map-shell .globe-route-layer { position: absolute; z-index: 5; inset: 0; overflow: visible; pointer-events: none; }
+.theme-map-shell .globe-route-layer path { fill: none; stroke: var(--lime); stroke-width: 2; stroke-linecap: round; stroke-dasharray: 7 7; filter: drop-shadow(0 0 6px rgba(217,255,89,.55)); }
+.theme-map-shell .globe-webgl .origin-point { top: auto; left: auto; transform: translate(-50%,-50%); }
+.theme-map-shell .globe-webgl .price-pin { z-index: 7; transform: translate(-50%,-50%) scale(var(--globe-depth,1)); will-change: left,top,transform; }
+.theme-map-shell .globe-webgl .price-pin:hover,.theme-map-shell .globe-webgl .price-pin.is-active { z-index: 9; scale: 1.08; }
+.theme-map-shell .globe-webgl .price-pin[hidden],.theme-map-shell .globe-webgl .origin-point[hidden] { display: none !important; }
+.theme-map-shell .map-imagery-attribution { color: #526970; font-size: 10px; text-decoration: underline; white-space: nowrap; }
+
+@media (max-width: 760px) {
+  .theme-map-shell .globe-webgl .price-pin:not(.is-active) { width: 24px; height: 24px; min-width: 24px; padding: 0; border: 0; background: transparent; box-shadow: none; }
+  .theme-map-shell .globe-webgl .price-pin:not(.is-active)::before { content: ''; position: absolute; inset: 4px; border: 2px solid #07171d; border-radius: 50%; background: #fff; box-shadow: 0 4px 12px rgba(0,0,0,.28); }
+  .theme-map-shell .globe-webgl .price-pin:not(.is-active)::after { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-map-shell .globe-webgl [data-globe-canvas] { transition: none; }
+}
