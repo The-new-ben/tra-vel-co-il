@@ -27,12 +27,20 @@ const requiredFiles = [
   'inc/suppliers/class-open-meteo-supplier-adapter.php',
   'inc/suppliers/class-supplier-registry.php',
   'inc/suppliers/class-discovery-repository.php',
+  'inc/flights/bootstrap.php',
+  'inc/flights/interface-flight-search-adapter.php',
+  'inc/flights/class-demo-flight-search-adapter.php',
+  'inc/flights/class-flight-search-registry.php',
+  'inc/flights/class-flight-search-repository.php',
+  'inc/flights/class-flight-search-controller.php',
   'inc/template-tags.php',
   'inc/seo.php',
   'assets/css/app.css',
   'assets/js/app.js',
   'assets/data/discovery-demo.json',
   'assets/data/discovery.schema.json',
+  'assets/data/flight-search-demo.json',
+  'assets/data/flight-search.schema.json',
   'assets/vendor/lucide.min.js',
   'assets/images/earth-blue-marble.jpg',
   'assets/images/thailand.jpg'
@@ -82,6 +90,8 @@ const appJs = readFileSync(join(themeRoot, 'assets/js/app.js'), 'utf8');
 if (!appJs.includes('window.traVelV2')) failures.push('The app script is not connected to localized WordPress configuration.');
 if (!appJs.includes('discoveryUrl')) failures.push('The app script is not connected to the discovery REST contract.');
 if (!appJs.includes('hydrateDiscovery')) failures.push('The app script does not hydrate the map from discovery data.');
+if (!appJs.includes('flightSearchUrl')) failures.push('The app script is not connected to the flight search REST contract.');
+if (!appJs.includes('initFlightSearch')) failures.push('The app script does not initialize the flight comparison product.');
 
 const discoveryController = readFileSync(join(themeRoot, 'inc/discovery.php'), 'utf8');
 if (/function\s+get_items\s*\(\s*WP_REST_Request\b/.test(discoveryController)) {
@@ -89,6 +99,22 @@ if (/function\s+get_items\s*\(\s*WP_REST_Request\b/.test(discoveryController)) {
 }
 if (!discoveryController.includes("'/' . $this->rest_base . '/cache'")) failures.push('The discovery cache administration route is missing.');
 if (!discoveryController.includes("current_user_can( 'manage_options' )")) failures.push('Discovery cache mutation lacks a manage_options capability check.');
+
+const flightController = readFileSync(join(themeRoot, 'inc/flights/class-flight-search-controller.php'), 'utf8');
+if (/function\s+get_items\s*\(\s*WP_REST_Request\b/.test(flightController)) {
+  failures.push('Flight REST controller overrides must keep the untyped WP_REST_Controller method signature for PHP 8 compatibility.');
+}
+if (!flightController.includes("'/flights/cache'")) failures.push('The flight cache administration route is missing.');
+if (!flightController.includes("current_user_can( 'manage_options' )")) failures.push('Flight cache mutation lacks a manage_options capability check.');
+
+const flightInterface = readFileSync(join(themeRoot, 'inc/flights/interface-flight-search-adapter.php'), 'utf8');
+for (const method of ['get_id', 'is_configured', 'get_mode', 'get_cache_version', 'search']) {
+  if (!flightInterface.includes(`function ${method}(`)) failures.push(`Flight adapter contract is missing ${method}().`);
+}
+
+const experiencePage = readFileSync(join(themeRoot, 'page-experience.php'), 'utf8');
+if (!experiencePage.includes('data-flight-search')) failures.push('The flights page is missing its functional search form.');
+if (!experiencePage.includes('data-flight-results')) failures.push('The flights page is missing its dynamic results region.');
 
 const supplierInterface = readFileSync(join(themeRoot, 'inc/suppliers/interface-supplier-adapter.php'), 'utf8');
 for (const method of ['get_id', 'get_verticals', 'is_configured', 'get_mode', 'get_cache_version', 'fetch']) {

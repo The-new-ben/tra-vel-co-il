@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://tra-vel.co.il/schemas/flight-search-v1.json",
+  "title": "Tra-Vel flight search contract",
+  "type": "object",
+  "required": ["contract_version", "data_mode", "currency", "provider_status", "airports", "offers"],
+  "properties": {
+    "contract_version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "data_mode": { "enum": ["demo", "live", "mixed"] },
+    "currency": { "type": "string", "pattern": "^[A-Z]{3}$" },
+    "provider_status": { "type": "object", "required": ["connected", "adapter", "readiness", "bookable"] },
+    "airports": { "type": "object", "minProperties": 2 },
+    "offers": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "label", "badge", "score", "airline", "outbound", "inbound", "ticket_mode", "risk", "emissions_kg", "fare", "trip_total", "policies", "pros", "cons", "booking"]
+      }
+    }
+  }
+}
