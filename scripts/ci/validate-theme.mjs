@@ -196,6 +196,7 @@ if (/[$₪]\s?\d/.test(directoryPage)) failures.push('The destination directory 
 
 try {
   const directory = JSON.parse(readFileSync(join(themeRoot, 'assets/data/editorial-directory.json'), 'utf8'));
+  if (/[—–]/u.test(JSON.stringify(directory))) failures.push('Public destination directory data must not use em dash or en dash punctuation.');
   if (directory.version !== 1) failures.push('Editorial directory manifest version must be 1.');
   if (!Array.isArray(directory.destinations) || directory.destinations.length < 6) failures.push('Editorial directory requires at least six destination decisions.');
   const ids = directory.destinations.map((destination) => destination.id);
