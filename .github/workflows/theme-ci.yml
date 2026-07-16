@@ -39,6 +39,7 @@ jobs:
         run: |
           node scripts/ci/validate-theme.mjs
           node scripts/ci/validate-discovery-contract.mjs
+          php scripts/ci/validate-supplier-runtime.php
 
       - name: Lint WordPress PHP
         shell: bash
