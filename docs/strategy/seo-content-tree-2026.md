@@ -8,6 +8,13 @@ Tra-Vel helps an Israeli traveler discover a destination, understand the complet
 
 ## Search architecture
 
+### Competitive evidence refreshed 2026-07-16
+
+- ISSTA's public product range covers flights, hotels, packages, organized trips, cruises, car rental and supporting travel services. Tra-Vel must match that commercial breadth while making tradeoffs easier to understand.
+- Gulliver's public homepage combines live-looking deal cards with high-intent landing links for flights, packages, hotels, last minute, charter routes and destination clusters. Tra-Vel should preserve the intent coverage but avoid unsupported prices or generic destination copy.
+- Google Search Central states that crawlable discovery depends on real HTML links with `href`, and recommends server-rendered or pre-rendered content because not every bot executes JavaScript. The globe therefore links into permanent destination hubs instead of acting as the only source of destination information.
+- Google supports breadcrumb markup for visible hierarchy. Destination hubs use `/destinations/{destination}/` and connect upward to the destination directory, sideways to related decisions and downward to live commercial searches.
+
 ### Level 1: commercial hubs
 
 - `/flights/`: cheap flights, direct flights, baggage, stopovers, flexible dates, airport guides

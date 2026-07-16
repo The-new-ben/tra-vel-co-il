@@ -149,7 +149,7 @@ function tra_vel_v2_render_guide_evidence( $post_id = null ) {
 	<section class="guide-evidence page-width" aria-labelledby="guide-evidence-title">
 		<div class="guide-evidence-status <?php echo $profile['is_reviewed'] ? 'is-reviewed' : 'is-pending'; ?>">
 			<i data-lucide="<?php echo $profile['is_reviewed'] ? 'badge-check' : 'clock-3'; ?>"></i>
-			<div><small><?php esc_html_e( 'סטטוס עריכה', 'tra-vel-v2' ); ?></small><strong id="guide-evidence-title"><?php echo esc_html( $profile['is_reviewed'] ? __( 'המקורות נבדקו', 'tra-vel-v2' ) : __( 'ממתין לבדיקת מקורות', 'tra-vel-v2' ) ); ?></strong></div>
+			<div><small><?php esc_html_e( 'בדיקת מידע', 'tra-vel-v2' ); ?></small><strong id="guide-evidence-title"><?php echo esc_html( $profile['is_reviewed'] ? __( 'המקורות נבדקו', 'tra-vel-v2' ) : __( 'המידע עדיין בבדיקה', 'tra-vel-v2' ) ); ?></strong></div>
 		</div>
 		<div class="guide-evidence-facts">
 			<span><small><?php esc_html_e( 'מחבר', 'tra-vel-v2' ); ?></small><strong><?php echo esc_html( $author ?: 'Tra-Vel' ); ?></strong></span>

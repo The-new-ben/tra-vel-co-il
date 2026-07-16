@@ -6,14 +6,18 @@
   "excerpt": "מדריך בודפשט מקיף לישראלים: מסלולים, אזורי לינה, טיסות, תחבורה, תקציב, מרחצאות, משפחות, ביטחון וביטוח — עם מקורות רשמיים ותאריך בדיקה.",
   "author": "מערכת Tra-Vel",
   "primaryTopic": "Budapest travel guide for Israelis",
-  "canonicalPath": "/budapest/",
-  "status": "editorial-review",
+  "canonicalPath": "/destinations/budapest/",
+  "status": "publish-ready",
   "wordTargetMin": 5000,
   "contentPath": "content/guides/budapest-2026.he.html",
   "checkedAt": "2026-07-16",
   "mapState": "budapest",
   "reviewer": "מערכת Tra-Vel",
   "reviewMethod": "Prioritize government, city, airport, transport operator and official tourism sources. Recheck all fares, opening details, entry rules, flight availability and security guidance immediately before publication.",
+  "flightTime": "בדקו מסלול חי",
+  "dailyBudget": "נבנה לפי ההרכב",
+  "bestSeason": "אביב וסתיו להליכה",
+  "bestFor": "3 עד 5 ימים בעיר",
   "sections": [
     "Decision summary",
     "Who Budapest suits",
@@ -141,10 +145,10 @@
       "supports": ["national tourism context", "trip planning"]
     },
     {
-      "id": "hungarian-police-entry",
-      "title": "Hungarian Police information for third-country nationals",
-      "publisher": "Hungarian Police",
-      "url": "https://www.police.hu/en/home",
+      "id": "eu-non-eu-travel-documents",
+      "title": "Travel documents for non-EU nationals",
+      "publisher": "European Union / Your Europe",
+      "url": "https://europa.eu/youreurope/citizens/travel/entry-exit/non-eu-nationals/index_en.htm",
       "type": "official",
       "checkedAt": "2026-07-16",
       "supports": ["passport validity rules", "border-system updates"]
@@ -236,7 +240,7 @@
     {
       "id": "third-country-passport-rule",
       "claim": "Hungarian Police states that qualifying third-country passports must extend at least three months after intended Schengen departure and have been issued within the previous ten years.",
-      "sourceIds": ["hungarian-police-entry"],
+      "sourceIds": ["eu-non-eu-travel-documents"],
       "volatile": true,
       "recheckBeforePublish": true
     },

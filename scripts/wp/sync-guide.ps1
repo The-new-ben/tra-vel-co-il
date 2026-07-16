@@ -64,7 +64,12 @@ if (-not (Test-Path -LiteralPath $CredentialPath)) {
     throw "Credential file not found: $CredentialPath"
 }
 
-$slug = ([string]$packet.canonicalPath).Trim('/')
+$canonicalSegments = @(([string]$packet.canonicalPath).Trim('/') -split '/' | Where-Object { $_ })
+if (-not $canonicalSegments.Count) {
+    throw 'The guide packet canonicalPath is empty.'
+}
+$slug = $canonicalSegments[-1]
+$parentSlug = if ($canonicalSegments.Count -gt 1) { $canonicalSegments[-2] } else { '' }
 $article = Get-Content -Raw -Encoding UTF8 -LiteralPath $ContentPath
 $articleHash = Get-TextSha256 -Value $article
 $sourceMeta = @($packet.sources | ForEach-Object {
@@ -82,6 +87,8 @@ if (-not $Apply) {
         Action = 'dry-run'
         Guide = $GuideId
         Slug = $slug
+        ParentSlug = $parentSlug
+        CanonicalPath = '/' + ($canonicalSegments -join '/') + '/'
         Status = $Status
         Words = ([regex]::Matches(($article -replace '<[^>]+>', ' '), "[\p{L}\p{N}][\p{L}\p{N}\u05be'’-]*")).Count
         Sources = @($packet.sources).Count
@@ -97,11 +104,22 @@ $encodedPair = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($pair))
 $headers = @{ Authorization = "Basic $encodedPair" }
 
 try {
+    $parentId = 0
+    if ($parentSlug) {
+        $parentLookupUri = "$SiteUrl/wp-json/wp/v2/pages?slug=$parentSlug&status=any&context=edit&_fields=id,slug,status,parent"
+        $parentMatches = @(Invoke-RestMethod -Uri $parentLookupUri -Headers $headers -Method Get)
+        if ($parentMatches.Count -ne 1) {
+            throw "Expected one WordPress parent page for /$parentSlug/; found $($parentMatches.Count)."
+        }
+        $parentId = [int]$parentMatches[0].id
+    }
+
     $lookupUri = "$SiteUrl/wp-json/wp/v2/pages?slug=$slug&status=any&context=edit&_fields=id,slug,status"
     $existing = @(Invoke-RestMethod -Uri $lookupUri -Headers $headers -Method Get)
     $body = [ordered]@{
         title = $packet.title
         slug = $slug
+        parent = $parentId
         status = $Status
         template = 'page-destination.php'
         excerpt = $packet.excerpt
@@ -114,6 +132,10 @@ try {
             _tra_vel_review_method = $packet.reviewMethod
             _tra_vel_map_state = $packet.mapState
             _tra_vel_sources_json = $sourceMeta
+            _tra_vel_flight_time = [string]$packet.flightTime
+            _tra_vel_daily_budget = [string]$packet.dailyBudget
+            _tra_vel_best_season = [string]$packet.bestSeason
+            _tra_vel_best_for = [string]$packet.bestFor
         }
     }
     $json = ConvertTo-Json -InputObject $body -Depth 10 -Compress
@@ -128,6 +150,8 @@ try {
         Action = if ($existing.Count) { 'updated' } else { 'created' }
         Id = $result.id
         Slug = $result.slug
+        Parent = $result.parent
+        CanonicalPath = '/' + ($canonicalSegments -join '/') + '/'
         Status = $result.status
         Words = ([regex]::Matches(($remoteArticle -replace '<[^>]+>', ' '), "[\p{L}\p{N}][\p{L}\p{N}\u05be'’-]*")).Count
         Sources = @($packet.sources).Count

@@ -509,9 +509,27 @@ input[type="range"] { width: 100%; accent-color: #7da000; }
 .destination-map-copy ul { list-style: none; padding: 0; }
 .destination-map-copy li { display: flex; align-items: center; gap: 8px; margin: 9px 0; }
 .destination-map-copy li i { width: 17px; height: 17px; color: #698900; }
-.compact-map { height: 510px; border-radius: 28px; position: relative; overflow: hidden; background: radial-gradient(circle at 50% 45%,#1b5362,#061116 68%); }
-.compact-map .globe { width: 460px; height: 460px; left: 15%; top: 25px; }
-.compact-map .map-result { transform: scale(.9); transform-origin: bottom left; }
+.compact-map { min-height: 510px; border-radius: 28px; overflow: hidden; padding: 18px; background: radial-gradient(circle at 50% 32%,#1b5362,#061116 62%); display: grid; gap: 16px; justify-items: center; }
+.destination-globe-toolbar { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px; color: #fff; }
+.destination-globe-toolbar > span,.destination-globe-toolbar > div { display: flex; align-items: center; gap: 8px; }
+.destination-globe-toolbar button { width: 40px; height: 40px; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.2); border-radius: 12px; color: #fff; background: rgba(4,20,27,.72); cursor: pointer; }
+.destination-globe-toolbar i { width: 17px; height: 17px; }
+.compact-map .globe { position: relative; width: min(460px,100%); aspect-ratio: 1; height: auto; left: auto; top: auto; }
+.compact-map .map-result { position: relative; inset: auto; width: min(100%,460px); transform: none; }
+.compact-map .globe-webgl { isolation: isolate; touch-action: pan-y; background-image: url('../images/earth-blue-marble-2048.jpg'); outline: none; }
+.compact-map .globe-webgl:focus-visible { box-shadow: inset 0 0 0 4px var(--lime),0 24px 55px rgba(0,0,0,.42); }
+.compact-map .globe-webgl.is-dragging { cursor: grabbing; }
+.compact-map .globe-webgl [data-globe-canvas] { position: absolute; z-index: 1; inset: 0; width: 100%; height: 100%; display: block; border-radius: 50%; opacity: 0; transition: opacity .35s ease; }
+.compact-map .globe-webgl.is-webgl-ready [data-globe-canvas] { opacity: 1; }
+.compact-map .globe-webgl.globe-3d-unavailable [data-globe-canvas] { display: none; }
+.compact-map .globe-webgl::before { z-index: 4; }
+.compact-map .globe-webgl::after { z-index: 3; }
+.compact-map .globe-route-layer { position: absolute; z-index: 5; inset: 0; overflow: visible; pointer-events: none; }
+.compact-map .globe-route-layer path { fill: none; stroke: var(--lime); stroke-width: 2; stroke-linecap: round; stroke-dasharray: 7 7; filter: drop-shadow(0 0 6px rgba(217,255,89,.55)); }
+.compact-map .globe-webgl .origin-point { top: auto; left: auto; transform: translate(-50%,-50%); }
+.compact-map .globe-webgl .price-pin { z-index: 7; transform: translate(-50%,-50%) scale(var(--globe-depth,1)); will-change: left,top,transform; }
+.compact-map .globe-webgl .price-pin:hover,.compact-map .globe-webgl .price-pin.is-active { z-index: 9; scale: 1.08; }
+.compact-map .globe-webgl .price-pin[hidden],.compact-map .globe-webgl .origin-point[hidden] { display: none !important; }
 .article-section { padding: 85px 0; border-top: 1px solid var(--line); }
 .month-grid { display: grid; grid-template-columns: repeat(6,1fr); gap: 8px; }
 .month-cell { border: 1px solid var(--line); background: #fff; border-radius: 15px; padding: 15px; text-align: center; position: relative; }
@@ -540,6 +558,13 @@ input[type="range"] { width: 100%; accent-color: #7da000; }
 .article-prose .lead { font-size: 22px; color: #2d4148; }
 .article-prose h2 { font-size: 35px; letter-spacing: -1.2px; margin-top: 50px; }
 .article-prose p, .article-prose li { font-size: 18px; color: #364c53; line-height: 1.8; }
+.guide-table-wrap { margin: 22px 0 34px; overflow-x: auto; border: 1px solid var(--line); border-radius: 18px; background: #fff; box-shadow: 0 14px 35px rgba(4,20,27,.06); }
+.guide-decision-table { width: 100%; min-width: 660px; border-collapse: collapse; text-align: right; }
+.guide-decision-table caption { padding: 16px 18px; color: var(--ink); font-size: 18px; font-weight: 800; text-align: right; }
+.guide-decision-table th,.guide-decision-table td { padding: 13px 16px; border-top: 1px solid var(--line); vertical-align: top; }
+.guide-decision-table th { color: var(--ink); background: #f2f6f3; font-size: 14px; }
+.guide-decision-table td { color: #465b61; font-size: 15px; line-height: 1.55; }
+.guide-decision-table tbody tr:hover { background: #f8faef; }
 .article-prose blockquote { margin: 35px 0; border-right: 4px solid var(--lime-2); background: #fff; padding: 22px 25px; font-size: 23px; font-weight: 600; border-radius: 14px 0 0 14px; }
 .inline-data { background: #eaf2ef; border-radius: 16px; padding: 18px; display: flex; gap: 13px; align-items: flex-start; }
 .inline-data .data-icon { width: 42px; height: 42px; border-radius: 12px; background: #fff; display: grid; place-items: center; color: #557100; flex: 0 0 auto; }
@@ -1166,8 +1191,8 @@ h3.deal-title { display: block; margin: 6px 0 12px; font-size: 22px; line-height
   .article-tabs { justify-content: flex-start; overflow-x: auto; white-space: nowrap; scrollbar-width: none; border-radius: 0; width: 100%; margin-top: 18px; }
   .destination-map-band { grid-template-columns: 1fr; gap: 20px; }
   .destination-map-copy h2 { font-size: 36px; }
-  .compact-map { height: 470px; }
-  .compact-map .globe { width: 380px; height: 380px; left: 50%; transform: translateX(-50%); }
+  .compact-map { min-height: 470px; padding: 14px; }
+  .compact-map .globe { width: min(380px,100%); transform: none; }
   .compact-map .map-result { transform: none; }
   .month-grid { display: flex; overflow-x: auto; padding-top: 12px; scrollbar-width: none; }
   .month-cell { min-width: 132px; }

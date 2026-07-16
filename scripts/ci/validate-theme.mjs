@@ -163,7 +163,7 @@ const globeTextureSize = statSync(join(themeRoot, 'assets/images/earth-blue-marb
 if (globeTextureSize > 500000) failures.push(`The mobile globe texture is too large (${globeTextureSize} bytes).`);
 
 const assetSource = readFileSync(join(themeRoot, 'inc/assets.php'), 'utf8');
-if (!assetSource.includes("is_page_template( 'page-map.php' )") || !assetSource.includes('tra-vel-v2-globe-3d')) failures.push('The WebGL globe must load only on the map template.');
+if (!assetSource.includes("is_page_template( 'page-map.php' )") || !assetSource.includes("is_page_template( 'page-destination.php' )") || !assetSource.includes('tra-vel-v2-globe-3d')) failures.push('The WebGL globe must load on map and destination templates.');
 
 const seoSource = readFileSync(join(themeRoot, 'inc/seo.php'), 'utf8');
 if (!seoSource.includes('BreadcrumbList')) failures.push('Destination guides are missing breadcrumb structured data.');
@@ -177,6 +177,15 @@ if (!destinationPage.includes('tra_vel_v2_render_guide_evidence')) failures.push
 if (/[$₪]\s?\d/.test(destinationPage)) failures.push('Destination templates must not hard-code demo prices that can be mistaken for live inventory.');
 if (destinationPage.includes('data-map-result')) failures.push('Destination guide cards must not be overwritten by global demo discovery results.');
 if (!destinationPage.includes('data-guide-map-card')) failures.push('Destination guides are missing their isolated map decision card.');
+for (const marker of ['data-globe-3d', 'data-globe-canvas', 'data-globe-route', 'destination-globe-toolbar']) {
+  if (!destinationPage.includes(marker)) failures.push(`Destination guides are missing interactive globe marker ${marker}.`);
+}
+if (!appCss.includes('.compact-map .map-result { position: relative;')) failures.push('Destination guide information must remain below the globe instead of covering it.');
+if (/מפת העריכה|במחקר|בדיקת מערכת|מדריך דגל/u.test(destinationPage)) failures.push('Destination templates expose internal project language.');
+
+const publicDirectoryPage = readFileSync(join(themeRoot, 'page-directory.php'), 'utf8');
+if (/מפת העריכה|במחקר|בדיקת מערכת|מדריך דגל|מחירים מומצאים/u.test(publicDirectoryPage)) failures.push('Destination directories expose internal project language.');
+if (/[—–]/u.test(destinationPage) || /[—–]/u.test(publicDirectoryPage)) failures.push('Public destination templates must not use em dash or en dash punctuation.');
 
 const directoryPage = readFileSync(join(themeRoot, 'page-directory.php'), 'utf8');
 for (const marker of ['data-directory-root', 'data-directory-filter', 'data-directory-grid', 'directory-map-pin', 'editorial-directory.json']) {
