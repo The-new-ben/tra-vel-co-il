@@ -1179,8 +1179,8 @@ h3.deal-title { display: block; margin: 6px 0 12px; font-size: 22px; line-height
   .package-map-pin strong { font-size: 13px; }
   .package-map-detail { right: 10px; bottom: 10px; left: 10px; padding: 14px; }
   .package-map-detail h3 { font-size: 21px; }
-  .package-results-grid { width: 100%; min-width: 0; max-width: 100%; display: flex; overflow-x: auto; contain: inline-size; padding: 2px 1px 12px; scroll-snap-type: x mandatory; scrollbar-width: none; }
-  .trip-package-card { width: 90%; min-width: 0; max-width: 90%; flex: 0 0 90%; scroll-snap-align: start; }
+  .package-results-grid { width: 100%; min-width: 0; max-width: 100%; display: flex; direction: ltr; overflow-x: auto; contain: inline-size; padding: 2px 1px 12px; scroll-snap-type: x mandatory; scrollbar-width: none; }
+  .trip-package-card { width: 90%; min-width: 0; max-width: 90%; flex: 0 0 90%; direction: rtl; scroll-snap-align: start; }
   .package-composer-section .section-heading { align-items: flex-start; }
   .package-search-status { align-self: flex-start; }
   .package-total-legend { display: grid; }
