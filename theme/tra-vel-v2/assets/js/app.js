@@ -107,6 +107,148 @@ function appendTextElement(parent, tag, text, className = '') {
   return element;
 }
 
+const workspaceLocalKey = 'traVelV2.workspace.v1';
+let travelerWorkspace = null;
+let activeWorkspaceFilter = 'all';
+
+function defaultLocalWorkspace() {
+  return {
+    version: 1,
+    items: [],
+    preferences: {home_airport: 'TLV', currency: 'USD', budget: 0, max_stops: 1, party_style: 'couple', priorities: ['price', 'comfort']},
+    meta: {storage: 'browser_local', max_items: 50, price_watch_delivery_enabled: false, sensitive_data_allowed: false}
+  };
+}
+
+function readLocalWorkspace() {
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(workspaceLocalKey) || 'null');
+    if (!parsed || parsed.version !== 1 || !Array.isArray(parsed.items)) return defaultLocalWorkspace();
+    return {
+      ...defaultLocalWorkspace(),
+      ...parsed,
+      items: parsed.items.slice(0, 50),
+      preferences: {...defaultLocalWorkspace().preferences, ...(parsed.preferences || {})}
+    };
+  } catch (error) {
+    console.warn(error);
+    return defaultLocalWorkspace();
+  }
+}
+
+function writeLocalWorkspace(workspace) {
+  travelerWorkspace = workspace;
+  try {
+    window.localStorage.setItem(workspaceLocalKey, JSON.stringify(workspace));
+  } catch (error) {
+    console.warn(error);
+  }
+}
+
+function mergeTravelerWorkspaces(local, server) {
+  if (!server) return local;
+  const byId = new Map([...(local.items || []), ...(server.items || [])].map(item => [item.id, item]));
+  return {...local, ...server, items: Array.from(byId.values()).slice(0, 50)};
+}
+
+async function workspaceRequest(path = '', options = {}) {
+  const endpoint = window.traVelV2?.workspaceUrl;
+  if (!endpoint || !window.traVelV2?.isLoggedIn) return null;
+  const response = await fetch(`${endpoint}${path}`, {
+    ...options,
+    credentials: 'same-origin',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      'X-WP-Nonce': window.traVelV2?.nonce || '',
+      ...(options.headers || {})
+    }
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(payload.message || `Workspace request failed: ${response.status}`);
+  return payload;
+}
+
+function showWorkspaceToast(message, icon = 'heart') {
+  let toast = document.querySelector('[data-workspace-toast]');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.className = 'workspace-toast';
+    toast.dataset.workspaceToast = '';
+    toast.setAttribute('role', 'status');
+    document.body.append(toast);
+  }
+  toast.replaceChildren();
+  const iconElement = document.createElement('i');
+  iconElement.dataset.lucide = icon;
+  toast.append(iconElement);
+  appendTextElement(toast, 'span', message);
+  toast.classList.add('is-visible');
+  renderIcons();
+  window.clearTimeout(showWorkspaceToast.timeout);
+  showWorkspaceToast.timeout = window.setTimeout(() => toast.classList.remove('is-visible'), 3200);
+}
+
+function normalizeWorkspaceItem(item) {
+  const externalId = String(item.external_id || '').replace(/[^A-Za-z0-9._:-]/g, '').slice(0, 60);
+  const kind = ['destination', 'route', 'flight', 'hotel', 'package'].includes(item.kind) ? item.kind : 'destination';
+  return {
+    id: `${kind}:${externalId}`,
+    kind,
+    external_id: externalId,
+    title: String(item.title || '').slice(0, 160),
+    subtitle: String(item.subtitle || '').slice(0, 240),
+    destination: String(item.destination || '').slice(0, 80),
+    route: String(item.route || '').slice(0, 160),
+    price_label: String(item.price_label || '').slice(0, 40),
+    price_amount: Math.max(0, Math.min(1000000, Number(item.price_amount) || 0)),
+    currency: ['USD', 'EUR', 'ILS'].includes(item.currency) ? item.currency : 'USD',
+    data_mode: ['demo', 'mixed', 'live', 'editorial'].includes(item.data_mode) ? item.data_mode : 'demo',
+    href: String(item.href || '/'),
+    saved_at: new Date().toISOString(),
+    watch: {enabled: false, target_amount: 0, delivery_enabled: false, status: 'off'}
+  };
+}
+
+function isWorkspaceItemSaved(itemId) {
+  return readLocalWorkspace().items.some(item => item.id === itemId);
+}
+
+async function saveWorkspaceItem(rawItem, button) {
+  const item = normalizeWorkspaceItem(rawItem);
+  if (!item.external_id || !item.title) return;
+  const workspace = readLocalWorkspace();
+  const existing = workspace.items.find(saved => saved.id === item.id);
+  if (existing?.watch) item.watch = existing.watch;
+  workspace.items = [item, ...workspace.items.filter(saved => saved.id !== item.id)].slice(0, 50);
+  writeLocalWorkspace(workspace);
+  button?.classList.add('is-saved');
+  if (button) button.querySelector('span').textContent = 'נשמר לנסיעה';
+  showWorkspaceToast(window.traVelV2?.isLoggedIn ? 'נשמר במכשיר ומסתנכרן לחשבון' : 'נשמר באופן פרטי במכשיר הזה', 'heart');
+  try {
+    const serverWorkspace = await workspaceRequest('/items', {method: 'POST', body: JSON.stringify(item)});
+    if (serverWorkspace) {
+      writeLocalWorkspace(mergeTravelerWorkspaces(workspace, serverWorkspace));
+    }
+  } catch (error) {
+    showWorkspaceToast('נשמר במכשיר; הסנכרון לחשבון ינסה שוב בהמשך', 'cloud-off');
+    console.warn(error);
+  }
+}
+
+function createSaveOfferButton(item) {
+  const normalized = normalizeWorkspaceItem(item);
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = `save-offer-button${isWorkspaceItemSaved(normalized.id) ? ' is-saved' : ''}`;
+  const icon = document.createElement('i');
+  icon.dataset.lucide = 'heart';
+  button.append(icon);
+  appendTextElement(button, 'span', isWorkspaceItemSaved(normalized.id) ? 'נשמר לנסיעה' : 'שמרו לנסיעה');
+  button.addEventListener('click', () => saveWorkspaceItem(item, button));
+  return button;
+}
+
 function renderRoutes(routes) {
   const list = document.querySelector('[data-route-list]');
   if (!list) return;
@@ -273,7 +415,14 @@ function renderFlightOffers(payload) {
     action.type = 'button';
     action.disabled = !offer.booking.bookable;
     action.textContent = offer.booking.bookable ? 'בחירת הטיסה' : 'הדגמה · הזמנה תיפתח עם ספק חי';
-    card.append(action);
+    card.append(action, createSaveOfferButton({
+      kind: 'flight', external_id: offer.id, title: offer.label,
+      subtitle: `${offer.airline.name} · ${offer.outbound.duration_label} · ${offer.outbound.stops_label}`,
+      destination: payload.destination?.city || payload.destination?.code || '',
+      route: `${payload.origin?.code || 'TLV'} → ${payload.destination?.code || ''}`,
+      price_label: offer.trip_total.total_formatted, price_amount: offer.trip_total.total,
+      currency: payload.query?.currency || 'USD', data_mode: payload.meta?.data_mode || 'demo', href: `${window.traVelV2?.homeUrl || '/'}flights/`
+    }));
     container.append(card);
   });
 }
@@ -451,7 +600,13 @@ function renderHotelProperties(payload) {
     action.type = 'button';
     action.disabled = !property.booking.bookable;
     action.textContent = property.booking.bookable ? 'בדיקת זמינות והזמנה' : 'הדגמה · הזמנה תיפתח עם ספק חי';
-    body.append(action);
+    body.append(action, createSaveOfferButton({
+      kind: 'hotel', external_id: property.id, title: property.name,
+      subtitle: `${property.area?.name || ''} · ${property.stars}★ · ${property.guest_score}/10`,
+      destination: payload.destination?.city || '', route: `${property.location.route_minutes} דקות למסלול`,
+      price_label: property.pricing.total_stay_formatted, price_amount: property.pricing.total_stay,
+      currency: payload.query?.currency || 'EUR', data_mode: payload.meta?.data_mode || 'demo', href: `${window.traVelV2?.homeUrl || '/'}hotels/`
+    }));
     card.append(body);
     container.append(card);
   });
@@ -895,7 +1050,14 @@ function renderTripPackages(payload) {
     checkout.type = 'button';
     checkout.disabled = !tripPackage.booking.bookable;
     checkout.textContent = tripPackage.booking.bookable ? 'עברו להזמנה מאומתת' : 'הדגמה · הזמנה תיפתח עם ספקים מחוברים';
-    actions.append(mapAction, checkout);
+    const saveAction = createSaveOfferButton({
+      kind: 'package', external_id: tripPackage.id, title: tripPackage.name,
+      subtitle: `${tripPackage.flight.airline} · ${tripPackage.stay.name} · ${payload.trip.nights} לילות`,
+      destination: payload.destination?.city || '', route: `${payload.origin?.code || 'TLV'} → ${payload.destination?.code || ''}`,
+      price_label: tripPackage.pricing.total_party_formatted, price_amount: tripPackage.pricing.total_party,
+      currency: payload.search?.currency || 'USD', data_mode: payload.meta?.data_mode || 'demo', href: `${window.traVelV2?.homeUrl || '/'}packages/`
+    });
+    actions.append(mapAction, saveAction, checkout);
     card.append(actions);
     container.append(card);
   });
@@ -956,6 +1118,267 @@ function initTripPackageSearch() {
   });
   document.querySelector('[data-package-map-reset]')?.addEventListener('click', () => selectTripPackage(packageComparisonPayload?.recommended));
   searchTripPackages(form);
+}
+
+function workspaceKindMeta(kind) {
+  return {
+    flight: {label: 'טיסה', icon: 'plane-takeoff'},
+    hotel: {label: 'מלון', icon: 'hotel'},
+    package: {label: 'חבילה', icon: 'package-check'},
+    route: {label: 'מסלול', icon: 'route'},
+    destination: {label: 'יעד', icon: 'map-pin'}
+  }[kind] || {label: 'שמירה', icon: 'heart'};
+}
+
+function workspaceMoney(item, amount = item.price_amount) {
+  if (!amount) return item.price_label || '—';
+  try {
+    return new Intl.NumberFormat('en-US', {style: 'currency', currency: item.currency || 'USD', maximumFractionDigits: 0}).format(amount);
+  } catch (error) {
+    return `${item.currency || 'USD'} ${Math.round(amount).toLocaleString('en-US')}`;
+  }
+}
+
+function safeWorkspaceHref(href) {
+  try {
+    const url = new URL(href || '/', window.location.origin);
+    return url.origin === window.location.origin ? url.href : window.traVelV2?.homeUrl || '/';
+  } catch (error) {
+    return window.traVelV2?.homeUrl || '/';
+  }
+}
+
+function selectWorkspaceMapItem(itemId) {
+  const item = travelerWorkspace?.items.find(saved => saved.id === itemId);
+  if (!item) return;
+  document.querySelectorAll('[data-workspace-item]').forEach(card => card.classList.toggle('is-active', card.dataset.workspaceItem === itemId));
+  document.querySelectorAll('[data-workspace-map-pin]').forEach(pin => {
+    const selected = pin.dataset.workspaceMapPin === itemId;
+    pin.classList.toggle('is-active', selected);
+    pin.setAttribute('aria-pressed', String(selected));
+  });
+  const title = document.querySelector('[data-workspace-map-title]');
+  const copy = document.querySelector('[data-workspace-map-copy]');
+  const price = document.querySelector('[data-workspace-map-price]');
+  if (title) title.textContent = item.title;
+  if (copy) copy.textContent = [item.route, item.subtitle].filter(Boolean).join(' · ');
+  if (price) price.textContent = item.price_label || workspaceMoney(item);
+}
+
+function renderWorkspaceMap(items) {
+  const pins = document.querySelector('[data-workspace-map-pins]');
+  if (!pins) return;
+  pins.replaceChildren();
+  const positions = [[64,28],[38,21],[24,43],[57,52],[73,43],[40,62],[18,67],[82,64]];
+  items.slice(0, 8).forEach((item, index) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = `workspace-map-pin${index === 0 ? ' is-active' : ''}`;
+    button.dataset.workspaceMapPin = item.id;
+    button.style.left = `${positions[index][0]}%`;
+    button.style.top = `${positions[index][1]}%`;
+    button.setAttribute('aria-label', `${item.title}, ${item.price_label || workspaceMoney(item)}`);
+    button.setAttribute('aria-pressed', String(index === 0));
+    appendTextElement(button, 'strong', item.price_label || workspaceMoney(item));
+    appendTextElement(button, 'span', item.destination || item.title);
+    button.addEventListener('click', () => selectWorkspaceMapItem(item.id));
+    pins.append(button);
+  });
+  if (items[0]) selectWorkspaceMapItem(items[0].id);
+}
+
+async function removeWorkspaceItem(itemId) {
+  const workspace = travelerWorkspace || readLocalWorkspace();
+  workspace.items = workspace.items.filter(item => item.id !== itemId);
+  writeLocalWorkspace(workspace);
+  renderWorkspaceDashboard();
+  showWorkspaceToast('האפשרות הוסרה מהנסיעה', 'trash-2');
+  try {
+    await workspaceRequest(`/items/${encodeURIComponent(itemId)}`, {method: 'DELETE'});
+  } catch (error) {
+    console.warn(error);
+  }
+}
+
+async function toggleWorkspaceWatch(itemId) {
+  const workspace = travelerWorkspace || readLocalWorkspace();
+  const item = workspace.items.find(saved => saved.id === itemId);
+  if (!item) return;
+  const enabled = !item.watch?.enabled;
+  const target = enabled ? Math.max(1, Math.round((item.price_amount || 0) * .95)) : 0;
+  item.watch = {enabled, target_amount: target, delivery_enabled: false, status: enabled ? 'awaiting_live_supplier' : 'off'};
+  writeLocalWorkspace(workspace);
+  renderWorkspaceDashboard(itemId);
+  showWorkspaceToast(enabled ? 'יעד המחיר נשמר; המשלוח ייפתח עם ספק חי' : 'מעקב המחיר הוסר', enabled ? 'bell-ring' : 'bell-off');
+  try {
+    await workspaceRequest(`/items/${encodeURIComponent(itemId)}/watch`, {method: 'PUT', body: JSON.stringify({enabled, target_amount: target})});
+  } catch (error) {
+    console.warn(error);
+  }
+}
+
+function renderWorkspaceCard(item) {
+  const card = document.createElement('article');
+  card.className = 'workspace-item-card';
+  card.dataset.workspaceItem = item.id;
+  const head = document.createElement('div');
+  head.className = 'workspace-card-head';
+  const identity = document.createElement('div');
+  const kind = workspaceKindMeta(item.kind);
+  const kindLine = document.createElement('span');
+  kindLine.className = 'workspace-kind';
+  const icon = document.createElement('i');
+  icon.dataset.lucide = kind.icon;
+  kindLine.append(icon, document.createTextNode(kind.label));
+  identity.append(kindLine);
+  appendTextElement(identity, 'h3', item.title);
+  appendTextElement(identity, 'p', item.subtitle || item.route || item.destination);
+  head.append(identity);
+  appendTextElement(head, 'strong', item.price_label || workspaceMoney(item), 'workspace-card-price');
+  card.append(head);
+
+  const context = document.createElement('div');
+  context.className = 'workspace-card-context';
+  [item.destination, item.route, item.data_mode === 'live' ? 'נתון חי' : 'הדגמה שקופה'].filter(Boolean).forEach(value => appendTextElement(context, 'span', value));
+  card.append(context);
+
+  const watchState = document.createElement('div');
+  watchState.className = 'workspace-watch-state';
+  if (item.watch?.enabled) {
+    const bell = document.createElement('i');
+    bell.dataset.lucide = 'bell-ring';
+    watchState.append(bell);
+    appendTextElement(watchState, 'span', `יעד ${workspaceMoney(item, item.watch.target_amount)} · ממתין לספק חי`);
+  } else {
+    appendTextElement(watchState, 'span', 'אפשר להצמיד יעד מחיר בלי להפעיל משלוח');
+  }
+  card.append(watchState);
+
+  const actions = document.createElement('div');
+  actions.className = 'workspace-card-actions';
+  const mapButton = document.createElement('button');
+  mapButton.type = 'button';
+  const mapIcon = document.createElement('i');
+  mapIcon.dataset.lucide = 'map-pin';
+  mapButton.append(mapIcon, document.createTextNode('על המפה'));
+  mapButton.addEventListener('click', () => {
+    selectWorkspaceMapItem(item.id);
+    document.querySelector('[data-workspace-map]')?.scrollIntoView({behavior: 'smooth', block: 'center'});
+  });
+  const watchButton = document.createElement('button');
+  watchButton.type = 'button';
+  watchButton.className = item.watch?.enabled ? 'is-watching' : '';
+  const watchIcon = document.createElement('i');
+  watchIcon.dataset.lucide = item.watch?.enabled ? 'bell-off' : 'bell-plus';
+  watchButton.append(watchIcon, document.createTextNode(item.watch?.enabled ? 'בטלו מעקב' : 'יעד מחיר'));
+  watchButton.addEventListener('click', () => toggleWorkspaceWatch(item.id));
+  const removeButton = document.createElement('button');
+  removeButton.type = 'button';
+  removeButton.className = 'workspace-delete';
+  removeButton.setAttribute('aria-label', `הסרת ${item.title}`);
+  const removeIcon = document.createElement('i');
+  removeIcon.dataset.lucide = 'trash-2';
+  removeButton.append(removeIcon);
+  removeButton.addEventListener('click', () => removeWorkspaceItem(item.id));
+  actions.append(mapButton, watchButton, removeButton);
+  card.append(actions);
+
+  const open = document.createElement('a');
+  open.href = safeWorkspaceHref(item.href);
+  open.className = 'text-link';
+  open.textContent = 'פתחו שוב את ההשוואה ←';
+  card.append(open);
+  return card;
+}
+
+function renderWorkspaceDashboard(preferredItemId = '') {
+  const workspace = travelerWorkspace || readLocalWorkspace();
+  const items = workspace.items || [];
+  const visible = activeWorkspaceFilter === 'all' ? items : items.filter(item => item.kind === activeWorkspaceFilter);
+  const container = document.querySelector('[data-workspace-items]');
+  const empty = document.querySelector('[data-workspace-empty]');
+  if (container) container.replaceChildren(...visible.map(renderWorkspaceCard));
+  if (empty) empty.hidden = visible.length > 0;
+  const count = document.querySelector('[data-workspace-count]');
+  const watches = document.querySelector('[data-workspace-watch-count]');
+  const destinations = document.querySelector('[data-workspace-destination-count]');
+  if (count) count.textContent = String(items.length);
+  if (watches) watches.textContent = String(items.filter(item => item.watch?.enabled).length);
+  if (destinations) destinations.textContent = String(new Set(items.map(item => item.destination).filter(Boolean)).size);
+  renderWorkspaceMap(items);
+  if (preferredItemId) selectWorkspaceMapItem(preferredItemId);
+  const status = document.querySelector('[data-workspace-status]');
+  if (status) status.textContent = items.length ? `${items.length} אפשרויות · נשמרות באופן פרטי · התראות אינן פעילות עדיין` : 'סביבת העבודה מוכנה. שמרו אפשרות אחת כדי להתחיל להשוות.';
+  renderIcons();
+}
+
+function hydrateWorkspacePreferences(preferences) {
+  const form = document.querySelector('[data-workspace-preferences]');
+  if (!form) return;
+  ['home_airport', 'currency', 'budget', 'max_stops', 'party_style'].forEach(name => {
+    if (form.elements[name] && preferences[name] !== undefined) form.elements[name].value = String(preferences[name]);
+  });
+  form.querySelectorAll('[name="priorities"]').forEach(input => { input.checked = (preferences.priorities || []).includes(input.value); });
+}
+
+async function saveWorkspacePreferences(form) {
+  const data = new FormData(form);
+  const preferences = {
+    home_airport: String(data.get('home_airport') || 'TLV').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3),
+    currency: String(data.get('currency') || 'USD'),
+    budget: Math.max(0, Number(data.get('budget')) || 0),
+    max_stops: Math.max(0, Math.min(3, Number(data.get('max_stops')) || 0)),
+    party_style: String(data.get('party_style') || 'couple'),
+    priorities: data.getAll('priorities').slice(0, 6)
+  };
+  if (preferences.home_airport.length !== 3) {
+    showWorkspaceToast('יש להזין קוד שדה תעופה בן שלוש אותיות', 'triangle-alert');
+    return;
+  }
+  const workspace = travelerWorkspace || readLocalWorkspace();
+  workspace.preferences = preferences;
+  writeLocalWorkspace(workspace);
+  showWorkspaceToast(window.traVelV2?.isLoggedIn ? 'ההעדפות נשמרו ומסתנכרנות לחשבון' : 'ההעדפות נשמרו במכשיר הזה', 'sliders-horizontal');
+  try {
+    const serverWorkspace = await workspaceRequest('/preferences', {method: 'PUT', body: JSON.stringify(preferences)});
+    if (serverWorkspace) writeLocalWorkspace(mergeTravelerWorkspaces(workspace, serverWorkspace));
+  } catch (error) {
+    console.warn(error);
+  }
+}
+
+async function initTravelerWorkspace() {
+  const root = document.querySelector('[data-traveler-workspace]');
+  if (!root) return;
+  travelerWorkspace = readLocalWorkspace();
+  renderWorkspaceDashboard();
+  hydrateWorkspacePreferences(travelerWorkspace.preferences);
+  document.querySelectorAll('[data-workspace-filter]').forEach(button => button.addEventListener('click', () => {
+    activeWorkspaceFilter = button.dataset.workspaceFilter;
+    document.querySelectorAll('[data-workspace-filter]').forEach(filter => filter.classList.toggle('is-active', filter === button));
+    renderWorkspaceDashboard();
+  }));
+  const form = document.querySelector('[data-workspace-preferences]');
+  form?.addEventListener('submit', event => {
+    event.preventDefault();
+    saveWorkspacePreferences(form);
+  });
+  form?.elements.home_airport?.addEventListener('input', event => {
+    event.target.value = event.target.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3);
+  });
+  if (!window.traVelV2?.isLoggedIn) return;
+  try {
+    const serverWorkspace = await workspaceRequest();
+    const local = readLocalWorkspace();
+    travelerWorkspace = mergeTravelerWorkspaces(local, serverWorkspace);
+    writeLocalWorkspace(travelerWorkspace);
+    renderWorkspaceDashboard();
+    hydrateWorkspacePreferences(travelerWorkspace.preferences);
+  } catch (error) {
+    const status = document.querySelector('[data-workspace-status]');
+    if (status) status.textContent = 'מוצגות השמירות במכשיר; הסנכרון לחשבון אינו זמין כרגע.';
+    console.warn(error);
+  }
 }
 
 function initNavigation() {
@@ -1068,6 +1491,7 @@ function initTraVelV2() {
   initHotelSearch();
   initInsuranceQuote();
   initTripPackageSearch();
+  initTravelerWorkspace();
   const query = new URLSearchParams(window.location.search).get('q') || '';
   hydrateDiscovery({ q: query, layer: activeLayer });
 }

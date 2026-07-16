@@ -18,6 +18,7 @@ const requiredFiles = [
   'page-map.php',
   'page-destination.php',
   'page-experience.php',
+  'page-saved.php',
   'inc/setup.php',
   'inc/assets.php',
   'inc/discovery.php',
@@ -51,6 +52,10 @@ const requiredFiles = [
   'inc/packages/class-trip-package-registry.php',
   'inc/packages/class-trip-package-repository.php',
   'inc/packages/class-trip-package-controller.php',
+  'inc/workspace/bootstrap.php',
+  'inc/workspace/class-traveler-workspace-controller.php',
+  'inc/handoffs/bootstrap.php',
+  'inc/handoffs/class-supplier-handoff-controller.php',
   'inc/template-tags.php',
   'inc/seo.php',
   'assets/css/app.css',
@@ -65,6 +70,8 @@ const requiredFiles = [
   'assets/data/insurance-quote.schema.json',
   'assets/data/trip-package-demo.json',
   'assets/data/trip-package.schema.json',
+  'assets/data/traveler-workspace.schema.json',
+  'assets/data/supplier-handoff.schema.json',
   'assets/vendor/lucide.min.js',
   'assets/images/earth-blue-marble.jpg',
   'assets/images/thailand.jpg'
@@ -122,6 +129,9 @@ if (!appJs.includes('insuranceQuoteUrl')) failures.push('The app script is not c
 if (!appJs.includes('initInsuranceQuote')) failures.push('The app script does not initialize the insurance comparison product.');
 if (!appJs.includes('packageSearchUrl')) failures.push('The app script is not connected to the trip package REST contract.');
 if (!appJs.includes('initTripPackageSearch')) failures.push('The app script does not initialize the total-trip package product.');
+if (!appJs.includes('workspaceUrl')) failures.push('The app script is not connected to the private traveler workspace contract.');
+if (!appJs.includes('initTravelerWorkspace')) failures.push('The app script does not initialize the saved-trip workspace.');
+if (!appJs.includes('createSaveOfferButton')) failures.push('Comparison cards cannot save decisions into the traveler workspace.');
 
 const discoveryController = readFileSync(join(themeRoot, 'inc/discovery.php'), 'utf8');
 if (/function\s+get_items\s*\(\s*WP_REST_Request\b/.test(discoveryController)) {
@@ -183,6 +193,23 @@ const packageInterface = readFileSync(join(themeRoot, 'inc/packages/interface-tr
 for (const method of ['get_id', 'is_configured', 'get_mode', 'get_cache_version', 'search']) {
   if (!packageInterface.includes(`function ${method}(`)) failures.push(`Package adapter contract is missing ${method}().`);
 }
+
+const workspaceController = readFileSync(join(themeRoot, 'inc/workspace/class-traveler-workspace-controller.php'), 'utf8');
+if (!workspaceController.includes("current_user_can( 'read' )")) failures.push('Traveler workspace routes are not restricted to an authenticated user capability.');
+if (!workspaceController.includes("'private, no-store, max-age=0'")) failures.push('Personal workspace responses must be private and non-cacheable.');
+if (!workspaceController.includes("'delivery_enabled' => false")) failures.push('Price-watch delivery must remain disabled until a live supplier and consent flow exist.');
+if (!workspaceController.includes('sanitize_internal_url')) failures.push('Saved item URLs must be constrained to internal Tra-Vel destinations.');
+
+const savedPage = readFileSync(join(themeRoot, 'page-saved.php'), 'utf8');
+if (!savedPage.includes('data-traveler-workspace')) failures.push('The saved-trip page is missing its functional workspace root.');
+if (!savedPage.includes('data-workspace-map')) failures.push('The saved-trip page is missing its interactive decision map.');
+if (!savedPage.includes('data-workspace-preferences')) failures.push('The saved-trip page is missing traveler preference controls.');
+
+const handoffController = readFileSync(join(themeRoot, 'inc/handoffs/class-supplier-handoff-controller.php'), 'utf8');
+if (!handoffController.includes("'https' !== $scheme")) failures.push('Supplier handoffs must enforce HTTPS.');
+if (!handoffController.includes("'sponsored noopener noreferrer'")) failures.push('Supplier handoffs must qualify and isolate outbound partner links.');
+if (!handoffController.includes("'private, no-store, max-age=0'")) failures.push('Prepared supplier handoffs must not be cached.');
+if (!handoffController.includes('allowed_hosts')) failures.push('Supplier handoffs must enforce an explicit host allowlist.');
 
 const experiencePage = readFileSync(join(themeRoot, 'page-experience.php'), 'utf8');
 if (!experiencePage.includes('data-flight-search')) failures.push('The flights page is missing its functional search form.');

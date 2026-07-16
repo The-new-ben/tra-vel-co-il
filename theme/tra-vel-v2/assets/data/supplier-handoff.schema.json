@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tra-vel.co.il/schemas/supplier-handoff-v1.json",
+  "title": "Tra-Vel verified supplier handoff",
+  "type": "object",
+  "required": ["provider", "vertical", "offer_id", "handoff_url", "rel", "disclosure", "price_recheck", "booking_on_partner", "expires_at"],
+  "properties": {
+    "provider": {
+      "type": "object",
+      "required": ["id", "label"],
+      "properties": { "id": { "type": "string" }, "label": { "type": "string" } },
+      "additionalProperties": false
+    },
+    "vertical": { "enum": ["flight", "hotel", "package", "insurance", "car", "transfer", "activity", "esim"] },
+    "offer_id": { "type": "string", "pattern": "^[A-Za-z0-9._:-]{1,80}$" },
+    "handoff_url": { "type": "string", "format": "uri", "pattern": "^https://" },
+    "rel": { "const": "sponsored noopener noreferrer" },
+    "disclosure": { "type": "string", "minLength": 1 },
+    "price_recheck": { "const": true },
+    "booking_on_partner": { "const": true },
+    "expires_at": { "type": "string", "format": "date-time" }
+  },
+  "additionalProperties": false
+}
