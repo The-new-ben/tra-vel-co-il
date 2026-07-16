@@ -101,7 +101,10 @@ for (const file of packetFiles) {
     else if (!existsSync(contentPath)) fail(file, `guide content is missing: ${packet.contentPath}.`);
     else {
       const content = readFileSync(contentPath, 'utf8');
-      const words = content.match(/[\p{L}\p{N}][\p{L}\p{N}\u05be'’-]*/gu) || [];
+      const visibleText = content
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/&(?:[a-z]+|#\d+|#x[\da-f]+);/gi, ' ');
+      const words = visibleText.match(/[\p{L}\p{N}][\p{L}\p{N}\u05be'’-]*/gu) || [];
       const hebrewWords = words.filter((word) => /[\u0590-\u05ff]/u.test(word));
       const h2Count = (content.match(/<h2\b/gi) || []).length;
       const internalLinks = (content.match(/<a\s+[^>]*href="\//gi) || []).length;
