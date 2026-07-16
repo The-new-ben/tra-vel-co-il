@@ -87,6 +87,9 @@
 .map-depth-grid span { color: var(--muted); font-size: 12px; }
 .map-depth-grid span strong { color: var(--ink); }
 .page-template-page-map .whatsapp-button { display: none !important; }
+.whatsapp-button { right: 20px !important; bottom: 20px !important; width: 58px !important; min-width: 58px !important; height: 58px !important; padding: 0 !important; border-radius: 50% !important; overflow: hidden !important; justify-content: center !important; font-size: 0 !important; }
+.whatsapp-button img:first-child { display: none !important; }
+.whatsapp-button img:last-of-type { display: block !important; width: 30px !important; height: 30px !important; margin: 0 !important; }
 .map-mobile-controls { display: none !important; }
 
 @media (max-width: 1000px) {
