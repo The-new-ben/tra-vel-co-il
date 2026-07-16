@@ -144,6 +144,8 @@ if (!seoSource.includes("$robots['noindex']")) failures.push('Faceted and person
 const destinationPage = readFileSync(join(themeRoot, 'page-destination.php'), 'utf8');
 if (!destinationPage.includes('tra_vel_v2_render_guide_evidence')) failures.push('Destination guides do not expose their evidence and freshness status.');
 if (/[$₪]\s?\d/.test(destinationPage)) failures.push('Destination templates must not hard-code demo prices that can be mistaken for live inventory.');
+if (destinationPage.includes('data-map-result')) failures.push('Destination guide cards must not be overwritten by global demo discovery results.');
+if (!destinationPage.includes('data-guide-map-card')) failures.push('Destination guides are missing their isolated map decision card.');
 
 const guideSyncPath = join(repoRoot, 'scripts', 'wp', 'sync-guide.ps1');
 if (!existsSync(guideSyncPath)) failures.push('The guarded WordPress guide synchronization pipeline is missing.');
