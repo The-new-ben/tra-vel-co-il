@@ -45,6 +45,42 @@ $pages = @(
         Title = 'תאילנד'
         Template = 'page-destination.php'
         Excerpt = 'מדריך תאילנד מחובר למפת מסלול, עונות, טיסות, מלונות ועלויות.'
+    },
+    [pscustomobject]@{
+        Slug = 'flights'
+        Title = 'טיסות חכמות'
+        Template = 'page-experience.php'
+        Excerpt = 'השוואת טיסות לפי מחיר כולל, מסלול, זמן, כבודה וגמישות.'
+    },
+    [pscustomobject]@{
+        Slug = 'hotels'
+        Title = 'מלונות וחבילות'
+        Template = 'page-experience.php'
+        Excerpt = 'בחירת מלון לפי אזור, מסלול, תנאים ועלות כוללת.'
+    },
+    [pscustomobject]@{
+        Slug = 'travel-insurance'
+        Title = 'ביטוח נסיעות'
+        Template = 'page-experience.php'
+        Excerpt = 'השוואת כיסויים לפי היעד, המסלול, הנוסעים והפעילויות.'
+    },
+    [pscustomobject]@{
+        Slug = 'ai-planner'
+        Title = 'מתכנן הנסיעות החכם'
+        Template = 'page-experience.php'
+        Excerpt = 'מתכנן AI שהופך בקשה בשפה טבעית למסלול חזותי וחלופות ברורות.'
+    },
+    [pscustomobject]@{
+        Slug = 'destinations'
+        Title = 'יעדים'
+        Template = 'page-experience.php'
+        Excerpt = 'גילוי יעדים לפי תקציב, זמן, עונה וסגנון נסיעה.'
+    },
+    [pscustomobject]@{
+        Slug = 'guides'
+        Title = 'מדריכי נסיעות'
+        Template = 'page-experience.php'
+        Excerpt = 'מדריכי עומק מחוברים למפה, לנתונים ולשלב הבא בתכנון.'
     }
 )
 

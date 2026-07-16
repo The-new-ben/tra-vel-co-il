@@ -17,6 +17,7 @@ const requiredFiles = [
   'front-page.php',
   'page-map.php',
   'page-destination.php',
+  'page-experience.php',
   'inc/setup.php',
   'inc/assets.php',
   'inc/template-tags.php',
