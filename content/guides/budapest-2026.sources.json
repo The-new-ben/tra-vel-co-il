@@ -4,6 +4,7 @@
   "locale": "he-IL",
   "title": "בודפשט",
   "excerpt": "מדריך בודפשט מקיף לישראלים: מסלולים, אזורי לינה, טיסות, תחבורה, תקציב, מרחצאות, משפחות, ביטחון וביטוח — עם מקורות רשמיים ותאריך בדיקה.",
+  "author": "מערכת Tra-Vel",
   "primaryTopic": "Budapest travel guide for Israelis",
   "canonicalPath": "/budapest/",
   "status": "editorial-review",
@@ -11,7 +12,7 @@
   "contentPath": "content/guides/budapest-2026.he.html",
   "checkedAt": "2026-07-16",
   "mapState": "budapest",
-  "reviewer": "Tra-Vel editorial desk",
+  "reviewer": "מערכת Tra-Vel",
   "reviewMethod": "Prioritize government, city, airport, transport operator and official tourism sources. Recheck all fares, opening details, entry rules, flight availability and security guidance immediately before publication.",
   "sections": [
     "Decision summary",

@@ -35,13 +35,15 @@ for (const file of packetFiles) {
   try { packet = JSON.parse(readFileSync(join(packetDir, file), 'utf8')); }
   catch (error) { fail(file, `invalid JSON: ${error.message}`); continue; }
 
-  for (const key of ['schemaVersion', 'id', 'locale', 'title', 'excerpt', 'primaryTopic', 'canonicalPath', 'status', 'wordTargetMin', 'checkedAt', 'mapState', 'sections', 'sources', 'facts']) {
+  for (const key of ['schemaVersion', 'id', 'locale', 'title', 'excerpt', 'author', 'reviewer', 'primaryTopic', 'canonicalPath', 'status', 'wordTargetMin', 'checkedAt', 'mapState', 'sections', 'sources', 'facts']) {
     if (!(key in packet)) fail(file, `missing ${key}`);
   }
   if (packet.schemaVersion !== 1) fail(file, 'schemaVersion must be 1.');
   if (packet.locale !== 'he-IL') fail(file, 'locale must be he-IL.');
   if (typeof packet.title !== 'string' || packet.title.trim().length < 2) fail(file, 'title is required.');
   if (typeof packet.excerpt !== 'string' || packet.excerpt.trim().length < 50) fail(file, 'excerpt must contain at least 50 characters.');
+  if (typeof packet.author !== 'string' || packet.author.trim().length < 2) fail(file, 'author is required.');
+  if (typeof packet.reviewer !== 'string' || packet.reviewer.trim().length < 2) fail(file, 'reviewer is required.');
   if (!/^[a-z0-9-]+$/.test(packet.id || '')) fail(file, 'id must be a lowercase slug.');
   if (!/^\/[a-z0-9-]+\/$/.test(packet.canonicalPath || '')) fail(file, 'canonicalPath must be one clean, trailing-slash route.');
   if (!['research', 'source-ready', 'editorial-review', 'publish-ready'].includes(packet.status)) fail(file, 'status is invalid.');
