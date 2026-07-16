@@ -21,6 +21,7 @@ class Tra_Vel_V2_Supplier_Registry {
 				TRA_VEL_V2_PATH . '/assets/data/discovery-demo.json'
 			)
 		);
+		$this->register( new Tra_Vel_V2_Open_Meteo_Supplier_Adapter() );
 
 		$adapters = apply_filters( 'tra_vel_v2_supplier_adapters', array() );
 		if ( is_array( $adapters ) ) {

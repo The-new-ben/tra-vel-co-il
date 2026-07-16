@@ -39,3 +39,13 @@ Live fragments merge by destination `id`. A supplied route set replaces the fall
 - Cache invalidation uses a generation number, avoiding database-wide transient scans.
 
 `GET /wp-json/tra-vel/v2/discovery/health` exposes safe adapter and cache state. Administrators can invalidate all discovery variants with authenticated `DELETE /wp-json/tra-vel/v2/discovery/cache`.
+
+## Open-Meteo commercial weather
+
+The built-in `open_meteo_commercial` adapter is disabled until a paid commercial API key is supplied server-side:
+
+```php
+define( 'TRA_VEL_OPEN_METEO_API_KEY', getenv( 'TRA_VEL_OPEN_METEO_API_KEY' ) );
+```
+
+It always uses `https://customer-api.open-meteo.com/v1/forecast`, batches all destination coordinates into one request, and requests current temperature, apparent temperature, WMO weather code, and day/night state. The public payload never contains the key. When connected, Tra-Vel displays the required Open-Meteo/CC BY attribution and changes discovery mode from `demo` to `mixed` until every vertical is live.

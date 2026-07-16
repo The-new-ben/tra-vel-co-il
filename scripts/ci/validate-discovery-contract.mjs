@@ -44,6 +44,9 @@ for (const destination of data.destinations || []) {
   if (!destination.id || destinationIds.has(destination.id)) failures.push(`${prefix} has a missing or duplicate id.`);
   destinationIds.add(destination.id);
   if (!/^[A-Z]{3}$/.test(destination.airport?.code || '')) failures.push(`${prefix} has an invalid airport code.`);
+  if (!(destination.geo?.latitude >= -90 && destination.geo?.latitude <= 90) || !(destination.geo?.longitude >= -180 && destination.geo?.longitude <= 180)) {
+    failures.push(`${prefix} must include valid WGS84 coordinates.`);
+  }
   if (![destination.position?.x, destination.position?.y].every(value => Number.isFinite(value) && value >= 0 && value <= 100)) {
     failures.push(`${prefix} map position must be between 0 and 100.`);
   }

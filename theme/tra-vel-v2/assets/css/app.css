@@ -338,6 +338,7 @@ input[type="range"] { width: 100%; accent-color: #7da000; }
 .map-layer-buttons button { width: 43px; height: 43px; border: 1px solid rgba(255,255,255,.2); border-radius: 13px; background: rgba(5,19,24,.8); color: #fff; display: grid; place-items: center; }
 .map-layer-buttons button.is-active { border-color: var(--lime); background: var(--lime); color: var(--ink); box-shadow: 0 0 0 4px rgba(217,255,89,.14); }
 .map-data-status { position: absolute; z-index: 19; top: 90px; right: 20px; margin: 0; padding: 7px 11px; border: 1px solid rgba(255,255,255,.16); border-radius: 999px; background: rgba(5,19,24,.72); color: #dce9ec; font-size: 11px; backdrop-filter: blur(10px); }
+.map-weather-attribution { position: absolute; z-index: 19; top: 126px; right: 20px; padding: 5px 9px; border-radius: 999px; background: rgba(5,19,24,.72); color: #b9cdd2; font-size: 10px; text-decoration: underline; backdrop-filter: blur(10px); }
 [data-data-mode="demo"] .map-data-status::before { content: '●'; color: var(--lime); margin-left: 6px; }
 [data-data-mode="fallback"] .map-data-status::before { content: '●'; color: #ffbd59; margin-left: 6px; }
 .route-sheet { position: absolute; z-index: 24; bottom: 18px; right: 50%; transform: translateX(50%); width: min(880px,90%); border-radius: 24px; padding: 18px; background: rgba(255,255,255,.97); color: var(--ink); box-shadow: var(--shadow); }
@@ -661,6 +662,7 @@ h3.deal-title { display: block; margin: 6px 0 12px; font-size: 22px; line-height
   .map-search-floating { top: 12px; width: calc(100% - 24px); }
   .map-layer-buttons { top: 76px; left: 12px; }
   .map-data-status { top: 76px; right: 12px; max-width: calc(100% - 80px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .map-weather-attribution { top: 112px; right: 12px; max-width: calc(100% - 80px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .route-sheet { bottom: 75px; width: calc(100% - 20px); padding: 12px; border-radius: 20px; max-height: 285px; overflow: hidden; }
   .sheet-head { align-items: flex-start; }
   .sheet-head h2 { font-size: 18px; line-height: 1.25; }
