@@ -67,7 +67,46 @@ Possible intents:
 - continue an existing trip
 - respond to a live disruption
 
-### 3.2 Request understanding
+### 3.2 One-click surprise journey
+
+The public entry is **תפתיעו אותי**. It is not destination roulette and it is not a long questionnaire. The traveler can type or say one open request such as: "Honeymoon for two, exotic, under $1,000, anywhere. You decide." The system must accept incomplete language, infer low-risk preferences, and ask only questions that materially affect feasibility, safety, eligibility, or price.
+
+The entry supports:
+
+- one click from the homepage, map, destination pages, and future mobile app
+- free-language Hebrew, English, or mixed speech
+- microphone input with an editable transcript before submission
+- budget, vibe, travelers, timing, and hard constraints expressed in any order
+- an explicit "I do not care where" state that broadens destination search
+- progressive results without forcing the traveler into a form
+
+The agent visibly moves through truthful work states:
+
+1. Understanding the request
+2. Checking date and traveler constraints
+3. Searching connected flight and ground options
+4. Building feasible destination combinations
+5. Comparing full-trip cost, travel time, quality, and risk
+6. Checking accommodation, transfers, activities, dining, insurance, and required equipment
+7. Revalidating the shortlisted supplier offers
+8. Sewing the winning components into three editable proposals
+9. Waiting for the traveler's approval
+
+Every progress event must come from an actual tool state or deterministic calculation. Decorative animation may visualize the work, but it must never imply that a supplier was searched, a price was found, or a booking was made when that event did not occur.
+
+The proposal is presented as a tailored trip, not a pile of search results. It includes a map route, timeline, complete cost ledger, verified inclusions, unresolved items, supplier timestamps, trade-offs, cancellation exposure, and the reason it represents strong value. "Savings" is shown only when the comparison basis is reproducible.
+
+The agent may prepare carts, holds, reservations, and supplier requests where the integration supports them. It must stop at one consolidated authorization surface before any purchase, cancellation, personal-data submission, or insurance binding. "Everything is ready. Authorize" is a checkout state, not permission to act silently.
+
+Public copy direction:
+
+- Primary CTA: **תפתיעו אותי**
+- Supporting line: **ספרו לנו תקציב או אווירה. הסוכן יחפש, ישווה ויתפור לכם חופשה לאישור.**
+- Voice prompt example: **"חופשה אקזוטית לזוג עד 1,000 דולר. תחליטו בשבילי."**
+
+This interaction must reuse the same `TripRequest`, proposal, approval, and trip-cockpit contracts on web and in the future application. Immersive hotel and place previews are an optional media layer attached to verified itinerary entities. They never replace real room descriptions, supplier media, accessibility details, or booking terms.
+
+### 3.3 Request understanding
 
 The agent extracts a `TripRequest` with:
 
@@ -88,7 +127,7 @@ The agent extracts a `TripRequest` with:
 
 The agent displays the interpreted request before searching. The traveler can correct it in plain language or through controls.
 
-### 3.3 Clarification policy
+### 3.4 Clarification policy
 
 The agent asks a question only when the answer changes feasibility, safety, legal eligibility, price, or a major recommendation. It can defer low-impact preferences.
 
@@ -100,7 +139,7 @@ Examples of blocking questions:
 - mobility requirements that affect transfer and room selection
 - whether the traveler accepts non-refundable inventory
 
-### 3.4 Research and proposal
+### 3.5 Research and proposal
 
 The proposal engine builds a dependency graph rather than an unordered shopping list.
 
@@ -128,7 +167,7 @@ Each proposal includes:
 - source freshness and supplier status
 - next decisions
 
-### 3.5 Approval and booking
+### 3.6 Approval and booking
 
 The agent has three tool classes:
 
@@ -148,7 +187,7 @@ Consequential tools always require a visible approval card showing:
 
 The approval model follows the human-in-the-loop pattern supported by the OpenAI Agents SDK: a run pauses at a protected tool call, preserves state, and resumes only after approval or rejection. See [OpenAI human-in-the-loop guidance](https://openai.github.io/openai-agents-js/guides/human-in-the-loop/).
 
-### 3.6 After booking
+### 3.7 After booking
 
 Every order creates a normalized `TripItem` and retains the supplier reference. Supplier data remains authoritative. The system records:
 
@@ -160,7 +199,7 @@ Every order creates a normalized `TripItem` and retains the supplier reference. 
 - supplier synchronization time
 - source event history
 
-### 3.7 During travel
+### 3.8 During travel
 
 The cockpit changes from planning mode to execution mode. It shows the next action, not every possible feature. The traveler can ask the agent to change a trip, but the agent first identifies affected orders and terms.
 
@@ -671,6 +710,14 @@ Support email link or passkey first, then Google, Apple, Facebook, and LinkedIn 
 - `AGT-013`: Every agent recommendation identifies evidence, inference, and live supplier data.
 - `AGT-014`: Mixed Hebrew and English destination input is interpreted correctly.
 - `AGT-015`: The audit trace connects the conversation, tools, approvals, and resulting orders.
+- `AGT-016`: One click opens the surprise journey without a mandatory form.
+- `AGT-017`: A voice request produces an editable transcript before it starts a search.
+- `AGT-018`: "Anywhere" expands the destination set but retains origin, eligibility, safety, and budget constraints.
+- `AGT-019`: Every visible progress state is backed by a tool event or deterministic calculation.
+- `AGT-020`: Surprise results include full-trip cost and cannot rank a cheap flight above an infeasible trip.
+- `AGT-021`: The agent asks only material blocking questions and defers optional preferences.
+- `AGT-022`: The final tailored proposal remains editable before authorization.
+- `AGT-023`: A consolidated authorization cannot silently approve multiple undisclosed supplier actions.
 
 ### Booking and trip cockpit
 

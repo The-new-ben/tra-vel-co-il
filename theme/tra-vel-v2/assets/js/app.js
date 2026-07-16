@@ -1612,6 +1612,54 @@ function initControls() {
   }));
 }
 
+function initAIConversationEntry() {
+  const root = document.querySelector('[data-ai-conversation-entry]');
+  const button = root?.querySelector('[data-ai-voice]');
+  const prompt = root?.querySelector('textarea[name="q"]');
+  const status = root?.querySelector('[data-ai-voice-status]');
+  if (!root || !button || !prompt || !status) return;
+
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    button.addEventListener('click', () => {
+      status.textContent = 'הכתבה קולית אינה זמינה בדפדפן הזה. אפשר לכתוב את הבקשה באותו שדה.';
+      prompt.focus();
+    });
+    return;
+  }
+
+  const recognition = new SpeechRecognition();
+  recognition.lang = 'he-IL';
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
+
+  const setListening = listening => {
+    button.classList.toggle('is-listening', listening);
+    button.setAttribute('aria-pressed', String(listening));
+  };
+
+  button.addEventListener('click', () => {
+    try {
+      recognition.start();
+    } catch (error) {
+      status.textContent = 'המיקרופון כבר מקשיב. אמרו את הבקשה במילים שלכם.';
+    }
+  });
+  recognition.addEventListener('start', () => {
+    setListening(true);
+    status.textContent = 'מקשיב. אמרו תקציב, אווירה, מי נוסע וכל דבר שאסור לפספס.';
+  });
+  recognition.addEventListener('result', event => {
+    const transcript = event.results?.[0]?.[0]?.transcript?.trim();
+    if (transcript) prompt.value = transcript;
+    status.textContent = 'הבקשה נקלטה. אפשר לערוך אותה לפני שמתחילים.';
+  });
+  recognition.addEventListener('error', () => {
+    status.textContent = 'לא הצלחנו לקלוט את הבקשה. אפשר לנסות שוב או לכתוב אותה.';
+  });
+  recognition.addEventListener('end', () => setListening(false));
+}
+
 function initDirectory() {
   const root = document.querySelector('[data-directory-root]');
   if (!root) return;
@@ -1658,6 +1706,7 @@ function initTraVelV2() {
   initNavigation();
   initMap();
   initControls();
+  initAIConversationEntry();
   initDirectory();
   initFlightSearch();
   initHotelSearch();
