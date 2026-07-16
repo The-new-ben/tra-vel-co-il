@@ -368,6 +368,46 @@ const frontPage = readFileSync(join(themeRoot, 'front-page.php'), 'utf8');
 if (/<a\b[^>]*class="ai-input"[^>]*>[\s\S]*?<button\b/.test(frontPage)) {
   failures.push('The AI planner link contains an invalid nested button.');
 }
+if (!frontPage.includes('tra_vel_v2_get_home_hero_campaign') || !frontPage.includes('data-hero-campaign')) {
+  failures.push('The homepage is not connected to the server-rendered campaign queue.');
+}
+if (!appJs.includes("document.querySelector('[data-hero-campaign]')")) {
+  failures.push('The homepage campaign cannot focus its matching map destination.');
+}
+
+const heroQueuePath = join(themeRoot, 'assets/data/home-hero-queue.json');
+if (!existsSync(heroQueuePath)) {
+  failures.push('The homepage campaign queue is missing.');
+} else {
+  try {
+    const heroQueue = JSON.parse(readFileSync(heroQueuePath, 'utf8'));
+    const campaigns = Array.isArray(heroQueue.campaigns) ? heroQueue.campaigns : [];
+    const ids = new Set();
+    if (!campaigns.length) failures.push('The homepage campaign queue is empty.');
+    for (const campaign of campaigns) {
+      if (!campaign || typeof campaign !== 'object') { failures.push('Every homepage campaign must be an object.'); continue; }
+      if (!/^[a-z0-9-]+$/.test(campaign.id || '')) failures.push('Every homepage campaign needs a lowercase slug id.');
+      if (ids.has(campaign.id)) failures.push(`Duplicate homepage campaign id ${campaign.id}.`);
+      ids.add(campaign.id);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(campaign.active_from || '') || !/^\d{4}-\d{2}-\d{2}$/.test(campaign.active_until || '')) failures.push(`${campaign.id || 'campaign'} has invalid active dates.`);
+      if ((campaign.active_from || '') > (campaign.active_until || '')) failures.push(`${campaign.id || 'campaign'} ends before it starts.`);
+      if (!Number.isInteger(campaign.priority)) failures.push(`${campaign.id || 'campaign'} needs an integer priority.`);
+      for (const key of ['eyebrow', 'title', 'copy', 'primary_label', 'secondary_label', 'map_state']) {
+        if (typeof campaign[key] !== 'string' || !campaign[key].trim()) failures.push(`${campaign.id || 'campaign'} is missing ${key}.`);
+      }
+      for (const key of ['primary_url', 'secondary_url']) {
+        if (!/^\/[a-z0-9/?=&._-]*$/i.test(campaign[key] || '')) failures.push(`${campaign.id || 'campaign'} has an unsafe ${key}.`);
+      }
+      const publicText = [campaign.eyebrow, campaign.title, campaign.copy, campaign.primary_label, campaign.secondary_label].join(' ');
+      if (/[—–]/u.test(publicText)) failures.push(`${campaign.id || 'campaign'} uses prohibited dash punctuation.`);
+      if (/מפת העריכה|במחקר|בדיקת מערכת|מדריך דגל/u.test(publicText)) failures.push(`${campaign.id || 'campaign'} exposes internal project language.`);
+      if (campaign.price_claim !== false) failures.push(`${campaign.id || 'campaign'} cannot make a price claim without verified inventory.`);
+    }
+    if (!ids.has('evergreen-map-discovery')) failures.push('The homepage campaign queue needs an evergreen discovery fallback.');
+  } catch (error) {
+    failures.push(`The homepage campaign queue is invalid JSON: ${error.message}`);
+  }
+}
 
 if (failures.length) {
   console.error('Tra-Vel V2 theme validation failed:');

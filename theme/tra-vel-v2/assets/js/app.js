@@ -1650,6 +1650,10 @@ function initDirectory() {
 function initTraVelV2() {
   if (document.documentElement.dataset.traVelV2Ready === 'true') return;
   document.documentElement.dataset.traVelV2Ready = 'true';
+  const heroCampaign = document.querySelector('[data-hero-campaign]');
+  if (heroCampaign?.dataset.mapState && destinationData[heroCampaign.dataset.mapState]) {
+    activeDestination = heroCampaign.dataset.mapState;
+  }
   renderIcons();
   initNavigation();
   initMap();

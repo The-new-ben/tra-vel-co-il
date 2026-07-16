@@ -69,6 +69,7 @@ jobs:
           php scripts/ci/validate-trip-package-runtime.php
           php scripts/ci/validate-traveler-workspace-runtime.php
           php scripts/ci/validate-supplier-handoff-runtime.php
+          php scripts/ci/validate-home-hero-queue-runtime.php
           php scripts/ci/validate-open-meteo-adapter.php
           node --check theme/tra-vel-v2/assets/js/app.js
           while IFS= read -r -d '' file; do php -l "$file"; done < <(find theme/tra-vel-v2 plugin/tra-vel-deploy-gateway -type f -name '*.php' -print0)

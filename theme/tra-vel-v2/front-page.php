@@ -9,6 +9,7 @@ get_header();
 $map_url       = home_url( '/travel-map/' );
 $thailand_url  = home_url( '/destinations/thailand/' );
 $planner_url   = home_url( '/ai-planner/' );
+$hero_campaign = tra_vel_v2_get_home_hero_campaign();
 ?>
 <main id="main-content">
 	<section class="home-hero">
@@ -18,6 +19,14 @@ $planner_url   = home_url( '/ai-planner/' );
 				<h1><?php esc_html_e( 'כל העולם.', 'tra-vel-v2' ); ?><br><em><?php esc_html_e( 'על מפה אחת.', 'tra-vel-v2' ); ?></em></h1>
 				<p><?php esc_html_e( 'בוחרים מקום על הגלובוס ומקבלים טיסות, מלונות, מסלולים, ביטוח ועלות אמיתית, עם הסבר מה עדיף ולמה.', 'tra-vel-v2' ); ?></p>
 				<a class="ai-prompt" href="<?php echo esc_url( $planner_url ); ?>"><i data-lucide="bot"></i><span><?php esc_html_e( 'אפשר גם לכתוב:', 'tra-vel-v2' ); ?></span><strong><?php esc_html_e( '“שבועיים בתאילנד עד ₪9,000 לזוג”', 'tra-vel-v2' ); ?></strong><i data-lucide="arrow-left"></i></a>
+				<?php if ( $hero_campaign ) : ?>
+					<aside class="hero-campaign" data-hero-campaign="<?php echo esc_attr( $hero_campaign['id'] ); ?>" data-map-state="<?php echo esc_attr( $hero_campaign['map_state'] ); ?>">
+						<div class="hero-campaign-heading"><span><i data-lucide="calendar-heart"></i><?php echo esc_html( $hero_campaign['eyebrow'] ); ?></span><small><?php esc_html_e( 'בחירה עונתית', 'tra-vel-v2' ); ?></small></div>
+						<strong><?php echo esc_html( $hero_campaign['title'] ); ?></strong>
+						<p><?php echo esc_html( $hero_campaign['copy'] ); ?></p>
+						<div class="hero-campaign-actions"><a class="is-primary" href="<?php echo esc_url( home_url( $hero_campaign['primary_url'] ) ); ?>"><?php echo esc_html( $hero_campaign['primary_label'] ); ?><i data-lucide="arrow-left"></i></a><a href="<?php echo esc_url( home_url( $hero_campaign['secondary_url'] ) ); ?>"><?php echo esc_html( $hero_campaign['secondary_label'] ); ?></a></div>
+					</aside>
+				<?php endif; ?>
 			</div>
 			<div class="globe-panel" aria-label="<?php esc_attr_e( 'מפת יעדים אינטראקטיבית', 'tra-vel-v2' ); ?>">
 				<div class="globe-halo"></div>

@@ -51,6 +51,12 @@ Published flagship hubs as of 2026-07-16:
 - `/destinations/budapest/`: 5,000+ visible Hebrew words, 16 reviewed sources and three decision tables.
 - `/destinations/thailand/`: 5,000+ visible Hebrew words, 18 reviewed sources and three decision tables covering the regional, seasonal and airport-chain decisions required for a long-haul trip.
 
+Source-ready hub queue:
+
+- `/destinations/athens/`: 17 official or first-party sources mapped to airport transport, public transport, neighborhoods, culture, accessibility, entry and Israeli consular decisions. The page remains unpublished until the complete Hebrew guide and volatile-fact recheck pass the repository gate.
+
+The Athens cluster owns the city-break and island-gateway intent. Its first supporting pages are: flights from Tel Aviv to Athens, airport to city or Piraeus, where to stay in Athens, Athens with children, and Athens plus a Greek island. A future Greece family-island comparison owns the separate “which island” intent so it does not compete with the Athens hub.
+
 ### Level 3: high-intent landing pages
 
 Each destination hub can support focused pages when the intent is distinct and the page has unique value.
@@ -136,6 +142,8 @@ The homepage hero should rotate by business priority, not randomly. One primary 
 8. Evergreen map-led discovery when no campaign has adequate inventory
 
 Each hero requires a verified feed, a clear travel period, transparent party composition, a destination landing page, and an alternative discovery action. If live inventory is unavailable, the hero promotes destination discovery rather than a price.
+
+The production queue is stored in `theme/tra-vel-v2/assets/data/home-hero-queue.json`. The homepage selects the highest-priority active campaign on the server, exposes crawlable links, and focuses the matching map destination in the browser. Campaigns with a price claim are rejected until verified supplier inventory is connected.
 
 ## Page standard for search and answer engines
 
