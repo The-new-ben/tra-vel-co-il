@@ -55,7 +55,9 @@ jobs:
           set -euo pipefail
           node scripts/ci/validate-theme.mjs
           node scripts/ci/validate-discovery-contract.mjs
+          node scripts/ci/validate-flight-search-contract.mjs
           php scripts/ci/validate-supplier-runtime.php
+          php scripts/ci/validate-flight-search-runtime.php
           php scripts/ci/validate-open-meteo-adapter.php
           node --check theme/tra-vel-v2/assets/js/app.js
           while IFS= read -r -d '' file; do php -l "$file"; done < <(find theme/tra-vel-v2 plugin/tra-vel-deploy-gateway -type f -name '*.php' -print0)

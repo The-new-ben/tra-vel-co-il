@@ -444,6 +444,58 @@ input[type="range"] { width: 100%; accent-color: #7da000; }
 .experience-submit { width: 100%; min-height: 55px; display: flex; align-items: center; justify-content: center; gap: 9px; color: var(--ink); background: var(--lime); border: 0; border-radius: 14px; font-weight: 900; }
 .experience-submit i { width: 19px; }
 .experience-search > small { display: block; margin-top: 10px; color: #74858a; line-height: 1.4; }
+.flight-search-form { display: grid; gap: 11px; }
+.flight-airports { display: grid; grid-template-columns: 1fr 28px 1fr; gap: 8px; align-items: center; }
+.flight-airports > i { width: 19px; color: #789100; }
+.flight-airports label { position: relative; }
+.flight-airports input { direction: ltr; padding-bottom: 13px; font: 900 25px 'Manrope',sans-serif; }
+.flight-airports label span { position: absolute; right: 14px; bottom: 6px; color: #7b8c91; font-size: 10px; font-weight: 500; }
+.flight-date-grid, .flight-options-grid { display: grid; gap: 8px; }
+.flight-date-grid { grid-template-columns: 1fr 1fr; }
+.flight-options-grid { grid-template-columns: repeat(4,1fr); }
+.experience-search select { width: 100%; min-height: 45px; padding: 0 10px; color: var(--ink); background: #f3f6f4; border: 1px solid var(--line); border-radius: 11px; font: 700 13px 'Heebo',sans-serif; }
+.flight-direct { min-height: 37px; display: flex !important; grid-template-columns: 20px 1fr; align-items: center; padding: 7px 10px; background: #f3f6f4; border-radius: 10px; }
+.flight-direct input { width: 18px; min-height: 18px; margin: 0; }
+.flight-search-form[data-state="loading"] { opacity: .72; }
+.flight-search-section { background: #eef3f1; }
+.flight-search-section .section-heading p { max-width: 640px; color: var(--muted); }
+.flight-search-status { align-self: flex-end; padding: 8px 11px; color: #536970; background: #fff; border: 1px solid var(--line); border-radius: 99px; font-size: 12px; }
+.flight-results-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; }
+.flight-offer { position: relative; min-width: 0; padding: 20px; background: #fff; border: 1px solid var(--line); border-radius: 22px; box-shadow: 0 16px 38px rgba(12,42,49,.07); }
+.flight-offer.is-recommended { border: 2px solid #9bbd2d; box-shadow: 0 18px 42px rgba(110,145,24,.16); }
+.flight-offer-head { display: flex; justify-content: space-between; gap: 12px; }
+.flight-offer-head h3 { margin: 4px 0 1px; font-size: 23px; }
+.flight-offer-head span { color: var(--muted); font-size: 12px; }
+.flight-offer-badge { color: #607e00; font-weight: 900; }
+.flight-score { width: 45px; height: 45px; display: grid; place-items: center; flex: 0 0 auto; color: #4d6700; background: #effbcf; border-radius: 50%; font: 900 16px 'Manrope'; }
+.flight-journeys { display: grid; gap: 7px; margin: 17px 0 12px; }
+.flight-journey-row { display: grid; grid-template-columns: 35px 1fr auto; gap: 7px; align-items: center; padding: 9px; background: #f4f7f5; border-radius: 11px; }
+.flight-journey-direction { color: #6e8186; font-size: 11px; }
+.flight-journey-row strong { text-align: center; font: 800 13px 'Manrope'; }
+.flight-journey-meta { color: #4f6268; font-size: 11px; }
+.flight-journey-row small { grid-column: 2/-1; color: var(--muted); }
+.flight-tradeoffs { min-height: 56px; display: grid; gap: 4px; padding: 10px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); font-size: 12px; }
+.flight-tradeoffs .flight-pro { color: #537100; }
+.flight-tradeoffs .flight-con { color: #8c5c32; }
+.flight-total-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 14px 0; }
+.flight-total-grid div { padding: 10px; background: #f4f7f5; border-radius: 11px; }
+.flight-total-grid div:last-child { background: #effbcf; }
+.flight-total-grid small, .flight-total-grid strong { display: block; }
+.flight-total-grid small { color: var(--muted); font-size: 10px; }
+.flight-total-grid strong { direction: ltr; margin-top: 3px; font: 900 22px 'Manrope'; text-align: right; }
+.flight-offer details { margin-top: 8px; border-top: 1px solid var(--line); }
+.flight-offer summary { padding: 11px 0; color: #526a70; cursor: pointer; font-size: 12px; font-weight: 800; }
+.flight-breakdown { display: grid; grid-template-columns: 1fr 1fr; gap: 5px 12px; padding-bottom: 10px; }
+.flight-breakdown span { display: flex; justify-content: space-between; gap: 8px; font-size: 11px; }
+.flight-breakdown i { color: var(--muted); font-style: normal; }
+.flight-breakdown b { direction: ltr; font-family: 'Manrope'; }
+.flight-breakdown p { grid-column: 1/-1; margin: 5px 0 0; color: var(--muted); font-size: 11px; }
+.flight-offer-action { width: 100%; min-height: 43px; margin-top: 6px; color: #6f7f84; background: #e7ecea; border: 0; border-radius: 11px; font-weight: 800; }
+.flight-offer-action:not(:disabled) { color: var(--ink); background: var(--lime); cursor: pointer; }
+.flight-cost-legend { display: flex; flex-wrap: wrap; gap: 12px 22px; align-items: center; margin-top: 18px; padding: 15px 18px; background: #fff; border: 1px solid var(--line); border-radius: 16px; }
+.flight-cost-legend span { display: flex; gap: 6px; align-items: center; color: var(--muted); font-size: 12px; }
+.flight-cost-legend i { width: 16px; color: #698800; }
+.flight-empty { grid-column: 1/-1; padding: 35px; background: #fff; border: 1px dashed var(--line); border-radius: 18px; text-align: center; }
 .experience-proof { position: relative; z-index: 3; display: grid; grid-template-columns: repeat(4,1fr); margin-top: -28px; padding: 19px; background: #fff; border: 1px solid var(--line); border-radius: 21px; box-shadow: var(--shadow); }
 .experience-proof div { min-height: 62px; padding: 7px 20px; border-left: 1px solid var(--line); }
 .experience-proof div:last-child { border-left: 0; }
@@ -641,6 +693,14 @@ h3.deal-title { display: block; margin: 6px 0 12px; font-size: 22px; line-height
   .experience-copy p { font-size: 17px; }
   .experience-search { padding: 14px; border-radius: 19px; }
   .experience-search-row { grid-template-columns: 1fr; }
+  .flight-airports { grid-template-columns: 1fr 22px 1fr; }
+  .flight-date-grid { grid-template-columns: 1fr 1fr; }
+  .flight-options-grid { grid-template-columns: 1fr 1fr; }
+  .flight-results-grid { display: flex; overflow-x: auto; padding: 2px 1px 12px; scroll-snap-type: x mandatory; scrollbar-width: none; }
+  .flight-offer { min-width: 88%; scroll-snap-align: start; }
+  .flight-search-section .section-heading { align-items: flex-start; }
+  .flight-search-status { align-self: flex-start; }
+  .flight-cost-legend { display: grid; }
   .experience-proof { grid-template-columns: 1fr 1fr; margin-top: -20px; padding: 10px; }
   .experience-proof div { min-height: 72px; padding: 10px; border-left: 0; }
   .experience-card-grid { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }

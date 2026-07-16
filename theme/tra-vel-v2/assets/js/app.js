@@ -195,6 +195,145 @@ async function hydrateDiscovery(params = {}) {
   }
 }
 
+function flightJourneyRow(label, journey) {
+  const row = document.createElement('div');
+  row.className = 'flight-journey-row';
+  appendTextElement(row, 'span', label, 'flight-journey-direction');
+  const times = document.createElement('strong');
+  times.dir = 'ltr';
+  times.textContent = `${journey.departure_time} → ${journey.arrival_time}`;
+  row.append(times);
+  appendTextElement(row, 'span', `${journey.duration_label} · ${journey.stops_label}`, 'flight-journey-meta');
+  if (journey.via?.length) appendTextElement(row, 'small', `דרך ${journey.via.join(', ')}`);
+  return row;
+}
+
+function renderFlightOffers(payload) {
+  const container = document.querySelector('[data-flight-results]');
+  if (!container) return;
+  container.replaceChildren();
+  if (!payload.offers?.length) {
+    appendTextElement(container, 'p', 'לא נמצאו אפשרויות שתואמות למסננים. נסו לאפשר עצירה אחת.', 'flight-empty');
+    return;
+  }
+
+  payload.offers.forEach(offer => {
+    const card = document.createElement('article');
+    card.className = `flight-offer${offer.id === payload.recommended ? ' is-recommended' : ''}`;
+
+    const head = document.createElement('div');
+    head.className = 'flight-offer-head';
+    const identity = document.createElement('div');
+    appendTextElement(identity, 'small', offer.badge, 'flight-offer-badge');
+    appendTextElement(identity, 'h3', offer.label);
+    appendTextElement(identity, 'span', `${offer.airline.name} · ${offer.ticket_mode === 'single' ? 'כרטיס אחד' : 'כרטיסים נפרדים'}`);
+    head.append(identity);
+    const score = appendTextElement(head, 'strong', `${offer.score}`, 'flight-score');
+    score.setAttribute('aria-label', `ציון התאמה ${offer.score} מתוך 100`);
+    card.append(head);
+
+    const journeys = document.createElement('div');
+    journeys.className = 'flight-journeys';
+    journeys.append(flightJourneyRow('הלוך', offer.outbound), flightJourneyRow('חזור', offer.inbound));
+    card.append(journeys);
+
+    const tradeoffs = document.createElement('div');
+    tradeoffs.className = 'flight-tradeoffs';
+    appendTextElement(tradeoffs, 'span', `✓ ${offer.pros[0]}`, 'flight-pro');
+    appendTextElement(tradeoffs, 'span', `△ ${offer.cons[0]}`, 'flight-con');
+    card.append(tradeoffs);
+
+    const totals = document.createElement('div');
+    totals.className = 'flight-total-grid';
+    const fare = document.createElement('div');
+    appendTextElement(fare, 'small', 'טיסה עם תוספות');
+    appendTextElement(fare, 'strong', offer.fare.total_formatted);
+    const trip = document.createElement('div');
+    appendTextElement(trip, 'small', 'עלות מסע מלאה');
+    appendTextElement(trip, 'strong', offer.trip_total.total_formatted);
+    totals.append(fare, trip);
+    card.append(totals);
+
+    const details = document.createElement('details');
+    appendTextElement(details, 'summary', 'פירוט עלות ותנאים');
+    const breakdown = document.createElement('div');
+    breakdown.className = 'flight-breakdown';
+    [['מחיר בסיס', offer.fare.base_formatted], ['מסים', offer.fare.taxes_formatted], ['כבודה', offer.fare.baggage_formatted], ['מושבים', offer.fare.seats_formatted], ['מלון משוער', offer.trip_total.hotel_formatted], ['ביטוח משוער', offer.trip_total.insurance_formatted]].forEach(([label, value]) => {
+      const line = document.createElement('span');
+      appendTextElement(line, 'i', label);
+      appendTextElement(line, 'b', value);
+      breakdown.append(line);
+    });
+    appendTextElement(breakdown, 'p', `${offer.policies.baggage} · ${offer.policies.changes}`);
+    details.append(breakdown);
+    card.append(details);
+
+    const action = document.createElement('button');
+    action.className = 'flight-offer-action';
+    action.type = 'button';
+    action.disabled = !offer.booking.bookable;
+    action.textContent = offer.booking.bookable ? 'בחירת הטיסה' : 'הדגמה · הזמנה תיפתח עם ספק חי';
+    card.append(action);
+    container.append(card);
+  });
+}
+
+async function searchFlights(form) {
+  const endpoint = window.traVelV2?.flightSearchUrl;
+  const status = document.querySelector('[data-flight-status]');
+  const submit = form.querySelector('[type="submit"]');
+  if (!endpoint) return;
+  const params = new URLSearchParams(new FormData(form));
+  if (!params.has('direct')) params.set('direct', 'false');
+  const url = new URL(endpoint, window.location.origin);
+  params.forEach((value, key) => url.searchParams.set(key, value));
+  submit.disabled = true;
+  form.dataset.state = 'loading';
+  if (status) status.textContent = 'בודק מחיר, זמן, כבודה וסיכון...';
+  try {
+    const response = await fetch(url, { headers: { Accept: 'application/json' } });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.message || `Flight search failed: ${response.status}`);
+    renderFlightOffers(payload);
+    const modeLabels = { live: 'מחירי ספקים חיים', mixed: 'נתונים חיים והערכות', demo: 'מחירי הדגמה שקופים' };
+    const cacheLabels = { miss: 'עודכן עכשיו', fresh: 'תוצאה שמורה ועדכנית', stale_refreshing: 'מעדכן ברקע', stale_error: 'תוצאה אחרונה תקינה', degraded_fallback: 'ספק חלקי' };
+    if (status) status.textContent = `${payload.meta.result_count} אפשרויות · ${modeLabels[payload.meta.data_mode] || modeLabels.demo} · ${cacheLabels[payload.meta.cache_state] || 'עודכן'}`;
+    form.dataset.state = payload.meta.data_mode;
+  } catch (error) {
+    document.querySelector('[data-flight-results]')?.replaceChildren();
+    if (status) status.textContent = 'לא הצלחנו להשלים את ההשוואה. בדקו את התאריכים ונסו שוב.';
+    form.dataset.state = 'error';
+    console.warn(error);
+  } finally {
+    submit.disabled = false;
+  }
+}
+
+function initFlightSearch() {
+  const form = document.querySelector('[data-flight-search]');
+  if (!form) return;
+  const departure = form.querySelector('[name="departure_date"]');
+  const returning = form.querySelector('[name="return_date"]');
+  departure?.addEventListener('change', () => {
+    if (returning) {
+      returning.min = departure.value;
+      if (returning.value <= departure.value) {
+        const next = new Date(`${departure.value}T12:00:00`);
+        next.setDate(next.getDate() + 7);
+        returning.value = next.toISOString().slice(0, 10);
+      }
+    }
+  });
+  form.querySelectorAll('[name="origin"], [name="destination"]').forEach(input => input.addEventListener('input', () => {
+    input.value = input.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3);
+  }));
+  form.addEventListener('submit', event => {
+    event.preventDefault();
+    searchFlights(form);
+  });
+  searchFlights(form);
+}
+
 function initNavigation() {
   const triggers = document.querySelectorAll('.nav-trigger');
   const closeAll = except => triggers.forEach(trigger => {
@@ -299,6 +438,7 @@ function initTraVelV2() {
   initNavigation();
   initMap();
   initControls();
+  initFlightSearch();
   const query = new URLSearchParams(window.location.search).get('q') || '';
   hydrateDiscovery({ q: query, layer: activeLayer });
 }
