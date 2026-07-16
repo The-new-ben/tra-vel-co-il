@@ -14,7 +14,7 @@ get_header();
 			<div class="workspace-hero-copy">
 				<span class="eyebrow">Tra-Vel Trip Space</span>
 				<h1><?php esc_html_e( 'הטיול שלכם. כל ההחלטות במקום אחד.', 'tra-vel-v2' ); ?></h1>
-				<p><?php esc_html_e( 'שומרים טיסות, מלונות וחבילות, מצמידים יעד מחיר ורואים את כל האפשרויות על מפה אחת — בלי לאבד את ההקשר.', 'tra-vel-v2' ); ?></p>
+				<p><?php esc_html_e( 'שומרים טיסות, מלונות וחבילות, מצמידים יעד מחיר ורואים את כל האפשרויות על מפה אחת בלי לאבד את ההקשר.', 'tra-vel-v2' ); ?></p>
 				<div class="workspace-hero-metrics" aria-label="<?php esc_attr_e( 'סיכום סביבת העבודה', 'tra-vel-v2' ); ?>">
 					<span><strong data-workspace-count>0</strong><?php esc_html_e( 'אפשרויות שמורות', 'tra-vel-v2' ); ?></span>
 					<span><strong data-workspace-watch-count>0</strong><?php esc_html_e( 'מעקבי מחיר', 'tra-vel-v2' ); ?></span>
@@ -29,7 +29,7 @@ get_header();
 					<small><?php esc_html_e( 'הבחירה על המפה', 'tra-vel-v2' ); ?></small>
 					<h2 data-workspace-map-title><?php esc_html_e( 'שמרו אפשרות כדי להתחיל', 'tra-vel-v2' ); ?></h2>
 					<p data-workspace-map-copy><?php esc_html_e( 'האפשרויות שתשמרו מהשוואת הטיסות, המלונות והחבילות יופיעו כאן.', 'tra-vel-v2' ); ?></p>
-					<strong data-workspace-map-price>—</strong>
+					<strong data-workspace-map-price><?php esc_html_e( 'טרם נקבע', 'tra-vel-v2' ); ?></strong>
 				</article>
 			</div>
 		</div>

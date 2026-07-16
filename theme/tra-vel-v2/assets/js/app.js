@@ -1,11 +1,11 @@
 const destinationAssetBase = window.traVelV2?.assetUrl || './assets/';
 const fallbackDestinations = {
-  bangkok: { id: 'bangkok', city: 'בנגקוק', country: 'תאילנד', price: '$742', total: '$1,347', note: 'מחירי הדגמה בלבד', image: `${destinationAssetBase}thailand.jpg`, tags: ['12 לילות', 'עצירה אחת', 'כולל כבודה'], airport: 'BKK · 11:20', hotel: 'Siam · 4.6★', weather: '29°C', x: 72, y: 61 },
-  athens: { id: 'athens', city: 'אתונה', country: 'יוון', price: '$189', total: '$534', note: 'מחירי הדגמה בלבד', image: `${destinationAssetBase}city-vienna.webp`, tags: ['טיסה ישירה', '3 לילות', 'ביטול גמיש'], airport: 'ATH · 2:15', hotel: 'Plaka · 4.2★', weather: '23°C', x: 48, y: 43 },
-  budapest: { id: 'budapest', city: 'בודפשט', country: 'הונגריה', price: '$214', total: '$596', note: 'מחירי הדגמה בלבד', image: `${destinationAssetBase}city-budapest.webp`, tags: ['טיסה ישירה', '4 לילות', 'ארוחת בוקר'], airport: 'BUD · 3:30', hotel: 'District V · 4.4★', weather: '17°C', x: 43, y: 32 },
-  dubai: { id: 'dubai', city: 'דובאי', country: 'איחוד האמירויות', price: '$236', total: '$690', note: 'מחירי הדגמה בלבד', image: `${destinationAssetBase}hero-budapest-900.webp`, tags: ['טיסה ישירה', 'סופ״ש', 'טרולי כלול'], airport: 'DXB · 3:25', hotel: 'Creek · 4.5★', weather: '31°C', x: 59, y: 53 },
-  tokyo: { id: 'tokyo', city: 'טוקיו', country: 'יפן', price: '$918', total: '$1,810', note: 'מחירי הדגמה בלבד', image: `${destinationAssetBase}city-prague.webp`, tags: ['עצירה אחת', '10 לילות', 'כבודה כלולה'], airport: 'HND · 15:30', hotel: 'Shinjuku · 4.3★', weather: '18°C', x: 84, y: 39 },
-  lisbon: { id: 'lisbon', city: 'ליסבון', country: 'פורטוגל', price: '$327', total: '$910', note: 'מחירי הדגמה בלבד', image: `${destinationAssetBase}city-prague.webp`, tags: ['7 לילות', 'עצירה אחת', 'מלון מומלץ'], airport: 'LIS · 7:50', hotel: 'Baixa · 4.5★', weather: '21°C', x: 29, y: 43 }
+  bangkok: { id: 'bangkok', city: 'בנגקוק', country: 'תאילנד', price: 'בדיקה חיה', total: 'בדיקה חיה', note: 'מחיר ותנאים יאומתו בחיפוש', image: `${destinationAssetBase}thailand.jpg`, tags: ['12 לילות', 'עצירה אחת', 'בדיקת כבודה'], airport: 'BKK · לפי המסלול', hotel: 'Siam · אזור לינה', weather: 'לפי התאריך', x: 72, y: 61 },
+  athens: { id: 'athens', city: 'אתונה', country: 'יוון', price: 'בדיקה חיה', total: 'בדיקה חיה', note: 'מחיר ותנאים יאומתו בחיפוש', image: `${destinationAssetBase}city-vienna.webp`, tags: ['מסלול ישיר', '3 לילות', 'ביטול גמיש'], airport: 'ATH · לפי המסלול', hotel: 'Plaka · אזור לינה', weather: 'לפי התאריך', x: 48, y: 43 },
+  budapest: { id: 'budapest', city: 'בודפשט', country: 'הונגריה', price: 'בדיקה חיה', total: 'בדיקה חיה', note: 'מחיר ותנאים יאומתו בחיפוש', image: `${destinationAssetBase}city-budapest.webp`, tags: ['מסלול ישיר', '4 לילות', 'בדיקת ארוחה'], airport: 'BUD · לפי המסלול', hotel: 'District V · אזור לינה', weather: 'לפי התאריך', x: 43, y: 32 },
+  dubai: { id: 'dubai', city: 'דובאי', country: 'איחוד האמירויות', price: 'בדיקה חיה', total: 'בדיקה חיה', note: 'מחיר ותנאים יאומתו בחיפוש', image: `${destinationAssetBase}hero-budapest-900.webp`, tags: ['מסלול ישיר', 'סוף שבוע', 'בדיקת כבודה'], airport: 'DXB · לפי המסלול', hotel: 'Creek · אזור לינה', weather: 'לפי התאריך', x: 59, y: 53 },
+  tokyo: { id: 'tokyo', city: 'טוקיו', country: 'יפן', price: 'בדיקה חיה', total: 'בדיקה חיה', note: 'מחיר ותנאים יאומתו בחיפוש', image: `${destinationAssetBase}city-prague.webp`, tags: ['עצירה אחת', '10 לילות', 'בדיקת כבודה'], airport: 'HND · לפי המסלול', hotel: 'Shinjuku · אזור לינה', weather: 'לפי התאריך', x: 84, y: 39 },
+  lisbon: { id: 'lisbon', city: 'ליסבון', country: 'פורטוגל', price: 'בדיקה חיה', total: 'בדיקה חיה', note: 'מחיר ותנאים יאומתו בחיפוש', image: `${destinationAssetBase}city-prague.webp`, tags: ['7 לילות', 'עצירה אחת', 'בחירת אזור'], airport: 'LIS · לפי המסלול', hotel: 'Baixa · אזור לינה', weather: 'לפי התאריך', x: 29, y: 43 }
 };
 
 let destinationData = { ...fallbackDestinations };
@@ -432,7 +432,7 @@ function renderFlightOffers(payload) {
     action.className = 'flight-offer-action';
     action.type = 'button';
     action.disabled = !offer.booking.bookable;
-    action.textContent = offer.booking.bookable ? 'בחירת הטיסה' : 'הדגמה · הזמנה תיפתח עם ספק חי';
+    action.textContent = offer.booking.bookable ? 'בחירת הטיסה' : 'הזמנה תיפתח לאחר אימות ספק';
     card.append(action, createSaveOfferButton({
       kind: 'flight', external_id: offer.id, title: offer.label,
       subtitle: `${offer.airline.name} · ${offer.outbound.duration_label} · ${offer.outbound.stops_label}`,
@@ -462,7 +462,7 @@ async function searchFlights(form) {
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.message || `Flight search failed: ${response.status}`);
     renderFlightOffers(payload);
-    const modeLabels = { live: 'מחירי ספקים חיים', mixed: 'נתונים חיים והערכות', demo: 'מחירי הדגמה שקופים' };
+    const modeLabels = { live: 'מחירי ספקים חיים', mixed: 'נתונים חיים ואומדנים', demo: 'מחירים לאימות בחיפוש' };
     const cacheLabels = { miss: 'עודכן עכשיו', fresh: 'תוצאה שמורה ועדכנית', stale_refreshing: 'מעדכן ברקע', stale_error: 'תוצאה אחרונה תקינה', degraded_fallback: 'ספק חלקי' };
     if (status) status.textContent = `${payload.meta.result_count} אפשרויות · ${modeLabels[payload.meta.data_mode] || modeLabels.demo} · ${cacheLabels[payload.meta.cache_state] || 'עודכן'}`;
     form.dataset.state = payload.meta.data_mode;
@@ -617,7 +617,7 @@ function renderHotelProperties(payload) {
     action.className = 'hotel-offer-action';
     action.type = 'button';
     action.disabled = !property.booking.bookable;
-    action.textContent = property.booking.bookable ? 'בדיקת זמינות והזמנה' : 'הדגמה · הזמנה תיפתח עם ספק חי';
+    action.textContent = property.booking.bookable ? 'בדיקת זמינות והזמנה' : 'הזמנה תיפתח לאחר אימות ספק';
     body.append(action, createSaveOfferButton({
       kind: 'hotel', external_id: property.id, title: property.name,
       subtitle: `${property.area?.name || ''} · ${property.stars}★ · ${property.guest_score}/10`,
@@ -650,7 +650,7 @@ async function searchHotels(form) {
     if (!response.ok) throw new Error(payload.message || `Hotel search failed: ${response.status}`);
     renderHotelAreaMap(payload, form);
     renderHotelProperties(payload);
-    const modeLabels = {live: 'מחירי ספקים חיים', mixed: 'נתונים חיים והערכות', demo: 'מחירי הדגמה שקופים'};
+    const modeLabels = {live: 'מחירי ספקים חיים', mixed: 'נתונים חיים ואומדנים', demo: 'מחירים לאימות בחיפוש'};
     const cacheLabels = {miss: 'עודכן עכשיו', fresh: 'תוצאה שמורה ועדכנית', stale_refreshing: 'מעדכן ברקע', stale_error: 'תוצאה אחרונה תקינה', degraded_fallback: 'ספק חלקי'};
     if (status) status.textContent = `${payload.meta.result_count} מקומות · ${payload.search.nights} לילות · ${modeLabels[payload.meta.data_mode] || modeLabels.demo} · ${cacheLabels[payload.meta.cache_state] || 'עודכן'}`;
     form.dataset.state = payload.meta.data_mode;
@@ -812,7 +812,7 @@ function renderInsurancePlans(payload) {
     appendTextElement(price, 'strong', plan.pricing.total_trip_formatted);
     appendTextElement(price, 'span', `${plan.pricing.daily_party_formatted} ליום לכל הקבוצה`);
     total.append(price);
-    appendTextElement(total, 'em', 'מחיר הדגמה משוער בלבד');
+    appendTextElement(total, 'em', 'אומדן בלבד, המחיר הסופי אצל המבטח');
     card.append(total);
 
     const details = document.createElement('details');
@@ -827,7 +827,7 @@ function renderInsurancePlans(payload) {
     action.type = 'button';
     action.className = 'insurance-plan-action';
     action.disabled = !plan.purchase.purchasable;
-    action.textContent = plan.purchase.purchasable ? 'מעבר להצעה ולפוליסה' : 'הדגמה · רכישה תיפתח עם מבטח מחובר';
+    action.textContent = plan.purchase.purchasable ? 'מעבר להצעה ולפוליסה' : 'רכישה תיפתח לאחר אימות מבטח';
     card.append(action);
     container.append(card);
   });
@@ -858,7 +858,7 @@ async function searchInsuranceQuotes(form) {
     renderInsurancePlans(payload);
     const policyNote = document.querySelector('[data-insurance-policy-note]');
     if (policyNote) policyNote.textContent = `${payload.destination.medical_cost_context} ${payload.destination.policy_note}`;
-    const modeLabels = {live: 'נתוני מבטחים מחוברים', mixed: 'נתונים חיים והדגמה', demo: 'תוכניות הדגמה שקופות'};
+    const modeLabels = {live: 'נתוני מבטחים מחוברים', mixed: 'נתונים חיים ואומדנים', demo: 'כיסויים ומחירים לאימות'};
     const cacheLabels = {miss: 'עודכן עכשיו', fresh: 'תוצאה שמורה ועדכנית', stale_refreshing: 'מעדכן ברקע', stale_error: 'תוצאה אחרונה תקינה', degraded_fallback: 'ספק חלקי', bypass_sensitive: 'לא נשמר מטעמי פרטיות'};
     const assessment = payload.meta.medical_assessment_required ? ' · נדרש בירור רפואי' : '';
     if (status) status.textContent = `${payload.meta.result_count} חלופות · ${payload.query.trip_days} ימים · ${modeLabels[payload.meta.data_mode] || modeLabels.demo}${assessment} · ${cacheLabels[payload.meta.cache_state] || 'עודכן'}`;
@@ -993,9 +993,9 @@ function renderTripPackages(payload) {
 
     const journey = document.createElement('div');
     journey.className = 'package-journey-summary';
-    appendPackageBreakdownRow(journey, `${tripPackage.flight.airline} · ${tripPackage.flight.departure_time}–${tripPackage.flight.return_time}`, `${tripPackage.flight.stops_label} · ${tripPackage.flight.duration_label}`, 'plane-takeoff');
+    appendPackageBreakdownRow(journey, `${tripPackage.flight.airline} · ${tripPackage.flight.departure_time} עד ${tripPackage.flight.return_time}`, `${tripPackage.flight.stops_label} · ${tripPackage.flight.duration_label}`, 'plane-takeoff');
     appendPackageBreakdownRow(journey, `${tripPackage.stay.name} · ${tripPackage.stay.stars}★`, `${payload.trip.nights} לילות · ${tripPackage.stay.guest_score}/10`, 'hotel');
-    appendPackageBreakdownRow(journey, tripPackage.insurance.name, tripPackage.insurance.tier === 'none' ? 'לא נכלל' : 'הדגמה בלבד', 'shield-check');
+    appendPackageBreakdownRow(journey, tripPackage.insurance.name, tripPackage.insurance.tier === 'none' ? 'לא נכלל' : 'אומדן עד אימות מבטח', 'shield-check');
     card.append(journey);
 
     const chips = document.createElement('div');
@@ -1067,7 +1067,7 @@ function renderTripPackages(payload) {
     const checkout = document.createElement('button');
     checkout.type = 'button';
     checkout.disabled = !tripPackage.booking.bookable;
-    checkout.textContent = tripPackage.booking.bookable ? 'עברו להזמנה מאומתת' : 'הדגמה · הזמנה תיפתח עם ספקים מחוברים';
+    checkout.textContent = tripPackage.booking.bookable ? 'עברו להזמנה מאומתת' : 'הזמנה תיפתח לאחר אימות ספקים';
     const saveAction = createSaveOfferButton({
       kind: 'package', external_id: tripPackage.id, title: tripPackage.name,
       subtitle: `${tripPackage.flight.airline} · ${tripPackage.stay.name} · ${payload.trip.nights} לילות`,
@@ -1101,7 +1101,7 @@ async function searchTripPackages(form) {
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.message || `Package search failed: ${response.status}`);
     renderTripPackages(payload);
-    const modeLabels = {live: 'נתוני ספקים מחוברים', mixed: 'נתונים חיים והדגמה', demo: 'רכיבי הדגמה שקופים'};
+    const modeLabels = {live: 'נתוני ספקים מחוברים', mixed: 'נתונים חיים ואומדנים', demo: 'רכיבים לאימות בחיפוש'};
     const cacheLabels = {miss: 'עודכן עכשיו', fresh: 'תוצאה שמורה ועדכנית', stale_refreshing: 'מתעדכן ברקע', stale_error: 'תוצאה אחרונה תקינה', degraded_fallback: 'ספק חלקי'};
     if (status) status.textContent = `${payload.meta.result_count} חלופות · ${payload.trip.nights} לילות · מחיר לכל ${payload.trip.travelers} הנוסעים · ${modeLabels[payload.meta.data_mode] || modeLabels.demo} · ${cacheLabels[payload.meta.cache_state] || 'עודכן'}`;
     form.dataset.state = payload.meta.data_mode;
@@ -1149,7 +1149,7 @@ function workspaceKindMeta(kind) {
 }
 
 function workspaceMoney(item, amount = item.price_amount) {
-  if (!amount) return item.price_label || '—';
+  if (!amount) return item.price_label || 'טרם נקבע';
   try {
     return new Intl.NumberFormat('en-US', {style: 'currency', currency: item.currency || 'USD', maximumFractionDigits: 0}).format(amount);
   } catch (error) {
@@ -1257,7 +1257,7 @@ function renderWorkspaceCard(item) {
 
   const context = document.createElement('div');
   context.className = 'workspace-card-context';
-  [item.destination, item.route, item.data_mode === 'live' ? 'נתון חי' : 'הדגמה שקופה'].filter(Boolean).forEach(value => appendTextElement(context, 'span', value));
+  [item.destination, item.route, item.data_mode === 'live' ? 'נתון חי' : 'אומדן לא מאומת'].filter(Boolean).forEach(value => appendTextElement(context, 'span', value));
   card.append(context);
 
   const watchState = document.createElement('div');

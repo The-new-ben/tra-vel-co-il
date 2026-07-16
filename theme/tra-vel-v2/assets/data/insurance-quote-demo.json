@@ -147,7 +147,7 @@
       "addon_rates": { "baggage": 0, "cancellation": 0, "adventure_sports": 1.2, "winter_sports": 1.9, "electronics": 0 },
       "underwriting": { "medical_condition": "assessment_required", "pregnancy": "assessment_required" },
       "exclusions": ["חריגים ותתי־גבולות לפי סוג אירוע", "פעילות מקצועית או תחרותית ללא אישור מתאים", "מצב רפואי או הריון ללא חיתום נדרש"],
-      "pros": ["גבולות הדגמה רחבים והרחבות רבות בבסיס", "מתאים להשוואה כשעלות הסיכון גבוהה יותר"],
+      "pros": ["גבולות רחבים והרחבות רבות בבסיס", "מתאים להשוואה כשעלות הסיכון גבוהה יותר"],
       "cons": ["המחיר הגבוה ביותר", "גם גבול גבוה אינו מבטיח אישור תביעה"],
       "purchase": { "purchasable": false, "provider": "demo", "checkout_url": null, "policy_url": null }
     }

@@ -36,7 +36,7 @@ $overlay_header = is_front_page() || is_page_template( 'page-destination.php' ) 
 						<a href="<?php echo esc_url( home_url( '/cars-transfers/' ) ); ?>"><i data-lucide="car-front"></i><span><?php esc_html_e( 'רכב והעברות', 'tra-vel-v2' ); ?><small><?php esc_html_e( 'מהנחיתה עד המלון', 'tra-vel-v2' ); ?></small></span></a>
 						<a href="<?php echo esc_url( home_url( '/activities/' ) ); ?>"><i data-lucide="ticket-check"></i><span><?php esc_html_e( 'אטרקציות', 'tra-vel-v2' ); ?><small><?php esc_html_e( 'כרטיסים וסיורים מקומיים', 'tra-vel-v2' ); ?></small></span></a>
 					</div>
-					<a class="mega-feature" href="<?php echo esc_url( home_url( '/travel-map/' ) ); ?>"><span><?php esc_html_e( 'המסלול החכם של השבוע', 'tra-vel-v2' ); ?></span><strong><?php esc_html_e( 'תאילנד דרך דובאי — פחות $157', 'tra-vel-v2' ); ?></strong><small><?php esc_html_e( 'השוו זמן, כבודה, סיכון ועלות כוללת', 'tra-vel-v2' ); ?></small><b><?php esc_html_e( 'פתחו במפה', 'tra-vel-v2' ); ?> <i data-lucide="arrow-left"></i></b></a>
+					<a class="mega-feature" href="<?php echo esc_url( home_url( '/travel-map/' ) ); ?>"><span><?php esc_html_e( 'המסלול החכם של השבוע', 'tra-vel-v2' ); ?></span><strong><?php esc_html_e( 'תאילנד: ישיר, קונקשן או עצירת לילה', 'tra-vel-v2' ); ?></strong><small><?php esc_html_e( 'השוו זמן, כבודה, סיכון ועלות כוללת', 'tra-vel-v2' ); ?></small><b><?php esc_html_e( 'פתחו במפה', 'tra-vel-v2' ); ?> <i data-lucide="arrow-left"></i></b></a>
 				</div>
 			</div>
 			<a class="nav-link" href="<?php echo esc_url( home_url( '/travel-map/' ) ); ?>"><?php esc_html_e( 'מפת המחירים', 'tra-vel-v2' ); ?></a>
