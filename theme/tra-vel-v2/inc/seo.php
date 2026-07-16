@@ -52,6 +52,44 @@ function tra_vel_v2_document_title_parts( $parts ) {
 add_filter( 'document_title_parts', 'tra_vel_v2_document_title_parts' );
 
 /**
+ * Return the public title used by SEO and social plugins that bypass core parts.
+ *
+ * @param string $title Existing generated title.
+ * @return string
+ */
+function tra_vel_v2_public_seo_title( $title ) {
+	if ( is_front_page() ) {
+		return __( 'חופשות, טיסות, מלונות ותכנון חכם | Tra-Vel', 'tra-vel-v2' );
+	}
+
+	if ( tra_vel_v2_is_destination_guide() ) {
+		return sprintf(
+			/* translators: %s: destination name. */
+			__( '%s | מדריך תכנון לישראלים | Tra-Vel', 'tra-vel-v2' ),
+			get_the_title()
+		);
+	}
+
+	return $title;
+}
+add_filter( 'wpseo_title', 'tra_vel_v2_public_seo_title' );
+add_filter( 'wpseo_opengraph_title', 'tra_vel_v2_public_seo_title' );
+add_filter( 'wpseo_twitter_title', 'tra_vel_v2_public_seo_title' );
+
+/**
+ * Remove the old Europe-only name from Yoast's WebSite entity.
+ *
+ * @param array<string, mixed> $data Yoast WebSite schema node.
+ * @return array<string, mixed>
+ */
+function tra_vel_v2_enrich_yoast_website_schema( $data ) {
+	$data['name']          = 'Tra-Vel';
+	$data['alternateName'] = 'Tra-Vel';
+	return $data;
+}
+add_filter( 'wpseo_schema_website', 'tra_vel_v2_enrich_yoast_website_schema' );
+
+/**
  * Prevent personal pages and faceted map/search combinations becoming crawl traps.
  *
  * @param array<string, bool> $robots Existing directives.
