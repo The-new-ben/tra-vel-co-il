@@ -1,0 +1,155 @@
+{
+  "contract_version": "1.0.0",
+  "data_mode": "demo",
+  "currency": "USD",
+  "provider_status": {
+    "connected": false,
+    "adapter": "curated_demo_insurance",
+    "readiness": "contract_ready",
+    "purchasable": false
+  },
+  "destination": {
+    "id": "europe",
+    "name": "אירופה",
+    "medical_cost_context": "עלויות רפואיות ותנאי טיפול משתנים בין מדינות; יש לבדוק התאמה ליעד המדויק.",
+    "policy_note": "הפוליסה, ההרחבות, החריגים ותהליך החיתום של המבטח הם המקור הקובע."
+  },
+  "risk_contexts": [
+    {
+      "id": "city-break",
+      "title": "חופשה עירונית",
+      "trip_type": "city_break",
+      "note": "בדקו כבודה, ביטול, עיכובים ושירות רפואי נגיש בעיר.",
+      "recommended_addons": ["baggage", "cancellation"],
+      "position": { "x": 57, "y": 44 }
+    },
+    {
+      "id": "alps-winter",
+      "title": "האלפים וספורט חורף",
+      "trip_type": "winter",
+      "note": "ספורט חורף וחילוץ הרים עשויים לדרוש הרחבה מפורשת ונפרדת.",
+      "recommended_addons": ["winter_sports"],
+      "position": { "x": 48, "y": 36 }
+    },
+    {
+      "id": "mediterranean-active",
+      "title": "ים ופעילות",
+      "trip_type": "adventure",
+      "note": "צלילה, שיט, רכיבה ופעילויות אחרות עשויות להיחשב ספורט אתגרי לפי הפוליסה.",
+      "recommended_addons": ["adventure_sports", "baggage"],
+      "position": { "x": 52, "y": 66 }
+    },
+    {
+      "id": "multi-city",
+      "title": "מסלול רב־יעדי",
+      "trip_type": "multi_city",
+      "note": "יותר מעברים מעלים את החשיבות של כבודה, עיכובים וקיצור נסיעה.",
+      "recommended_addons": ["baggage", "cancellation"],
+      "position": { "x": 68, "y": 40 }
+    }
+  ],
+  "plans": [
+    {
+      "id": "demo-essential",
+      "name": "Essential",
+      "badge": "בסיס ברור",
+      "base_score": 78,
+      "service_score": 72,
+      "daily_base": 2.4,
+      "coverage": {
+        "medical_limit": 5000000,
+        "medical_deductible": 50,
+        "emergency_dental_limit": 500,
+        "medical_evacuation": true,
+        "repatriation": true,
+        "search_rescue_limit": 200000,
+        "third_party_limit": 100000,
+        "baggage_limit": 0,
+        "electronics_limit": 0,
+        "cancellation_limit": 0,
+        "trip_shortening_limit": 0,
+        "delay_limit": 150
+      },
+      "service": {
+        "model": "החזר הוצאות בכפוף לאישור ומסמכים",
+        "availability": "מוקד חירום 24/7",
+        "digital_doctor": false,
+        "payment_coordination": false
+      },
+      "addon_rates": { "baggage": 0.65, "cancellation": 1.1, "adventure_sports": 1.35, "winter_sports": 2.2, "electronics": 0.55 },
+      "underwriting": { "medical_condition": "assessment_required", "pregnancy": "assessment_required" },
+      "exclusions": ["טיפול מתוכנן מראש", "פעילות ספורט ללא הרחבה מתאימה", "אירוע שאינו עומד בתנאי הפוליסה"],
+      "pros": ["מחיר בסיס נמוך", "מבנה פשוט למי שלא צריך הרחבות רבות"],
+      "cons": ["השתתפות עצמית רפואית", "כבודה וביטול אינם כלולים בבסיס"],
+      "purchase": { "purchasable": false, "provider": "demo", "checkout_url": null, "policy_url": null }
+    },
+    {
+      "id": "demo-assisted",
+      "name": "Assisted",
+      "badge": "שירות מאוזן",
+      "base_score": 95,
+      "service_score": 96,
+      "daily_base": 3.8,
+      "coverage": {
+        "medical_limit": 5000000,
+        "medical_deductible": 0,
+        "emergency_dental_limit": 750,
+        "medical_evacuation": true,
+        "repatriation": true,
+        "search_rescue_limit": 500000,
+        "third_party_limit": 250000,
+        "baggage_limit": 1500,
+        "electronics_limit": 0,
+        "cancellation_limit": 0,
+        "trip_shortening_limit": 2500,
+        "delay_limit": 250
+      },
+      "service": {
+        "model": "תיאום תשלום דיגיטלי במקרים מאושרים",
+        "availability": "מוקד חירום 24/7 וצ׳אט",
+        "digital_doctor": true,
+        "payment_coordination": true
+      },
+      "addon_rates": { "baggage": 0, "cancellation": 1.0, "adventure_sports": 1.25, "winter_sports": 2.0, "electronics": 0.5 },
+      "underwriting": { "medical_condition": "assessment_required", "pregnancy": "assessment_required" },
+      "exclusions": ["מצב רפואי שלא דווח כנדרש", "ספורט חורף או אתגרי ללא הרחבה", "פריטים מעבר לתת־הגבולות בפוליסה"],
+      "pros": ["ללא השתתפות עצמית רפואית בדוגמה", "כלי שירות דיגיטליים וכבודה בסיסית"],
+      "cons": ["ביטול נסיעה דורש הרחבה", "כיסוי בפועל כפוף לאישור ולתנאי הפוליסה"],
+      "purchase": { "purchasable": false, "provider": "demo", "checkout_url": null, "policy_url": null }
+    },
+    {
+      "id": "demo-extended",
+      "name": "Extended",
+      "badge": "גבולות רחבים",
+      "base_score": 90,
+      "service_score": 88,
+      "daily_base": 5.4,
+      "coverage": {
+        "medical_limit": 10000000,
+        "medical_deductible": 0,
+        "emergency_dental_limit": 1000,
+        "medical_evacuation": true,
+        "repatriation": true,
+        "search_rescue_limit": 1000000,
+        "third_party_limit": 500000,
+        "baggage_limit": 2500,
+        "electronics_limit": 750,
+        "cancellation_limit": 7500,
+        "trip_shortening_limit": 5000,
+        "delay_limit": 300
+      },
+      "service": {
+        "model": "שילוב תיאום ספקים והחזר הוצאות",
+        "availability": "מוקד חירום 24/7 ושירות דיגיטלי",
+        "digital_doctor": true,
+        "payment_coordination": true
+      },
+      "addon_rates": { "baggage": 0, "cancellation": 0, "adventure_sports": 1.2, "winter_sports": 1.9, "electronics": 0 },
+      "underwriting": { "medical_condition": "assessment_required", "pregnancy": "assessment_required" },
+      "exclusions": ["חריגים ותתי־גבולות לפי סוג אירוע", "פעילות מקצועית או תחרותית ללא אישור מתאים", "מצב רפואי או הריון ללא חיתום נדרש"],
+      "pros": ["גבולות הדגמה רחבים והרחבות רבות בבסיס", "מתאים להשוואה כשעלות הסיכון גבוהה יותר"],
+      "cons": ["המחיר הגבוה ביותר", "גם גבול גבוה אינו מבטיח אישור תביעה"],
+      "purchase": { "purchasable": false, "provider": "demo", "checkout_url": null, "policy_url": null }
+    }
+  ]
+}

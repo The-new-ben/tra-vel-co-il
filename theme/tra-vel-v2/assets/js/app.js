@@ -520,6 +520,213 @@ function initHotelSearch() {
   searchHotels(form);
 }
 
+const insuranceAddonLabels = {
+  baggage: 'כבודה',
+  cancellation: 'ביטול וקיצור',
+  adventure_sports: 'ספורט אתגרי',
+  winter_sports: 'ספורט חורף',
+  electronics: 'אלקטרוניקה'
+};
+
+function setInsuranceRiskDetail(context) {
+  if (!context) return;
+  const title = document.querySelector('[data-insurance-risk-title]');
+  const note = document.querySelector('[data-insurance-risk-note]');
+  if (title) title.textContent = context.title;
+  if (note) note.textContent = context.note;
+  replaceChildrenWithSpans(
+    document.querySelector('[data-insurance-risk-addons]'),
+    (context.recommended_addons || []).map(addon => insuranceAddonLabels[addon] || addon)
+  );
+}
+
+function renderInsuranceRiskMap(payload, form) {
+  const pins = document.querySelector('[data-insurance-risk-pins]');
+  if (!pins) return;
+  pins.replaceChildren();
+  const tripType = form.elements.trip_type.value;
+  const active = payload.risk_contexts.find(context => context.trip_type === tripType) || payload.risk_contexts[0];
+  setInsuranceRiskDetail(active);
+  payload.risk_contexts.forEach(context => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = `insurance-risk-pin${context.id === active?.id ? ' is-active' : ''}`;
+    button.dataset.insuranceRisk = context.id;
+    button.style.left = `${context.position.x}%`;
+    button.style.top = `${context.position.y}%`;
+    button.setAttribute('aria-label', `${context.title}: ${context.note}`);
+    appendTextElement(button, 'strong', context.title);
+    appendTextElement(button, 'span', (context.recommended_addons || []).map(addon => insuranceAddonLabels[addon] || addon).join(' · '));
+    button.addEventListener('click', () => {
+      form.elements.trip_type.value = context.trip_type;
+      ['adventure_sports', 'winter_sports'].forEach(name => { form.elements[name].checked = false; });
+      (context.recommended_addons || []).forEach(addon => {
+        if (form.elements[addon]) form.elements[addon].checked = true;
+      });
+      searchInsuranceQuotes(form);
+    });
+    pins.append(button);
+  });
+}
+
+function appendInsuranceCoverageRow(parent, label, value, emphasis = false) {
+  const row = document.createElement('div');
+  if (emphasis) row.className = 'is-emphasis';
+  appendTextElement(row, 'span', label);
+  appendTextElement(row, 'strong', value);
+  parent.append(row);
+}
+
+function renderInsurancePlans(payload) {
+  const container = document.querySelector('[data-insurance-results]');
+  if (!container) return;
+  container.replaceChildren();
+  if (!payload.plans?.length) {
+    appendTextElement(container, 'p', 'לא נמצאו תוכניות שמתאימות להשוואה. בדקו את התאריכים והנתונים.', 'insurance-empty');
+    return;
+  }
+  payload.plans.forEach(plan => {
+    const card = document.createElement('article');
+    card.className = `insurance-plan${plan.id === payload.recommended ? ' is-recommended' : ''}`;
+    const head = document.createElement('div');
+    head.className = 'insurance-plan-head';
+    const identity = document.createElement('div');
+    appendTextElement(identity, 'small', plan.badge, 'insurance-plan-badge');
+    appendTextElement(identity, 'h3', plan.name);
+    appendTextElement(identity, 'span', plan.service.availability);
+    head.append(identity);
+    const score = appendTextElement(head, 'strong', `${plan.score}`, 'insurance-match-score');
+    score.setAttribute('aria-label', `ציון התאמה ${plan.score} מתוך 100`);
+    card.append(head);
+
+    if (plan.eligibility.status === 'medical_assessment_required') {
+      appendTextElement(card, 'p', `! ${plan.eligibility.message}`, 'insurance-underwriting-alert');
+    }
+    const coverage = document.createElement('div');
+    coverage.className = 'insurance-coverage-grid';
+    appendInsuranceCoverageRow(coverage, 'הוצאות רפואיות', plan.coverage.medical_limit_formatted, true);
+    appendInsuranceCoverageRow(coverage, 'השתתפות עצמית', plan.coverage.medical_deductible_formatted);
+    appendInsuranceCoverageRow(coverage, 'איתור וחילוץ', plan.coverage.search_rescue_limit_formatted);
+    appendInsuranceCoverageRow(coverage, 'כבודה בבסיס', plan.coverage.baggage_limit ? plan.coverage.baggage_limit_formatted : 'לא כלול');
+    appendInsuranceCoverageRow(coverage, 'ביטול בבסיס', plan.coverage.cancellation_limit ? plan.coverage.cancellation_limit_formatted : 'לא כלול');
+    card.append(coverage);
+
+    const service = document.createElement('div');
+    service.className = 'insurance-service-box';
+    appendTextElement(service, 'strong', plan.service.model);
+    appendTextElement(service, 'span', `${plan.service.digital_doctor ? 'רופא דיגיטלי' : 'ללא רופא דיגיטלי'} · ${plan.service.payment_coordination ? 'תיאום תשלום' : 'החזר בכפוף למסמכים'}`);
+    card.append(service);
+
+    if (plan.requested_addons.length) {
+      const addons = document.createElement('div');
+      addons.className = 'insurance-selected-addons';
+      plan.requested_addons.forEach(addon => {
+        appendTextElement(addons, 'span', `${insuranceAddonLabels[addon.id] || addon.id} · ${addon.included ? 'כלול' : `+${addon.estimated_cost_formatted}`}`);
+      });
+      card.append(addons);
+    }
+
+    const tradeoffs = document.createElement('div');
+    tradeoffs.className = 'insurance-tradeoffs';
+    appendTextElement(tradeoffs, 'span', `✓ ${plan.pros[0]}`, 'insurance-pro');
+    appendTextElement(tradeoffs, 'span', `△ ${plan.cons[0]}`, 'insurance-con');
+    card.append(tradeoffs);
+
+    const total = document.createElement('div');
+    total.className = 'insurance-total';
+    const price = document.createElement('div');
+    appendTextElement(price, 'small', `${payload.query.trip_days} ימים · ${payload.calculation.travelers} נוסעים`);
+    appendTextElement(price, 'strong', plan.pricing.total_trip_formatted);
+    appendTextElement(price, 'span', `${plan.pricing.daily_party_formatted} ליום לכל הקבוצה`);
+    total.append(price);
+    appendTextElement(total, 'em', 'מחיר הדגמה משוער בלבד');
+    card.append(total);
+
+    const details = document.createElement('details');
+    appendTextElement(details, 'summary', 'חריגים, הרחבות ותנאים לבדיקה');
+    const list = document.createElement('ul');
+    plan.exclusions.forEach(exclusion => appendTextElement(list, 'li', exclusion));
+    details.append(list);
+    appendTextElement(details, 'p', plan.eligibility.message);
+    card.append(details);
+
+    const action = document.createElement('button');
+    action.type = 'button';
+    action.className = 'insurance-plan-action';
+    action.disabled = !plan.purchase.purchasable;
+    action.textContent = plan.purchase.purchasable ? 'מעבר להצעה ולפוליסה' : 'הדגמה · רכישה תיפתח עם מבטח מחובר';
+    card.append(action);
+    container.append(card);
+  });
+}
+
+async function searchInsuranceQuotes(form) {
+  const endpoint = window.traVelV2?.insuranceQuoteUrl;
+  const status = document.querySelector('[data-insurance-status]');
+  const submit = form.querySelector('[type="submit"]');
+  if (!endpoint) return;
+  const params = new URLSearchParams(new FormData(form));
+  ['baggage', 'cancellation', 'adventure_sports', 'winter_sports', 'electronics', 'medical_condition', 'pregnancy'].forEach(name => {
+    if (!params.has(name)) params.set(name, 'false');
+  });
+  const requestBody = Object.fromEntries(params.entries());
+  submit.disabled = true;
+  form.dataset.state = 'loading';
+  if (status) status.textContent = 'משווה גבולות, הרחבות, שירות, חריגים ומחיר משוער...';
+  try {
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {Accept: 'application/json', 'Content-Type': 'application/json'},
+      body: JSON.stringify(requestBody)
+    });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.message || `Insurance comparison failed: ${response.status}`);
+    renderInsuranceRiskMap(payload, form);
+    renderInsurancePlans(payload);
+    const policyNote = document.querySelector('[data-insurance-policy-note]');
+    if (policyNote) policyNote.textContent = `${payload.destination.medical_cost_context} ${payload.destination.policy_note}`;
+    const modeLabels = {live: 'נתוני מבטחים מחוברים', mixed: 'נתונים חיים והדגמה', demo: 'תוכניות הדגמה שקופות'};
+    const cacheLabels = {miss: 'עודכן עכשיו', fresh: 'תוצאה שמורה ועדכנית', stale_refreshing: 'מעדכן ברקע', stale_error: 'תוצאה אחרונה תקינה', degraded_fallback: 'ספק חלקי', bypass_sensitive: 'לא נשמר מטעמי פרטיות'};
+    const assessment = payload.meta.medical_assessment_required ? ' · נדרש בירור רפואי' : '';
+    if (status) status.textContent = `${payload.meta.result_count} חלופות · ${payload.query.trip_days} ימים · ${modeLabels[payload.meta.data_mode] || modeLabels.demo}${assessment} · ${cacheLabels[payload.meta.cache_state] || 'עודכן'}`;
+    form.dataset.state = payload.meta.data_mode;
+  } catch (error) {
+    document.querySelector('[data-insurance-results]')?.replaceChildren();
+    if (status) status.textContent = 'לא הצלחנו להשלים את ההשוואה. בדקו תאריכים ונסו שוב.';
+    form.dataset.state = 'error';
+    console.warn(error);
+  } finally {
+    submit.disabled = false;
+  }
+}
+
+function initInsuranceQuote() {
+  const form = document.querySelector('[data-insurance-quote]');
+  if (!form) return;
+  const start = form.querySelector('[name="start_date"]');
+  const end = form.querySelector('[name="end_date"]');
+  start?.addEventListener('change', () => {
+    if (!end) return;
+    end.min = start.value;
+    if (end.value < start.value) {
+      const next = new Date(`${start.value}T12:00:00`);
+      next.setDate(next.getDate() + 6);
+      end.value = next.toISOString().slice(0, 10);
+    }
+  });
+  form.addEventListener('submit', event => {
+    event.preventDefault();
+    searchInsuranceQuotes(form);
+  });
+  document.querySelector('[data-insurance-risk-reset]')?.addEventListener('click', () => {
+    form.elements.trip_type.value = 'city_break';
+    form.elements.adventure_sports.checked = false;
+    form.elements.winter_sports.checked = false;
+    searchInsuranceQuotes(form);
+  });
+  searchInsuranceQuotes(form);
+}
+
 function initNavigation() {
   const triggers = document.querySelectorAll('.nav-trigger');
   const closeAll = except => triggers.forEach(trigger => {
@@ -626,6 +833,7 @@ function initTraVelV2() {
   initControls();
   initFlightSearch();
   initHotelSearch();
+  initInsuranceQuote();
   const query = new URLSearchParams(window.location.search).get('q') || '';
   hydrateDiscovery({ q: query, layer: activeLayer });
 }
