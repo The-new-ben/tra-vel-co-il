@@ -41,6 +41,18 @@ $pages = @(
         Excerpt = 'סביבת עבודה אישית לשמירת מסלולים, השוואות, העדפות ומעקב מחירים.'
     },
     [pscustomobject]@{
+        Slug = 'account'
+        Title = 'החשבון שלי'
+        Template = 'page-account.php'
+        Excerpt = 'כניסה מאובטחת, סנכרון נסיעות שמורות והעדפות אישיות.'
+    },
+    [pscustomobject]@{
+        Slug = 'partners'
+        Title = 'מרכז הספקים והשותפים'
+        Template = 'page-partners.php'
+        Excerpt = 'חיבור ספקי תיירות מאומתים למלאי, תוכן והזדמנויות רלוונטיות לאורך המסע.'
+    },
+    [pscustomobject]@{
         Slug = 'travel-map'
         Title = 'מפת המסע החכמה'
         Template = 'page-map.php'

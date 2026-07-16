@@ -1418,10 +1418,49 @@ function initNavigation() {
   document.addEventListener('click', () => closeAll());
   const menuButton = document.querySelector('.mobile-menu-button');
   const drawer = document.querySelector('.mobile-drawer');
-  menuButton?.addEventListener('click', () => {
-    const opening = !drawer?.classList.contains('is-open');
-    drawer?.classList.toggle('is-open', opening);
+  const drawerClose = drawer?.querySelector('.mobile-drawer-close');
+  const disclosures = drawer?.querySelectorAll('.mobile-nav-disclosure') || [];
+  let drawerWasOpenedBy = null;
+
+  const setDrawerState = (opening, returnFocus = false) => {
+    if (!menuButton || !drawer) return;
+    drawer.classList.toggle('is-open', opening);
+    drawer.setAttribute('aria-hidden', String(!opening));
     menuButton.setAttribute('aria-expanded', String(opening));
+    menuButton.setAttribute('aria-label', opening ? 'סגירת תפריט' : 'פתיחת תפריט');
+    document.body.classList.toggle('mobile-navigation-open', opening);
+    if (opening) {
+      drawerWasOpenedBy = document.activeElement;
+      window.requestAnimationFrame(() => drawerClose?.focus());
+    } else if (returnFocus && drawerWasOpenedBy instanceof HTMLElement) {
+      drawerWasOpenedBy.focus();
+    }
+  };
+
+  menuButton?.addEventListener('click', () => setDrawerState(!drawer?.classList.contains('is-open')));
+  drawerClose?.addEventListener('click', () => setDrawerState(false, true));
+  drawer?.querySelectorAll('a').forEach(link => link.addEventListener('click', () => setDrawerState(false)));
+
+  disclosures.forEach(button => button.addEventListener('click', () => {
+    const panel = document.getElementById(button.getAttribute('aria-controls'));
+    const opening = button.getAttribute('aria-expanded') !== 'true';
+    button.setAttribute('aria-expanded', String(opening));
+    panel?.classList.toggle('is-open', opening);
+  }));
+
+  document.addEventListener('keydown', event => {
+    if (event.key !== 'Escape') return;
+    const openTrigger = Array.from(triggers).find(trigger => trigger.getAttribute('aria-expanded') === 'true');
+    if (openTrigger) {
+      closeAll();
+      openTrigger.focus();
+      return;
+    }
+    if (drawer?.classList.contains('is-open')) setDrawerState(false, true);
+  });
+
+  window.matchMedia('(min-width: 1101px)').addEventListener?.('change', event => {
+    if (event.matches) setDrawerState(false);
   });
 }
 

@@ -22,7 +22,13 @@ if ( is_page_template( 'page-map.php' ) ) {
 	</div>
 	<div class="footer-bottom page-width"><span>© <?php echo esc_html( wp_date( 'Y' ) ); ?> Tra-Vel</span><span><?php esc_html_e( 'פרטיות · נגישות · תנאי שימוש', 'tra-vel-v2' ); ?></span><?php if ( defined( 'TRA_VEL_OPEN_METEO_API_KEY' ) && TRA_VEL_OPEN_METEO_API_KEY ) : ?><a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Weather data by Open-Meteo · CC BY 4.0</a><?php endif; ?></div>
 </footer>
-<nav class="mobile-bottom-nav" aria-label="<?php esc_attr_e( 'ניווט מהיר', 'tra-vel-v2' ); ?>"><a class="active" href="<?php echo esc_url( home_url( '/' ) ); ?>"><i data-lucide="house"></i><?php esc_html_e( 'בית', 'tra-vel-v2' ); ?></a><a href="<?php echo esc_url( home_url( '/travel-map/' ) ); ?>"><i data-lucide="earth"></i><?php esc_html_e( 'מפה', 'tra-vel-v2' ); ?></a><a href="<?php echo esc_url( home_url( '/#search' ) ); ?>"><i data-lucide="search"></i><?php esc_html_e( 'חיפוש', 'tra-vel-v2' ); ?></a><a href="<?php echo esc_url( home_url( '/ai-planner/' ) ); ?>"><i data-lucide="sparkles"></i><?php esc_html_e( 'מתכנן AI', 'tra-vel-v2' ); ?></a></nav>
+<nav class="mobile-bottom-nav" aria-label="<?php esc_attr_e( 'ניווט מהיר', 'tra-vel-v2' ); ?>">
+	<a class="<?php echo is_front_page() ? 'active' : ''; ?>" href="<?php echo esc_url( home_url( '/' ) ); ?>"><i data-lucide="house"></i><?php esc_html_e( 'בית', 'tra-vel-v2' ); ?></a>
+	<a class="<?php echo is_page( 'travel-map' ) ? 'active' : ''; ?>" href="<?php echo esc_url( home_url( '/travel-map/' ) ); ?>"><i data-lucide="earth"></i><?php esc_html_e( 'מפה', 'tra-vel-v2' ); ?></a>
+	<a href="<?php echo esc_url( home_url( '/#search' ) ); ?>"><i data-lucide="search"></i><?php esc_html_e( 'חיפוש', 'tra-vel-v2' ); ?></a>
+	<a class="<?php echo is_page( 'saved' ) ? 'active' : ''; ?>" href="<?php echo esc_url( home_url( '/saved/' ) ); ?>"><i data-lucide="heart"></i><?php esc_html_e( 'שמורים', 'tra-vel-v2' ); ?></a>
+	<a class="<?php echo is_page( 'account' ) ? 'active' : ''; ?>" href="<?php echo esc_url( home_url( '/account/' ) ); ?>"><i data-lucide="user-round"></i><?php esc_html_e( 'חשבון', 'tra-vel-v2' ); ?></a>
+</nav>
 <?php wp_footer(); ?>
 </body>
 </html>
