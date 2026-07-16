@@ -1,0 +1,49 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/theme.json",
+  "version": 3,
+  "settings": {
+    "appearanceTools": true,
+    "layout": {
+      "contentSize": "820px",
+      "wideSize": "1320px"
+    },
+    "color": {
+      "custom": false,
+      "customGradient": false,
+      "palette": [
+        { "slug": "ink", "name": "Ink", "color": "#061116" },
+        { "slug": "paper", "name": "Paper", "color": "#f5f5ef" },
+        { "slug": "surface", "name": "Surface", "color": "#ffffff" },
+        { "slug": "lime", "name": "Tra-Vel Lime", "color": "#d9ff59" },
+        { "slug": "aqua", "name": "Travel Aqua", "color": "#6ae1ff" },
+        { "slug": "coral", "name": "Alert Coral", "color": "#ff725e" }
+      ]
+    },
+    "spacing": {
+      "units": ["px", "rem", "%", "vw"],
+      "spacingSizes": [
+        { "slug": "10", "name": "2XS", "size": "8px" },
+        { "slug": "20", "name": "XS", "size": "12px" },
+        { "slug": "30", "name": "S", "size": "18px" },
+        { "slug": "40", "name": "M", "size": "28px" },
+        { "slug": "50", "name": "L", "size": "48px" },
+        { "slug": "60", "name": "XL", "size": "80px" }
+      ]
+    },
+    "typography": {
+      "fluid": true,
+      "fontFamilies": [
+        { "slug": "heebo", "name": "Heebo", "fontFamily": "Heebo, Arial, sans-serif" },
+        { "slug": "manrope", "name": "Manrope", "fontFamily": "Manrope, Arial, sans-serif" }
+      ]
+    }
+  },
+  "styles": {
+    "color": { "background": "#f5f5ef", "text": "#061116" },
+    "typography": { "fontFamily": "var(--wp--preset--font-family--heebo)", "lineHeight": "1.55" },
+    "elements": {
+      "heading": { "typography": { "fontWeight": "800", "lineHeight": "1.08" } },
+      "link": { "color": { "text": "inherit" }, "typography": { "textDecoration": "none" } }
+    }
+  }
+}

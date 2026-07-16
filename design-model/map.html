@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="מפת המסע החכמה של Tra-Vel — יעדים, מחירים, מסלולים ועלות כוללת.">
+  <title>Tra-Vel Globe — מפת המסע החכמה</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body class="map-body">
+  <main class="map-shell">
+    <header class="site-header on-light">
+      <div class="header-inner page-width">
+        <a class="brand" href="./home.html"><span class="brand-mark"><i data-lucide="navigation"></i></span><span class="brand-word">tra<b>־vel</b></span></a>
+        <nav class="main-nav"><a class="nav-link" href="./home.html">ראשי</a><a class="nav-link" href="#">טיסות</a><a class="nav-link" href="#">מלונות</a><a class="nav-link" href="./destination-thailand.html">יעדים</a><a class="nav-link" href="#">מדריכים</a></nav>
+        <div class="header-actions"><button class="round-button"><i data-lucide="heart"></i></button><a class="header-cta" href="#">שמרו את המסלול</a><button class="mobile-menu-button" aria-expanded="false"><i data-lucide="menu"></i></button></div>
+        <div class="mobile-drawer"><a href="./home.html">דף הבית</a><a href="#">טיסות ומלונות</a><a href="./destination-thailand.html">מדריך תאילנד</a><a href="#">שמורים</a></div>
+      </div>
+    </header>
+    <div class="map-workspace">
+      <aside class="filter-panel">
+        <button class="round-button" data-filter-close aria-label="סגירה" style="float:left"><i data-lucide="x"></i></button>
+        <span class="eyebrow">Tra-Vel Globe</span><h1>לאן אפשר להגיע?</h1><p>שנו את מה שחשוב לכם — המפה וההמלצה מתעדכנות יחד.</p>
+        <div class="filter-block"><div class="budget-row"><strong>תקציב לאדם</strong><span class="budget-value" data-budget-value>$950</span></div><input data-budget type="range" min="200" max="1600" step="25" value="950" aria-label="תקציב"><div class="filter-scale"><span>$200</span><span>$1,600</span></div></div>
+        <div class="filter-block"><strong>מה מחפשים?</strong><div class="filter-chips"><button class="is-active">הכל</button><button>טיסה</button><button>טיסה + מלון</button><button>חופשה קצרה</button><button>טיול גדול</button></div></div>
+        <div class="filter-block"><strong>הקצב שלי</strong><label class="check-row"><input type="checkbox" checked> עד עצירה אחת</label><label class="check-row"><input type="checkbox" checked> לא יותר מ־16 שעות</label><label class="check-row"><input type="checkbox"> אפשר עצירת לילה בדרך</label><div class="toggle-row"><span>רק טיסות ישירות</span><button class="toggle" aria-pressed="false"></button></div></div>
+        <div class="filter-block"><strong>מה חשוב יותר?</strong><div class="filter-chips"><button class="is-active">איזון</button><button>המחיר</button><button>זמן</button><button>נוחות</button><button>גמישות</button></div></div>
+        <div class="filter-block"><strong>עם מי נוסעים?</strong><div class="filter-chips"><button class="is-active">זוג</button><button>משפחה</button><button>לבד</button><button>חברים</button></div></div>
+        <button class="filter-apply">הציגו 48 אפשרויות</button>
+      </aside>
+      <section class="world-canvas" aria-label="גלובוס מחירים ומסלולים">
+        <form class="map-search-floating"><i data-lucide="sparkles"></i><input aria-label="חיפוש חופשה" value="שבועיים בתאילנד בנובמבר, עד $950 לאדם"><button type="button"><i data-lucide="arrow-left"></i></button></form>
+        <div class="globe">
+          <span class="origin-point"></span><span class="route-curve curve-one"></span><span class="route-curve curve-two"></span>
+          <button class="price-pin pin-budapest" data-destination="budapest">$214</button><button class="price-pin pin-athens" data-destination="athens">$189</button><button class="price-pin pin-dubai" data-destination="dubai">$236</button><button class="price-pin pin-bangkok is-active" data-destination="bangkok">$742</button><button class="price-pin pin-tokyo" data-destination="tokyo">$918</button><button class="price-pin pin-lisbon" data-destination="lisbon">$327</button>
+        </div>
+        <div class="map-layer-buttons"><button data-map-zoom="in" aria-label="הגדלה"><i data-lucide="plus"></i></button><button data-map-zoom="out" aria-label="הקטנה"><i data-lucide="minus"></i></button><button aria-label="שכבות"><i data-lucide="layers-3"></i></button><button aria-label="מזג אוויר"><i data-lucide="cloud-sun"></i></button></div>
+        <article class="map-result" data-map-result style="left:20px;bottom:190px"><img class="map-result-image" data-result-image src="./assets/thailand.jpg" alt="בנגקוק"><div class="map-result-body"><div class="result-top"><div><small>היעד הפעיל</small><h3 data-result-city>בנגקוק, תאילנד</h3></div><button class="save-button"><i data-lucide="heart"></i></button></div><div class="result-tags" data-result-tags><span>12 לילות</span><span>עצירה אחת</span><span>כולל כבודה</span></div><div class="result-price"><div><small>לאדם, הלוך ושוב</small><strong data-result-price>$742</strong></div><p data-result-note>חיסכון של $157 דרך דובאי</p></div></div></article>
+        <aside class="route-sheet"><div class="sheet-head"><div><span class="eyebrow">ההחלטה הבאה שלכם</span><h2>תל אביב ← בנגקוק · 12–26 בנובמבר</h2></div><span>מחירי הדגמה · זמינות תתחבר בשלב הספקים</span></div><div class="mini-routes"><button class="mini-route" data-route data-route-summary="ישיר — נוחות מרבית, $899"><small>הכי נוח</small><strong>ישיר · 11:20</strong><span>כבודה ושינוי כלולים</span><b>$899</b></button><button class="mini-route is-selected" data-route data-route-summary="דרך דובאי — איזון מומלץ, $742"><small>הבחירה החכמה</small><strong>דובאי · 14:00</strong><span>חוסך $157 · כרטיס אחד</span><b>$742</b></button><button class="mini-route" data-route data-route-summary="אתונה — הכי זול, זמן ארוך יותר, $621"><small>הכי זול</small><strong>אתונה · 24:30</strong><span>לילה בדרך · סיכון בינוני</span><b>$621</b></button></div></aside>
+      </section>
+    </div>
+  </main>
+  <div class="map-mobile-controls"><button data-filter-toggle><i data-lucide="sliders-horizontal"></i>מסננים</button><button><i data-lucide="route"></i>מסלולים</button><button><i data-lucide="list"></i>רשימה</button></div>
+  <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script><script src="./app.js"></script>
+</body>
+</html>

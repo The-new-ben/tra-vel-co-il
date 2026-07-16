@@ -1,0 +1,83 @@
+name: Tra-Vel Theme CI
+
+on:
+  pull_request:
+    paths:
+      - "theme/tra-vel-v2/**"
+      - "plugin/tra-vel-deploy-gateway/**"
+      - "scripts/ci/**"
+      - "scripts/deploy/**"
+      - ".github/workflows/**"
+  push:
+    branches:
+      - main
+      - "rebuild/**"
+    paths:
+      - "theme/tra-vel-v2/**"
+      - "plugin/tra-vel-deploy-gateway/**"
+      - "scripts/ci/**"
+      - "scripts/deploy/**"
+      - ".github/workflows/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: theme-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-and-package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Validate theme structure and policy
+        run: node scripts/ci/validate-theme.mjs
+
+      - name: Lint WordPress PHP
+        shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r -d '' file; do
+            php -l "$file"
+          done < <(find theme/tra-vel-v2 plugin/tra-vel-deploy-gateway -type f -name '*.php' -print0)
+
+      - name: Validate JavaScript syntax
+        run: node --check theme/tra-vel-v2/assets/js/app.js
+
+      - name: Validate deployment scripts
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in scripts/ci/*.sh scripts/deploy/*.sh; do
+            bash -n "$file"
+          done
+
+      - name: Build installable theme artifact
+        run: |
+          bash scripts/ci/build-theme.sh
+          python3 scripts/ci/build_deploy_gateway.py
+
+      - name: Inspect package and checksum
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="$(find dist -maxdepth 1 -name 'tra-vel-v2-*.zip' -print -quit)"
+          test -n "$archive"
+          unzip -t "$archive"
+          unzip -t dist/tra-vel-deploy-gateway-0.1.0.zip
+          sha256sum "$archive"
+          cat dist/manifest.json
+          cat dist/deploy-gateway-manifest.json
+
+      - name: Upload versioned theme artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tra-vel-v2-theme-${{ github.sha }}
+          path: dist/
+          if-no-files-found: error
+          retention-days: 30
