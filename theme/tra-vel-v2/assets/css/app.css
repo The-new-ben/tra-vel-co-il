@@ -552,6 +552,23 @@ h3.deal-title { display: block; margin: 6px 0 12px; font-size: 22px; line-height
   .mobile-bottom-nav a.active { color: #577400; font-weight: 800; }
   .mobile-bottom-nav i { width: 19px; height: 19px; }
 
+  /* Keep the legacy WhatsApp CTA from blocking V2 mobile navigation. */
+  .whatsapp-button {
+    right: 12px !important;
+    bottom: 78px !important;
+    width: 56px !important;
+    min-width: 56px !important;
+    height: 56px !important;
+    padding: 0 !important;
+    border-radius: 50% !important;
+    overflow: hidden !important;
+    justify-content: center !important;
+    font-size: 0 !important;
+  }
+  .whatsapp-button img:first-child { display: none !important; }
+  .whatsapp-button img:last-of-type { display: block !important; width: 30px !important; height: 30px !important; margin: 0 !important; }
+  .page-template-page-map .whatsapp-button { display: none !important; }
+
   /* map mobile */
   .map-shell { grid-template-rows: 64px 1fr; }
   .map-workspace { grid-template-columns: 1fr; }
