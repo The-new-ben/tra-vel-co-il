@@ -77,6 +77,11 @@ if (!appJs.includes('window.traVelV2')) failures.push('The app script is not con
 if (!appJs.includes('discoveryUrl')) failures.push('The app script is not connected to the discovery REST contract.');
 if (!appJs.includes('hydrateDiscovery')) failures.push('The app script does not hydrate the map from discovery data.');
 
+const discoveryController = readFileSync(join(themeRoot, 'inc/discovery.php'), 'utf8');
+if (/function\s+get_items\s*\(\s*WP_REST_Request\b/.test(discoveryController)) {
+  failures.push('REST controller overrides must keep the untyped WP_REST_Controller method signature for PHP 8 compatibility.');
+}
+
 const frontPage = readFileSync(join(themeRoot, 'front-page.php'), 'utf8');
 if (/<a\b[^>]*class="ai-input"[^>]*>[\s\S]*?<button\b/.test(frontPage)) {
   failures.push('The AI planner link contains an invalid nested button.');

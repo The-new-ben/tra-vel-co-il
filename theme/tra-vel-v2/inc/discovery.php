@@ -65,7 +65,7 @@ class Tra_Vel_V2_Discovery_Controller extends WP_REST_Controller {
 	/**
 	 * Return filtered discovery data for the globe and route comparison UI.
 	 */
-	public function get_items( WP_REST_Request $request ) {
+	public function get_items( $request ) {
 		$data = $this->load_json_file( TRA_VEL_V2_PATH . '/assets/data/discovery-demo.json' );
 		if ( is_wp_error( $data ) ) {
 			return $data;
