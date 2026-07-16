@@ -334,6 +334,192 @@ function initFlightSearch() {
   searchFlights(form);
 }
 
+function setHotelAreaDetail(area) {
+  if (!area) return;
+  const name = document.querySelector('[data-hotel-area-name]');
+  const profile = document.querySelector('[data-hotel-area-profile]');
+  const tradeoff = document.querySelector('[data-hotel-area-tradeoff]');
+  if (name) name.textContent = area.name;
+  if (profile) profile.textContent = `${area.profile} · ${area.transport}`;
+  if (tradeoff) tradeoff.textContent = `△ ${area.tradeoff}`;
+  replaceChildrenWithSpans(document.querySelector('[data-hotel-area-tags]'), area.best_for || []);
+}
+
+function renderHotelAreaMap(payload, form) {
+  const pins = document.querySelector('[data-hotel-map-pins]');
+  if (!pins) return;
+  pins.replaceChildren();
+  const selectedArea = form.elements.area.value;
+  const recommended = payload.properties?.find(property => property.id === payload.recommended);
+  const detailArea = payload.areas.find(area => area.id === selectedArea) || payload.areas.find(area => area.id === recommended?.area_id) || payload.areas[0];
+  setHotelAreaDetail(detailArea);
+  payload.areas.forEach(area => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = `hotel-area-pin${area.id === detailArea?.id ? ' is-active' : ''}${area.visible_properties === 0 ? ' is-empty' : ''}`;
+    button.dataset.hotelArea = area.id;
+    button.style.left = `${area.position.x}%`;
+    button.style.top = `${area.position.y}%`;
+    button.setAttribute('aria-label', `${area.name}, ממוצע €${area.average_nightly} ללילה`);
+    appendTextElement(button, 'strong', `€${area.average_nightly}`);
+    appendTextElement(button, 'span', area.short_name);
+    button.addEventListener('click', () => {
+      form.elements.area.value = area.id;
+      searchHotels(form);
+    });
+    pins.append(button);
+  });
+}
+
+function renderHotelProperties(payload) {
+  const container = document.querySelector('[data-hotel-results]');
+  if (!container) return;
+  container.replaceChildren();
+  if (!payload.properties?.length) {
+    appendTextElement(container, 'p', 'לא נמצאו מלונות שמתאימים לכל המסננים. נסו להסיר מסנן או להציג את כל האזורים.', 'hotel-empty');
+    return;
+  }
+  payload.properties.forEach(property => {
+    const card = document.createElement('article');
+    card.className = `hotel-offer${property.id === payload.recommended ? ' is-recommended' : ''}`;
+    const media = document.createElement('div');
+    media.className = 'hotel-offer-media';
+    const image = document.createElement('img');
+    image.loading = 'lazy';
+    image.alt = `${property.name}, ${property.area?.name || payload.destination.city}`;
+    const safeLocalImage = /^[a-z0-9._-]+$/i.test(property.image || '') ? property.image : 'city-budapest.webp';
+    image.src = `${window.traVelV2?.assetUrl || ''}${safeLocalImage}`;
+    media.append(image);
+    appendTextElement(media, 'span', property.badge, 'hotel-offer-badge');
+    const score = appendTextElement(media, 'strong', `${property.score}`, 'hotel-match-score');
+    score.setAttribute('aria-label', `ציון התאמה ${property.score} מתוך 100`);
+    card.append(media);
+
+    const body = document.createElement('div');
+    body.className = 'hotel-offer-body';
+    appendTextElement(body, 'small', `${property.area?.name || ''} · ${'★'.repeat(property.stars)}`, 'hotel-area-line');
+    appendTextElement(body, 'h3', property.name);
+    appendTextElement(body, 'span', `${property.guest_score}/10 · ${property.review_count.toLocaleString('he-IL')} חוות דעת`, 'hotel-guest-score');
+    const route = document.createElement('div');
+    route.className = 'hotel-route-fit';
+    appendTextElement(route, 'strong', `${property.location.route_minutes} דק׳ למסלול`);
+    appendTextElement(route, 'span', property.location.transit);
+    body.append(route);
+    appendTextElement(body, 'p', `${property.room.name} · ${property.room.size_sqm} מ״ר · עד ${property.room.sleeps} אורחים`, 'hotel-room');
+
+    const tradeoffs = document.createElement('div');
+    tradeoffs.className = 'hotel-tradeoffs';
+    appendTextElement(tradeoffs, 'span', `✓ ${property.pros[0]}`, 'hotel-pro');
+    appendTextElement(tradeoffs, 'span', `△ ${property.cons[0]}`, 'hotel-con');
+    body.append(tradeoffs);
+
+    const totals = document.createElement('div');
+    totals.className = 'hotel-total-grid';
+    const nightly = document.createElement('div');
+    appendTextElement(nightly, 'small', 'ללילה, לחדר');
+    appendTextElement(nightly, 'strong', property.pricing.nightly_formatted);
+    const stay = document.createElement('div');
+    appendTextElement(stay, 'small', `${property.stay_nights} לילות · מחיר מלא`);
+    appendTextElement(stay, 'strong', property.pricing.total_stay_formatted);
+    totals.append(nightly, stay);
+    body.append(totals);
+
+    const policyChips = document.createElement('div');
+    policyChips.className = 'hotel-policy-chips';
+    if (property.policies.free_cancellation) appendTextElement(policyChips, 'span', 'ביטול חינם');
+    if (property.policies.pay_at_property) appendTextElement(policyChips, 'span', 'תשלום במקום');
+    if (property.amenities.breakfast) appendTextElement(policyChips, 'span', 'ארוחת בוקר');
+    if (property.amenities.family) appendTextElement(policyChips, 'span', 'משפחות');
+    body.append(policyChips);
+
+    const details = document.createElement('details');
+    appendTextElement(details, 'summary', 'מחיר מלא ותנאי החדר');
+    const breakdown = document.createElement('div');
+    breakdown.className = 'hotel-breakdown';
+    [['חדרים ולילות', property.pricing.base_formatted], ['מסים', property.pricing.taxes_formatted], ['עמלות', property.pricing.fees_formatted], ['לאדם בשהייה', property.pricing.per_person_formatted]].forEach(([label, value]) => {
+      const line = document.createElement('span');
+      appendTextElement(line, 'i', label);
+      appendTextElement(line, 'b', value);
+      breakdown.append(line);
+    });
+    appendTextElement(breakdown, 'p', `${property.policies.cancellation_deadline} · כניסה ${property.policies.check_in} · יציאה ${property.policies.check_out}`);
+    details.append(breakdown);
+    body.append(details);
+
+    const action = document.createElement('button');
+    action.className = 'hotel-offer-action';
+    action.type = 'button';
+    action.disabled = !property.booking.bookable;
+    action.textContent = property.booking.bookable ? 'בדיקת זמינות והזמנה' : 'הדגמה · הזמנה תיפתח עם ספק חי';
+    body.append(action);
+    card.append(body);
+    container.append(card);
+  });
+}
+
+async function searchHotels(form) {
+  const endpoint = window.traVelV2?.hotelSearchUrl;
+  const status = document.querySelector('[data-hotel-status]');
+  const submit = form.querySelector('[type="submit"]');
+  if (!endpoint) return;
+  const params = new URLSearchParams(new FormData(form));
+  ['free_cancellation', 'breakfast', 'family'].forEach(name => {
+    if (!params.has(name)) params.set(name, 'false');
+  });
+  const url = new URL(endpoint, window.location.origin);
+  params.forEach((value, key) => url.searchParams.set(key, value));
+  submit.disabled = true;
+  form.dataset.state = 'loading';
+  if (status) status.textContent = 'משווה אזור, מחיר מלא, תנאים וזמן למסלול...';
+  try {
+    const response = await fetch(url, {headers: {Accept: 'application/json'}});
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.message || `Hotel search failed: ${response.status}`);
+    renderHotelAreaMap(payload, form);
+    renderHotelProperties(payload);
+    const modeLabels = {live: 'מחירי ספקים חיים', mixed: 'נתונים חיים והערכות', demo: 'מחירי הדגמה שקופים'};
+    const cacheLabels = {miss: 'עודכן עכשיו', fresh: 'תוצאה שמורה ועדכנית', stale_refreshing: 'מעדכן ברקע', stale_error: 'תוצאה אחרונה תקינה', degraded_fallback: 'ספק חלקי'};
+    if (status) status.textContent = `${payload.meta.result_count} מקומות · ${payload.search.nights} לילות · ${modeLabels[payload.meta.data_mode] || modeLabels.demo} · ${cacheLabels[payload.meta.cache_state] || 'עודכן'}`;
+    form.dataset.state = payload.meta.data_mode;
+  } catch (error) {
+    document.querySelector('[data-hotel-results]')?.replaceChildren();
+    if (status) status.textContent = 'לא הצלחנו להשלים את השוואת המלונות. בדקו את התאריכים ונסו שוב.';
+    form.dataset.state = 'error';
+    console.warn(error);
+  } finally {
+    submit.disabled = false;
+  }
+}
+
+function initHotelSearch() {
+  const form = document.querySelector('[data-hotel-search]');
+  if (!form) return;
+  const checkin = form.querySelector('[name="checkin"]');
+  const checkout = form.querySelector('[name="checkout"]');
+  checkin?.addEventListener('change', () => {
+    if (!checkout) return;
+    checkout.min = checkin.value;
+    if (checkout.value <= checkin.value) {
+      const next = new Date(`${checkin.value}T12:00:00`);
+      next.setDate(next.getDate() + 4);
+      checkout.value = next.toISOString().slice(0, 10);
+    }
+  });
+  form.querySelector('[name="destination"]')?.addEventListener('input', event => {
+    event.target.value = event.target.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3);
+  });
+  form.addEventListener('submit', event => {
+    event.preventDefault();
+    form.elements.area.value = '';
+    searchHotels(form);
+  });
+  document.querySelector('[data-hotel-area-reset]')?.addEventListener('click', () => {
+    form.elements.area.value = '';
+    searchHotels(form);
+  });
+  searchHotels(form);
+}
+
 function initNavigation() {
   const triggers = document.querySelectorAll('.nav-trigger');
   const closeAll = except => triggers.forEach(trigger => {
@@ -439,6 +625,7 @@ function initTraVelV2() {
   initMap();
   initControls();
   initFlightSearch();
+  initHotelSearch();
   const query = new URLSearchParams(window.location.search).get('q') || '';
   hydrateDiscovery({ q: query, layer: activeLayer });
 }

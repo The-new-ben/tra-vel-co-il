@@ -40,8 +40,10 @@ jobs:
           node scripts/ci/validate-theme.mjs
           node scripts/ci/validate-discovery-contract.mjs
           node scripts/ci/validate-flight-search-contract.mjs
+          node scripts/ci/validate-hotel-search-contract.mjs
           php scripts/ci/validate-supplier-runtime.php
           php scripts/ci/validate-flight-search-runtime.php
+          php scripts/ci/validate-hotel-search-runtime.php
           php scripts/ci/validate-open-meteo-adapter.php
 
       - name: Lint WordPress PHP
