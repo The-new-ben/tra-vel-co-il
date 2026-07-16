@@ -21,6 +21,11 @@ const requiredFiles = [
   'inc/setup.php',
   'inc/assets.php',
   'inc/discovery.php',
+  'inc/suppliers/bootstrap.php',
+  'inc/suppliers/interface-supplier-adapter.php',
+  'inc/suppliers/class-demo-supplier-adapter.php',
+  'inc/suppliers/class-supplier-registry.php',
+  'inc/suppliers/class-discovery-repository.php',
   'inc/template-tags.php',
   'inc/seo.php',
   'assets/css/app.css',
@@ -80,6 +85,13 @@ if (!appJs.includes('hydrateDiscovery')) failures.push('The app script does not 
 const discoveryController = readFileSync(join(themeRoot, 'inc/discovery.php'), 'utf8');
 if (/function\s+get_items\s*\(\s*WP_REST_Request\b/.test(discoveryController)) {
   failures.push('REST controller overrides must keep the untyped WP_REST_Controller method signature for PHP 8 compatibility.');
+}
+if (!discoveryController.includes("'/' . $this->rest_base . '/cache'")) failures.push('The discovery cache administration route is missing.');
+if (!discoveryController.includes("current_user_can( 'manage_options' )")) failures.push('Discovery cache mutation lacks a manage_options capability check.');
+
+const supplierInterface = readFileSync(join(themeRoot, 'inc/suppliers/interface-supplier-adapter.php'), 'utf8');
+for (const method of ['get_id', 'get_verticals', 'is_configured', 'get_mode', 'get_cache_version', 'fetch']) {
+  if (!supplierInterface.includes(`function ${method}(`)) failures.push(`Supplier adapter contract is missing ${method}().`);
 }
 
 const frontPage = readFileSync(join(themeRoot, 'front-page.php'), 'utf8');

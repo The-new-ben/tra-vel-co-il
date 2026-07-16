@@ -16,11 +16,19 @@ class Tra_Vel_V2_Discovery_Controller extends WP_REST_Controller {
 	protected $schema;
 
 	/**
+	 * Cached supplier repository.
+	 *
+	 * @var Tra_Vel_V2_Discovery_Repository
+	 */
+	protected $repository;
+
+	/**
 	 * Configure the controller.
 	 */
 	public function __construct() {
 		$this->namespace = 'tra-vel/v2';
 		$this->rest_base = 'discovery';
+		$this->repository = new Tra_Vel_V2_Discovery_Repository();
 	}
 
 	/**
@@ -60,17 +68,22 @@ class Tra_Vel_V2_Discovery_Controller extends WP_REST_Controller {
 				'permission_callback' => '__return_true',
 			)
 		);
+
+		register_rest_route(
+			$this->namespace,
+			'/' . $this->rest_base . '/cache',
+			array(
+				'methods'             => WP_REST_Server::DELETABLE,
+				'callback'            => array( $this, 'purge_cache' ),
+				'permission_callback' => array( $this, 'can_manage_cache' ),
+			)
+		);
 	}
 
 	/**
 	 * Return filtered discovery data for the globe and route comparison UI.
 	 */
 	public function get_items( $request ) {
-		$data = $this->load_json_file( TRA_VEL_V2_PATH . '/assets/data/discovery-demo.json' );
-		if ( is_wp_error( $data ) ) {
-			return $data;
-		}
-
 		$budget      = (int) $request->get_param( 'budget' );
 		$destination = (string) $request->get_param( 'destination' );
 		$direct      = (bool) $request->get_param( 'direct' );
@@ -78,6 +91,21 @@ class Tra_Vel_V2_Discovery_Controller extends WP_REST_Controller {
 		$sort        = (string) $request->get_param( 'sort' );
 		$limit       = (int) $request->get_param( 'limit' );
 		$layer       = (string) $request->get_param( 'layer' );
+		$resolved    = $this->repository->get(
+			array(
+				'budget'      => $budget,
+				'destination' => $destination,
+				'direct'      => $direct,
+				'q'           => $query,
+				'sort'        => $sort,
+				'limit'       => $limit,
+				'layer'       => $layer,
+			)
+		);
+		if ( is_wp_error( $resolved ) ) {
+			return $resolved;
+		}
+		$data = $resolved['data'];
 
 		$destinations = array_values(
 			array_filter(
@@ -150,16 +178,24 @@ class Tra_Vel_V2_Discovery_Controller extends WP_REST_Controller {
 				$recommended = $route;
 			}
 		}
+		$disclaimer = 'Demo data only. Prices and availability are not live or bookable until supplier adapters are connected.';
+		if ( 'mixed' === $data['data_mode'] ) {
+			$disclaimer = 'Some supplier data is live and some is fallback data. Confirm final price and availability before booking.';
+		} elseif ( 'live' === $data['data_mode'] ) {
+			$disclaimer = 'Supplier data is live but prices and availability can change until booking is confirmed.';
+		}
 
 		$response = new WP_REST_Response(
 			array(
 				'meta'            => array(
 					'contract_version' => $data['contract_version'],
 					'data_mode'        => $data['data_mode'],
-					'generated_at'     => gmdate( 'c' ),
-					'cache_ttl'        => 300,
-					'source'           => 'curated_demo_contract',
-					'disclaimer'       => 'Demo data only. Prices and availability are not live or bookable until supplier adapters are connected.',
+					'generated_at'     => $resolved['runtime']['generated_at'],
+					'cache_ttl'        => $resolved['runtime']['cache_ttl'],
+					'stale_ttl'        => $resolved['runtime']['stale_ttl'],
+					'cache_state'      => $resolved['runtime']['cache_state'],
+					'source'           => 'supplier_registry',
+					'disclaimer'       => $disclaimer,
 					'active_layer'     => $layer,
 					'result_count'     => count( $destinations ),
 					'filters'          => array(
@@ -170,6 +206,7 @@ class Tra_Vel_V2_Discovery_Controller extends WP_REST_Controller {
 						'sort'        => $sort,
 					),
 				),
+				'adapter_status'  => $resolved['runtime']['adapters'],
 				'origin'          => $data['origin'],
 				'provider_status' => $data['provider_status'],
 				'layers'          => array(
@@ -184,8 +221,9 @@ class Tra_Vel_V2_Discovery_Controller extends WP_REST_Controller {
 			),
 			200
 		);
-		$response->header( 'Cache-Control', 'public, max-age=300, stale-while-revalidate=600' );
+		$response->header( 'Cache-Control', sprintf( 'public, max-age=%d, stale-while-revalidate=600', (int) $resolved['runtime']['cache_ttl'] ) );
 		$response->header( 'X-Tra-Vel-Data-Mode', $data['data_mode'] );
+		$response->header( 'X-Tra-Vel-Cache', $resolved['runtime']['cache_state'] );
 		$response->add_link( 'self', rest_url( $this->namespace . '/' . $this->rest_base ) );
 		$response->add_link( 'https://tra-vel.co.il/rels/map', home_url( '/travel-map/' ) );
 
@@ -196,10 +234,11 @@ class Tra_Vel_V2_Discovery_Controller extends WP_REST_Controller {
 	 * Return a small provider/contract readiness payload for monitoring.
 	 */
 	public function get_health() {
-		$data = $this->load_json_file( TRA_VEL_V2_PATH . '/assets/data/discovery-demo.json' );
-		if ( is_wp_error( $data ) ) {
-			return $data;
+		$resolved = $this->repository->get();
+		if ( is_wp_error( $resolved ) ) {
+			return $resolved;
 		}
+		$data = $resolved['data'];
 
 		return rest_ensure_response(
 			array(
@@ -209,8 +248,33 @@ class Tra_Vel_V2_Discovery_Controller extends WP_REST_Controller {
 				'destination_count' => count( $data['destinations'] ),
 				'route_set_count'   => count( $data['route_sets'] ),
 				'providers'         => $data['provider_status'],
+				'adapters'          => $resolved['runtime']['adapters'],
+				'cache'             => array(
+					'state'     => $resolved['runtime']['cache_state'],
+					'ttl'       => $resolved['runtime']['cache_ttl'],
+					'stale_ttl' => $resolved['runtime']['stale_ttl'],
+				),
 			)
 		);
+	}
+
+	/**
+	 * Purge supplier response caches for administrators.
+	 */
+	public function purge_cache() {
+		return rest_ensure_response(
+			array(
+				'ok'               => true,
+				'cache_generation' => $this->repository->purge(),
+			)
+		);
+	}
+
+	/**
+	 * Protect cache mutation with a real capability check.
+	 */
+	public function can_manage_cache() {
+		return current_user_can( 'manage_options' );
 	}
 
 	/**
@@ -316,6 +380,7 @@ class Tra_Vel_V2_Discovery_Controller extends WP_REST_Controller {
 			'type'       => 'object',
 			'properties' => array(
 				'meta'            => array( 'type' => 'object', 'readonly' => true ),
+				'adapter_status'  => array( 'type' => 'object', 'readonly' => true ),
 				'origin'          => array( 'type' => 'object', 'readonly' => true ),
 				'provider_status' => array( 'type' => 'object', 'readonly' => true ),
 				'layers'          => array( 'type' => 'array', 'items' => array( 'type' => 'object' ), 'readonly' => true ),
@@ -325,20 +390,6 @@ class Tra_Vel_V2_Discovery_Controller extends WP_REST_Controller {
 			),
 		);
 		return $this->schema;
-	}
-
-	/**
-	 * Read and decode a bundled JSON contract.
-	 */
-	private function load_json_file( $path ) {
-		if ( ! is_readable( $path ) ) {
-			return new WP_Error( 'tra_vel_discovery_missing', 'Discovery contract is unavailable.', array( 'status' => 503 ) );
-		}
-		$decoded = json_decode( (string) file_get_contents( $path ), true );
-		if ( ! is_array( $decoded ) || JSON_ERROR_NONE !== json_last_error() ) {
-			return new WP_Error( 'tra_vel_discovery_invalid', 'Discovery contract is invalid.', array( 'status' => 500 ) );
-		}
-		return $decoded;
 	}
 
 	/**
