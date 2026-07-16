@@ -85,7 +85,7 @@ function tra_vel_v2_schema_data() {
 	$url       = get_permalink( $post_id );
 	$profile   = tra_vel_v2_get_guide_profile( $post_id );
 	$author_id = (int) get_post_field( 'post_author', $post_id );
-	$author    = get_the_author_meta( 'display_name', $author_id ) ?: 'Tra-Vel';
+	$author    = $profile['author'] ?: ( get_the_author_meta( 'display_name', $author_id ) ?: 'Tra-Vel' );
 	$image     = get_the_post_thumbnail_url( $post_id, 'full' );
 	$excerpt   = get_the_excerpt( $post_id );
 	$article   = array(

@@ -30,6 +30,7 @@ No automation may move an article to `publish-ready` solely because text was gen
 The theme registers authenticated REST-editable metadata for pages using `page-destination.php`:
 
 - `_tra_vel_primary_topic`
+- `_tra_vel_author`
 - `_tra_vel_source_checked`
 - `_tra_vel_reviewer`
 - `_tra_vel_review_method`

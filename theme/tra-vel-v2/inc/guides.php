@@ -18,6 +18,7 @@ function tra_vel_v2_guide_meta_fields() {
 	return array(
 		'_tra_vel_primary_topic' => array( 'type' => 'string', 'sanitize_callback' => 'sanitize_text_field' ),
 		'_tra_vel_source_checked' => array( 'type' => 'string', 'sanitize_callback' => 'tra_vel_v2_sanitize_iso_date' ),
+		'_tra_vel_author' => array( 'type' => 'string', 'sanitize_callback' => 'sanitize_text_field' ),
 		'_tra_vel_reviewer' => array( 'type' => 'string', 'sanitize_callback' => 'sanitize_text_field' ),
 		'_tra_vel_review_method' => array( 'type' => 'string', 'sanitize_callback' => 'sanitize_textarea_field' ),
 		'_tra_vel_map_state' => array( 'type' => 'string', 'sanitize_callback' => 'sanitize_key' ),
@@ -124,6 +125,7 @@ function tra_vel_v2_get_guide_profile( $post_id = null ) {
 
 	return array(
 		'primary_topic' => sanitize_text_field( get_post_meta( $post_id, '_tra_vel_primary_topic', true ) ),
+		'author'        => sanitize_text_field( get_post_meta( $post_id, '_tra_vel_author', true ) ),
 		'checked'       => $checked,
 		'reviewer'      => sanitize_text_field( get_post_meta( $post_id, '_tra_vel_reviewer', true ) ),
 		'method'        => sanitize_textarea_field( get_post_meta( $post_id, '_tra_vel_review_method', true ) ),
@@ -141,7 +143,7 @@ function tra_vel_v2_get_guide_profile( $post_id = null ) {
 function tra_vel_v2_render_guide_evidence( $post_id = null ) {
 	$post_id = $post_id ?: get_queried_object_id();
 	$profile = tra_vel_v2_get_guide_profile( $post_id );
-	$author  = get_the_author_meta( 'display_name', (int) get_post_field( 'post_author', $post_id ) );
+	$author  = $profile['author'] ?: get_the_author_meta( 'display_name', (int) get_post_field( 'post_author', $post_id ) );
 	$method  = $profile['method'] ?: __( 'העובדות נבדקות מול מקורות ראשוניים. מחירים מסחריים מסומנים בנפרד ונבדקים שוב לפני הזמנה.', 'tra-vel-v2' );
 	?>
 	<section class="guide-evidence page-width" aria-labelledby="guide-evidence-title">

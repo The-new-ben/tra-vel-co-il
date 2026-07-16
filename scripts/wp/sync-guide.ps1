@@ -108,6 +108,7 @@ try {
         content = [string]$article
         meta = [ordered]@{
             _tra_vel_primary_topic = $packet.primaryTopic
+            _tra_vel_author = $packet.author
             _tra_vel_source_checked = $packet.checkedAt
             _tra_vel_reviewer = $packet.reviewer
             _tra_vel_review_method = $packet.reviewMethod
