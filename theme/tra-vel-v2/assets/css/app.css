@@ -1171,7 +1171,7 @@ h3.deal-title { display: block; margin: 6px 0 12px; font-size: 22px; line-height
   .package-control-grid label:first-child { grid-column: 1/-1; }
   .package-inclusion-grid { grid-template-columns: repeat(3,1fr); }
   .package-composer-layout { min-width: 0; max-width: 100%; overflow: hidden; grid-template-columns: 1fr; }
-  .package-journey-map { position: relative; top: auto; min-height: 570px; }
+  .package-journey-map { position: relative; top: auto; min-height: 570px; contain: paint; }
   .package-map-point { width: 57px; height: 57px; }
   .package-map-point.point-origin { right: 10%; }
   .package-map-point.point-destination { left: 12%; }
@@ -1200,8 +1200,8 @@ h3.deal-title { display: block; margin: 6px 0 12px; font-size: 22px; line-height
   .insurance-quote-status { align-self: flex-start; }
   .experience-proof { grid-template-columns: 1fr 1fr; margin-top: -20px; padding: 10px; }
   .experience-proof div { min-height: 72px; padding: 10px; border-left: 0; }
-  .experience-card-grid { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
-  .experience-card { min-width: 84%; min-height: 300px; scroll-snap-align: start; }
+  .experience-card-grid { display: flex; direction: ltr; overflow-x: auto; contain: inline-size paint; scroll-snap-type: x mandatory; scrollbar-width: none; }
+  .experience-card { width: 84%; min-width: 0; max-width: 84%; flex: 0 0 84%; min-height: 300px; direction: rtl; scroll-snap-align: start; }
   .experience-map-grid { grid-template-columns: 1fr; gap: 32px; }
   .experience-map-grid h2 { font-size: 38px; }
   .experience-globe { min-height: 460px; }
