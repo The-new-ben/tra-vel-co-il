@@ -1612,12 +1612,523 @@ function initControls() {
   }));
 }
 
+const agentActiveRunStorageKey = 'traVelAgent.activeRunId';
+const agentRuntime = {
+  runId: '',
+  status: '',
+  lastSequence: 0,
+  events: [],
+  eventIds: new Set(),
+  pollTimer: 0,
+  pollFailures: 0
+};
+
+function readAgentSessionValue(key) {
+  try {
+    return window.sessionStorage.getItem(key) || '';
+  } catch (error) {
+    return '';
+  }
+}
+
+function clearAgentRunSession() {
+  try {
+    window.sessionStorage.removeItem(agentActiveRunStorageKey);
+  } catch (error) {
+    // A private run can still render its initial response without browser persistence.
+  }
+}
+
+function storeAgentRunSession(runId) {
+  if (!runId) return false;
+  try {
+    window.sessionStorage.setItem(agentActiveRunStorageKey, runId);
+    return window.sessionStorage.getItem(agentActiveRunStorageKey) === runId;
+  } catch (error) {
+    return false;
+  }
+}
+
+function resetAgentRuntime(runId = '') {
+  if (agentRuntime.pollTimer) window.clearTimeout(agentRuntime.pollTimer);
+  agentRuntime.runId = runId;
+  agentRuntime.status = '';
+  agentRuntime.lastSequence = 0;
+  agentRuntime.events = [];
+  agentRuntime.eventIds.clear();
+  agentRuntime.pollTimer = 0;
+  agentRuntime.pollFailures = 0;
+}
+
+function agentRestBase() {
+  return String(window.traVelV2?.agentRestUrl || '').replace(/\/+$/, '');
+}
+
+async function agentApiRequest(path, options = {}) {
+  const base = agentRestBase();
+  if (!base) {
+    const error = new Error('שירות המתכנן הפרטי אינו זמין כרגע.');
+    error.code = 'agent_unavailable';
+    error.status = 0;
+    throw error;
+  }
+
+  const headers = {
+    Accept: 'application/json',
+    'Cache-Control': 'no-store',
+    ...(options.body ? {'Content-Type': 'application/json'} : {})
+  };
+  if (window.traVelV2?.nonce) headers['X-WP-Nonce'] = window.traVelV2.nonce;
+
+  const response = await fetch(`${base}${path}`, {
+    method: options.method || 'GET',
+    body: options.body || undefined,
+    credentials: 'same-origin',
+    headers
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error(typeof payload.message === 'string' ? payload.message : `Agent request failed: ${response.status}`);
+    error.code = payload.code || 'agent_request_failed';
+    error.status = response.status;
+    throw error;
+  }
+  return payload;
+}
+
+function createAgentClientRequestId() {
+  if (window.crypto?.randomUUID) return window.crypto.randomUUID();
+  const values = new Uint32Array(4);
+  if (window.crypto?.getRandomValues) window.crypto.getRandomValues(values);
+  else values.forEach((value, index) => { values[index] = Math.floor(Math.random() * 0xffffffff); });
+  return `web-${Date.now().toString(36)}-${Array.from(values, value => value.toString(36)).join('')}`;
+}
+
+function detectAgentLocale(prompt) {
+  const hasHebrew = /[\u0590-\u05ff]/.test(prompt);
+  const hasLatin = /[A-Za-z]/.test(prompt);
+  if (hasHebrew && hasLatin) return 'mixed';
+  if (hasLatin) return 'en-US';
+  return 'he-IL';
+}
+
+function agentStatusLabel(status) {
+  const labels = {
+    created: 'הריצה הפרטית נפתחה',
+    provider_error: 'פירוש הבקשה נכשל',
+    needs_clarification: 'נדרשת הבהרה לפני חיפוש',
+    request_ready: 'הבקשה מובנית ומוכנה לשלב הבא',
+    searching: 'השרת מדווח על חיפוש ספקים פעיל',
+    proposal_ready: 'השרת החזיר הצעה לבדיקה',
+    approval_required: 'נדרש אישור מפורש לפעולה מוגנת',
+    completed: 'הריצה הסתיימה',
+    failed: 'הריצה נכשלה',
+    cancelled: 'הריצה בוטלה'
+  };
+  return labels[status] || 'מצב הריצה התקבל מהשרת';
+}
+
+function agentWorkbenchRoot(root) {
+  return root.closest('.ai-planner-column') || root;
+}
+
+function setAgentWorkbenchStatus(root, message, state = '') {
+  const status = agentWorkbenchRoot(root).querySelector('[data-agent-run-state]');
+  if (!status) return;
+  status.textContent = message;
+  status.dataset.state = state;
+}
+
+function setAgentWorkbenchError(root, message = '') {
+  const error = agentWorkbenchRoot(root).querySelector('[data-agent-error]');
+  if (!error) return;
+  error.textContent = message;
+  error.hidden = !message;
+}
+
+function resetAgentWorkbench(root) {
+  const view = agentWorkbenchRoot(root);
+  const workbench = view.querySelector('[data-agent-workbench]');
+  const log = view.querySelector('[data-agent-event-log]');
+  const empty = view.querySelector('[data-agent-event-empty]');
+  const tripRequest = view.querySelector('[data-agent-trip-request]');
+  const facts = view.querySelector('[data-agent-request-facts]');
+  const clarifications = view.querySelector('[data-agent-clarifications]');
+  const questions = view.querySelector('[data-agent-question-list]');
+  const assumptions = view.querySelector('[data-agent-assumptions]');
+  const assumptionList = view.querySelector('[data-agent-assumption-list]');
+  const supplier = view.querySelector('[data-agent-supplier-state]');
+  if (workbench) workbench.hidden = false;
+  log?.replaceChildren();
+  facts?.replaceChildren();
+  questions?.replaceChildren();
+  assumptionList?.replaceChildren();
+  if (empty) {
+    empty.hidden = false;
+    empty.textContent = 'אירועי הריצה יופיעו כאן לאחר שהשרת יקבל את הבקשה.';
+  }
+  if (tripRequest) tripRequest.hidden = true;
+  if (clarifications) clarifications.hidden = true;
+  if (assumptions) assumptions.hidden = true;
+  if (supplier) {
+    supplier.hidden = true;
+    supplier.textContent = '';
+    delete supplier.dataset.state;
+  }
+  setAgentWorkbenchError(root);
+}
+
+function appendAgentFact(list, label, value) {
+  if (!list || !value) return;
+  const row = document.createElement('div');
+  const term = document.createElement('dt');
+  const description = document.createElement('dd');
+  term.textContent = label;
+  description.textContent = value;
+  row.append(term, description);
+  list.append(row);
+}
+
+function formatAgentBudget(budget) {
+  if (!budget || budget.amount === null || budget.amount === undefined || budget.amount === '' || !Number.isFinite(Number(budget.amount))) return '';
+  const amount = Number(budget.amount);
+  if (budget.currency && budget.currency !== 'UNKNOWN') {
+    try {
+      return new Intl.NumberFormat('he-IL', {style: 'currency', currency: budget.currency, maximumFractionDigits: 0}).format(amount);
+    } catch (error) {
+      return `${amount} ${budget.currency}`;
+    }
+  }
+  return String(amount);
+}
+
+function formatAgentTravelers(travelers) {
+  if (!travelers || typeof travelers !== 'object') return '';
+  const values = [];
+  if (Number.isInteger(travelers.adults)) values.push(`${travelers.adults} מבוגרים`);
+  if (Number.isInteger(travelers.children) && travelers.children > 0) values.push(`${travelers.children} ילדים`);
+  if (Number.isInteger(travelers.rooms)) values.push(`${travelers.rooms} חדרים`);
+  return values.join(' · ');
+}
+
+function renderAgentTripRequest(root, request) {
+  const view = agentWorkbenchRoot(root);
+  const card = view.querySelector('[data-agent-trip-request]');
+  const summary = view.querySelector('[data-agent-request-summary]');
+  const facts = view.querySelector('[data-agent-request-facts]');
+  const assumptions = view.querySelector('[data-agent-assumptions]');
+  const assumptionList = view.querySelector('[data-agent-assumption-list]');
+  const clarifications = view.querySelector('[data-agent-clarifications]');
+  const questionList = view.querySelector('[data-agent-question-list]');
+  if (!card || !summary || !facts || !request || typeof request !== 'object') {
+    if (card) card.hidden = true;
+    if (assumptions) assumptions.hidden = true;
+    if (clarifications) clarifications.hidden = true;
+    return;
+  }
+
+  facts.replaceChildren();
+  summary.textContent = request.summary || 'השרת החזיר בקשת נסיעה מובנית.';
+  const destinations = Array.isArray(request.destinations) ? request.destinations.filter(Boolean) : [];
+  const destinationLabel = request.destination_mode === 'anywhere'
+    ? 'פתוחים לכל יעד שמתאים לאילוצים'
+    : destinations.join(', ');
+  appendAgentFact(facts, 'יעד', destinationLabel);
+  appendAgentFact(facts, 'מועד', request.date_text || (request.date_flexibility === 'flexible' ? 'תאריכים גמישים' : 'טרם נקבע'));
+  appendAgentFact(facts, 'נוסעים', formatAgentTravelers(request.travelers));
+  appendAgentFact(facts, 'תקציב', formatAgentBudget(request.budget));
+  appendAgentFact(facts, 'אווירה', Array.isArray(request.vibes) ? request.vibes.join(', ') : '');
+  appendAgentFact(facts, 'אילוצים', Array.isArray(request.hard_constraints) ? request.hard_constraints.join(', ') : '');
+  appendAgentFact(
+    facts,
+    'מקור הבקשה',
+    request.source?.input_kind === 'voice'
+      ? `קול · ${request.source.transcript_confirmed ? 'התמלול אושר' : 'התמלול לא אושר'}`
+      : 'הקלדה'
+  );
+  card.hidden = false;
+
+  const assumptionValues = Array.isArray(request.assumptions) ? request.assumptions.filter(Boolean) : [];
+  assumptionList?.replaceChildren(...assumptionValues.map(value => {
+    const item = document.createElement('li');
+    item.textContent = value;
+    return item;
+  }));
+  if (assumptions) assumptions.hidden = assumptionValues.length === 0;
+
+  const blockerIds = new Set(Array.isArray(request.readiness?.blockers) ? request.readiness.blockers : []);
+  const questions = Array.isArray(request.material_questions)
+    ? request.material_questions.filter(question => question && question.status === 'open')
+    : [];
+  questionList?.replaceChildren(...questions.map(question => {
+    const item = document.createElement('article');
+    const head = document.createElement('div');
+    const title = document.createElement('strong');
+    title.textContent = question.question || 'נדרשת הבהרה';
+    head.append(title);
+    if (question.blocking || blockerIds.has(question.id)) {
+      const badge = document.createElement('span');
+      badge.textContent = 'נדרש לפני חיפוש';
+      head.append(badge);
+    }
+    item.append(head);
+    if (question.reason) {
+      const reason = document.createElement('p');
+      reason.textContent = question.reason;
+      item.append(reason);
+    }
+    return item;
+  }));
+  if (clarifications) clarifications.hidden = questions.length === 0;
+}
+
+function agentEventPhaseLabel(phase) {
+  const labels = {
+    intake: 'קליטת בקשה',
+    understanding: 'פירוש הבקשה',
+    clarification: 'הבהרה',
+    supplier_search: 'חיפוש ספקים',
+    proposal: 'הצעה',
+    approval: 'אישור',
+    execution: 'ביצוע',
+    recovery: 'התאוששות'
+  };
+  return labels[phase] || 'עדכון שרת';
+}
+
+function mergeAndRenderAgentEvents(root, events) {
+  if (!Array.isArray(events)) return;
+  const view = agentWorkbenchRoot(root);
+  const log = view.querySelector('[data-agent-event-log]');
+  const empty = view.querySelector('[data-agent-event-empty]');
+  if (!log) return;
+
+  [...events].sort((a, b) => Number(a?.sequence || 0) - Number(b?.sequence || 0)).forEach(event => {
+    const sequence = Number(event?.sequence || 0);
+    if (sequence > agentRuntime.lastSequence) agentRuntime.lastSequence = sequence;
+    const eventId = String(event?.event_id || `sequence-${sequence}`);
+    if (agentRuntime.eventIds.has(eventId)) return;
+    agentRuntime.eventIds.add(eventId);
+    agentRuntime.events.push(event);
+    if (event?.visible === false || !event?.message) return;
+
+    const item = document.createElement('li');
+    item.className = `agent-event is-${String(event.status || 'completed').replace(/[^a-z-]/g, '')}`;
+    item.dataset.eventId = eventId;
+    item.dataset.eventSequence = String(sequence);
+    const meta = document.createElement('div');
+    const phase = document.createElement('span');
+    const time = document.createElement('time');
+    const message = document.createElement('p');
+    phase.textContent = agentEventPhaseLabel(event.phase);
+    if (event.occurred_at) {
+      time.dateTime = event.occurred_at;
+      const parsed = new Date(event.occurred_at);
+      time.textContent = Number.isNaN(parsed.getTime()) ? '' : parsed.toLocaleTimeString('he-IL', {hour: '2-digit', minute: '2-digit'});
+    }
+    meta.append(phase, time);
+    message.textContent = event.message;
+    item.append(meta, message);
+    log.append(item);
+  });
+  if (empty) empty.hidden = log.childElementCount > 0;
+}
+
+function renderAgentSupplierState(root, run) {
+  const supplier = agentWorkbenchRoot(root).querySelector('[data-agent-supplier-state]');
+  if (!supplier) return;
+  const supplierEvents = agentRuntime.events.filter(event => event?.visible !== false && event?.phase === 'supplier_search' && event?.message);
+  const latest = supplierEvents[supplierEvents.length - 1];
+  if (latest) {
+    supplier.hidden = false;
+    supplier.dataset.state = latest.status === 'waiting' ? 'not-started' : String(latest.status || 'reported');
+    supplier.textContent = latest.message;
+    return;
+  }
+  if (run?.status === 'needs_clarification') {
+    supplier.hidden = false;
+    supplier.dataset.state = 'not-started';
+    supplier.textContent = 'חיפוש ספקים לא התחיל. השרת ממתין לתשובה על שאלות החובה.';
+    return;
+  }
+  supplier.hidden = true;
+  supplier.textContent = '';
+}
+
+function renderAgentRun(root, run, focusWorkbench = false) {
+  if (!run || typeof run !== 'object' || typeof run.run_id !== 'string') {
+    throw new Error('השרת לא החזיר חוזה ריצה תקין.');
+  }
+  agentRuntime.runId = run.run_id;
+  agentRuntime.status = String(run.status || 'created');
+  setAgentWorkbenchStatus(root, agentStatusLabel(agentRuntime.status), agentRuntime.status);
+  renderAgentTripRequest(root, run.trip_request);
+  mergeAndRenderAgentEvents(root, run.events || []);
+  renderAgentSupplierState(root, run);
+  const failedEvents = agentRuntime.events.filter(event => event?.visible !== false && event?.status === 'failed' && event?.message);
+  if (['provider_error', 'failed'].includes(agentRuntime.status)) {
+    const failedEvent = failedEvents[failedEvents.length - 1];
+    setAgentWorkbenchError(root, failedEvent?.message || 'השרת דיווח שהריצה נכשלה. לא יוצגו חיפוש, מחיר או הצעה ללא אירוע תקין.');
+  } else {
+    setAgentWorkbenchError(root);
+  }
+  if (focusWorkbench) agentWorkbenchRoot(root).querySelector('#agent-run-title')?.focus({preventScroll: true});
+}
+
+function agentErrorMessage(error) {
+  if (error?.status === 404 || error?.code === 'agent_unavailable') {
+    return 'שירות המתכנן הפרטי עדיין אינו זמין באתר. הבקשה לא הועברה למפת החיפוש ולא נחשפה בכתובת.';
+  }
+  if (error?.status === 429) return 'נשלחו יותר מדי בקשות בזמן קצר. המתינו כמה דקות ונסו שוב.';
+  if (error?.status === 409) return 'השרת כבר קיבל את הבקשה הזאת. המתינו לפני שליחה נוספת.';
+  if (error?.status === 401 || error?.status === 403) return 'הגישה לריצה הפרטית פגה. פתחו ריצה חדשה מהבקשה שמופיעה למעלה.';
+  return 'לא התקבל אישור תקין לפתיחת ריצה פרטית. לא נציג חיפוש, מחיר או הצעה בלי אירוע שרת מאומת.';
+}
+
+function shouldPollAgentRun(status) {
+  return ['created', 'searching'].includes(status);
+}
+
+function scheduleAgentPoll(root, delay = 1800) {
+  if (!shouldPollAgentRun(agentRuntime.status) || !agentRuntime.runId) return;
+  if (agentRuntime.pollTimer) window.clearTimeout(agentRuntime.pollTimer);
+  agentRuntime.pollTimer = window.setTimeout(() => pollAgentRun(root), delay);
+}
+
+async function pollAgentRun(root) {
+  agentRuntime.pollTimer = 0;
+  const runId = agentRuntime.runId;
+  if (!runId) {
+    setAgentWorkbenchError(root, 'לא ניתן להמשיך לעדכן את הריצה כי מזהה הריצה אינו זמין בלשונית הזאת.');
+    return;
+  }
+  try {
+    const eventPayload = await agentApiRequest(`/runs/${encodeURIComponent(runId)}/events?after=${agentRuntime.lastSequence}`);
+    if (agentRuntime.runId !== runId) return;
+    mergeAndRenderAgentEvents(root, eventPayload.events || []);
+    if (Number(eventPayload.last_sequence) > agentRuntime.lastSequence) agentRuntime.lastSequence = Number(eventPayload.last_sequence);
+    const run = await agentApiRequest(`/runs/${encodeURIComponent(runId)}`);
+    if (agentRuntime.runId !== runId) return;
+    renderAgentRun(root, run);
+    agentRuntime.pollFailures = 0;
+    scheduleAgentPoll(root);
+  } catch (error) {
+    agentRuntime.pollFailures += 1;
+    setAgentWorkbenchError(root, 'העדכון החי נעצר זמנית. האירועים שכבר התקבלו נשארים מוצגים ללא שינוי.');
+    if (agentRuntime.pollFailures < 3) scheduleAgentPoll(root, 5000);
+  }
+}
+
+async function createAgentRun(root) {
+  const prompt = root.querySelector('[data-agent-prompt]');
+  const mode = root.querySelector('input[name="mode"]');
+  const transcriptConfirmed = root.querySelector('[data-ai-transcript-confirmed]');
+  const submit = root.querySelector('[data-agent-submit]');
+  const voiceStatus = root.querySelector('[data-ai-voice-status]');
+  if (!prompt || !mode || !submit || root.dataset.state === 'loading') return;
+  const message = prompt.value.trim();
+  if (message.length < 4) {
+    prompt.setCustomValidity('כתבו לפחות ארבעה תווים כדי להתחיל.');
+    prompt.reportValidity();
+    return;
+  }
+  prompt.setCustomValidity('');
+
+  const inputKind = root.dataset.agentInputKind === 'voice' ? 'voice' : 'typed';
+  if (inputKind === 'voice' && !transcriptConfirmed?.checked) {
+    if (voiceStatus) voiceStatus.textContent = 'בדקו את התמלול וסמנו שאישרתם אותו לפני השליחה.';
+    transcriptConfirmed?.focus();
+    return;
+  }
+
+  clearAgentRunSession();
+  resetAgentRuntime();
+  resetAgentWorkbench(root);
+  setAgentWorkbenchStatus(root, 'שולחים בקשה פרטית לשרת. עדיין לא התקבל אירוע ריצה.', 'connecting');
+  submit.disabled = true;
+  root.dataset.state = 'loading';
+  try {
+    const payload = await agentApiRequest('/runs', {
+      method: 'POST',
+      body: JSON.stringify({
+        prompt: message,
+        mode: mode.value === 'surprise' ? 'surprise' : 'agent',
+        locale: detectAgentLocale(message),
+        input_kind: inputKind,
+        transcript_confirmed: inputKind === 'typed' || Boolean(transcriptConfirmed?.checked),
+        client_request_id: createAgentClientRequestId()
+      })
+    });
+    const run = {...payload};
+    if (!run.run_id) throw new Error('השרת לא החזיר מזהה ריצה פרטי.');
+    resetAgentRuntime(run.run_id);
+    const stored = storeAgentRunSession(run.run_id);
+    renderAgentRun(root, run, true);
+    if (!stored) {
+      setAgentWorkbenchError(root, 'הריצה נפתחה, אבל הדפדפן חסם שמירת מזהה הריצה בלשונית. האירועים הראשונים מוצגים, אך לא יתבצע עדכון נוסף.');
+      return;
+    }
+    scheduleAgentPoll(root);
+  } catch (error) {
+    setAgentWorkbenchStatus(root, 'לא התקבל אישור לפתיחת ריצה', 'error');
+    setAgentWorkbenchError(root, agentErrorMessage(error));
+    const view = agentWorkbenchRoot(root);
+    const empty = view.querySelector('[data-agent-event-empty]');
+    if (empty) empty.textContent = 'לא התקבלו אירועי ריצה מהשרת.';
+    view.querySelector('#agent-run-title')?.focus({preventScroll: true});
+  } finally {
+    submit.disabled = false;
+    root.dataset.state = 'idle';
+  }
+}
+
+async function resumeAgentRun(root) {
+  const runId = readAgentSessionValue(agentActiveRunStorageKey);
+  if (!runId) return;
+  resetAgentRuntime(runId);
+  resetAgentWorkbench(root);
+  setAgentWorkbenchStatus(root, 'טוענים את הריצה הפרטית מהלשונית הזאת.', 'connecting');
+  try {
+    const run = await agentApiRequest(`/runs/${encodeURIComponent(runId)}`);
+    if (agentRuntime.runId !== runId) return;
+    renderAgentRun(root, run);
+    scheduleAgentPoll(root);
+  } catch (error) {
+    clearAgentRunSession();
+    setAgentWorkbenchStatus(root, 'לא ניתן לחדש את הריצה הפרטית', 'error');
+    setAgentWorkbenchError(root, agentErrorMessage(error));
+  }
+}
+
 function initAIConversationEntry() {
   const root = document.querySelector('[data-ai-conversation-entry]');
   const button = root?.querySelector('[data-ai-voice]');
-  const prompt = root?.querySelector('textarea[name="q"]');
+  const prompt = root?.querySelector('[data-agent-prompt]');
   const status = root?.querySelector('[data-ai-voice-status]');
+  const confirmation = root?.querySelector('[data-ai-transcript-confirmation]');
+  const confirmed = root?.querySelector('[data-ai-transcript-confirmed]');
   if (!root || !button || !prompt || !status) return;
+
+  root.dataset.agentInputKind = 'typed';
+  const submit = root.querySelector('[data-agent-submit]');
+  if (submit) submit.disabled = false;
+  root.addEventListener('submit', event => {
+    event.preventDefault();
+    createAgentRun(root);
+  });
+  prompt.addEventListener('input', () => {
+    prompt.setCustomValidity('');
+    if (root.dataset.agentInputKind === 'voice') {
+      if (confirmed) confirmed.checked = false;
+      if (confirmation) confirmation.hidden = false;
+      status.textContent = 'התמלול נערך. בדקו אותו ואשרו מחדש לפני השליחה.';
+    }
+  });
+  confirmed?.addEventListener('change', () => {
+    status.textContent = confirmed.checked
+      ? 'התמלול אושר ויישלח עם סימון שמקורו בקול.'
+      : 'בדקו את התמלול ואשרו אותו לפני השליחה.';
+  });
 
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SpeechRecognition) {
@@ -1625,6 +2136,7 @@ function initAIConversationEntry() {
       status.textContent = 'הכתבה קולית אינה זמינה בדפדפן הזה. אפשר לכתוב את הבקשה באותו שדה.';
       prompt.focus();
     });
+    resumeAgentRun(root);
     return;
   }
 
@@ -1632,15 +2144,20 @@ function initAIConversationEntry() {
   recognition.lang = 'he-IL';
   recognition.interimResults = false;
   recognition.maxAlternatives = 1;
+  let listening = false;
 
-  const setListening = listening => {
-    button.classList.toggle('is-listening', listening);
-    button.setAttribute('aria-pressed', String(listening));
+  const setListening = value => {
+    listening = value;
+    button.classList.toggle('is-listening', value);
+    button.setAttribute('aria-pressed', String(value));
+    const label = button.querySelector('span');
+    if (label) label.textContent = value ? 'עצרו את ההקלטה' : 'דברו במקום להקליד';
   };
 
   button.addEventListener('click', () => {
     try {
-      recognition.start();
+      if (listening) recognition.stop();
+      else recognition.start();
     } catch (error) {
       status.textContent = 'המיקרופון כבר מקשיב. אמרו את הבקשה במילים שלכם.';
     }
@@ -1651,13 +2168,19 @@ function initAIConversationEntry() {
   });
   recognition.addEventListener('result', event => {
     const transcript = event.results?.[0]?.[0]?.transcript?.trim();
-    if (transcript) prompt.value = transcript;
-    status.textContent = 'הבקשה נקלטה. אפשר לערוך אותה לפני שמתחילים.';
+    if (!transcript) return;
+    prompt.value = transcript;
+    root.dataset.agentInputKind = 'voice';
+    if (confirmation) confirmation.hidden = false;
+    if (confirmed) confirmed.checked = false;
+    status.textContent = 'התמלול מופיע בשדה. בדקו אותו ואשרו לפני שמתחילים.';
+    prompt.focus();
   });
   recognition.addEventListener('error', () => {
     status.textContent = 'לא הצלחנו לקלוט את הבקשה. אפשר לנסות שוב או לכתוב אותה.';
   });
   recognition.addEventListener('end', () => setListening(false));
+  resumeAgentRun(root);
 }
 
 function initDirectory() {

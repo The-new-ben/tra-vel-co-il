@@ -14,6 +14,10 @@ if [[ ! "$WP_SITE_URL" =~ ^https:// ]]; then
   echo "WP_SITE_URL must use HTTPS." >&2
   exit 1
 fi
+if [[ "${ROLLBACK_CONFIRMATION:-}" != "ROLLBACK TRA-VEL V2" ]]; then
+  echo "Rollback requires the exact phrase ROLLBACK TRA-VEL V2." >&2
+  exit 1
+fi
 
 ROLLBACK_URL="${WP_SITE_URL%/}/wp-json/tra-vel-deploy/v1/theme/rollback"
 RESPONSE_FILE="$(mktemp)"
@@ -22,6 +26,7 @@ trap 'rm -f "$RESPONSE_FILE"' EXIT
 curl --fail-with-body --silent --show-error --max-time 180 \
   --user "${WP_USERNAME}:${WP_APP_PASSWORD}" \
   --data-urlencode "backup=${BACKUP_NAME}" \
+  --data-urlencode "confirmation=${ROLLBACK_CONFIRMATION}" \
   "$ROLLBACK_URL" > "$RESPONSE_FILE"
 
 grep -q '"ok":true' "$RESPONSE_FILE" || { echo "WordPress did not confirm the rollback." >&2; exit 1; }

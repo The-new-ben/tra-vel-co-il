@@ -4,6 +4,7 @@ param(
     [string]$CredentialPath = 'C:\Users\janana\Documents\.codex-secrets\wordpress-app-passwords\tra-vel.co.il.credential.xml',
     [string]$ArchivePath = '',
     [switch]$Activate,
+    [string]$DeploymentConfirmation = '',
     [string]$ActivationConfirmation = ''
 )
 
@@ -30,7 +31,10 @@ if (-not $ArchivePath) {
 if (-not (Test-Path -LiteralPath $ArchivePath)) {
     throw "Theme archive not found: $ArchivePath"
 }
-if ($Activate -and $ActivationConfirmation -ne 'ACTIVATE TRA-VEL V2') {
+if ($DeploymentConfirmation -cne 'DEPLOY TRA-VEL V2') {
+    throw 'Deployment requires the exact phrase DEPLOY TRA-VEL V2.'
+}
+if ($Activate -and $ActivationConfirmation -cne 'ACTIVATE TRA-VEL V2') {
     throw 'Activation requires the exact phrase ACTIVATE TRA-VEL V2.'
 }
 
@@ -57,7 +61,8 @@ try {
     $fileContent.Headers.ContentType = [Net.Http.Headers.MediaTypeHeaderValue]::new('application/zip')
     $multipart.Add($fileContent, 'package', [IO.Path]::GetFileName($ArchivePath))
     $multipart.Add([Net.Http.StringContent]::new($Activate.IsPresent.ToString().ToLowerInvariant()), 'activate')
-    $multipart.Add([Net.Http.StringContent]::new($ActivationConfirmation), 'confirmation')
+    $multipart.Add([Net.Http.StringContent]::new($DeploymentConfirmation), 'deployment_confirmation')
+    $multipart.Add([Net.Http.StringContent]::new($ActivationConfirmation), 'activation_confirmation')
 
     $endpoint = $SiteUrl.TrimEnd('/') + '/wp-json/tra-vel-deploy/v1/theme'
     $response = $client.PostAsync($endpoint, $multipart).GetAwaiter().GetResult()

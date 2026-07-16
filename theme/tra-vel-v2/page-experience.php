@@ -67,16 +67,16 @@ $experiences = array(
 	),
 	'ai-planner' => array(
 		'eyebrow'     => 'Tra-Vel AI Planner',
-		'title'       => 'כתבו איך אתם רוצים להרגיש. אנחנו נבנה את הדרך.',
-		'description' => 'המתכנן הופך שפה טבעית למסלול חזותי, בודק חלופות ומסביר כל החלטה לפי תקציב, עונה, טיסות, מלונות וביטוח.',
+		'title'       => 'כתבו איך אתם רוצים להרגיש. מתחילים בבקשה ברורה.',
+		'description' => 'המתכנן הופך שפה טבעית לבקשת נסיעה מסודרת ומציג מה הובן ומה חייב הבהרה לפני כל חיפוש ספקים.',
 		'prompt'      => 'למשל: 12 יום בתאילנד לזוג, רגוע, עד ₪9,000, בלי יותר מעצירה אחת',
-		'action'      => 'בנו לי מסלול',
+		'action'      => 'התחילו תכנון פרטי',
 		'chips'       => array( 'זוג', 'משפחה', 'גמיש בתאריכים', 'טיול ראשון' ),
-		'proof'       => array( 'מבין כוונה' => 'לא רק שדות חיפוש', 'מציע חלופות' => 'עם יתרונות וחסרונות', 'מחובר למפה' => 'כל החלטה במקום', 'נשאר בשליטה' => 'אתם מאשרים כל שינוי' ),
+		'proof'       => array( 'מבין כוונה' => 'לא רק שדות חיפוש', 'מסדר את הבקשה' => 'מה ידוע ומה חסר', 'מתעד פעולות' => 'רק אירועי שרת אמיתיים', 'נשאר בשליטה' => 'אין חיפוש או הזמנה בשקט' ),
 		'cards'       => array(
 			array( 'messages-square', 'ספרו', 'מטרה, קצב ותקציב', 'מתחילים מהאנשים ומהחוויה, לא מרשימת יעדים מוכנה.' ),
-			array( 'wand-sparkles', 'השוו', 'שלוש דרכים אפשריות', 'המערכת בונה מסלול נוח, מאוזן וזול ומציגה את המחיר של כל בחירה.' ),
-			array( 'map', 'ערכו', 'הכול על המפה', 'גוררים, מוסיפים, מסירים ומקבלים חישוב חדש של זמן ועלות.' ),
+			array( 'scan-search', 'בדקו', 'מה באמת הובן', 'מקבלים סיכום מובנה, הנחות מסומנות ושאלות שחייבות תשובה.' ),
+			array( 'list-checks', 'הבהירו', 'רק את מה שחסר', 'חיפוש ספקים מתחיל רק לאחר שהבקשה מוכנה והמערכת מדווחת על כך.' ),
 		),
 	),
 	'destinations' => array(
@@ -169,12 +169,41 @@ get_header();
 				<input type="hidden" name="limit" value="12"><button class="experience-submit" type="submit"><span><?php esc_html_e( 'השוו כיסוי ומחיר משוער', 'tra-vel-v2' ); ?></span><i data-lucide="shield-check"></i></button><small><?php esc_html_e( 'המידע אינו ייעוץ או הצעת ביטוח. הפוליסה, החיתום והמחיר אצל המבטח הם הקובעים.', 'tra-vel-v2' ); ?></small>
 			</form>
 			<?php elseif ( $is_ai_planner ) : ?>
-			<form class="experience-search ai-conversation-entry" action="<?php echo esc_url( $map_url ); ?>" method="get" data-ai-conversation-entry>
-				<label class="ai-conversation-prompt"><span><?php echo esc_html( $is_surprise ? __( 'ספרו לי איזו חופשה להפתיע אתכם', 'tra-vel-v2' ) : __( 'ספרו לי על החופשה במילים שלכם', 'tra-vel-v2' ) ); ?></span><textarea name="q" rows="5" required><?php echo esc_textarea( $is_surprise ? __( 'חופשה אקזוטית לזוג עד 1,000 דולר. לא משנה לאן. תחליטו בשבילי.', 'tra-vel-v2' ) : $experience['prompt'] ); ?></textarea></label>
-				<input type="hidden" name="mode" value="<?php echo esc_attr( $is_surprise ? 'surprise' : 'agent' ); ?>">
-				<div class="ai-conversation-actions"><button class="ai-voice-button" type="button" data-ai-voice><i data-lucide="mic"></i><span><?php esc_html_e( 'דברו במקום להקליד', 'tra-vel-v2' ); ?></span></button><button class="experience-submit" type="submit"><span><?php echo esc_html( $is_surprise ? __( 'תפתיעו אותי', 'tra-vel-v2' ) : __( 'בנו לי הצעה', 'tra-vel-v2' ) ); ?></span><i data-lucide="sparkles"></i></button></div>
-				<p class="ai-voice-status" data-ai-voice-status role="status"><?php esc_html_e( 'אפשר לשנות כל פרט לפני אישור. הזמנה או תשלום יתבצעו רק לאחר אישור מפורש.', 'tra-vel-v2' ); ?></p>
-			</form>
+			<div class="ai-planner-column">
+				<form class="experience-search ai-conversation-entry" action="" method="post" data-ai-conversation-entry data-agent-entry-form>
+					<label class="ai-conversation-prompt"><span><?php echo esc_html( $is_surprise ? __( 'ספרו לי איזו חופשה להפתיע אתכם', 'tra-vel-v2' ) : __( 'ספרו לי על החופשה במילים שלכם', 'tra-vel-v2' ) ); ?></span><textarea name="prompt" rows="5" minlength="4" maxlength="4000" autocomplete="off" data-agent-prompt required><?php echo esc_textarea( $is_surprise ? __( 'חופשה אקזוטית לזוג עד 1,000 דולר. לא משנה לאן. תחליטו בשבילי.', 'tra-vel-v2' ) : $experience['prompt'] ); ?></textarea></label>
+					<input type="hidden" name="mode" value="<?php echo esc_attr( $is_surprise ? 'surprise' : 'agent' ); ?>">
+					<label class="ai-transcript-confirmation" data-ai-transcript-confirmation hidden><input type="checkbox" data-ai-transcript-confirmed><span><?php esc_html_e( 'בדקתי ואישרתי שזה התמלול שהתכוונתי לשלוח', 'tra-vel-v2' ); ?></span></label>
+					<div class="ai-conversation-actions"><button class="ai-voice-button" type="button" data-ai-voice aria-pressed="false"><i data-lucide="mic"></i><span><?php esc_html_e( 'דברו במקום להקליד', 'tra-vel-v2' ); ?></span></button><button class="experience-submit" type="submit" data-agent-submit disabled><span><?php echo esc_html( $is_surprise ? __( 'תפתיעו אותי', 'tra-vel-v2' ) : __( 'התחילו תכנון פרטי', 'tra-vel-v2' ) ); ?></span><i data-lucide="sparkles"></i></button></div>
+					<p class="ai-voice-status" data-ai-voice-status role="status"><?php esc_html_e( 'הבקשה תעובד באופן פרטי ולא תישמר כטקסט חופשי. אל תזינו פרטי דרכון, תשלום או מידע רפואי. לא יתבצע חיפוש ספקים, תשלום או הזמנה בלי אירוע מתועד ואישור מפורש.', 'tra-vel-v2' ); ?></p>
+					<noscript><p class="agent-noscript"><?php esc_html_e( 'המתכנן הפרטי דורש JavaScript. הבקשה לא נשלחה.', 'tra-vel-v2' ); ?></p></noscript>
+				</form>
+
+				<section class="agent-run-workbench" data-agent-workbench aria-labelledby="agent-run-title" hidden>
+					<header class="agent-run-head">
+						<div><span class="eyebrow"><?php esc_html_e( 'סביבת תכנון פרטית', 'tra-vel-v2' ); ?></span><h2 id="agent-run-title" tabindex="-1"><?php esc_html_e( 'מה הסוכן עשה בפועל', 'tra-vel-v2' ); ?></h2></div>
+						<p class="agent-run-state" data-agent-run-state role="status" aria-live="polite"></p>
+					</header>
+					<p class="agent-run-error" data-agent-error role="alert" hidden></p>
+					<section class="agent-request-card" data-agent-trip-request hidden>
+						<span><?php esc_html_e( 'הבקשה שהובנה', 'tra-vel-v2' ); ?></span>
+						<h3 data-agent-request-summary></h3>
+						<dl class="agent-request-facts" data-agent-request-facts></dl>
+					</section>
+					<section class="agent-assumptions" data-agent-assumptions hidden><h3><?php esc_html_e( 'הנחות שצריך לבדוק', 'tra-vel-v2' ); ?></h3><ul data-agent-assumption-list></ul></section>
+					<section class="agent-clarifications" data-agent-clarifications hidden aria-labelledby="agent-clarification-title">
+						<h3 id="agent-clarification-title"><?php esc_html_e( 'שאלות שחייבות תשובה', 'tra-vel-v2' ); ?></h3>
+						<div class="agent-question-list" data-agent-question-list></div>
+						<p><?php esc_html_e( 'עד לקבלת תשובה לא מתחיל חיפוש ספקים. בשלב הראשון אפשר לערוך את הבקשה למעלה ולפתוח ריצה פרטית חדשה.', 'tra-vel-v2' ); ?></p>
+					</section>
+					<section class="agent-event-panel" aria-labelledby="agent-event-title">
+						<div class="agent-panel-heading"><h3 id="agent-event-title"><?php esc_html_e( 'יומן פעולות אמיתי', 'tra-vel-v2' ); ?></h3><small><?php esc_html_e( 'מוצגים רק אירועים שהשרת החזיר', 'tra-vel-v2' ); ?></small></div>
+						<p class="agent-event-empty" data-agent-event-empty><?php esc_html_e( 'אירועי הריצה יופיעו כאן לאחר שהשרת יקבל את הבקשה.', 'tra-vel-v2' ); ?></p>
+						<ol class="agent-event-log" data-agent-event-log role="log" aria-live="polite" aria-relevant="additions text"></ol>
+					</section>
+					<aside class="agent-supplier-state" data-agent-supplier-state role="status" aria-live="polite" hidden></aside>
+				</section>
+			</div>
 			<?php else : ?>
 			<form class="experience-search" action="<?php echo esc_url( $map_url ); ?>" method="get"><label><?php esc_html_e( 'מה אתם מחפשים?', 'tra-vel-v2' ); ?><input name="q" value="<?php echo esc_attr( $experience['prompt'] ); ?>"></label><div class="experience-search-row"><label><?php esc_html_e( 'מתי?', 'tra-vel-v2' ); ?><input name="when" value="<?php esc_attr_e( 'גמיש', 'tra-vel-v2' ); ?>"></label><label><?php esc_html_e( 'תקציב?', 'tra-vel-v2' ); ?><input name="budget" value="<?php esc_attr_e( 'עוד לא החלטנו', 'tra-vel-v2' ); ?>"></label></div><div class="experience-chips"><?php foreach ( $experience['chips'] as $chip ) : ?><button type="button"><?php echo esc_html( $chip ); ?></button><?php endforeach; ?></div><button class="experience-submit" type="submit"><?php echo esc_html( $experience['action'] ); ?><i data-lucide="arrow-left"></i></button><small><?php esc_html_e( 'המחירים והזמינות יאומתו בחיפוש לפני מעבר להזמנה.', 'tra-vel-v2' ); ?></small></form>
 			<?php endif; ?>

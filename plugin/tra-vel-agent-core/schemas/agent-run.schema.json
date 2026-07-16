@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://tra-vel.co.il/schemas/agent/run-1.0.0.json",
+  "title": "Tra-Vel AgentRun",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract_version", "run_id", "status", "mode", "locale", "trip_request", "proposals", "provider", "events", "approvals", "created_at", "updated_at", "expires_at"],
+  "properties": {
+    "contract_version": { "const": "1.0.0" },
+    "run_id": { "type": "string", "format": "uuid" },
+    "status": { "enum": ["created", "provider_error", "needs_clarification", "request_ready", "searching", "proposal_ready", "approval_required", "completed", "failed", "cancelled"] },
+    "mode": { "enum": ["agent", "surprise"] },
+    "locale": { "enum": ["he-IL", "en-US", "mixed"] },
+    "trip_request": { "type": "object" },
+    "proposals": { "type": "array" },
+    "provider": { "type": "object" },
+    "events": { "type": "array", "items": { "$ref": "run-event.schema.json" } },
+    "approvals": { "type": "array", "items": { "$ref": "approval.schema.json" } },
+    "created_at": { "type": "string", "format": "date-time" },
+    "updated_at": { "type": "string", "format": "date-time" },
+    "expires_at": { "type": "string", "format": "date-time" }
+  }
+}

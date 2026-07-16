@@ -62,6 +62,7 @@ jobs:
           node scripts/ci/validate-traveler-workspace-contract.mjs
           node scripts/ci/validate-supplier-handoff-contract.mjs
           node scripts/ci/validate-guide-packets.mjs
+          node scripts/ci/validate-theme-deploy-contract.mjs
           php scripts/ci/validate-supplier-runtime.php
           php scripts/ci/validate-flight-search-runtime.php
           php scripts/ci/validate-hotel-search-runtime.php

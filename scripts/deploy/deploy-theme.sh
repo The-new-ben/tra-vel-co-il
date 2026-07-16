@@ -14,6 +14,18 @@ if [[ ! "$WP_SITE_URL" =~ ^https:// ]]; then
   echo "WP_SITE_URL must use HTTPS." >&2
   exit 1
 fi
+if [[ "${DEPLOYMENT_CONFIRMATION:-}" != "DEPLOY TRA-VEL V2" ]]; then
+  echo "Deployment requires the exact phrase DEPLOY TRA-VEL V2." >&2
+  exit 1
+fi
+if [[ "${ACTIVATE_THEME:-false}" != "true" && "${ACTIVATE_THEME:-false}" != "false" ]]; then
+  echo "ACTIVATE_THEME must be true or false." >&2
+  exit 1
+fi
+if [[ "${ACTIVATE_THEME:-false}" == "true" && "${ACTIVATION_CONFIRMATION:-}" != "ACTIVATE TRA-VEL V2" ]]; then
+  echo "Activation requires the exact phrase ACTIVATE TRA-VEL V2." >&2
+  exit 1
+fi
 
 SHA256="$(sha256sum "$ARCHIVE" | cut -d' ' -f1)"
 STATUS_URL="${WP_SITE_URL%/}/wp-json/tra-vel-deploy/v1/theme/status"
@@ -33,7 +45,8 @@ curl --fail-with-body --silent --show-error --max-time 180 \
   --header "X-Tra-Vel-SHA256: ${SHA256}" \
   --form "package=@${ARCHIVE};type=application/zip" \
   --form "activate=${ACTIVATE_THEME:-false}" \
-  --form "confirmation=${ACTIVATION_CONFIRMATION:-}" \
+  --form "deployment_confirmation=${DEPLOYMENT_CONFIRMATION}" \
+  --form "activation_confirmation=${ACTIVATION_CONFIRMATION:-}" \
   "$DEPLOY_URL" > "$RESPONSE_FILE"
 
 grep -q '"ok":true' "$RESPONSE_FILE" || { echo "WordPress did not confirm the deployment." >&2; exit 1; }

@@ -1,6 +1,6 @@
 # Tra-Vel V2 deployment pipeline
 
-Status: verified on `https://tra-vel.co.il` on 2026-07-16. Tra-Vel V2 0.2.0 is active; authenticated upload, backup, rollback, activation, page synchronization, and live smoke tests passed. Automatic deployment remains off. No uPress development environment is used.
+Status before this release: verified on `https://tra-vel.co.il` on 2026-07-16 with deploy gateway 0.1.0 and active Tra-Vel V2 1.10.2. Gateway 0.2.0, Agent Core 0.1.0, and theme 1.11.0 are prepared for the protected release sequence below. Automatic production deployment remains off. No uPress development environment is used.
 
 ## Delivery model
 
@@ -25,7 +25,7 @@ The existing production theme is not overwritten. Upload and activation are sepa
 
 Source: `plugin/tra-vel-deploy-gateway/`
 
-The gateway is installed once as a normal WordPress plugin. It accepts WordPress Application Password authentication over HTTPS and checks both `install_themes` and `update_themes` capabilities. `scripts/wp/bootstrap-deploy-gateway.ps1` uses the site's existing Code Snippets REST API only as a temporary authenticated installer, then deactivates it, replaces its code with a harmless comment, moves it to trash, and attempts permanent deletion.
+The gateway is installed once as a normal WordPress plugin. It accepts WordPress Application Password authentication over HTTPS and exposes fixed-scope controllers for Tra-Vel V2 and Tra-Vel Agent Core only. `scripts/wp/bootstrap-deploy-gateway.ps1` uses the site's existing Code Snippets REST API only as a temporary authenticated installer, then deactivates it, replaces its code with a harmless comment, moves it to trash, and attempts permanent deletion.
 
 It enforces all of the following:
 
@@ -38,6 +38,11 @@ It enforces all of the following:
 - Ten rollback releases are retained.
 - Activation requires the exact phrase `ACTIVATE TRA-VEL V2`.
 - No endpoint can update another theme slug.
+- Theme and plugin deployment locks are atomic database leases with owner-conditional release.
+- Server-side deployment, activation, and rollback phrases are required even when a caller bypasses GitHub Actions.
+- Downgrades and changed same-version artifacts are rejected; exact repeats are idempotent.
+- Failed installation or activation automatically restores the verified prior release and active state.
+- WordPress filesystem initialization, staged copies, installed versions, and release fingerprints fail closed.
 
 Authenticated routes:
 
@@ -46,6 +51,10 @@ Authenticated routes:
 | `GET` | `/wp-json/tra-vel-deploy/v1/theme/status` | Installed version, active state, backups |
 | `POST` | `/wp-json/tra-vel-deploy/v1/theme` | Validate, back up, and install V2 |
 | `POST` | `/wp-json/tra-vel-deploy/v1/theme/rollback` | Restore `latest` or a named backup |
+| `GET` | `/wp-json/tra-vel-deploy/v1/plugin/agent-core/status` | Installed Agent Core version, state, backups |
+| `POST` | `/wp-json/tra-vel-deploy/v1/plugin/agent-core` | Validate, back up, install, and optionally activate Agent Core |
+| `POST` | `/wp-json/tra-vel-deploy/v1/plugin/agent-core/rollback` | Restore a named Agent Core backup |
+| `POST` | `/wp-json/tra-vel-deploy/v1/plugin/agent-core/recovery/fresh` | Remove only the exact recent failed first install |
 
 ## GitHub workflows
 
@@ -70,6 +79,10 @@ Automatic main-branch upload remains off until `AUTO_DEPLOY_PRODUCTION=true`. Wh
 ### Rollback
 
 `.github/workflows/rollback-theme.yml` requires production approval and `ROLLBACK TRA-VEL V2`, restores a gateway backup, and reruns smoke tests.
+
+### Agent Core deploy
+
+`.github/workflows/deploy-agent-core.yml` packages and validates the private agent plugin. A real dispatch requires the protected production environment, `DEPLOY TRA-VEL AGENT CORE`, and, when requested, `ACTIVATE TRA-VEL AGENT CORE`. The health gate requires the exact manifest version and checksum returned by deployment. A failed update restores its named backup; a failed first install is deactivated and removed through the narrowly scoped recovery route.
 
 ## GitHub production environment
 
@@ -106,7 +119,8 @@ Build and upload V2 without activating it:
 
 ```powershell
 & 'C:\Users\janana\Documents\tra-vel-co-il\scripts\wp\deploy-theme-rest.ps1' `
-  -SiteUrl 'https://tra-vel.co.il'
+  -SiteUrl 'https://tra-vel.co.il' `
+  -DeploymentConfirmation 'DEPLOY TRA-VEL V2'
 ```
 
 Activate only after validation:
@@ -114,17 +128,18 @@ Activate only after validation:
 ```powershell
 & 'C:\Users\janana\Documents\tra-vel-co-il\scripts\wp\deploy-theme-rest.ps1' `
   -SiteUrl 'https://tra-vel.co.il' `
+  -DeploymentConfirmation 'DEPLOY TRA-VEL V2' `
   -Activate `
   -ActivationConfirmation 'ACTIVATE TRA-VEL V2'
 ```
 
 ## First live sequence
 
-1. Install and activate the deploy gateway plugin with `scripts/wp/bootstrap-deploy-gateway.ps1`; confirm the temporary snippet is inactive and neutralized or deleted.
-2. Confirm the authenticated status endpoint.
-3. Upload V2 without activation.
-4. Confirm installed version and checksum.
-5. Create/update the map and Thailand pages through the authenticated content helper.
-6. Activate V2 when the homepage and routes are ready.
-7. Run public desktop/mobile and route smoke tests.
-8. Enable automatic upload only after one complete manual release and rollback test.
+1. Install deploy gateway 0.2.0 with `scripts/wp/bootstrap-deploy-gateway.ps1`; confirm the temporary snippet is inactive and neutralized or deleted.
+2. Confirm both authenticated theme and Agent Core status endpoints.
+3. Install and activate Agent Core 0.1.0 with `scripts/wp/bootstrap-agent-core.ps1` and `INSTALL TRA-VEL AGENT CORE`.
+4. Store the OpenAI key through `scripts/wp/configure-agent-key.ps1`; confirm encrypted storage without printing the secret.
+5. Create a real private run and verify the structured request, HttpOnly ownership cookie, event log, no supplier claims, and exact provider usage.
+6. Upload and activate Tra-Vel V2 1.11.0 with the protected theme workflow.
+7. Run public desktop/mobile, map, AI planner, and route smoke tests with at least three visual checkpoints.
+8. Preserve automatic upload as disabled until another complete update and rollback exercise passes.

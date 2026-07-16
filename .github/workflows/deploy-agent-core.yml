@@ -1,0 +1,196 @@
+name: Tra-Vel Agent Core Deploy
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "plugin/tra-vel-agent-core/**"
+      - "plugin/tra-vel-deploy-gateway/**"
+      - "scripts/ci/build_agent_core.py"
+      - "scripts/ci/validate-agent-*.mjs"
+      - "scripts/ci/validate-agent-*.php"
+      - "scripts/deploy/deploy-agent-core.sh"
+      - "scripts/deploy/rollback-agent-core.sh"
+      - "scripts/deploy/remove-failed-agent-core.sh"
+      - ".github/workflows/deploy-agent-core.yml"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Package and validate without updating WordPress
+        required: true
+        default: true
+        type: boolean
+      activate_plugin:
+        description: Activate Agent Core after upload
+        required: true
+        default: true
+        type: boolean
+      deployment_confirmation:
+        description: For a real upload, enter DEPLOY TRA-VEL AGENT CORE
+        required: false
+        default: ""
+        type: string
+      activation_confirmation:
+        description: To activate, enter ACTIVATE TRA-VEL AGENT CORE
+        required: false
+        default: ""
+        type: string
+
+permissions:
+  contents: read
+  deployments: write
+
+concurrency:
+  group: tra-vel-production-agent-core
+  cancel-in-progress: false
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out selected revision
+        uses: actions/checkout@v4
+
+      - name: Validate Agent Core contracts and PHP
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/ci/validate-agent-contract.mjs
+          node scripts/ci/validate-agent-deploy-contract.mjs
+          php scripts/ci/validate-agent-policy-runtime.php
+          php scripts/ci/validate-agent-controller-runtime.php
+          while IFS= read -r -d '' file; do php -l "$file"; done < <(find plugin/tra-vel-agent-core plugin/tra-vel-deploy-gateway -type f -name '*.php' -print0)
+          bash -n scripts/deploy/deploy-agent-core.sh
+          bash -n scripts/deploy/rollback-agent-core.sh
+          bash -n scripts/deploy/remove-failed-agent-core.sh
+
+      - name: Build deterministic Agent Core package
+        run: python3 scripts/ci/build_agent_core.py
+
+      - name: Verify package and checksum
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="$(python3 -c 'import json; print("dist/" + json.load(open("dist/agent-core-manifest.json"))["archive"])')"
+          test -f "$archive"
+          unzip -t "$archive"
+          expected="$(python3 -c 'import json; print(json.load(open("dist/agent-core-manifest.json"))["sha256"])')"
+          actual="$(sha256sum "$archive" | cut -d' ' -f1)"
+          [[ "$expected" == "$actual" ]]
+
+      - name: Upload Agent Core artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tra-vel-agent-core-${{ github.run_id }}
+          path: |
+            dist/tra-vel-agent-core-*.zip
+            dist/agent-core-manifest.json
+          if-no-files-found: error
+          retention-days: 90
+
+  deploy:
+    needs: package
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: ${{ github.event_name == 'workflow_dispatch' }}
+    environment:
+      name: production
+      url: ${{ vars.WP_SITE_URL }}
+    env:
+      DRY_RUN: ${{ inputs.dry_run }}
+      DEPLOYMENT_CONFIRMATION: ${{ inputs.deployment_confirmation }}
+      ACTIVATE_AGENT_CORE: ${{ inputs.activate_plugin }}
+      AGENT_ACTIVATION_CONFIRMATION: ${{ inputs.activation_confirmation }}
+      DEPLOY_ENABLED: ${{ vars.DEPLOY_ENABLED }}
+      WP_SITE_URL: ${{ vars.WP_SITE_URL }}
+      WP_USERNAME: ${{ secrets.WP_USERNAME }}
+      WP_APP_PASSWORD: ${{ secrets.WP_APP_PASSWORD }}
+      AGENT_DEPLOY_RESULT_FILE: agent-deploy-result.json
+    steps:
+      - name: Check out repository scripts
+        uses: actions/checkout@v4
+
+      - name: Download Agent Core artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: tra-vel-agent-core-${{ github.run_id }}
+          path: dist
+
+      - name: Report dry run
+        if: ${{ env.DRY_RUN == 'true' }}
+        run: cat dist/agent-core-manifest.json
+
+      - name: Validate production gate
+        if: ${{ env.DRY_RUN != 'true' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$DEPLOY_ENABLED" == "true" ]]
+          [[ "$GITHUB_REF_NAME" == "main" ]]
+          [[ "$DEPLOYMENT_CONFIRMATION" == "DEPLOY TRA-VEL AGENT CORE" ]]
+          [[ "$WP_SITE_URL" =~ ^https:// ]]
+          [[ -n "$WP_USERNAME" && -n "$WP_APP_PASSWORD" ]]
+          if [[ "$ACTIVATE_AGENT_CORE" == "true" ]]; then
+            [[ "$AGENT_ACTIVATION_CONFIRMATION" == "ACTIVATE TRA-VEL AGENT CORE" ]]
+          fi
+
+      - name: Deploy Agent Core through restricted WordPress REST
+        if: ${{ env.DRY_RUN != 'true' }}
+        shell: bash
+        run: |
+          archive="$(python3 -c 'import json; print("dist/" + json.load(open("dist/agent-core-manifest.json"))["archive"])')"
+          bash scripts/deploy/deploy-agent-core.sh "$archive"
+
+      - name: Verify public health contract
+        if: ${{ env.DRY_RUN != 'true' }}
+        shell: bash
+        run: |
+          set -u
+          verified=false
+          if curl --fail-with-body --silent --show-error --max-time 30 "${WP_SITE_URL%/}/wp-json/tra-vel-agent/v1/health" > health.json && python3 - <<'PY'
+          import json
+          data = json.load(open("health.json", encoding="utf-8"))
+          manifest = json.load(open("dist/agent-core-manifest.json", encoding="utf-8"))
+          deployed = json.load(open("agent-deploy-result.json", encoding="utf-8"))
+          assert data["ok"] is True
+          assert data["contract_version"] == "1.0.0"
+          assert data["capabilities"]["booking_execution"] is False
+          assert deployed["version"] == manifest["version"]
+          assert deployed["sha256"] == manifest["sha256"]
+          assert data["plugin_version"] == manifest["version"]
+          print(f"Agent Core {data['plugin_version']} health passed; provider_configured={data['provider']['configured']}")
+          PY
+          then
+            verified=true
+          fi
+          if [[ "$verified" != "true" ]]; then
+            backup="$(python3 - <<'PY'
+          import json
+          import re
+          try:
+              data = json.load(open("agent-deploy-result.json", encoding="utf-8"))
+          except Exception:
+              data = {}
+          backup = data.get("backup") or ""
+          if backup and not re.fullmatch(r"tra-vel-agent-core-\d{8}T\d{6}Z-[A-Za-z0-9]+", backup):
+              raise SystemExit("Deployment returned an invalid rollback identifier.")
+          print(backup)
+          PY
+          )"
+            if [[ -n "$backup" ]]; then
+              export ROLLBACK_CONFIRMATION="ROLLBACK TRA-VEL AGENT CORE"
+              bash scripts/deploy/rollback-agent-core.sh "$backup"
+            else
+              read -r failed_version failed_sha256 < <(python3 - <<'PY'
+          import json
+          data = json.load(open("agent-deploy-result.json", encoding="utf-8"))
+          print(data.get("version", ""), data.get("sha256", ""))
+          PY
+          )
+              export REMOVE_FRESH_CONFIRMATION="REMOVE FAILED TRA-VEL AGENT CORE"
+              bash scripts/deploy/remove-failed-agent-core.sh "$failed_version" "$failed_sha256"
+            fi
+            exit 1
+          fi
