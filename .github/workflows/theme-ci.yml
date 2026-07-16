@@ -7,6 +7,7 @@ on:
       - "content/guides/**"
       - "plugin/tra-vel-deploy-gateway/**"
       - "scripts/ci/**"
+      - "scripts/wp/**"
       - "scripts/deploy/**"
       - ".github/workflows/**"
   push:
@@ -18,6 +19,7 @@ on:
       - "content/guides/**"
       - "plugin/tra-vel-deploy-gateway/**"
       - "scripts/ci/**"
+      - "scripts/wp/**"
       - "scripts/deploy/**"
       - ".github/workflows/**"
   workflow_dispatch:
@@ -67,6 +69,11 @@ jobs:
 
       - name: Validate JavaScript syntax
         run: node --check theme/tra-vel-v2/assets/js/app.js
+
+      - name: Validate PowerShell syntax
+        shell: pwsh
+        run: |
+          [scriptblock]::Create((Get-Content -Raw scripts/wp/sync-guide.ps1)) | Out-Null
 
       - name: Validate deployment scripts
         shell: bash

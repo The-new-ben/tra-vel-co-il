@@ -49,3 +49,19 @@ The public guide shows author, reviewer, check date, source count, methodology a
 - The theme does not emit `FAQPage`, demo `Product` or demo `Offer` markup. Travel FAQ rich results are not a viable target, and commercial schema is reserved for verified supplier inventory.
 
 Run `node scripts/ci/validate-guide-packets.mjs` before publishing or changing a guide packet. The same check runs in pull requests and production packaging.
+
+## Guarded WordPress synchronization
+
+`scripts/wp/sync-guide.ps1` validates every packet in the repository before it contacts WordPress. It refuses to publish unless the selected packet is `publish-ready`, requires an explicit production-write confirmation, stores credentials only through the encrypted local DPAPI file, and verifies that the SHA-256 hash returned by WordPress exactly matches the validated repository article.
+
+Dry run:
+
+```powershell
+& "C:\Users\janana\Documents\tra-vel-co-il\scripts\wp\sync-guide.ps1" -GuideId budapest-2026
+```
+
+Private draft synchronization:
+
+```powershell
+& "C:\Users\janana\Documents\tra-vel-co-il\scripts\wp\sync-guide.ps1" -GuideId budapest-2026 -Status draft -Apply -ProductionConfirmation "SYNC TRA-VEL GUIDE"
+```

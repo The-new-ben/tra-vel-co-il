@@ -35,11 +35,13 @@ for (const file of packetFiles) {
   try { packet = JSON.parse(readFileSync(join(packetDir, file), 'utf8')); }
   catch (error) { fail(file, `invalid JSON: ${error.message}`); continue; }
 
-  for (const key of ['schemaVersion', 'id', 'locale', 'primaryTopic', 'canonicalPath', 'status', 'wordTargetMin', 'checkedAt', 'mapState', 'sections', 'sources', 'facts']) {
+  for (const key of ['schemaVersion', 'id', 'locale', 'title', 'excerpt', 'primaryTopic', 'canonicalPath', 'status', 'wordTargetMin', 'checkedAt', 'mapState', 'sections', 'sources', 'facts']) {
     if (!(key in packet)) fail(file, `missing ${key}`);
   }
   if (packet.schemaVersion !== 1) fail(file, 'schemaVersion must be 1.');
   if (packet.locale !== 'he-IL') fail(file, 'locale must be he-IL.');
+  if (typeof packet.title !== 'string' || packet.title.trim().length < 2) fail(file, 'title is required.');
+  if (typeof packet.excerpt !== 'string' || packet.excerpt.trim().length < 50) fail(file, 'excerpt must contain at least 50 characters.');
   if (!/^[a-z0-9-]+$/.test(packet.id || '')) fail(file, 'id must be a lowercase slug.');
   if (!/^\/[a-z0-9-]+\/$/.test(packet.canonicalPath || '')) fail(file, 'canonicalPath must be one clean, trailing-slash route.');
   if (!['research', 'source-ready', 'editorial-review', 'publish-ready'].includes(packet.status)) fail(file, 'status is invalid.');
@@ -86,15 +88,31 @@ for (const file of packetFiles) {
     if (fact.volatile === true && fact.recheckBeforePublish !== true) fail(file, `${fact.id || 'fact'} is volatile but lacks the publish-time recheck gate.`);
   }
 
-  if (packet.status === 'publish-ready') {
-    if (!packet.contentPath) fail(file, 'publish-ready packets require contentPath.');
+  if (['editorial-review', 'publish-ready'].includes(packet.status) && !packet.contentPath) {
+    fail(file, `${packet.status} packets require contentPath.`);
+  }
+  if (packet.contentPath) {
+    const contentPath = resolve(repoRoot, packet.contentPath);
+    if (!contentPath.startsWith(join(repoRoot, 'content', 'guides'))) fail(file, 'contentPath must stay inside content/guides.');
+    else if (!existsSync(contentPath)) fail(file, `guide content is missing: ${packet.contentPath}.`);
     else {
-      const contentPath = resolve(repoRoot, packet.contentPath);
-      if (!existsSync(contentPath)) fail(file, `publish-ready content is missing: ${packet.contentPath}.`);
-      else {
-        const words = readFileSync(contentPath, 'utf8').match(/[\p{L}\p{N}][\p{L}\p{N}\u05be'’-]*/gu) || [];
-        if (words.length < packet.wordTargetMin) fail(file, `content has ${words.length} words; ${packet.wordTargetMin} required.`);
+      const content = readFileSync(contentPath, 'utf8');
+      const words = content.match(/[\p{L}\p{N}][\p{L}\p{N}\u05be'’-]*/gu) || [];
+      const hebrewWords = words.filter((word) => /[\u0590-\u05ff]/u.test(word));
+      const h2Count = (content.match(/<h2\b/gi) || []).length;
+      const internalLinks = (content.match(/<a\s+[^>]*href="\//gi) || []).length;
+      const sourcedLinks = (content.match(/rel="external noopener"/gi) || []).length;
+      const externalUrls = [...content.matchAll(/<a\s+[^>]*href="(https:\/\/[^"#]+)"[^>]*rel="external noopener"/gi)].map((match) => match[1]);
+      if (words.length < packet.wordTargetMin) fail(file, `content has ${words.length} words; ${packet.wordTargetMin} required.`);
+      if (hebrewWords.length / Math.max(words.length, 1) < 0.75) fail(file, 'flagship content must be predominantly Hebrew.');
+      if (h2Count < 12) fail(file, `content has ${h2Count} H2 sections; at least 12 required.`);
+      if (internalLinks < 4) fail(file, `content has ${internalLinks} internal decision links; at least 4 required.`);
+      if (sourcedLinks < 6) fail(file, `content has ${sourcedLinks} visible source links; at least 6 required.`);
+      for (const url of externalUrls) {
+        if (!sourceUrls.has(url)) fail(file, `content cites an external URL that is absent from the source packet: ${url}.`);
       }
+      if (/<(?:script|iframe)\b/i.test(content)) fail(file, 'guide content must not embed scripts or iframes.');
+      if (/FAQPage/.test(content)) fail(file, 'guide content must not include FAQPage markup.');
     }
   }
 }

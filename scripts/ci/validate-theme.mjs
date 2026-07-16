@@ -145,6 +145,17 @@ const destinationPage = readFileSync(join(themeRoot, 'page-destination.php'), 'u
 if (!destinationPage.includes('tra_vel_v2_render_guide_evidence')) failures.push('Destination guides do not expose their evidence and freshness status.');
 if (/[$₪]\s?\d/.test(destinationPage)) failures.push('Destination templates must not hard-code demo prices that can be mistaken for live inventory.');
 
+const guideSyncPath = join(repoRoot, 'scripts', 'wp', 'sync-guide.ps1');
+if (!existsSync(guideSyncPath)) failures.push('The guarded WordPress guide synchronization pipeline is missing.');
+else {
+  const guideSync = readFileSync(guideSyncPath, 'utf8');
+  if (!guideSync.includes('validate-guide-packets.mjs')) failures.push('Guide synchronization does not run the content quality gate first.');
+  if (!guideSync.includes("packet.status -ne 'publish-ready'")) failures.push('Guide synchronization can publish content that is not publish-ready.');
+  if (!guideSync.includes('SYNC TRA-VEL GUIDE')) failures.push('Guide synchronization lacks an explicit production-write confirmation.');
+  if (!guideSync.includes('Import-Clixml')) failures.push('Guide synchronization is not using the encrypted credential file.');
+  if (!guideSync.includes('remoteHash -ne $articleHash')) failures.push('Guide synchronization does not verify the persisted article hash.');
+}
+
 const discoveryController = readFileSync(join(themeRoot, 'inc/discovery.php'), 'utf8');
 if (/function\s+get_items\s*\(\s*WP_REST_Request\b/.test(discoveryController)) {
   failures.push('REST controller overrides must keep the untyped WP_REST_Controller method signature for PHP 8 compatibility.');
