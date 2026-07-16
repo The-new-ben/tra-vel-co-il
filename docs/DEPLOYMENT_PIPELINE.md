@@ -1,6 +1,6 @@
 # Tra-Vel V2 deployment pipeline
 
-Status: implemented for direct deployment to `https://tra-vel.co.il`. No uPress development environment is used.
+Status: verified on `https://tra-vel.co.il` on 2026-07-16. Tra-Vel V2 0.2.0 is active; authenticated upload, backup, rollback, activation, page synchronization, and live smoke tests passed. Automatic deployment remains off. No uPress development environment is used.
 
 ## Delivery model
 

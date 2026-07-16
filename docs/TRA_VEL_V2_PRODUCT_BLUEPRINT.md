@@ -1,7 +1,7 @@
 # Tra-Vel V2 product and launch blueprint
 
 Date: 2026-07-16
-Status: visual direction approved; production theme and direct WordPress delivery pipeline implemented; live supplier integrations and first production activation remain.
+Status: visual direction approved; Tra-Vel V2 0.2.0 and the direct WordPress delivery pipeline are live; supplier integrations, account/booking flows, and long-form content expansion remain.
 
 ## Product thesis
 
