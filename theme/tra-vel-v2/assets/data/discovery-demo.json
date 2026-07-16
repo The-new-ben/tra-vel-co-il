@@ -41,7 +41,7 @@
       "hotel": { "name": "Plaka View", "area": "Plaka", "rating": 4.2, "nightly": 145, "nights": 3, "room_total": 435, "per_person_total": 218, "currency": "USD", "tour_ready": false },
       "weather": { "temperature_c": 23, "condition": "שמשי", "season_fit": "מצוין" },
       "tags": ["טיסה ישירה", "3 לילות", "ביטול גמיש"],
-      "image": "city-vienna.webp"
+      "image": "athens-acropolis.jpg"
     },
     {
       "id": "dubai",

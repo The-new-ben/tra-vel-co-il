@@ -10,11 +10,21 @@ get_header();
 
 while ( have_posts() ) :
 	the_post();
+	$destination_slug = get_post_field( 'post_name', get_the_ID() );
+	$image_credit     = array();
 	$hero = get_the_post_thumbnail_url( get_the_ID(), 'tra-vel-hero' );
 	if ( ! $hero ) {
-		$fallback_image = 'thailand' === get_post_field( 'post_name', get_the_ID() ) ? 'images/thailand.jpg' : 'images/earth-blue-marble.jpg';
-		if ( 'budapest' === get_post_field( 'post_name', get_the_ID() ) ) {
-			$fallback_image = 'images/hero-budapest-1600.webp';
+		$fallback_images = array(
+			'athens'   => 'images/athens-acropolis.jpg',
+			'budapest' => 'images/hero-budapest-1600.webp',
+			'thailand' => 'images/thailand.jpg',
+		);
+		$fallback_image = $fallback_images[ $destination_slug ] ?? 'images/earth-blue-marble.jpg';
+		if ( 'athens' === $destination_slug ) {
+			$image_credit = array(
+				'label' => 'Photo: Davide Aversa, CC BY-SA 4.0',
+				'url'   => 'https://commons.wikimedia.org/wiki/File:View_of_Athen%27s_Acropolis.jpg',
+			);
 		}
 		$hero = tra_vel_v2_asset_uri( $fallback_image );
 	}
@@ -35,6 +45,7 @@ while ( have_posts() ) :
 	<main id="main-content">
 		<section class="destination-hero"><img src="<?php echo esc_url( $hero ); ?>" alt="<?php echo esc_attr( $title ); ?>">
 			<div class="destination-hero-content page-width"><div class="breadcrumbs"><a href="<?php echo esc_url( home_url( '/' ) ); ?>"><?php esc_html_e( 'ראשי', 'tra-vel-v2' ); ?></a><i data-lucide="chevron-left"></i><a href="<?php echo esc_url( home_url( '/destinations/' ) ); ?>"><?php esc_html_e( 'יעדים', 'tra-vel-v2' ); ?></a><i data-lucide="chevron-left"></i><span><?php echo esc_html( $title ); ?></span></div><span class="destination-badge"><i data-lucide="badge-check"></i><?php printf( esc_html__( 'מדריך עומק · עודכן %s', 'tra-vel-v2' ), esc_html( get_the_modified_date( 'F Y' ) ) ); ?></span><h1><?php echo esc_html( $title ); ?>.<br><em><?php esc_html_e( 'הטיול שלכם, לא של כולם.', 'tra-vel-v2' ); ?></em></h1><p><?php echo esc_html( get_the_excerpt() ?: __( 'עונות, אזורים, טיסות, מלונות ועלויות מתחברים למפה שמציעה מסלול לפי התקציב והקצב שלכם ומסבירה כל בחירה.', 'tra-vel-v2' ) ); ?></p><div class="destination-actions"><a href="<?php echo esc_url( $map_url ); ?>"><i data-lucide="route"></i><?php esc_html_e( 'בנו מסלול על המפה', 'tra-vel-v2' ); ?></a><a href="<?php echo esc_url( home_url( '/ai-planner/' ) ); ?>"><i data-lucide="sparkles"></i><?php esc_html_e( 'שאלו את המתכנן', 'tra-vel-v2' ); ?></a><a href="<?php echo esc_url( home_url( '/saved/' ) ); ?>"><i data-lucide="bookmark"></i><?php esc_html_e( 'שמרו מדריך', 'tra-vel-v2' ); ?></a></div></div>
+			<?php if ( $image_credit ) : ?><a class="destination-image-credit" href="<?php echo esc_url( $image_credit['url'] ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( $image_credit['label'] ); ?></a><?php endif; ?>
 		</section>
 		<div class="fact-ribbon page-width"><div><small><?php esc_html_e( 'זמן טיסה ישירה', 'tra-vel-v2' ); ?></small><strong><?php echo esc_html( get_post_meta( get_the_ID(), '_tra_vel_flight_time', true ) ?: __( 'נבדק בחיפוש חי', 'tra-vel-v2' ) ); ?></strong></div><div><small><?php esc_html_e( 'תקציב יומי לזוג', 'tra-vel-v2' ); ?></small><strong><?php echo esc_html( get_post_meta( get_the_ID(), '_tra_vel_daily_budget', true ) ?: __( 'בנו תקציב אישי', 'tra-vel-v2' ) ); ?></strong></div><div><small><?php esc_html_e( 'חלון מומלץ', 'tra-vel-v2' ); ?></small><strong><?php echo esc_html( get_post_meta( get_the_ID(), '_tra_vel_best_season', true ) ?: __( 'לפי מזג אוויר ועומס', 'tra-vel-v2' ) ); ?></strong></div><div><small><?php esc_html_e( 'מתאים במיוחד', 'tra-vel-v2' ); ?></small><strong><?php echo esc_html( get_post_meta( get_the_ID(), '_tra_vel_best_for', true ) ?: __( 'לפי הקצב שלכם', 'tra-vel-v2' ) ); ?></strong></div></div>
 		<nav class="article-tabs page-width" aria-label="<?php esc_attr_e( 'תוכן המדריך', 'tra-vel-v2' ); ?>"><a href="#map"><?php esc_html_e( 'מפת מסלול', 'tra-vel-v2' ); ?></a><a href="#when"><?php esc_html_e( 'מתי לטוס', 'tra-vel-v2' ); ?></a><a href="#areas"><?php esc_html_e( 'איפה לישון', 'tra-vel-v2' ); ?></a><a href="#costs"><?php esc_html_e( 'עלויות', 'tra-vel-v2' ); ?></a><a href="#flights"><?php esc_html_e( 'טיסות', 'tra-vel-v2' ); ?></a><a href="#insurance"><?php esc_html_e( 'ביטוח', 'tra-vel-v2' ); ?></a><a href="#guide"><?php esc_html_e( 'המדריך המלא', 'tra-vel-v2' ); ?></a></nav>
