@@ -46,6 +46,11 @@ Example: `/destinations/thailand/`
 - Frequently asked questions based on real search demand
 - Price alerts and saved-trip actions
 
+Published flagship hubs as of 2026-07-16:
+
+- `/destinations/budapest/`: 5,000+ visible Hebrew words, 16 reviewed sources and three decision tables.
+- `/destinations/thailand/`: 5,000+ visible Hebrew words, 18 reviewed sources and three decision tables covering the regional, seasonal and airport-chain decisions required for a long-haul trip.
+
 ### Level 3: high-intent landing pages
 
 Each destination hub can support focused pages when the intent is distinct and the page has unique value.

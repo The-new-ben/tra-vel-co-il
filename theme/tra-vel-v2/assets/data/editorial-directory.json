@@ -69,10 +69,10 @@
       "decision": "צפון, בנגקוק ואיים לפי העונה והקצב",
       "map_state": "bangkok",
       "image": "thailand.jpg",
-      "guide_status": "research",
-      "guide_path": "",
-      "word_count": 0,
-      "source_count": 0
+      "guide_status": "published",
+      "guide_path": "/destinations/thailand/",
+      "word_count": 5333,
+      "source_count": 18
     },
     {
       "id": "athens",

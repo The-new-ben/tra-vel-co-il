@@ -1,0 +1,315 @@
+{
+  "schemaVersion": 1,
+  "id": "thailand-2026",
+  "locale": "he-IL",
+  "title": "תאילנד",
+  "excerpt": "מדריך תאילנד מקיף לישראלים עם מסלולים לפי עונה וקצב, בחירת איים ואזורים, טיסות ומעברים, מלונות, תקציב כולל, משפחות, בריאות, ביטחון וביטוח על בסיס מקורות רשמיים.",
+  "author": "מערכת Tra-Vel",
+  "primaryTopic": "Thailand travel guide for Israelis",
+  "canonicalPath": "/destinations/thailand/",
+  "status": "publish-ready",
+  "wordTargetMin": 5000,
+  "contentPath": "content/guides/thailand-2026.he.html",
+  "checkedAt": "2026-07-16",
+  "mapState": "bangkok",
+  "reviewer": "מערכת Tra-Vel",
+  "reviewMethod": "Government, immigration, airport, railway, health, safety and official tourism sources were prioritized. Entry rules, warnings, schedules, fares, weather, flight availability and commercial prices must be checked again immediately before booking and departure.",
+  "flightTime": "בדקו מסלול חי",
+  "dailyBudget": "נבנה לפי האזור וההרכב",
+  "bestSeason": "לפי החוף והמסלול",
+  "bestFor": "12 עד 21 ימים",
+  "sections": [
+    "Decision summary",
+    "Who Thailand suits",
+    "Trip length and route shape",
+    "Weather by coast and region",
+    "Flights from Israel and connection tradeoffs",
+    "Bangkok airport and domestic transfer planning",
+    "Bangkok, north, Andaman and Gulf destination choice",
+    "Hotels and area selection",
+    "Family travel",
+    "Island and ferry logistics",
+    "Complete trip budgets",
+    "Money, payments and exchange",
+    "Entry and TDAC",
+    "Health and mosquito protection",
+    "Safety, scams and emergency contacts",
+    "Insurance decision framework",
+    "Responsible wildlife and marine travel",
+    "Booking checklist and source log"
+  ],
+  "sources": [
+    {
+      "id": "thailand-tdac-guide",
+      "title": "Thailand Digital Arrival Card official guide",
+      "publisher": "Thailand Immigration Bureau",
+      "url": "https://tdac.immigration.go.th/manual/en/",
+      "type": "official",
+      "checkedAt": "2026-07-16",
+      "supports": ["TDAC requirement", "submission window", "group submission", "data update rules"]
+    },
+    {
+      "id": "thailand-visa-exemption",
+      "title": "Thailand visa exemption scheme",
+      "publisher": "Ministry of Foreign Affairs of Thailand",
+      "url": "https://image.mfa.go.th/mfa/0/bE5KohkHoq/Visa_application/Visa_Exemption_Scheme.pdf",
+      "type": "official",
+      "checkedAt": "2026-07-16",
+      "supports": ["visa exemption country list", "ordinary passport policy context"]
+    },
+    {
+      "id": "tat-bangkok",
+      "title": "Bangkok destination overview",
+      "publisher": "Tourism Authority of Thailand",
+      "url": "https://www.tourismthailand.org/Destinations/Provinces/bangkok/219",
+      "type": "official",
+      "checkedAt": "2026-07-16",
+      "supports": ["Bangkok visitor areas", "markets", "temples", "city trip context"]
+    },
+    {
+      "id": "tat-chiang-mai",
+      "title": "Chiang Mai destination overview",
+      "publisher": "Tourism Authority of Thailand",
+      "url": "https://www.tourismthailand.org/Destinations/Provinces/Chiang-Mai/101",
+      "type": "official",
+      "checkedAt": "2026-07-16",
+      "supports": ["Chiang Mai highlights", "nature", "Lanna culture", "regional context"]
+    },
+    {
+      "id": "tat-phuket",
+      "title": "Phuket destination overview",
+      "publisher": "Tourism Authority of Thailand",
+      "url": "https://www.tourismthailand.org/Destinations/Provinces/Phuket/350",
+      "type": "official",
+      "checkedAt": "2026-07-16",
+      "supports": ["Phuket beaches", "island size", "crowding differences", "sea safety"]
+    },
+    {
+      "id": "tat-ko-samui",
+      "title": "Ko Samui destination overview",
+      "publisher": "Tourism Authority of Thailand",
+      "url": "https://www.tourismthailand.org/Destinations/Provinces/Ko-Samui/360",
+      "type": "official",
+      "checkedAt": "2026-07-16",
+      "supports": ["Ko Samui areas", "island activities", "road and beach safety"]
+    },
+    {
+      "id": "tat-thailand-beach-seasons",
+      "title": "Best time to visit Thailand beaches and islands",
+      "publisher": "Tourism Authority of Thailand Newsroom",
+      "url": "https://www.tatnews.org/2024/02/the-best-time-to-visit-thailands-beaches-and-islands/",
+      "type": "official",
+      "checkedAt": "2026-07-16",
+      "supports": ["regional monsoon differences", "Andaman and Gulf planning", "season averages"]
+    },
+    {
+      "id": "aot-suvarnabhumi",
+      "title": "Suvarnabhumi Airport official passenger and transportation information",
+      "publisher": "Airports of Thailand",
+      "url": "https://suvarnabhumi.airportthai.co.th/?lang=en",
+      "type": "official",
+      "checkedAt": "2026-07-16",
+      "supports": ["BKK arrival process", "Airport Rail Link", "taxi", "BKK to DMK transfer shuttle"]
+    },
+    {
+      "id": "aot-don-mueang-arrival",
+      "title": "Don Mueang arrival procedure and transportation",
+      "publisher": "Airports of Thailand",
+      "url": "https://donmueang.airportthai.co.th/service/airport-guide/detail/ArrivalProcedure_DMK",
+      "type": "official",
+      "checkedAt": "2026-07-16",
+      "supports": ["DMK transport", "Red Line", "airport buses", "inter-airport shuttle"]
+    },
+    {
+      "id": "aot-phuket-smart-bus",
+      "title": "Phuket Smart Bus",
+      "publisher": "Airports of Thailand",
+      "url": "https://phuket.airportthai.co.th/service/transportation/detail/151",
+      "type": "official",
+      "checkedAt": "2026-07-16",
+      "supports": ["Phuket airport public transport", "west-coast beach route", "published fare and hours"]
+    },
+    {
+      "id": "srt-dticket",
+      "title": "State Railway of Thailand D-Ticket",
+      "publisher": "State Railway of Thailand",
+      "url": "https://dticket.railway.co.th/DTicketPublicWeb/home/Home",
+      "type": "official",
+      "checkedAt": "2026-07-16",
+      "supports": ["official rail search", "seat selection", "ticket booking workflow"]
+    },
+    {
+      "id": "thai-ddc-dengue",
+      "title": "Dengue and other mosquito-borne diseases advice for travelers",
+      "publisher": "Thailand Department of Disease Control",
+      "url": "https://ddc.moph.go.th/uploads/files_en/filedata/Dengue%20and%20other%20Mosquito-borne%20diseases%20%28Thailand%29%208%20June%202018.pdf",
+      "type": "official",
+      "checkedAt": "2026-07-16",
+      "supports": ["mosquito bite prevention", "traveler health advice", "warning signs"]
+    },
+    {
+      "id": "thai-tourist-police",
+      "title": "Thailand Tourist Police",
+      "publisher": "Tourist Police Bureau Thailand",
+      "url": "https://www.touristpolice.go.th/en/main",
+      "type": "official",
+      "checkedAt": "2026-07-16",
+      "supports": ["tourist police hotline", "emergency numbers", "multilingual assistance"]
+    },
+    {
+      "id": "thai-tourist-police-trust",
+      "title": "Tourist Police Trust Portal",
+      "publisher": "Thai Ministry of Tourism and Sports",
+      "url": "https://trust.touristpolice.go.th/en",
+      "type": "official",
+      "checkedAt": "2026-07-16",
+      "supports": ["verified accommodation lookup", "suspicious URL checks", "scam reporting"]
+    },
+    {
+      "id": "bank-thailand-rates",
+      "title": "Daily foreign exchange rates",
+      "publisher": "Bank of Thailand",
+      "url": "https://www.bot.or.th/en/statistics/exchange-rate.html",
+      "type": "official",
+      "checkedAt": "2026-07-16",
+      "supports": ["official reference exchange rates", "commercial bank counter rates", "historical comparison"]
+    },
+    {
+      "id": "israel-travel-warnings",
+      "title": "אזהרות מסע",
+      "publisher": "המטה לביטחון לאומי",
+      "url": "https://www.gov.il/he/Departments/DynamicCollectors/travel-warnings-nsc",
+      "type": "official",
+      "checkedAt": "2026-07-16",
+      "supports": ["current Israeli travel warning lookup", "warning guidance", "hotline"]
+    },
+    {
+      "id": "israel-embassy-thailand",
+      "title": "Embassy of Israel in Thailand",
+      "publisher": "Israel Ministry of Foreign Affairs",
+      "url": "https://embassies.gov.il/thailand/en",
+      "type": "official",
+      "checkedAt": "2026-07-16",
+      "supports": ["consular announcements", "official embassy services", "Israeli traveler support"]
+    },
+    {
+      "id": "tat-wild-elephant-safety",
+      "title": "Safety guidelines for encountering wild elephants",
+      "publisher": "Tourism Authority of Thailand Newsroom",
+      "url": "https://www.tatnews.org/2024/12/safety-guidelines-for-encountering-wild-elephants/",
+      "type": "official",
+      "checkedAt": "2026-07-16",
+      "supports": ["wildlife distance", "feeding prohibition", "marked trail guidance", "responsible observation"]
+    }
+  ],
+  "facts": [
+    {
+      "id": "tdac-required",
+      "claim": "All non-Thai nationals entering Thailand are required to complete the Thailand Digital Arrival Card before entry, subject to the official exceptions and current instructions.",
+      "sourceIds": ["thailand-tdac-guide"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "tdac-three-day-window",
+      "claim": "The official TDAC guide says the form should be submitted within the three days before arrival, including the arrival date.",
+      "sourceIds": ["thailand-tdac-guide"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "tdac-not-visa",
+      "claim": "The TDAC is an arrival card and is not a visa.",
+      "sourceIds": ["thailand-tdac-guide"],
+      "volatile": false
+    },
+    {
+      "id": "israel-visa-exemption-list",
+      "claim": "Israel appears in Thailand official visa exemption materials for ordinary passport holders, but permitted stay and conditions must be rechecked before travel.",
+      "sourceIds": ["thailand-visa-exemption"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "coasts-weather-differs",
+      "claim": "Official tourism guidance says weather can differ between the Andaman west coast and the Gulf east coast, so island choice should be regional rather than based on a single Thailand season.",
+      "sourceIds": ["tat-thailand-beach-seasons"],
+      "volatile": false
+    },
+    {
+      "id": "bkk-airport-rail-link",
+      "claim": "Suvarnabhumi Airport lists Airport Rail Link, taxi, bus and ride-hailing among the official transport options to and from the airport.",
+      "sourceIds": ["aot-suvarnabhumi"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "bkk-dmk-shuttle",
+      "claim": "Airports of Thailand lists a free shuttle between Suvarnabhumi and Don Mueang for eligible connecting passengers with proof of onward travel.",
+      "sourceIds": ["aot-suvarnabhumi", "aot-don-mueang-arrival"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "dmk-red-line",
+      "claim": "Don Mueang Airport lists the SRT Red Line, airport buses, taxis and the inter-airport shuttle as ground transport options.",
+      "sourceIds": ["aot-don-mueang-arrival"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "phuket-smart-bus-route",
+      "claim": "The Phuket airport page lists a Smart Bus route serving major west-coast beach areas, with current fare and schedule information shown by the operator.",
+      "sourceIds": ["aot-phuket-smart-bus"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "official-rail-booking",
+      "claim": "State Railway of Thailand provides an official D-Ticket workflow for train search, seat selection, passenger details and payment.",
+      "sourceIds": ["srt-dticket"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "dengue-prevention",
+      "claim": "Thailand health authorities advise travelers to prevent mosquito bites with suitable clothing, screened rooms or nets and appropriate repellent.",
+      "sourceIds": ["thai-ddc-dengue"],
+      "volatile": false
+    },
+    {
+      "id": "tourist-police-1155",
+      "claim": "Thailand Tourist Police publishes 1155 as its traveler assistance hotline and also lists national emergency numbers.",
+      "sourceIds": ["thai-tourist-police"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "provider-verification",
+      "claim": "The official Tourist Police Trust Portal offers tools for checking verified accommodations and reporting suspicious booking URLs.",
+      "sourceIds": ["thai-tourist-police-trust"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "bank-rate-reference",
+      "claim": "The Bank of Thailand publishes daily and historical reference exchange-rate information including commercial bank counter rates.",
+      "sourceIds": ["bank-thailand-rates"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "wildlife-distance",
+      "claim": "Official tourism safety guidance recommends keeping distance from wild elephants, not feeding wildlife and staying on marked trails.",
+      "sourceIds": ["tat-wild-elephant-safety"],
+      "volatile": false
+    },
+    {
+      "id": "israeli-warning-check",
+      "claim": "Israeli travelers should check Thailand and any transit country in the National Security Council warning system immediately before booking and departure.",
+      "sourceIds": ["israel-travel-warnings", "israel-embassy-thailand"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    }
+  ]
+}
