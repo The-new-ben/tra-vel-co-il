@@ -6,7 +6,6 @@
  */
 if ( is_page_template( 'page-map.php' ) ) {
 	?>
-	<div class="map-mobile-controls"><button data-filter-toggle type="button" aria-expanded="false"><i data-lucide="sliders-horizontal"></i><?php esc_html_e( 'מסננים', 'tra-vel-v2' ); ?></button><button type="button"><i data-lucide="route"></i><?php esc_html_e( 'מסלולים', 'tra-vel-v2' ); ?></button><button type="button"><i data-lucide="list"></i><?php esc_html_e( 'רשימה', 'tra-vel-v2' ); ?></button></div>
 	<?php wp_footer(); ?>
 	</body>
 	</html>

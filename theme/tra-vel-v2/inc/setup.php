@@ -54,7 +54,7 @@ function tra_vel_v2_body_classes( $classes ) {
 		$classes[] = 'tra-vel-front-page';
 	}
 	if ( is_page_template( 'page-map.php' ) ) {
-		$classes[] = 'map-body';
+		$classes[] = 'tra-vel-map';
 	}
 	if ( is_page_template( 'page-destination.php' ) || is_singular( 'destination' ) ) {
 		$classes[] = 'tra-vel-destination';

@@ -137,6 +137,17 @@ if (!appJs.includes('workspaceUrl')) failures.push('The app script is not connec
 if (!appJs.includes('initTravelerWorkspace')) failures.push('The app script does not initialize the saved-trip workspace.');
 if (!appJs.includes('createSaveOfferButton')) failures.push('Comparison cards cannot save decisions into the traveler workspace.');
 if (!appJs.includes('initDirectory')) failures.push('The destination directory does not initialize its search and filters.');
+if (!appJs.includes('discoveryDataMode')) failures.push('Map prices are not gated by the live supplier data mode.');
+if (!appJs.includes("routePrice = discoveryDataMode === 'live'")) failures.push('Route cards can expose non-live prices as customer inventory.');
+
+const mapPage = readFileSync(join(themeRoot, 'page-map.php'), 'utf8');
+for (const marker of ['map-view-layout', 'map-support-section', 'map-destination-panel', 'map-depth-section']) {
+  if (!mapPage.includes(marker)) failures.push(`The unobstructed map architecture is missing ${marker}.`);
+}
+if (mapPage.includes('map-search-floating')) failures.push('The map search must not float over the globe.');
+if (mapPage.includes('style="left:') || mapPage.includes('style="right:')) failures.push('Map information must not use inline overlay positioning.');
+if (!appCss.includes('.theme-map-shell .route-sheet { position: static')) failures.push('Route comparison must remain below the globe in document flow.');
+if (!appCss.includes('.map-mobile-controls { display: none !important; }')) failures.push('The legacy fixed mobile map bar is still allowed to cover the globe.');
 
 const seoSource = readFileSync(join(themeRoot, 'inc/seo.php'), 'utf8');
 if (!seoSource.includes('BreadcrumbList')) failures.push('Destination guides are missing breadcrumb structured data.');
