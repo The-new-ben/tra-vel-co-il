@@ -29,6 +29,29 @@ function tra_vel_v2_canonical_guide_url( $canonical, $post ) {
 add_filter( 'get_canonical_url', 'tra_vel_v2_canonical_guide_url', 10, 2 );
 
 /**
+ * Keep public titles destination-neutral and useful outside the former Europe focus.
+ *
+ * @param array<string, string> $parts Generated document title parts.
+ * @return array<string, string>
+ */
+function tra_vel_v2_document_title_parts( $parts ) {
+	$parts['site'] = 'Tra-Vel';
+
+	if ( is_front_page() ) {
+		$parts['title'] = __( 'חופשות, טיסות, מלונות ותכנון חכם', 'tra-vel-v2' );
+	} elseif ( tra_vel_v2_is_destination_guide() ) {
+		$parts['title'] = sprintf(
+			/* translators: %s: destination name. */
+			__( '%s | מדריך תכנון לישראלים', 'tra-vel-v2' ),
+			get_the_title()
+		);
+	}
+
+	return $parts;
+}
+add_filter( 'document_title_parts', 'tra_vel_v2_document_title_parts' );
+
+/**
  * Prevent personal pages and faceted map/search combinations becoming crawl traps.
  *
  * @param array<string, bool> $robots Existing directives.

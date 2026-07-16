@@ -113,6 +113,23 @@ const allFiles = walk(themeRoot);
 const forbidden = allFiles.filter((path) => /(?:^|[\\/])(?:\.git|node_modules|dist|output)(?:[\\/]|$)/.test(path));
 for (const path of forbidden) failures.push(`Forbidden packaged path: ${relative(themeRoot, path)}`);
 
+const publicCopyFiles = allFiles.filter((path) =>
+  (path.endsWith('.php') || path.endsWith('.js')) &&
+  !path.includes(`${join('assets', 'vendor')}${String.fromCharCode(92)}`) &&
+  !path.includes(`${join('assets', 'vendor')}/`)
+);
+for (const path of publicCopyFiles) {
+  if (/[—–]/u.test(readFileSync(path, 'utf8'))) {
+    failures.push(`Public theme copy uses em dash or en dash punctuation: ${relative(themeRoot, path)}`);
+  }
+}
+
+for (const path of allFiles.filter((file) => /\.(?:php|js|json)$/.test(file) && !file.includes(join('assets', 'vendor')))) {
+  if (/הדגמה|מדריך הדגל|נתוני הדגמה/u.test(readFileSync(path, 'utf8'))) {
+    failures.push(`Public theme data exposes internal prototype language: ${relative(themeRoot, path)}`);
+  }
+}
+
 for (const path of allFiles.filter((file) => file.endsWith('.php'))) {
   const source = readFileSync(path, 'utf8');
   if (/\b(?:var_dump|print_r)\s*\(/.test(source)) failures.push(`Debug output found in ${relative(themeRoot, path)}`);
@@ -173,6 +190,7 @@ if (!seoSource.includes('lastReviewed')) failures.push('Destination guide schema
 if (!seoSource.includes('CollectionPage') || !seoSource.includes('ItemList')) failures.push('Editorial directories are missing CollectionPage and ItemList schema.');
 if (seoSource.includes("'FAQPage'") || seoSource.includes('"FAQPage"')) failures.push('Travel guides must not chase unavailable FAQ rich results.');
 if (!seoSource.includes("$robots['noindex']")) failures.push('Faceted and personal routes are missing an explicit noindex policy.');
+if (!seoSource.includes("add_filter( 'document_title_parts', 'tra_vel_v2_document_title_parts' )")) failures.push('Public document titles are not protected from the legacy Europe-only site name.');
 
 const destinationPage = readFileSync(join(themeRoot, 'page-destination.php'), 'utf8');
 if (!destinationPage.includes('tra_vel_v2_render_guide_evidence')) failures.push('Destination guides do not expose their evidence and freshness status.');
@@ -204,6 +222,8 @@ try {
   if (new Set(ids).size !== ids.length) failures.push('Editorial directory destination IDs must be unique.');
   const budapest = directory.destinations.find((destination) => destination.id === 'budapest');
   if (!budapest || budapest.word_count < 5000 || budapest.source_count < 10) failures.push('Budapest directory evidence is not connected to the flagship guide gate.');
+  const thailand = directory.destinations.find((destination) => destination.id === 'thailand');
+  if (!thailand || thailand.guide_path !== '/destinations/thailand/' || thailand.word_count < 5000 || thailand.source_count < 10) failures.push('Thailand directory evidence is not connected to the flagship guide gate.');
   if (directory.destinations.some((destination) => destination.guide_status !== 'published' && destination.guide_path)) failures.push('Unreviewed directory guides must not expose a public guide path.');
 } catch (error) {
   failures.push(`Editorial directory manifest is invalid JSON: ${error.message}`);

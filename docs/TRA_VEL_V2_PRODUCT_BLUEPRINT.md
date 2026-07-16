@@ -1,7 +1,7 @@
 # Tra-Vel V2 product and launch blueprint
 
 Date: 2026-07-16
-Status: Tra-Vel V2 1.6.0 is prepared for production deployment with Budapest and Thailand flagship hubs, a direct WordPress delivery pipeline and the native 3D globe. Live supplier integrations, account/booking flows and the remaining destination clusters are still in progress.
+Status: Tra-Vel V2 1.6.1 is prepared for production deployment with Budapest and Thailand flagship hubs, a direct WordPress delivery pipeline, the native 3D globe and a global public-copy integrity gate. Live supplier integrations, account/booking flows and the remaining destination clusters are still in progress.
 
 ## Product thesis
 

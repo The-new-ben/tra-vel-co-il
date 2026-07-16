@@ -16,6 +16,8 @@ Every destination owns one primary search intent and one clean canonical path be
 - at least three decision tables before a flagship guide can become `publish-ready`;
 - public language checks that reject em dashes, en dashes and internal project terminology.
 
+The theme-level validator applies the same punctuation and prototype-language policy to shared PHP, JavaScript and public JSON data. This prevents a clean guide from inheriting unsuitable copy from the header, footer, homepage or commercial comparison modules.
+
 The first two publish-ready packets are:
 
 - `budapest-2026.sources.json`, covering a focused European city break with official city, transport, airport, entry, currency and Israeli safety sources.

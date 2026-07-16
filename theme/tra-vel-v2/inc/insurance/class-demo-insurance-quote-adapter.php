@@ -72,7 +72,7 @@ class Tra_Vel_V2_Demo_Insurance_Quote_Adapter implements Tra_Vel_V2_Insurance_Qu
 				'status' => ( $query['medical_condition'] || $query['pregnancy'] ) ? 'medical_assessment_required' : 'preliminary_demo',
 				'message' => ( $query['medical_condition'] || $query['pregnancy'] )
 					? 'המחיר והכיסוי אינם תקפים ללא שאלון רפואי וחיתום של המבטח.'
-					: 'הדגמה בלבד; הצעה אמיתית דורשת פרטי נוסעים, הצהרות ותנאי מבטח.',
+					: 'אומדן בלבד; הצעה מחייבת דורשת פרטי נוסעים, הצהרות ותנאי מבטח.',
 			);
 		}
 		unset( $plan );
