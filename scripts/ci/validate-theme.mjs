@@ -191,6 +191,7 @@ if (!seoSource.includes('CollectionPage') || !seoSource.includes('ItemList')) fa
 if (seoSource.includes("'FAQPage'") || seoSource.includes('"FAQPage"')) failures.push('Travel guides must not chase unavailable FAQ rich results.');
 if (!seoSource.includes("$robots['noindex']")) failures.push('Faceted and personal routes are missing an explicit noindex policy.');
 if (!seoSource.includes("add_filter( 'document_title_parts', 'tra_vel_v2_document_title_parts' )")) failures.push('Public document titles are not protected from the legacy Europe-only site name.');
+if (!seoSource.includes("add_filter( 'wpseo_title', 'tra_vel_v2_public_seo_title' )") || !seoSource.includes("add_filter( 'wpseo_schema_website', 'tra_vel_v2_enrich_yoast_website_schema' )")) failures.push('Yoast can still expose the legacy Europe-only site name.');
 
 const destinationPage = readFileSync(join(themeRoot, 'page-destination.php'), 'utf8');
 if (!destinationPage.includes('tra_vel_v2_render_guide_evidence')) failures.push('Destination guides do not expose their evidence and freshness status.');
