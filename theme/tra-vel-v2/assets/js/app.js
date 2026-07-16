@@ -109,9 +109,17 @@ function initControls() {
   }));
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+function initTraVelV2() {
+	if (document.documentElement.dataset.traVelV2Ready === 'true') return;
+	document.documentElement.dataset.traVelV2Ready = 'true';
   renderIcons();
   initNavigation();
   initMap();
   initControls();
-});
+}
+
+if (document.readyState === 'loading') {
+	document.addEventListener('DOMContentLoaded', initTraVelV2, { once: true });
+} else {
+	initTraVelV2();
+}
