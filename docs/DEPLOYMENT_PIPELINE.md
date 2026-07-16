@@ -25,7 +25,7 @@ The existing production theme is not overwritten. Upload and activation are sepa
 
 Source: `plugin/tra-vel-deploy-gateway/`
 
-The gateway is installed once as a normal WordPress plugin. It accepts WordPress Application Password authentication over HTTPS and checks both `install_themes` and `update_themes` capabilities.
+The gateway is installed once as a normal WordPress plugin. It accepts WordPress Application Password authentication over HTTPS and checks both `install_themes` and `update_themes` capabilities. `scripts/wp/bootstrap-deploy-gateway.ps1` uses the site's existing Code Snippets REST API only as a temporary authenticated installer, then deactivates it, replaces its code with a harmless comment, moves it to trash, and attempts permanent deletion.
 
 It enforces all of the following:
 
@@ -120,7 +120,7 @@ Activate only after validation:
 
 ## First live sequence
 
-1. Install and activate the deploy gateway plugin.
+1. Install and activate the deploy gateway plugin with `scripts/wp/bootstrap-deploy-gateway.ps1`; confirm the temporary snippet is inactive and neutralized or deleted.
 2. Confirm the authenticated status endpoint.
 3. Upload V2 without activation.
 4. Confirm installed version and checksum.
