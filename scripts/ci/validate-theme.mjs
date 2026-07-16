@@ -173,6 +173,7 @@ if (mapPage.includes('style="left:') || mapPage.includes('style="right:')) failu
 if (!appCss.includes('.theme-map-shell .route-sheet { position: static')) failures.push('Route comparison must remain below the globe in document flow.');
 if (!appCss.includes('.map-mobile-controls { display: none !important; }')) failures.push('The legacy fixed mobile map bar is still allowed to cover the globe.');
 if (!appCss.includes('.whatsapp-button { right: 20px !important; bottom: 20px !important; width: 58px !important;')) failures.push('The legacy WhatsApp action can still cover primary desktop content.');
+if (!appCss.includes('.whatsapp-button { display: none !important; }')) failures.push('The legacy WhatsApp action can still cover mobile content and inline actions.');
 if (!appCss.includes('.theme-map-shell .globe-webgl .price-pin:not(.is-active) { width: 24px; height: 24px; min-width: 24px;')) failures.push('Mobile globe destination targets must retain a 24px hit area.');
 if (!appCss.includes('transform: scale(var(--globe-depth,1));')) failures.push('Globe depth must scale the visual marker without shrinking its mobile hit area.');
 
