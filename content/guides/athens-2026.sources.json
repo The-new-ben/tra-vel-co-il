@@ -1,0 +1,275 @@
+{
+  "schemaVersion": 1,
+  "id": "athens-2026",
+  "locale": "he-IL",
+  "title": "אתונה",
+  "excerpt": "מדריך אתונה לישראלים שיחבר בין טיסות, אזורי לינה, תחבורה, אתרים, משפחות, נגישות, תקציב ושילוב עם איים, על בסיס מקורות רשמיים ותאריך בדיקה.",
+  "author": "מערכת Tra-Vel",
+  "primaryTopic": "Athens travel guide for Israelis",
+  "canonicalPath": "/destinations/athens/",
+  "status": "source-ready",
+  "wordTargetMin": 5000,
+  "checkedAt": "2026-07-16",
+  "mapState": "athens",
+  "reviewer": "מערכת Tra-Vel",
+  "reviewMethod": "Prioritize official city, airport, public transport, culture, entry, accessibility and Israeli consular sources. Recheck fares, opening hours, entry rules, flight availability, heat guidance and security information immediately before publication.",
+  "flightTime": "בדקו מסלול חי",
+  "dailyBudget": "נבנה לפי ההרכב",
+  "bestSeason": "אביב וסתיו להליכה",
+  "bestFor": "2 עד 4 ימים או שער לאיים",
+  "sections": [
+    "Decision summary",
+    "Who Athens suits",
+    "When to travel and heat planning",
+    "Flights and route choices from Israel",
+    "Airport to city and port comparison",
+    "Where to stay by neighborhood",
+    "Two, three and four day routes",
+    "Public transport and ticket validation",
+    "Acropolis and museum booking decisions",
+    "Daily budget by travel style",
+    "Families, accessibility and pace",
+    "Athens as a gateway to the islands",
+    "Food, markets and evening areas",
+    "Entry, safety and Israeli consular guidance",
+    "Booking checklist and source log"
+  ],
+  "sources": [
+    {
+      "id": "this-is-athens",
+      "title": "The Official Athens Guide",
+      "publisher": "City of Athens / This is Athens",
+      "url": "https://www.thisisathens.org/?langid=3",
+      "type": "official",
+      "checkedAt": "2026-07-16",
+      "supports": ["official city orientation", "neighborhood context", "visitor planning"]
+    },
+    {
+      "id": "this-is-athens-stay",
+      "title": "Book Your Stay",
+      "publisher": "City of Athens / This is Athens",
+      "url": "https://www.thisisathens.org/stay",
+      "type": "official",
+      "checkedAt": "2026-07-16",
+      "supports": ["neighborhood guides", "accommodation-area decisions"]
+    },
+    {
+      "id": "this-is-athens-airport",
+      "title": "Coming from the Airport",
+      "publisher": "City of Athens / This is Athens",
+      "url": "https://www.thisisathens.org/acvb/getting-around/airport-transportation-metro-bus-taxi",
+      "type": "official",
+      "checkedAt": "2026-07-16",
+      "supports": ["airport metro", "airport buses", "city arrival choices"]
+    },
+    {
+      "id": "discover-greece-athens",
+      "title": "Athens city guide",
+      "publisher": "Discover Greece",
+      "url": "https://www.discovergreece.com/attica/athens",
+      "type": "official",
+      "checkedAt": "2026-07-16",
+      "supports": ["city-break positioning", "island gateway", "food and culture areas"]
+    },
+    {
+      "id": "visit-greece-neighborhoods",
+      "title": "Neighbourhoods in Athens",
+      "publisher": "Greek National Tourism Organisation",
+      "url": "https://www.visitgreece.gr/inspirations/neighbourhoods-in-athens/",
+      "type": "official",
+      "checkedAt": "2026-07-16",
+      "supports": ["Plaka", "Monastiraki", "Kolonaki", "neighborhood character"]
+    },
+    {
+      "id": "oasa-prices",
+      "title": "Prices of Products",
+      "publisher": "Athens Urban Transport Organisation",
+      "url": "https://www.oasa.gr/en/tickets/prices-of-products/",
+      "type": "official",
+      "checkedAt": "2026-07-16",
+      "supports": ["urban tickets", "airport metro ticket", "validity rules"]
+    },
+    {
+      "id": "oasa-faq",
+      "title": "Passenger service FAQs",
+      "publisher": "Athens Urban Transport Organisation",
+      "url": "https://www.oasa.gr/en/passenger-service/announcements/faqs/",
+      "type": "official",
+      "checkedAt": "2026-07-16",
+      "supports": ["ATH.ENA Ticket", "validation", "current fare-policy source"]
+    },
+    {
+      "id": "aia-transport",
+      "title": "Transportation at Athens Airport",
+      "publisher": "Athens International Airport",
+      "url": "https://www.aia.gr/en/traveller/transportation-airport",
+      "type": "official",
+      "checkedAt": "2026-07-16",
+      "supports": ["airport transport modes", "taxi location", "rental-car context"]
+    },
+    {
+      "id": "aia-public-transport",
+      "title": "Public transportation from Athens Airport",
+      "publisher": "Athens International Airport",
+      "url": "https://www.aia.gr/en/traveller/transportation-airport/public-transportation-airport",
+      "type": "official",
+      "checkedAt": "2026-07-16",
+      "supports": ["Metro Line 3", "airport express buses", "Piraeus and regional connections"]
+    },
+    {
+      "id": "visit-greece-passports",
+      "title": "Passports and Visas",
+      "publisher": "Greek National Tourism Organisation",
+      "url": "https://www.visitgreece.gr/before-travelling-to-greece/passports-visas/",
+      "type": "official",
+      "checkedAt": "2026-07-16",
+      "supports": ["Israeli passport holders", "short-stay entry context"]
+    },
+    {
+      "id": "hellenic-heritage",
+      "title": "Hellenic Heritage official ticket service",
+      "publisher": "Hellenic Ministry of Culture and ODAP",
+      "url": "https://www.hh.gr/en/",
+      "type": "official",
+      "checkedAt": "2026-07-16",
+      "supports": ["official Acropolis tickets", "official cultural-site notices"]
+    },
+    {
+      "id": "acropolis-museum-visit",
+      "title": "Plan your visit",
+      "publisher": "Acropolis Museum",
+      "url": "https://www.theacropolismuseum.gr/en/plan-your-visit",
+      "type": "official",
+      "checkedAt": "2026-07-16",
+      "supports": ["museum admission", "separate Acropolis ticket", "visitor facilities"]
+    },
+    {
+      "id": "accessible-athens",
+      "title": "Accessible Athens routes",
+      "publisher": "City of Athens / This is Athens",
+      "url": "https://accessibleroutes.thisisathens.org/en/",
+      "type": "official",
+      "checkedAt": "2026-07-16",
+      "supports": ["accessible itineraries", "mobility and visual-access planning"]
+    },
+    {
+      "id": "israel-greece-travelers",
+      "title": "מידע לתיירים ישראלים ביוון",
+      "publisher": "שגרירות ישראל ביוון",
+      "url": "https://embassies.gov.il/greece/he/announcements/myd-ltyyrym-ysrlym",
+      "type": "official",
+      "checkedAt": "2026-07-16",
+      "supports": ["official traveler notices", "entry by sea or land"]
+    },
+    {
+      "id": "israel-greece-consular",
+      "title": "המחלקה הקונסולרית",
+      "publisher": "שגרירות ישראל ביוון",
+      "url": "https://embassies.gov.il/greece/he/node/3195",
+      "type": "official",
+      "checkedAt": "2026-07-16",
+      "supports": ["consular assistance", "lost-passport procedure", "emergency contact"]
+    },
+    {
+      "id": "israel-travel-warnings",
+      "title": "Travel warnings",
+      "publisher": "Israel National Security Council",
+      "url": "https://www.gov.il/en/departments/dynamiccollectors/travel-warnings-nsc?skip=0",
+      "type": "official",
+      "checkedAt": "2026-07-16",
+      "supports": ["current Israeli security guidance", "warning-level definitions"]
+    },
+    {
+      "id": "eu-travel-documents",
+      "title": "Travel documents for non-EU nationals",
+      "publisher": "European Union / Your Europe",
+      "url": "https://europa.eu/youreurope/citizens/travel/entry-exit/non-eu-nationals/index_en.htm",
+      "type": "official",
+      "checkedAt": "2026-07-16",
+      "supports": ["Schengen passport rules", "entry and exit systems"]
+    }
+  ],
+  "facts": [
+    {
+      "id": "athens-city-and-island-gateway",
+      "claim": "Official Greek tourism information presents Athens both as a city-break destination and as a stop before an island or mainland trip.",
+      "sourceIds": ["discover-greece-athens"],
+      "volatile": false
+    },
+    {
+      "id": "athens-neighborhood-choice",
+      "claim": "Official destination sources distinguish Plaka, Monastiraki, Kolonaki and other central neighborhoods by atmosphere and visitor experience.",
+      "sourceIds": ["visit-greece-neighborhoods", "this-is-athens-stay"],
+      "volatile": false
+    },
+    {
+      "id": "airport-metro-line",
+      "claim": "Metro Line 3 connects Athens International Airport with the city centre and Piraeus.",
+      "sourceIds": ["aia-public-transport", "this-is-athens-airport"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "airport-express-lines",
+      "claim": "Four airport express bus lines connect the airport with Syntagma, Piraeus, the intercity bus stations and the southern metro connection.",
+      "sourceIds": ["aia-public-transport"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "airport-metro-price",
+      "claim": "OASA listed the full-price one-way airport metro ticket at 9 euros when checked on 2026-07-16.",
+      "sourceIds": ["oasa-prices"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "airport-ticket-validity",
+      "claim": "OASA states that the airport metro ticket includes a 90-minute validity window on the urban network under its current terms.",
+      "sourceIds": ["oasa-prices"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "official-acropolis-tickets",
+      "claim": "Hellenic Heritage is the official Ministry of Culture and ODAP platform for Acropolis and other cultural-site tickets.",
+      "sourceIds": ["hellenic-heritage"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "museum-ticket-separate",
+      "claim": "The Acropolis Museum states that its admission ticket is separate from the archaeological-site ticket.",
+      "sourceIds": ["acropolis-museum-visit"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "accessible-routes",
+      "claim": "The City of Athens publishes mapped accessible visitor routes for travelers with mobility or visual impairments.",
+      "sourceIds": ["accessible-athens"],
+      "volatile": false
+    },
+    {
+      "id": "israeli-short-stay-context",
+      "claim": "The Greek tourism authority lists Israel among countries whose passport holders can visit for a short stay without first obtaining a standard tourist visa, subject to current Schengen rules.",
+      "sourceIds": ["visit-greece-passports", "eu-travel-documents"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "israeli-consular-source",
+      "claim": "The Israeli embassy in Athens provides the official consular channel for Israelis traveling in Greece.",
+      "sourceIds": ["israel-greece-consular"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "security-recheck",
+      "claim": "Israeli travelers should verify Greece in the National Security Council travel-warning system immediately before departure.",
+      "sourceIds": ["israel-travel-warnings"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    }
+  ]
+}

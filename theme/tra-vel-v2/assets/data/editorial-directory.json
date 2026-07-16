@@ -87,10 +87,10 @@
       "decision": "מרכז היסטורי מול בסיס שקט לקראת האיים",
       "map_state": "athens",
       "image": "city-vienna.webp",
-      "guide_status": "research",
+      "guide_status": "source-ready",
       "guide_path": "",
       "word_count": 0,
-      "source_count": 0
+      "source_count": 17
     },
     {
       "id": "tokyo",

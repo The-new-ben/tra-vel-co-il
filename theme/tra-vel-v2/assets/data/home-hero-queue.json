@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "updated": "2026-07-16",
+  "campaigns": [
+    {
+      "id": "greece-summer-decisions",
+      "priority": 10,
+      "active_from": "2026-07-01",
+      "active_until": "2026-08-31",
+      "eyebrow": "יוון בקיץ",
+      "title": "עיר, אי או שילוב ביניהם?",
+      "copy": "השוו אתונה, כרתים ורודוס לפי זמן טיסה, אזור לינה, קצב משפחתי והעלות המלאה של הנסיעה.",
+      "primary_label": "גלו את יוון על המפה",
+      "primary_url": "/travel-map/?destination=athens",
+      "secondary_label": "השוו טיסה ומלון",
+      "secondary_url": "/packages/?route=TLV-ATH&dates=flexible",
+      "map_state": "athens",
+      "price_claim": false
+    },
+    {
+      "id": "autumn-city-breaks",
+      "priority": 20,
+      "active_from": "2026-09-01",
+      "active_until": "2026-11-15",
+      "eyebrow": "חופשות סתיו",
+      "title": "איזו עיר נותנת יותר בשלושה עד חמישה ימים?",
+      "copy": "השוו בודפשט, פראג ווינה לפי הליכה, תחבורה, שכונות, מזג אוויר ועלות מלאה.",
+      "primary_label": "השוו ערים על המפה",
+      "primary_url": "/travel-map/?destination=budapest",
+      "secondary_label": "למדריך בודפשט",
+      "secondary_url": "/destinations/budapest/",
+      "map_state": "budapest",
+      "price_claim": false
+    },
+    {
+      "id": "thailand-winter-planning",
+      "priority": 30,
+      "active_from": "2026-11-16",
+      "active_until": "2027-03-31",
+      "eyebrow": "תאילנד בחורף",
+      "title": "בונים את המסלול לפני שסוגרים את הטיסה.",
+      "copy": "חברו בנגקוק, הצפון והאיים לפי העונה, מספר הימים, המעברים והתקציב שלכם.",
+      "primary_label": "בנו מסלול על המפה",
+      "primary_url": "/travel-map/?destination=bangkok",
+      "secondary_label": "למדריך תאילנד",
+      "secondary_url": "/destinations/thailand/",
+      "map_state": "bangkok",
+      "price_claim": false
+    },
+    {
+      "id": "evergreen-map-discovery",
+      "priority": 100,
+      "active_from": "2026-01-01",
+      "active_until": "2030-12-31",
+      "eyebrow": "לא בטוחים לאן?",
+      "title": "מתחילים בזמן, בתקציב ובסגנון החופשה.",
+      "copy": "המפה מציעה יעדים ומסלולים שמתאימים להרכב, לאורך הנסיעה ולדברים שחשובים לכם.",
+      "primary_label": "פתחו את מפת המסע",
+      "primary_url": "/travel-map/",
+      "secondary_label": "גלו את כל היעדים",
+      "secondary_url": "/destinations/",
+      "map_state": "bangkok",
+      "price_claim": false
+    }
+  ]
+}

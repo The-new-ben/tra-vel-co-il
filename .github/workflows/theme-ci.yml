@@ -57,6 +57,7 @@ jobs:
           php scripts/ci/validate-trip-package-runtime.php
           php scripts/ci/validate-traveler-workspace-runtime.php
           php scripts/ci/validate-supplier-handoff-runtime.php
+          php scripts/ci/validate-home-hero-queue-runtime.php
           php scripts/ci/validate-open-meteo-adapter.php
 
       - name: Lint WordPress PHP

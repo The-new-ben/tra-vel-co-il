@@ -255,6 +255,18 @@ img { display: block; max-width: 100%; }
 .ai-prompt { margin-top: 28px; display: inline-flex; align-items: center; gap: 9px; padding: 10px 14px; border: 1px solid rgba(255,255,255,.16); border-radius: 99px; background: rgba(255,255,255,.06); color: #d8e3e5; }
 .ai-prompt i { width: 17px; height: 17px; color: var(--aqua); }
 .ai-prompt strong { color: #fff; }
+.hero-campaign { max-width: 610px; display: grid; gap: 9px; margin-top: 18px; padding: 17px 18px; border: 1px solid rgba(218,255,89,.24); border-radius: 19px; background: linear-gradient(135deg,rgba(218,255,89,.1),rgba(255,255,255,.05)); box-shadow: inset 0 1px rgba(255,255,255,.08); }
+.hero-campaign-heading,.hero-campaign-heading span,.hero-campaign-actions { display: flex; align-items: center; }
+.hero-campaign-heading { justify-content: space-between; gap: 12px; }
+.hero-campaign-heading span { gap: 7px; color: var(--lime); font-weight: 900; }
+.hero-campaign-heading i { width: 17px; }
+.hero-campaign-heading small { color: #9eb2b7; }
+.hero-campaign > strong { color: #fff; font-size: 23px; line-height: 1.15; }
+.hero-campaign > p { margin: 0; color: #c8d5d9; font-size: 14px; line-height: 1.55; }
+.hero-campaign-actions { gap: 9px; margin-top: 3px; }
+.hero-campaign-actions a { min-height: 40px; display: inline-flex; gap: 6px; align-items: center; justify-content: center; padding: 8px 12px; border: 1px solid rgba(255,255,255,.16); border-radius: 11px; color: #fff; font-size: 13px; font-weight: 900; }
+.hero-campaign-actions a.is-primary { color: var(--ink); background: var(--lime); border-color: var(--lime); }
+.hero-campaign-actions i { width: 16px; }
 
 /* Globe and map pins */
 .globe-panel { position: relative; height: 590px; min-width: 0; }
@@ -1062,6 +1074,10 @@ h3.deal-title { display: block; margin: 6px 0 12px; font-size: 22px; line-height
   .hero-copy > p { font-size: 17px; }
   .ai-prompt { display: flex; width: 100%; border-radius: 15px; align-items: flex-start; }
   .ai-prompt span { display: none; }
+  .hero-campaign { max-width: 100%; padding: 15px; border-radius: 16px; }
+  .hero-campaign > strong { font-size: 20px; }
+  .hero-campaign-actions { display: grid; grid-template-columns: 1fr; }
+  .hero-campaign-actions a { width: 100%; }
   .globe-panel { height: 465px; margin-top: 5px; }
   .globe-halo { width: 380px; height: 380px; left: 0; }
   .globe { width: 380px; height: 380px; max-width: 100%; left: 50%; transform: translateX(-50%); top: 18px; }
