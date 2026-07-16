@@ -459,6 +459,7 @@
     }
 
     function zoom(direction) {
+      state.visible = document.visibilityState !== 'hidden';
       const change = direction === 'in' ? -0.32 : 0.32;
       animateTo(state.yaw, state.pitch, clamp(state.distance + change, 2.25, 4.8), 260);
     }
@@ -496,6 +497,7 @@
 
     root.addEventListener('pointerdown', event => {
       if (event.target.closest('.price-pin')) return;
+      state.visible = document.visibilityState !== 'hidden';
       state.animation = null;
       state.pointer = { id: event.pointerId, x: event.clientX, y: event.clientY };
       root.classList.add('is-dragging');
@@ -520,6 +522,7 @@
     root.addEventListener('pointerup', endPointer);
     root.addEventListener('pointercancel', endPointer);
     root.addEventListener('keydown', event => {
+      state.visible = document.visibilityState !== 'hidden';
       const step = event.shiftKey ? 18 * DEG : 8 * DEG;
       if (event.key === 'ArrowLeft') state.yaw = normalizeAngle(state.yaw - step);
       else if (event.key === 'ArrowRight') state.yaw = normalizeAngle(state.yaw + step);

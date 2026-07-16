@@ -158,6 +158,7 @@ const globeJs = readFileSync(join(themeRoot, 'assets/js/globe-3d.js'), 'utf8');
 for (const marker of ['getContext(\'webgl\'', 'pointerdown', 'IntersectionObserver', 'ResizeObserver', 'prefers-reduced-motion', 'focusDestination', 'boxesOverlap']) {
   if (!globeJs.includes(marker)) failures.push(`The production 3D globe is missing ${marker}.`);
 }
+if ((globeJs.match(/state\.visible = document\.visibilityState !== 'hidden'/g) || []).length < 3) failures.push('Globe drag, keyboard and zoom input must wake event-driven rendering.');
 if (/https?:\/\//.test(globeJs)) failures.push('The 3D globe must not load unapproved third-party runtime code or textures.');
 const globeTextureSize = statSync(join(themeRoot, 'assets/images/earth-blue-marble-2048.jpg')).size;
 if (globeTextureSize > 500000) failures.push(`The mobile globe texture is too large (${globeTextureSize} bytes).`);
