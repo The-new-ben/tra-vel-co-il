@@ -5,7 +5,7 @@
  * @package TraVelV2
  */
 
-$overlay_header = is_front_page() || is_page_template( 'page-destination.php' ) || is_singular( 'destination' );
+$overlay_header = is_front_page() || is_page_template( 'page-destination.php' ) || is_page_template( 'page-directory.php' ) || is_singular( 'destination' );
 ?>
 <!doctype html>
 <html <?php language_attributes(); ?> dir="rtl">

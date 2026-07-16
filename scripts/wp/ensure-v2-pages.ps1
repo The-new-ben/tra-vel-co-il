@@ -85,13 +85,13 @@ $pages = @(
     [pscustomobject]@{
         Slug = 'destinations'
         Title = 'יעדים'
-        Template = 'page-experience.php'
+        Template = 'page-directory.php'
         Excerpt = 'גילוי יעדים לפי תקציב, זמן, עונה וסגנון נסיעה.'
     },
     [pscustomobject]@{
         Slug = 'guides'
         Title = 'מדריכי נסיעות'
-        Template = 'page-experience.php'
+        Template = 'page-directory.php'
         Excerpt = 'מדריכי עומק מחוברים למפה, לנתונים ולשלב הבא בתכנון.'
     }
 )

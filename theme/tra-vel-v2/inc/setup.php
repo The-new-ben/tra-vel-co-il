@@ -59,6 +59,9 @@ function tra_vel_v2_body_classes( $classes ) {
 	if ( is_page_template( 'page-destination.php' ) || is_singular( 'destination' ) ) {
 		$classes[] = 'tra-vel-destination';
 	}
+	if ( is_page_template( 'page-directory.php' ) ) {
+		$classes[] = 'tra-vel-directory';
+	}
 	return $classes;
 }
 add_filter( 'body_class', 'tra_vel_v2_body_classes' );
