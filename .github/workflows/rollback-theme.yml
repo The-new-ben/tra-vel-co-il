@@ -46,6 +46,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          node scripts/ci/validate-theme-deploy-contract.mjs
           [[ "$ROLLBACK_CONFIRMATION" == "ROLLBACK TRA-VEL V2" ]] || { echo "Rollback confirmation did not match." >&2; exit 1; }
           [[ "$WP_SITE_URL" =~ ^https:// ]] || { echo "WP_SITE_URL must use HTTPS." >&2; exit 1; }
           [[ -n "$WP_USERNAME" && -n "$WP_APP_PASSWORD" ]] || { echo "WordPress deployment secrets are missing." >&2; exit 1; }

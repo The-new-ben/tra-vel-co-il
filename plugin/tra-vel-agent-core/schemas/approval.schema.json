@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://tra-vel.co.il/schemas/agent/approval-1.0.0.json",
+  "title": "Tra-Vel ApprovalRequest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["approval_id", "version", "status", "action_type", "scope_digest", "summary", "action", "expires_at"],
+  "properties": {
+    "approval_id": { "type": "string", "format": "uuid" },
+    "version": { "type": "integer", "minimum": 1 },
+    "status": { "enum": ["pending", "approved", "rejected", "expired", "superseded"] },
+    "action_type": { "enum": ["purchase", "cancel", "amend", "submit_personal_data", "bind_insurance", "send_supplier_request"] },
+    "scope_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "summary": { "type": "object" },
+    "action": { "type": "object" },
+    "expires_at": { "type": "string", "format": "date-time" }
+  }
+}

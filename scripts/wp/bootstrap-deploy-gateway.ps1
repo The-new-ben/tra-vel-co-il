@@ -20,7 +20,9 @@ if (-not $GatewayArchive) {
     if ($LASTEXITCODE -ne 0) {
         throw 'Deploy gateway packaging failed.'
     }
-    $GatewayArchive = Join-Path $repoRoot 'dist\tra-vel-deploy-gateway-0.1.0.zip'
+    $GatewayArchive = Get-ChildItem -LiteralPath (Join-Path $repoRoot 'dist') -Filter 'tra-vel-deploy-gateway-*.zip' |
+        Sort-Object LastWriteTime -Descending |
+        Select-Object -First 1 -ExpandProperty FullName
 }
 if (-not (Test-Path -LiteralPath $GatewayArchive)) {
     throw "Gateway archive not found: $GatewayArchive"

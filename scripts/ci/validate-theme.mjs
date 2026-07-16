@@ -146,6 +146,10 @@ if (!appCss.includes("../images/earth-blue-marble.jpg")) failures.push('The prod
 
 const appJs = readFileSync(join(themeRoot, 'assets/js/app.js'), 'utf8');
 if (!appJs.includes('window.traVelV2')) failures.push('The app script is not connected to localized WordPress configuration.');
+if (!appJs.includes('agentRestUrl') || !appJs.includes("agentApiRequest('/runs'")) failures.push('The AI planner is not connected to the private Agent Core POST contract.');
+if (!appJs.includes('window.sessionStorage') || !appJs.includes("credentials: 'same-origin'")) failures.push('The private agent run ID is not retained per tab or requests do not include the protected same-origin cookie.');
+if (appJs.includes('run_token') || appJs.includes('X-Tra-Vel-Run-Token') || appJs.includes('agentTokenStorageKey')) failures.push('The private agent bearer secret is exposed to JavaScript instead of the HttpOnly ownership cookie.');
+if (!appJs.includes('mergeAndRenderAgentEvents') || !appJs.includes("event?.visible === false")) failures.push('The AI planner does not render the actual visible server event log.');
 if (!appJs.includes('discoveryUrl')) failures.push('The app script is not connected to the discovery REST contract.');
 if (!appJs.includes('hydrateDiscovery')) failures.push('The app script does not hydrate the map from discovery data.');
 if (!appJs.includes('flightSearchUrl')) failures.push('The app script is not connected to the flight search REST contract.');
@@ -359,6 +363,11 @@ if (!appCss.includes('.package-search-form,.package-route-row') || !appCss.inclu
 if (!appCss.includes('.experience-card-grid { display: flex; direction: ltr;') || !appCss.includes('.package-journey-map { position: relative; top: auto; min-height: 570px; contain: paint;')) failures.push('The supporting content and journey map are missing mobile paint containment.');
 if (!appCss.includes('.flight-results-grid { display: flex; direction: ltr;') || !appCss.includes('.hotel-results-grid { display: flex; direction: ltr;') || !appCss.includes('.insurance-plan-grid { display: flex; direction: ltr;')) failures.push('The mobile commerce result rails are missing RTL-safe paint containment.');
 if (!experiencePage.includes('data-package-results')) failures.push('The packages page is missing its dynamic comparison region.');
+for (const marker of ['data-agent-entry-form', 'data-agent-workbench', 'data-agent-trip-request', 'data-agent-clarifications', 'data-agent-event-log', 'data-agent-supplier-state']) {
+  if (!experiencePage.includes(marker)) failures.push(`The private AI planner is missing ${marker}.`);
+}
+if (!experiencePage.includes('method="post"') || !experiencePage.includes('data-agent-submit disabled')) failures.push('The agent prompt must fail closed when JavaScript is unavailable.');
+if (experiencePage.includes('name="q"') && /data-agent-entry-form[\s\S]{0,1000}name="q"/.test(experiencePage)) failures.push('The agent prompt can still leak into a query-string parameter.');
 
 const supplierInterface = readFileSync(join(themeRoot, 'inc/suppliers/interface-supplier-adapter.php'), 'utf8');
 for (const method of ['get_id', 'get_verticals', 'is_configured', 'get_mode', 'get_cache_version', 'fetch']) {
