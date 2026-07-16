@@ -63,6 +63,7 @@ function tra_vel_v2_enqueue_assets() {
 			'insuranceQuoteUrl' => esc_url_raw( rest_url( 'tra-vel/v2/insurance/quote' ) ),
 			'packageSearchUrl' => esc_url_raw( rest_url( 'tra-vel/v2/packages/search' ) ),
 			'workspaceUrl' => esc_url_raw( rest_url( 'tra-vel/v2/workspace' ) ),
+			'handoffUrl'   => esc_url_raw( rest_url( 'tra-vel/v2/handoffs/prepare' ) ),
 			'isLoggedIn'  => is_user_logged_in(),
 			'nonce'        => wp_create_nonce( 'wp_rest' ),
 			'demoMode'     => (bool) apply_filters( 'tra_vel_v2_demo_mode', true ),

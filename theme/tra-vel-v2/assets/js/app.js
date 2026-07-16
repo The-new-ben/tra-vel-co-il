@@ -181,6 +181,73 @@ async function workspaceRequest(path = '', options = {}) {
   return payload;
 }
 
+function commercialHandoffContext(vertical, commerce, payload = {}) {
+  const query = payload.query || payload.search || {};
+  const calculation = payload.calculation || {};
+  const adults = Number(query.adults || 0);
+  const children = Number(query.children || 0);
+  const verticalLabels = {
+    flight: 'טיסה', hotel: 'מלון', package: 'טיסה ומלון', insurance: 'ביטוח נסיעות'
+  };
+  const provider = commerce?.bookable || commerce?.purchasable
+    ? String(commerce.provider || '')
+    : 'tra-vel-concierge';
+  return {
+    provider: provider && provider !== 'demo' ? provider : 'tra-vel-concierge',
+    vertical,
+    offer_id: String(commerce?.id || 'search').replace(/[^A-Za-z0-9._:-]/g, '').slice(0, 80) || 'search',
+    destination: String(payload.destination?.city || payload.destination?.name || query.destination || '').slice(0, 80),
+    origin: String(payload.origin?.code || query.origin || 'TLV').slice(0, 80),
+    depart_date: String(query.depart_date || query.check_in || query.start_date || '').slice(0, 10),
+    return_date: String(query.return_date || query.check_out || query.end_date || '').slice(0, 10),
+    travelers: Math.max(1, Math.min(20, Number(payload.trip?.travelers || calculation.travelers || adults + children || 1))),
+    budget: Math.max(0, Math.min(1000000, Number(query.budget || query.max_total || 0))),
+    currency: ['ILS', 'USD', 'EUR', 'GBP'].includes(query.currency) ? query.currency : 'ILS',
+    product: verticalLabels[vertical] || vertical,
+    return_path: `${window.location.pathname}${window.location.search}`.slice(0, 200)
+  };
+}
+
+async function startCommercialHandoff(button, vertical, commerce, payload) {
+  const endpoint = window.traVelV2?.handoffUrl;
+  if (!endpoint || !button) return;
+  const originalText = button.textContent;
+  button.disabled = true;
+  button.dataset.handoffState = 'loading';
+  button.textContent = 'מכינים בקשה מאובטחת...';
+  try {
+    let requestBody = commercialHandoffContext(vertical, commerce, payload);
+    let response = await fetch(endpoint, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {Accept: 'application/json', 'Content-Type': 'application/json'},
+      body: JSON.stringify(requestBody)
+    });
+    if (!response.ok && requestBody.provider !== 'tra-vel-concierge') {
+      requestBody = {...requestBody, provider: 'tra-vel-concierge'};
+      response = await fetch(endpoint, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {Accept: 'application/json', 'Content-Type': 'application/json'},
+        body: JSON.stringify(requestBody)
+      });
+    }
+    const handoff = await response.json().catch(() => ({}));
+    if (!response.ok || !handoff.handoff_url) throw new Error(handoff.message || `Handoff failed: ${response.status}`);
+    button.dataset.handoffState = 'ready';
+    button.textContent = handoff.conversion_type === 'assisted_quote' ? 'עוברים לשיחה עם Tra-Vel' : 'עוברים לספק המאומת';
+    window.location.assign(handoff.handoff_url);
+  } catch (error) {
+    button.disabled = false;
+    button.dataset.handoffState = 'error';
+    button.textContent = 'לא הצלחנו לפתוח את הבקשה. נסו שוב';
+    window.setTimeout(() => {
+      if (button.dataset.handoffState === 'error') button.textContent = originalText;
+    }, 4500);
+    console.warn(error);
+  }
+}
+
 function showWorkspaceToast(message, icon = 'heart') {
   let toast = document.querySelector('[data-workspace-toast]');
   if (!toast) {
@@ -431,8 +498,9 @@ function renderFlightOffers(payload) {
     const action = document.createElement('button');
     action.className = 'flight-offer-action';
     action.type = 'button';
-    action.disabled = !offer.booking.bookable;
-    action.textContent = offer.booking.bookable ? 'בחירת הטיסה' : 'הזמנה תיפתח לאחר אימות ספק';
+    action.classList.toggle('is-assisted', !offer.booking.bookable);
+    action.textContent = offer.booking.bookable ? 'מעבר להזמנה מאומתת' : 'קבלו מחיר חי בוואטסאפ';
+    action.addEventListener('click', () => startCommercialHandoff(action, 'flight', {...offer.booking, id: offer.id}, payload));
     card.append(action, createSaveOfferButton({
       kind: 'flight', external_id: offer.id, title: offer.label,
       subtitle: `${offer.airline.name} · ${offer.outbound.duration_label} · ${offer.outbound.stops_label}`,
@@ -616,8 +684,9 @@ function renderHotelProperties(payload) {
     const action = document.createElement('button');
     action.className = 'hotel-offer-action';
     action.type = 'button';
-    action.disabled = !property.booking.bookable;
-    action.textContent = property.booking.bookable ? 'בדיקת זמינות והזמנה' : 'הזמנה תיפתח לאחר אימות ספק';
+    action.classList.toggle('is-assisted', !property.booking.bookable);
+    action.textContent = property.booking.bookable ? 'בדיקת זמינות והזמנה' : 'קבלו מחיר חי בוואטסאפ';
+    action.addEventListener('click', () => startCommercialHandoff(action, 'hotel', {...property.booking, id: property.id}, payload));
     body.append(action, createSaveOfferButton({
       kind: 'hotel', external_id: property.id, title: property.name,
       subtitle: `${property.area?.name || ''} · ${property.stars}★ · ${property.guest_score}/10`,
@@ -826,8 +895,9 @@ function renderInsurancePlans(payload) {
     const action = document.createElement('button');
     action.type = 'button';
     action.className = 'insurance-plan-action';
-    action.disabled = !plan.purchase.purchasable;
-    action.textContent = plan.purchase.purchasable ? 'מעבר להצעה ולפוליסה' : 'רכישה תיפתח לאחר אימות מבטח';
+    action.classList.toggle('is-assisted', !plan.purchase.purchasable);
+    action.textContent = plan.purchase.purchasable ? 'מעבר להצעה ולפוליסה' : 'קבלו הצעה מאומתת בוואטסאפ';
+    action.addEventListener('click', () => startCommercialHandoff(action, 'insurance', {...plan.purchase, id: plan.id}, payload));
     card.append(action);
     container.append(card);
   });
@@ -1066,8 +1136,9 @@ function renderTripPackages(payload) {
     mapAction.addEventListener('click', () => selectTripPackage(tripPackage.id, true));
     const checkout = document.createElement('button');
     checkout.type = 'button';
-    checkout.disabled = !tripPackage.booking.bookable;
-    checkout.textContent = tripPackage.booking.bookable ? 'עברו להזמנה מאומתת' : 'הזמנה תיפתח לאחר אימות ספקים';
+    checkout.classList.toggle('is-assisted', !tripPackage.booking.bookable);
+    checkout.textContent = tripPackage.booking.bookable ? 'עברו להזמנה מאומתת' : 'קבלו מחיר מלא בוואטסאפ';
+    checkout.addEventListener('click', () => startCommercialHandoff(checkout, 'package', {...tripPackage.booking, id: tripPackage.id}, payload));
     const saveAction = createSaveOfferButton({
       kind: 'package', external_id: tripPackage.id, title: tripPackage.name,
       subtitle: `${tripPackage.flight.airline} · ${tripPackage.stay.name} · ${payload.trip.nights} לילות`,

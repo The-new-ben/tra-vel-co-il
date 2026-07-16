@@ -60,6 +60,7 @@ const requiredFiles = [
   'inc/workspace/class-traveler-workspace-controller.php',
   'inc/handoffs/bootstrap.php',
   'inc/handoffs/class-supplier-handoff-controller.php',
+  'inc/handoffs/class-whatsapp-sales-handoff-provider.php',
   'inc/template-tags.php',
   'inc/guides.php',
   'inc/seo.php',
@@ -210,6 +211,9 @@ if (/מפת העריכה|במחקר|בדיקת מערכת|מדריך דגל/u.te
 const publicDirectoryPage = readFileSync(join(themeRoot, 'page-directory.php'), 'utf8');
 if (/מפת העריכה|במחקר|בדיקת מערכת|מדריך דגל|מחירים מומצאים/u.test(publicDirectoryPage)) failures.push('Destination directories expose internal project language.');
 if (/[—–]/u.test(destinationPage) || /[—–]/u.test(publicDirectoryPage)) failures.push('Public destination templates must not use em dash or en dash punctuation.');
+const commercialExperiencePage = readFileSync(join(themeRoot, 'page-experience.php'), 'utf8');
+if (/הגרסה הבאה|המבנה והמסע מוכנים|יחוברו ספקים/u.test(commercialExperiencePage)) failures.push('Commercial experience pages expose internal roadmap language.');
+if (!commercialExperiencePage.includes('commercial-assurance')) failures.push('Commercial experience pages are missing the assisted-sales trust boundary.');
 
 const directoryPage = readFileSync(join(themeRoot, 'page-directory.php'), 'utf8');
 for (const marker of ['data-directory-root', 'data-directory-filter', 'data-directory-grid', 'directory-map-pin', 'editorial-directory.json']) {
@@ -331,6 +335,12 @@ const handoffController = readFileSync(join(themeRoot, 'inc/handoffs/class-suppl
 if (!handoffController.includes("'https' !== $scheme")) failures.push('Supplier handoffs must enforce HTTPS.');
 if (!handoffController.includes("'sponsored noopener noreferrer'")) failures.push('Supplier handoffs must qualify and isolate outbound partner links.');
 if (!handoffController.includes("'private, no-store, max-age=0'")) failures.push('Prepared supplier handoffs must not be cached.');
+if (!handoffController.includes("'assisted_quote'") || !handoffController.includes("'partner_booking'")) failures.push('Commercial handoffs do not distinguish owned sales from affiliate bookings.');
+const ownedHandoff = readFileSync(join(themeRoot, 'inc/handoffs/class-whatsapp-sales-handoff-provider.php'), 'utf8');
+if (!ownedHandoff.includes("'relationship'  => 'owned'")) failures.push('The owned Tra-Vel assisted-sales provider is missing.');
+if (!ownedHandoff.includes('api.whatsapp.com')) failures.push('The owned sales provider is missing its allowlisted WhatsApp destination.');
+if (/\$context\['(?:price|pricing|medical_condition|pregnancy)'\]/.test(ownedHandoff)) failures.push('The assisted-sales provider must not transmit sample prices or medical answers.');
+if (!appJs.includes('startCommercialHandoff') || !appJs.includes('tra-vel-concierge')) failures.push('Commercial result cards are not connected to the verified handoff boundary.');
 if (!handoffController.includes('allowed_hosts')) failures.push('Supplier handoffs must enforce an explicit host allowlist.');
 
 const experiencePage = readFileSync(join(themeRoot, 'page-experience.php'), 'utf8');
