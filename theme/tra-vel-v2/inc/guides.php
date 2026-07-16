@@ -142,21 +142,21 @@ function tra_vel_v2_render_guide_evidence( $post_id = null ) {
 	$post_id = $post_id ?: get_queried_object_id();
 	$profile = tra_vel_v2_get_guide_profile( $post_id );
 	$author  = get_the_author_meta( 'display_name', (int) get_post_field( 'post_author', $post_id ) );
-	$method  = $profile['method'] ?: __( 'Facts are checked against primary sources; commercial prices are labelled separately and rechecked before booking.', 'tra-vel-v2' );
+	$method  = $profile['method'] ?: __( 'העובדות נבדקות מול מקורות ראשוניים. מחירים מסחריים מסומנים בנפרד ונבדקים שוב לפני הזמנה.', 'tra-vel-v2' );
 	?>
 	<section class="guide-evidence page-width" aria-labelledby="guide-evidence-title">
 		<div class="guide-evidence-status <?php echo $profile['is_reviewed'] ? 'is-reviewed' : 'is-pending'; ?>">
 			<i data-lucide="<?php echo $profile['is_reviewed'] ? 'badge-check' : 'clock-3'; ?>"></i>
-			<div><small><?php esc_html_e( 'Editorial status', 'tra-vel-v2' ); ?></small><strong id="guide-evidence-title"><?php echo esc_html( $profile['is_reviewed'] ? __( 'Sources checked', 'tra-vel-v2' ) : __( 'Source review pending', 'tra-vel-v2' ) ); ?></strong></div>
+			<div><small><?php esc_html_e( 'סטטוס עריכה', 'tra-vel-v2' ); ?></small><strong id="guide-evidence-title"><?php echo esc_html( $profile['is_reviewed'] ? __( 'המקורות נבדקו', 'tra-vel-v2' ) : __( 'ממתין לבדיקת מקורות', 'tra-vel-v2' ) ); ?></strong></div>
 		</div>
 		<div class="guide-evidence-facts">
-			<span><small><?php esc_html_e( 'Author', 'tra-vel-v2' ); ?></small><strong><?php echo esc_html( $author ?: 'Tra-Vel' ); ?></strong></span>
-			<span><small><?php esc_html_e( 'Reviewer', 'tra-vel-v2' ); ?></small><strong><?php echo esc_html( $profile['reviewer'] ?: __( 'Tra-Vel editorial desk', 'tra-vel-v2' ) ); ?></strong></span>
-			<span><small><?php esc_html_e( 'Facts checked', 'tra-vel-v2' ); ?></small><strong><?php echo esc_html( $profile['checked'] ?: __( 'Not yet recorded', 'tra-vel-v2' ) ); ?></strong></span>
-			<span><small><?php esc_html_e( 'Primary sources', 'tra-vel-v2' ); ?></small><strong><?php echo esc_html( number_format_i18n( count( $profile['sources'] ) ) ); ?></strong></span>
+			<span><small><?php esc_html_e( 'מחבר', 'tra-vel-v2' ); ?></small><strong><?php echo esc_html( $author ?: 'Tra-Vel' ); ?></strong></span>
+			<span><small><?php esc_html_e( 'בדיקה מקצועית', 'tra-vel-v2' ); ?></small><strong><?php echo esc_html( $profile['reviewer'] ?: __( 'מערכת Tra-Vel', 'tra-vel-v2' ) ); ?></strong></span>
+			<span><small><?php esc_html_e( 'העובדות נבדקו', 'tra-vel-v2' ); ?></small><strong><?php echo esc_html( $profile['checked'] ?: __( 'טרם תועד', 'tra-vel-v2' ) ); ?></strong></span>
+			<span><small><?php esc_html_e( 'מקורות ראשוניים', 'tra-vel-v2' ); ?></small><strong><?php echo esc_html( number_format_i18n( count( $profile['sources'] ) ) ); ?></strong></span>
 		</div>
 		<details class="guide-evidence-details">
-			<summary><?php esc_html_e( 'How this guide was checked', 'tra-vel-v2' ); ?></summary>
+			<summary><?php esc_html_e( 'איך בדקנו את המדריך', 'tra-vel-v2' ); ?></summary>
 			<p><?php echo esc_html( $method ); ?></p>
 			<?php if ( $profile['sources'] ) : ?>
 				<ul>

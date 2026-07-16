@@ -142,8 +142,8 @@ function tra_vel_v2_schema_data() {
 		'@type'           => 'BreadcrumbList',
 		'@id'             => $url . '#breadcrumb',
 		'itemListElement' => array(
-			array( '@type' => 'ListItem', 'position' => 1, 'name' => __( 'Home', 'tra-vel-v2' ), 'item' => home_url( '/' ) ),
-			array( '@type' => 'ListItem', 'position' => 2, 'name' => __( 'Destinations', 'tra-vel-v2' ), 'item' => home_url( '/destinations/' ) ),
+			array( '@type' => 'ListItem', 'position' => 1, 'name' => __( 'ראשי', 'tra-vel-v2' ), 'item' => home_url( '/' ) ),
+			array( '@type' => 'ListItem', 'position' => 2, 'name' => __( 'יעדים', 'tra-vel-v2' ), 'item' => home_url( '/destinations/' ) ),
 			array( '@type' => 'ListItem', 'position' => 3, 'name' => get_the_title( $post_id ), 'item' => $url ),
 		),
 	);
@@ -157,6 +157,21 @@ function tra_vel_v2_schema_graph() {
 		return;
 	}
 	if ( defined( 'WPSEO_VERSION' ) || defined( 'AIOSEO_VERSION' ) || function_exists( 'aioseo' ) ) {
+		if ( ! tra_vel_v2_is_destination_guide() ) {
+			return;
+		}
+		$data    = tra_vel_v2_schema_data();
+		$article = array_values(
+			array_filter(
+				$data['@graph'],
+				static function ( $node ) {
+					return isset( $node['@id'] ) && '#guide' === substr( $node['@id'], -6 );
+				}
+			)
+		);
+		if ( $article ) {
+			echo '<script type="application/ld+json">' . wp_json_encode( array( '@context' => 'https://schema.org', '@graph' => $article ), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE ) . '</script>';
+		}
 		return;
 	}
 	echo '<script type="application/ld+json">' . wp_json_encode( tra_vel_v2_schema_data(), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE ) . '</script>';
