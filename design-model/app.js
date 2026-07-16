@@ -112,6 +112,7 @@ function initControls() {
     button.classList.add('is-active');
   }));
   document.querySelectorAll('.filter-chips button').forEach(button => button.addEventListener('click', () => button.classList.toggle('is-active')));
+  document.querySelectorAll('.experience-chips button').forEach(button => button.addEventListener('click', () => button.classList.toggle('is-active')));
   document.querySelectorAll('.toggle').forEach(toggle => toggle.addEventListener('click', () => {
     toggle.classList.toggle('is-active');
     toggle.setAttribute('aria-pressed', String(toggle.classList.contains('is-active')));

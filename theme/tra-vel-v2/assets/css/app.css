@@ -428,6 +428,7 @@ input[type="range"] { width: 100%; accent-color: #7da000; }
 .experience-chips { display: flex; flex-wrap: wrap; gap: 7px; margin: 14px 0; }
 .experience-chips button { padding: 7px 11px; color: #4b6268; background: #eff3f1; border: 1px solid transparent; border-radius: 99px; font-weight: 700; }
 .experience-chips button:hover { border-color: #99b43a; color: #4a6700; }
+.experience-chips button.is-active { color: #456200; background: #e8ffc0; border-color: #98b83c; }
 .experience-submit { width: 100%; min-height: 55px; display: flex; align-items: center; justify-content: center; gap: 9px; color: var(--ink); background: var(--lime); border: 0; border-radius: 14px; font-weight: 900; }
 .experience-submit i { width: 19px; }
 .experience-search > small { display: block; margin-top: 10px; color: #74858a; line-height: 1.4; }
