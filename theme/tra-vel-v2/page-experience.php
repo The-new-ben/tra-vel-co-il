@@ -115,6 +115,8 @@ $is_flights = 'flights' === $slug;
 $is_hotels  = 'hotels' === $slug;
 $is_packages = 'packages' === $slug;
 $is_insurance = 'travel-insurance' === $slug;
+$is_ai_planner = 'ai-planner' === $slug;
+$is_surprise = $is_ai_planner && isset( $_GET['mode'] ) && 'surprise' === sanitize_key( wp_unslash( $_GET['mode'] ) );
 $today      = current_time( 'timestamp' );
 $departure_default = wp_date( 'Y-m-d', strtotime( '+30 days', $today ) );
 $return_default    = wp_date( 'Y-m-d', strtotime( '+44 days', $today ) );
@@ -165,6 +167,13 @@ get_header();
 				<fieldset class="insurance-addon-grid"><legend><?php esc_html_e( 'מה חשוב לכלול בהשוואה?', 'tra-vel-v2' ); ?></legend><label><input type="checkbox" name="baggage" value="true"><span><i data-lucide="luggage"></i><?php esc_html_e( 'כבודה', 'tra-vel-v2' ); ?></span></label><label><input type="checkbox" name="cancellation" value="true"><span><i data-lucide="calendar-x"></i><?php esc_html_e( 'ביטול וקיצור', 'tra-vel-v2' ); ?></span></label><label><input type="checkbox" name="adventure_sports" value="true"><span><i data-lucide="mountain"></i><?php esc_html_e( 'ספורט אתגרי', 'tra-vel-v2' ); ?></span></label><label><input type="checkbox" name="winter_sports" value="true"><span><i data-lucide="snowflake"></i><?php esc_html_e( 'ספורט חורף', 'tra-vel-v2' ); ?></span></label><label><input type="checkbox" name="electronics" value="true"><span><i data-lucide="smartphone"></i><?php esc_html_e( 'אלקטרוניקה', 'tra-vel-v2' ); ?></span></label></fieldset>
 				<div class="insurance-assessment-row"><label><input type="checkbox" name="medical_condition" value="true"><span><?php esc_html_e( 'יש מצב רפואי קיים, נדרש בירור', 'tra-vel-v2' ); ?></span></label><label><input type="checkbox" name="pregnancy" value="true"><span><?php esc_html_e( 'הריון, נדרש בירור', 'tra-vel-v2' ); ?></span></label></div>
 				<input type="hidden" name="limit" value="12"><button class="experience-submit" type="submit"><span><?php esc_html_e( 'השוו כיסוי ומחיר משוער', 'tra-vel-v2' ); ?></span><i data-lucide="shield-check"></i></button><small><?php esc_html_e( 'המידע אינו ייעוץ או הצעת ביטוח. הפוליסה, החיתום והמחיר אצל המבטח הם הקובעים.', 'tra-vel-v2' ); ?></small>
+			</form>
+			<?php elseif ( $is_ai_planner ) : ?>
+			<form class="experience-search ai-conversation-entry" action="<?php echo esc_url( $map_url ); ?>" method="get" data-ai-conversation-entry>
+				<label class="ai-conversation-prompt"><span><?php echo esc_html( $is_surprise ? __( 'ספרו לי איזו חופשה להפתיע אתכם', 'tra-vel-v2' ) : __( 'ספרו לי על החופשה במילים שלכם', 'tra-vel-v2' ) ); ?></span><textarea name="q" rows="5" required><?php echo esc_textarea( $is_surprise ? __( 'חופשה אקזוטית לזוג עד 1,000 דולר. לא משנה לאן. תחליטו בשבילי.', 'tra-vel-v2' ) : $experience['prompt'] ); ?></textarea></label>
+				<input type="hidden" name="mode" value="<?php echo esc_attr( $is_surprise ? 'surprise' : 'agent' ); ?>">
+				<div class="ai-conversation-actions"><button class="ai-voice-button" type="button" data-ai-voice><i data-lucide="mic"></i><span><?php esc_html_e( 'דברו במקום להקליד', 'tra-vel-v2' ); ?></span></button><button class="experience-submit" type="submit"><span><?php echo esc_html( $is_surprise ? __( 'תפתיעו אותי', 'tra-vel-v2' ) : __( 'בנו לי הצעה', 'tra-vel-v2' ) ); ?></span><i data-lucide="sparkles"></i></button></div>
+				<p class="ai-voice-status" data-ai-voice-status role="status"><?php esc_html_e( 'אפשר לשנות כל פרט לפני אישור. הזמנה או תשלום יתבצעו רק לאחר אישור מפורש.', 'tra-vel-v2' ); ?></p>
 			</form>
 			<?php else : ?>
 			<form class="experience-search" action="<?php echo esc_url( $map_url ); ?>" method="get"><label><?php esc_html_e( 'מה אתם מחפשים?', 'tra-vel-v2' ); ?><input name="q" value="<?php echo esc_attr( $experience['prompt'] ); ?>"></label><div class="experience-search-row"><label><?php esc_html_e( 'מתי?', 'tra-vel-v2' ); ?><input name="when" value="<?php esc_attr_e( 'גמיש', 'tra-vel-v2' ); ?>"></label><label><?php esc_html_e( 'תקציב?', 'tra-vel-v2' ); ?><input name="budget" value="<?php esc_attr_e( 'עוד לא החלטנו', 'tra-vel-v2' ); ?>"></label></div><div class="experience-chips"><?php foreach ( $experience['chips'] as $chip ) : ?><button type="button"><?php echo esc_html( $chip ); ?></button><?php endforeach; ?></div><button class="experience-submit" type="submit"><?php echo esc_html( $experience['action'] ); ?><i data-lucide="arrow-left"></i></button><small><?php esc_html_e( 'המחירים והזמינות יאומתו בחיפוש לפני מעבר להזמנה.', 'tra-vel-v2' ); ?></small></form>

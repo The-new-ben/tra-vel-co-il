@@ -9,6 +9,7 @@ get_header();
 $map_url       = home_url( '/travel-map/' );
 $thailand_url  = home_url( '/destinations/thailand/' );
 $planner_url   = home_url( '/ai-planner/' );
+$surprise_url  = add_query_arg( 'mode', 'surprise', $planner_url );
 $hero_campaign = tra_vel_v2_get_home_hero_campaign();
 ?>
 <main id="main-content">
@@ -18,7 +19,10 @@ $hero_campaign = tra_vel_v2_get_home_hero_campaign();
 				<span class="kicker"><i data-lucide="sparkles"></i><?php esc_html_e( 'Tra-Vel Intelligence · מסע אחד, החלטה אחת בכל פעם', 'tra-vel-v2' ); ?></span>
 				<h1><?php esc_html_e( 'כל העולם.', 'tra-vel-v2' ); ?><br><em><?php esc_html_e( 'על מפה אחת.', 'tra-vel-v2' ); ?></em></h1>
 				<p><?php esc_html_e( 'בוחרים מקום על הגלובוס ומקבלים טיסות, מלונות, מסלולים, ביטוח ועלות אמיתית, עם הסבר מה עדיף ולמה.', 'tra-vel-v2' ); ?></p>
-				<a class="ai-prompt" href="<?php echo esc_url( $planner_url ); ?>"><i data-lucide="bot"></i><span><?php esc_html_e( 'אפשר גם לכתוב:', 'tra-vel-v2' ); ?></span><strong><?php esc_html_e( '“שבועיים בתאילנד עד ₪9,000 לזוג”', 'tra-vel-v2' ); ?></strong><i data-lucide="arrow-left"></i></a>
+				<div class="hero-agent-actions">
+					<a class="ai-prompt" href="<?php echo esc_url( $planner_url ); ?>"><i data-lucide="bot"></i><span><?php esc_html_e( 'אפשר גם לכתוב:', 'tra-vel-v2' ); ?></span><strong><?php esc_html_e( '“שבועיים בתאילנד עד ₪9,000 לזוג”', 'tra-vel-v2' ); ?></strong><i data-lucide="arrow-left"></i></a>
+					<a class="surprise-cta" href="<?php echo esc_url( $surprise_url ); ?>"><i data-lucide="dices"></i><span><strong><?php esc_html_e( 'תפתיעו אותי', 'tra-vel-v2' ); ?></strong><small><?php esc_html_e( 'אתם מספרים תקציב ואווירה. הסוכן תופר חופשה.', 'tra-vel-v2' ); ?></small></span><i data-lucide="arrow-left"></i></a>
+				</div>
 				<?php if ( $hero_campaign ) : ?>
 					<aside class="hero-campaign" data-hero-campaign="<?php echo esc_attr( $hero_campaign['id'] ); ?>" data-map-state="<?php echo esc_attr( $hero_campaign['map_state'] ); ?>">
 						<div class="hero-campaign-heading"><span><i data-lucide="calendar-heart"></i><?php echo esc_html( $hero_campaign['eyebrow'] ); ?></span><small><?php esc_html_e( 'בחירה עונתית', 'tra-vel-v2' ); ?></small></div>
