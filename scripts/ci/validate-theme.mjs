@@ -33,6 +33,12 @@ const requiredFiles = [
   'inc/flights/class-flight-search-registry.php',
   'inc/flights/class-flight-search-repository.php',
   'inc/flights/class-flight-search-controller.php',
+  'inc/hotels/bootstrap.php',
+  'inc/hotels/interface-hotel-search-adapter.php',
+  'inc/hotels/class-demo-hotel-search-adapter.php',
+  'inc/hotels/class-hotel-search-registry.php',
+  'inc/hotels/class-hotel-search-repository.php',
+  'inc/hotels/class-hotel-search-controller.php',
   'inc/template-tags.php',
   'inc/seo.php',
   'assets/css/app.css',
@@ -41,6 +47,8 @@ const requiredFiles = [
   'assets/data/discovery.schema.json',
   'assets/data/flight-search-demo.json',
   'assets/data/flight-search.schema.json',
+  'assets/data/hotel-search-demo.json',
+  'assets/data/hotel-search.schema.json',
   'assets/vendor/lucide.min.js',
   'assets/images/earth-blue-marble.jpg',
   'assets/images/thailand.jpg'
@@ -92,6 +100,8 @@ if (!appJs.includes('discoveryUrl')) failures.push('The app script is not connec
 if (!appJs.includes('hydrateDiscovery')) failures.push('The app script does not hydrate the map from discovery data.');
 if (!appJs.includes('flightSearchUrl')) failures.push('The app script is not connected to the flight search REST contract.');
 if (!appJs.includes('initFlightSearch')) failures.push('The app script does not initialize the flight comparison product.');
+if (!appJs.includes('hotelSearchUrl')) failures.push('The app script is not connected to the hotel search REST contract.');
+if (!appJs.includes('initHotelSearch')) failures.push('The app script does not initialize the hotel comparison product.');
 
 const discoveryController = readFileSync(join(themeRoot, 'inc/discovery.php'), 'utf8');
 if (/function\s+get_items\s*\(\s*WP_REST_Request\b/.test(discoveryController)) {
@@ -112,9 +122,24 @@ for (const method of ['get_id', 'is_configured', 'get_mode', 'get_cache_version'
   if (!flightInterface.includes(`function ${method}(`)) failures.push(`Flight adapter contract is missing ${method}().`);
 }
 
+const hotelController = readFileSync(join(themeRoot, 'inc/hotels/class-hotel-search-controller.php'), 'utf8');
+if (/function\s+get_items\s*\(\s*WP_REST_Request\b/.test(hotelController)) {
+  failures.push('Hotel REST controller overrides must keep the untyped WP_REST_Controller method signature for PHP 8 compatibility.');
+}
+if (!hotelController.includes("'/hotels/cache'")) failures.push('The hotel cache administration route is missing.');
+if (!hotelController.includes("current_user_can( 'manage_options' )")) failures.push('Hotel cache mutation lacks a manage_options capability check.');
+
+const hotelInterface = readFileSync(join(themeRoot, 'inc/hotels/interface-hotel-search-adapter.php'), 'utf8');
+for (const method of ['get_id', 'is_configured', 'get_mode', 'get_cache_version', 'search']) {
+  if (!hotelInterface.includes(`function ${method}(`)) failures.push(`Hotel adapter contract is missing ${method}().`);
+}
+
 const experiencePage = readFileSync(join(themeRoot, 'page-experience.php'), 'utf8');
 if (!experiencePage.includes('data-flight-search')) failures.push('The flights page is missing its functional search form.');
 if (!experiencePage.includes('data-flight-results')) failures.push('The flights page is missing its dynamic results region.');
+if (!experiencePage.includes('data-hotel-search')) failures.push('The hotels page is missing its functional search form.');
+if (!experiencePage.includes('data-hotel-area-map')) failures.push('The hotels page is missing its neighborhood map.');
+if (!experiencePage.includes('data-hotel-results')) failures.push('The hotels page is missing its dynamic results region.');
 
 const supplierInterface = readFileSync(join(themeRoot, 'inc/suppliers/interface-supplier-adapter.php'), 'utf8');
 for (const method of ['get_id', 'get_verticals', 'is_configured', 'get_mode', 'get_cache_version', 'fetch']) {

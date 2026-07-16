@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://tra-vel.co.il/schemas/hotel-search-v1.json",
+  "title": "Tra-Vel hotel search contract",
+  "type": "object",
+  "required": ["contract_version", "data_mode", "currency", "provider_status", "destination", "areas", "properties"],
+  "properties": {
+    "contract_version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "data_mode": { "enum": ["demo", "live", "mixed"] },
+    "currency": { "type": "string", "pattern": "^[A-Z]{3}$" },
+    "provider_status": { "type": "object", "required": ["connected", "adapter", "readiness", "bookable"] },
+    "destination": { "type": "object", "required": ["id", "code", "city", "country", "latitude", "longitude"] },
+    "areas": { "type": "array", "minItems": 1 },
+    "properties": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "badge", "score", "area_id", "stars", "guest_score", "review_count", "image", "room", "location", "pricing", "policies", "amenities", "pros", "cons", "booking"]
+      }
+    }
+  }
+}

@@ -46,6 +46,7 @@ function tra_vel_v2_enqueue_assets() {
 			'restUrl'      => esc_url_raw( rest_url( 'tra-vel/v2' ) ),
 			'discoveryUrl' => esc_url_raw( rest_url( 'tra-vel/v2/discovery' ) ),
 			'flightSearchUrl' => esc_url_raw( rest_url( 'tra-vel/v2/flights/search' ) ),
+			'hotelSearchUrl'  => esc_url_raw( rest_url( 'tra-vel/v2/hotels/search' ) ),
 			'nonce'        => wp_create_nonce( 'wp_rest' ),
 			'demoMode'     => (bool) apply_filters( 'tra_vel_v2_demo_mode', true ),
 			'assetUrl'     => TRA_VEL_V2_URI . '/assets/images/',
