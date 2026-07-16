@@ -42,11 +42,12 @@ function tra_vel_v2_enqueue_assets() {
 		'tra-vel-v2-app',
 		'traVelV2',
 		array(
-			'homeUrl'   => home_url( '/' ),
-			'restUrl'   => esc_url_raw( rest_url( 'tra-vel/v2' ) ),
-			'nonce'     => wp_create_nonce( 'wp_rest' ),
-			'demoMode'  => (bool) apply_filters( 'tra_vel_v2_demo_mode', true ),
-			'assetUrl'  => TRA_VEL_V2_URI . '/assets/images/',
+			'homeUrl'      => home_url( '/' ),
+			'restUrl'      => esc_url_raw( rest_url( 'tra-vel/v2' ) ),
+			'discoveryUrl' => esc_url_raw( rest_url( 'tra-vel/v2/discovery' ) ),
+			'nonce'        => wp_create_nonce( 'wp_rest' ),
+			'demoMode'     => (bool) apply_filters( 'tra_vel_v2_demo_mode', true ),
+			'assetUrl'     => TRA_VEL_V2_URI . '/assets/images/',
 		)
 	);
 }

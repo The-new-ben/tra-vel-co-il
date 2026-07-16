@@ -20,10 +20,13 @@ const requiredFiles = [
   'page-experience.php',
   'inc/setup.php',
   'inc/assets.php',
+  'inc/discovery.php',
   'inc/template-tags.php',
   'inc/seo.php',
   'assets/css/app.css',
   'assets/js/app.js',
+  'assets/data/discovery-demo.json',
+  'assets/data/discovery.schema.json',
   'assets/vendor/lucide.min.js',
   'assets/images/earth-blue-marble.jpg',
   'assets/images/thailand.jpg'
@@ -71,6 +74,8 @@ if (!appCss.includes("../images/earth-blue-marble.jpg")) failures.push('The prod
 
 const appJs = readFileSync(join(themeRoot, 'assets/js/app.js'), 'utf8');
 if (!appJs.includes('window.traVelV2')) failures.push('The app script is not connected to localized WordPress configuration.');
+if (!appJs.includes('discoveryUrl')) failures.push('The app script is not connected to the discovery REST contract.');
+if (!appJs.includes('hydrateDiscovery')) failures.push('The app script does not hydrate the map from discovery data.');
 
 const frontPage = readFileSync(join(themeRoot, 'front-page.php'), 'utf8');
 if (/<a\b[^>]*class="ai-input"[^>]*>[\s\S]*?<button\b/.test(frontPage)) {
