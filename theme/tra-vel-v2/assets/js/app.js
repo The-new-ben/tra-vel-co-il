@@ -104,7 +104,7 @@ function initMap() {
       filterPanel?.classList.remove('is-open');
       document.querySelector('[data-filter-toggle]')?.setAttribute('aria-expanded', 'false');
     }
-  });
+  }, true);
 }
 
 function initControls() {
