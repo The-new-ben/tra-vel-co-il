@@ -3,21 +3,26 @@
   "$id": "https://tra-vel.co.il/schemas/supplier-handoff-v1.json",
   "title": "Tra-Vel verified supplier handoff",
   "type": "object",
-  "required": ["provider", "vertical", "offer_id", "handoff_url", "rel", "disclosure", "price_recheck", "booking_on_partner", "expires_at"],
+  "required": ["provider", "vertical", "offer_id", "handoff_url", "rel", "disclosure", "price_recheck", "booking_on_partner", "conversion_type", "expires_at"],
   "properties": {
     "provider": {
       "type": "object",
-      "required": ["id", "label"],
-      "properties": { "id": { "type": "string" }, "label": { "type": "string" } },
+      "required": ["id", "label", "relationship"],
+      "properties": {
+        "id": { "type": "string" },
+        "label": { "type": "string" },
+        "relationship": { "enum": ["owned", "affiliate"] }
+      },
       "additionalProperties": false
     },
     "vertical": { "enum": ["flight", "hotel", "package", "insurance", "car", "transfer", "activity", "esim"] },
     "offer_id": { "type": "string", "pattern": "^[A-Za-z0-9._:-]{1,80}$" },
     "handoff_url": { "type": "string", "format": "uri", "pattern": "^https://" },
-    "rel": { "const": "sponsored noopener noreferrer" },
+    "rel": { "enum": ["noopener noreferrer", "sponsored noopener noreferrer"] },
     "disclosure": { "type": "string", "minLength": 1 },
     "price_recheck": { "const": true },
-    "booking_on_partner": { "const": true },
+    "booking_on_partner": { "type": "boolean" },
+    "conversion_type": { "enum": ["assisted_quote", "partner_booking"] },
     "expires_at": { "type": "string", "format": "date-time" }
   },
   "additionalProperties": false

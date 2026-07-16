@@ -29,6 +29,13 @@ class Tra_Vel_V2_Supplier_Handoff_Controller extends WP_REST_Controller {
 					'vertical' => array( 'type' => 'string', 'required' => true, 'enum' => $this->supported_verticals(), 'sanitize_callback' => 'sanitize_key', 'validate_callback' => 'rest_validate_request_arg' ),
 					'offer_id' => array( 'type' => 'string', 'required' => true, 'pattern' => '^[A-Za-z0-9._:-]{1,80}$', 'sanitize_callback' => array( $this, 'sanitize_offer_id' ), 'validate_callback' => 'rest_validate_request_arg' ),
 					'destination' => array( 'type' => 'string', 'default' => '', 'maxLength' => 80, 'sanitize_callback' => 'sanitize_text_field', 'validate_callback' => 'rest_validate_request_arg' ),
+					'origin' => array( 'type' => 'string', 'default' => '', 'maxLength' => 80, 'sanitize_callback' => 'sanitize_text_field', 'validate_callback' => 'rest_validate_request_arg' ),
+					'depart_date' => array( 'type' => 'string', 'default' => '', 'pattern' => '^(?:\\d{4}-\\d{2}-\\d{2})?$', 'sanitize_callback' => 'sanitize_text_field', 'validate_callback' => 'rest_validate_request_arg' ),
+					'return_date' => array( 'type' => 'string', 'default' => '', 'pattern' => '^(?:\\d{4}-\\d{2}-\\d{2})?$', 'sanitize_callback' => 'sanitize_text_field', 'validate_callback' => 'rest_validate_request_arg' ),
+					'travelers' => array( 'type' => 'integer', 'default' => 1, 'minimum' => 1, 'maximum' => 20, 'sanitize_callback' => 'absint', 'validate_callback' => 'rest_validate_request_arg' ),
+					'budget' => array( 'type' => 'integer', 'default' => 0, 'minimum' => 0, 'maximum' => 1000000, 'sanitize_callback' => 'absint', 'validate_callback' => 'rest_validate_request_arg' ),
+					'currency' => array( 'type' => 'string', 'default' => 'ILS', 'enum' => array( 'ILS', 'USD', 'EUR', 'GBP' ), 'sanitize_callback' => 'sanitize_text_field', 'validate_callback' => 'rest_validate_request_arg' ),
+					'product' => array( 'type' => 'string', 'default' => '', 'maxLength' => 100, 'sanitize_callback' => 'sanitize_text_field', 'validate_callback' => 'rest_validate_request_arg' ),
 					'return_path' => array( 'type' => 'string', 'default' => '/', 'maxLength' => 200, 'sanitize_callback' => 'sanitize_text_field', 'validate_callback' => 'rest_validate_request_arg' ),
 				),
 			)
@@ -66,8 +73,15 @@ class Tra_Vel_V2_Supplier_Handoff_Controller extends WP_REST_Controller {
 			'offer_id'     => $this->sanitize_offer_id( $request->get_param( 'offer_id' ) ),
 			'destination'  => sanitize_text_field( (string) $request->get_param( 'destination' ) ),
 			'return_path'  => $this->sanitize_return_path( $request->get_param( 'return_path' ) ),
+			'origin'       => sanitize_text_field( (string) $request->get_param( 'origin' ) ),
+			'depart_date'  => $this->sanitize_date( $request->get_param( 'depart_date' ) ),
+			'return_date'  => $this->sanitize_date( $request->get_param( 'return_date' ) ),
+			'travelers'    => max( 1, min( 20, absint( $request->get_param( 'travelers' ) ) ) ),
+			'budget'       => min( 1000000, absint( $request->get_param( 'budget' ) ) ),
+			'currency'     => in_array( $request->get_param( 'currency' ), array( 'ILS', 'USD', 'EUR', 'GBP' ), true ) ? $request->get_param( 'currency' ) : 'ILS',
+			'product'      => substr( sanitize_text_field( (string) $request->get_param( 'product' ) ), 0, 100 ),
 			'source'       => 'tra-vel-v2',
-			'campaign'     => 'verified_handoff',
+			'campaign'     => 'owned' === $provider['relationship'] ? 'assisted_quote' : 'verified_handoff',
 		);
 		$url = call_user_func( $provider['build_url'], $context );
 		$url = $this->validate_provider_url( $url, $provider['allowed_hosts'] );
@@ -76,14 +90,15 @@ class Tra_Vel_V2_Supplier_Handoff_Controller extends WP_REST_Controller {
 		}
 		$response = new WP_REST_Response(
 			array(
-				'provider'       => array( 'id' => $provider_id, 'label' => $provider['label'] ),
+				'provider'       => array( 'id' => $provider_id, 'label' => $provider['label'], 'relationship' => $provider['relationship'] ),
 				'vertical'       => $vertical,
 				'offer_id'       => $context['offer_id'],
 				'handoff_url'    => $url,
-				'rel'            => 'sponsored noopener noreferrer',
+				'rel'            => 'affiliate' === $provider['relationship'] ? 'sponsored noopener noreferrer' : 'noopener noreferrer',
 				'disclosure'     => $provider['disclosure'],
 				'price_recheck'   => true,
-				'booking_on_partner' => true,
+				'booking_on_partner' => 'affiliate' === $provider['relationship'],
+				'conversion_type' => 'affiliate' === $provider['relationship'] ? 'partner_booking' : 'assisted_quote',
 				'expires_at'      => gmdate( 'c', time() + 300 ),
 			),
 			200
@@ -95,13 +110,24 @@ class Tra_Vel_V2_Supplier_Handoff_Controller extends WP_REST_Controller {
 
 	public function get_health() {
 		$providers = $this->configured_providers();
+		$relationships = array_unique( wp_list_pluck( $providers, 'relationship' ) );
+		$booking_mode  = 'disabled';
+		if ( in_array( 'affiliate', $relationships, true ) && in_array( 'owned', $relationships, true ) ) {
+			$booking_mode = 'hybrid';
+		} elseif ( in_array( 'affiliate', $relationships, true ) ) {
+			$booking_mode = 'partner_handoff';
+		} elseif ( in_array( 'owned', $relationships, true ) ) {
+			$booking_mode = 'assisted_sales';
+		}
+
 		return rest_ensure_response(
 			array(
 				'ok'                  => true,
 				'enabled'             => count( $providers ) > 0,
 				'configured_count'    => count( $providers ),
 				'supported_verticals' => $this->supported_verticals(),
-				'booking_mode'        => count( $providers ) ? 'partner_handoff' : 'disabled',
+				'booking_mode'        => $booking_mode,
+				'relationships'       => array_values( $relationships ),
 			)
 		);
 	}
@@ -127,7 +153,14 @@ class Tra_Vel_V2_Supplier_Handoff_Controller extends WP_REST_Controller {
 			$verticals     = array_values( array_intersect( $this->supported_verticals(), array_map( 'sanitize_key', isset( $provider['verticals'] ) ? (array) $provider['verticals'] : array() ) ) );
 			$allowed_hosts = array_values( array_filter( array_map( array( $this, 'normalize_host' ), isset( $provider['allowed_hosts'] ) ? (array) $provider['allowed_hosts'] : array() ) ) );
 			$disclosure    = sanitize_text_field( isset( $provider['disclosure'] ) ? $provider['disclosure'] : '' );
-			if ( ! $id || empty( $provider['live'] ) || empty( $provider['sponsored'] ) || ! $verticals || ! $allowed_hosts || ! $disclosure || empty( $provider['build_url'] ) || ! is_callable( $provider['build_url'] ) ) {
+			$relationship  = sanitize_key( isset( $provider['relationship'] ) ? $provider['relationship'] : ( ! empty( $provider['sponsored'] ) ? 'affiliate' : '' ) );
+			if ( ! in_array( $relationship, array( 'owned', 'affiliate' ), true ) ) {
+				continue;
+			}
+			if ( 'affiliate' === $relationship && empty( $provider['sponsored'] ) ) {
+				continue;
+			}
+			if ( ! $id || empty( $provider['live'] ) || ! $verticals || ! $allowed_hosts || ! $disclosure || empty( $provider['build_url'] ) || ! is_callable( $provider['build_url'] ) ) {
 				continue;
 			}
 			$resolved[ $id ] = array(
@@ -136,6 +169,7 @@ class Tra_Vel_V2_Supplier_Handoff_Controller extends WP_REST_Controller {
 				'verticals'     => $verticals,
 				'allowed_hosts' => $allowed_hosts,
 				'disclosure'    => $disclosure,
+				'relationship'  => $relationship,
 				'build_url'     => $provider['build_url'],
 			);
 		}
@@ -160,6 +194,11 @@ class Tra_Vel_V2_Supplier_Handoff_Controller extends WP_REST_Controller {
 	private function sanitize_return_path( $path ) {
 		$path = '/' . ltrim( sanitize_text_field( (string) $path ), '/' );
 		return substr( preg_replace( '/[^A-Za-z0-9_\-\/.?=&]/', '', $path ), 0, 200 );
+	}
+
+	private function sanitize_date( $value ) {
+		$value = sanitize_text_field( (string) $value );
+		return preg_match( '/^\d{4}-\d{2}-\d{2}$/', $value ) ? $value : '';
 	}
 
 	private function supported_verticals() {
