@@ -36,6 +36,7 @@ function absint( $value ) { return abs( (int) $value ); }
 require TRA_VEL_AGENT_PATH . '/includes/interface-tra-vel-agent-provider.php';
 require TRA_VEL_AGENT_PATH . '/includes/class-tra-vel-agent-openai-provider.php';
 require TRA_VEL_AGENT_PATH . '/includes/class-tra-vel-agent-policy.php';
+require TRA_VEL_AGENT_PATH . '/includes/class-tra-vel-agent-store.php';
 
 function tv_agent_assert( $condition, $message ) {
 	if ( ! $condition ) {
@@ -63,6 +64,28 @@ function tv_agent_base_request() {
 		'assumptions'        => array( 'Dates are flexible' ),
 		'confidence'         => 0.92,
 	);
+}
+
+function tv_agent_hydrate_event_type( $stored_type ) {
+	$store  = new Tra_Vel_Agent_Store();
+	$method = new ReflectionMethod( $store, 'hydrate_event' );
+	$method->setAccessible( true );
+	$event = $method->invoke(
+		$store,
+		array(
+			'event_uuid' => '11111111-2222-4333-8444-555555555555',
+			'sequence_no'=> 1,
+			'created_at' => '2030-01-01 00:00:00',
+			'event_type' => $stored_type,
+			'phase'      => 'supplier_search',
+			'status'     => 'waiting',
+			'source'     => 'system',
+			'visible'    => 1,
+			'message'    => 'Supplier search has not started.',
+			'payload'    => '{}',
+		)
+	);
+	return $event['type'];
 }
 
 function tv_agent_prepare( $request, $input_kind = 'typed', $confirmed = true ) {
@@ -190,4 +213,8 @@ foreach ( array( 'supplier', 'availability', 'offers', 'prices', 'proposals', 'b
 	tv_agent_assert( ! array_key_exists( $forbidden_claim, $anywhere ), "policy added forbidden commercial claim {$forbidden_claim}" );
 }
 
-echo "Tra-Vel agent policy runtime validation passed (strict schema, deterministic clarification gates, anywhere preservation, no supplier or booking claims).\n";
+tv_agent_assert( 'supplier.search.not_started' === tv_agent_hydrate_event_type( 'supplier.search.not_started' ), 'canonical event type separators were changed during hydration' );
+tv_agent_assert( 'supplier.search.not_started' === tv_agent_hydrate_event_type( 'supplier_search_not_started' ), 'legacy 0.1.0 supplier event was not normalized' );
+tv_agent_assert( 'run.created' === tv_agent_hydrate_event_type( 'run_created' ), 'legacy 0.1.0 run event was not normalized' );
+
+echo "Tra-Vel agent policy runtime validation passed (strict schema, deterministic clarification gates, anywhere preservation, canonical events, no supplier or booking claims).\n";

@@ -113,6 +113,8 @@ if (!storePhp.includes("'input_text'           => ''")) fail('Raw natural-langua
 if (!storePhp.includes('INSERT IGNORE INTO') || !storePhp.includes('counter_value < %d')) fail('Agent request limits must reserve capacity atomically in the database.');
 if (!controllerPhp.includes("'tra_vel_agent_provider_concurrency_limit', 2") || !controllerPhp.includes("'tra_vel_agent_provider_busy'")) fail('Live provider work must enforce the default two-slot concurrency semaphore.');
 if (!storePhp.includes('acquire_lease') || !storePhp.includes('release_lease') || !storePhp.includes('AND option_value = %s')) fail('Provider concurrency leases must be atomic and owner-conditionally released.');
+if (!storePhp.includes("preg_replace( '/[^a-z0-9._-]/'") || storePhp.includes("str_replace( '_', '.', $row['event_type'] )")) fail('Run events must preserve canonical dot and underscore separators without lossy conversion.');
+if (!storePhp.includes("'supplier_search_not_started'    => 'supplier.search.not_started'")) fail('Agent Core must normalize event rows written by version 0.1.0.');
 
 if (failures.length) {
   console.error('Tra-Vel agent contract validation failed:');

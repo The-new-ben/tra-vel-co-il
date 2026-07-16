@@ -2,7 +2,7 @@
 Contributors: tra-vel
 Requires at least: 6.5
 Requires PHP: 7.4
-Stable tag: 0.1.0
+Stable tag: 0.1.1
 License: Proprietary
 
 Private AI travel-request interpretation, persistent run events, and protected approval foundations for Tra-Vel.
@@ -20,6 +20,9 @@ Version 0.1.0 does not search suppliers, quote live prices, or execute bookings.
 Use a hosting environment variable or wp-config.php constant for the OpenAI key when possible. The administrator-only encrypted-option fallback requires sodium. Keys are never returned by REST.
 
 == Changelog ==
+
+= 0.1.1 =
+* Preserved canonical event type separators and normalized legacy 0.1.0 event rows.
 
 = 0.1.0 =
 * Added strict TripRequest interpretation.
