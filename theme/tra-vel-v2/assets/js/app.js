@@ -71,6 +71,7 @@ function setActiveDestination(key, pin) {
   const data = destinationData[key];
   if (!data) return;
   const hasLivePrices = discoveryDataMode === 'live';
+  const displayTags = hasLivePrices ? (data.tags || []) : ['מדריך ליעד', 'אזורי לינה', 'מסלולים אפשריים'];
   activeDestination = key;
   document.querySelectorAll('.price-pin').forEach(item => item.classList.toggle('is-active', item.dataset.destination === key));
   pin?.classList.add('is-active');
@@ -86,15 +87,15 @@ function setActiveDestination(key, pin) {
       '[data-result-price]': hasLivePrices ? data.price : 'בדיקה חיה',
       '[data-result-total]': hasLivePrices ? data.total : 'בדיקה חיה',
       '[data-result-note]': hasLivePrices ? data.note : 'המחיר יופיע לאחר חיפוש מול ספקים מחוברים.',
-      '[data-result-airport]': data.airport,
-      '[data-result-hotel]': data.hotel,
-      '[data-result-weather]': `${data.weather} · ${data.weatherCondition || ''}`
+      '[data-result-airport]': hasLivePrices ? data.airport : (data.airportCode || 'שדות תעופה'),
+      '[data-result-hotel]': hasLivePrices ? data.hotel : 'אזורי לינה',
+      '[data-result-weather]': hasLivePrices ? `${data.weather} · ${data.weatherCondition || ''}` : 'מזג אוויר לפי תאריך'
     };
     Object.entries(fields).forEach(([selector, value]) => {
       const field = card.querySelector(selector);
       if (field) field.textContent = value;
     });
-    replaceChildrenWithSpans(card.querySelector('[data-result-tags]'), data.tags || []);
+    replaceChildrenWithSpans(card.querySelector('[data-result-tags]'), displayTags);
   });
 
   const routeTitle = document.querySelector('[data-route-title]');
@@ -261,22 +262,23 @@ function renderRoutes(routes) {
   }
   const bestScore = Math.max(...routes.map(route => route.score));
   routes.forEach(route => {
-    const routePrice = discoveryDataMode === 'live' ? route.costs.total_formatted : 'בדיקת מחיר';
+    const hasLiveRouteData = discoveryDataMode === 'live';
+    const routePrice = hasLiveRouteData ? route.costs.total_formatted : 'בדיקת מחיר';
     const button = document.createElement('button');
     button.className = `mini-route${route.score === bestScore ? ' is-selected' : ''}`;
     button.type = 'button';
     button.dataset.route = route.id;
     button.dataset.routeSummary = `${route.label} · ${routePrice}`;
     appendTextElement(button, 'small', route.badge);
-    appendTextElement(button, 'strong', `${route.label} · ${route.duration_label}`);
-    appendTextElement(button, 'span', `${route.stops ? `${route.stops} עצירה` : 'ישיר'} · ${route.ticket_mode === 'single' ? 'כרטיס אחד' : 'כרטיסים נפרדים'}`);
+    appendTextElement(button, 'strong', hasLiveRouteData ? `${route.label} · ${route.duration_label}` : route.label);
+    appendTextElement(button, 'span', hasLiveRouteData ? `${route.stops ? `${route.stops} עצירה` : 'ישיר'} · ${route.ticket_mode === 'single' ? 'כרטיס אחד' : 'כרטיסים נפרדים'}` : 'זמן, עצירות ותנאי כרטיס יוצגו אחרי חיפוש');
     const tradeoffs = document.createElement('div');
     tradeoffs.className = 'route-tradeoffs';
-    appendTextElement(tradeoffs, 'span', `✓ ${route.pros[0]}`, 'route-pro');
-    appendTextElement(tradeoffs, 'span', `△ ${route.cons[0]}`, 'route-con');
+    appendTextElement(tradeoffs, 'span', hasLiveRouteData ? `✓ ${route.pros[0]}` : '✓ משווים זמן, נוחות וגמישות', 'route-pro');
+    appendTextElement(tradeoffs, 'span', hasLiveRouteData ? `△ ${route.cons[0]}` : '△ מחיר ותנאים יאומתו בחיפוש חי', 'route-con');
     button.append(tradeoffs);
     appendTextElement(button, 'b', routePrice);
-    appendTextElement(button, 'em', discoveryDataMode === 'live' ? 'עלות מלאה לאדם' : 'מחיר סופי יוצג בחיפוש חי');
+    appendTextElement(button, 'em', hasLiveRouteData ? 'עלות מלאה לאדם' : 'מחיר סופי יוצג בחיפוש חי');
     button.addEventListener('click', () => selectRoute(button));
     list.append(button);
   });

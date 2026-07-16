@@ -138,7 +138,8 @@ if (!appJs.includes('initTravelerWorkspace')) failures.push('The app script does
 if (!appJs.includes('createSaveOfferButton')) failures.push('Comparison cards cannot save decisions into the traveler workspace.');
 if (!appJs.includes('initDirectory')) failures.push('The destination directory does not initialize its search and filters.');
 if (!appJs.includes('discoveryDataMode')) failures.push('Map prices are not gated by the live supplier data mode.');
-if (!appJs.includes("routePrice = discoveryDataMode === 'live'")) failures.push('Route cards can expose non-live prices as customer inventory.');
+if (!appJs.includes("hasLiveRouteData = discoveryDataMode === 'live'")) failures.push('Route cards can expose non-live prices as customer inventory.');
+if (!appJs.includes('מחיר ותנאים יאומתו בחיפוש חי')) failures.push('Non-live route tradeoffs can expose unsupported savings or conditions.');
 
 const mapPage = readFileSync(join(themeRoot, 'page-map.php'), 'utf8');
 for (const marker of ['map-view-layout', 'map-support-section', 'map-destination-panel', 'map-depth-section']) {
