@@ -354,6 +354,7 @@ if (!experiencePage.includes('data-insurance-risk-map')) failures.push('The insu
 if (!experiencePage.includes('data-insurance-results')) failures.push('The insurance page is missing its dynamic plan results region.');
 if (!experiencePage.includes('data-package-search')) failures.push('The packages page is missing its functional composer form.');
 if (!experiencePage.includes('data-package-map')) failures.push('The packages page is missing its total-trip map.');
+if (!appCss.includes('.package-search-form,.package-route-row') || !appCss.includes('contain: inline-size')) failures.push('The mobile package composer is missing its inline overflow containment.');
 if (!experiencePage.includes('data-package-results')) failures.push('The packages page is missing its dynamic comparison region.');
 
 const supplierInterface = readFileSync(join(themeRoot, 'inc/suppliers/interface-supplier-adapter.php'), 'utf8');
