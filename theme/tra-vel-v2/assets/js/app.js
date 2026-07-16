@@ -1480,6 +1480,41 @@ function initControls() {
   }));
 }
 
+function initDirectory() {
+  const root = document.querySelector('[data-directory-root]');
+  if (!root) return;
+  const form = root.querySelector('[data-directory-filter]');
+  const query = root.querySelector('[data-directory-query]');
+  const cards = [...root.querySelectorAll('[data-directory-card]')];
+  const count = root.querySelector('[data-directory-count]');
+  const empty = root.querySelector('[data-directory-empty]');
+  const buttons = [...root.querySelectorAll('[data-directory-value]')];
+  let active = 'all';
+  const normalize = value => String(value || '').toLocaleLowerCase('he-IL').trim();
+  const apply = () => {
+    const phrase = normalize(query?.value);
+    let visible = 0;
+    cards.forEach(card => {
+      const matchesFilter = active === 'all' || card.dataset.region === active || card.dataset.experience === active;
+      const matchesQuery = !phrase || normalize(card.dataset.search).includes(phrase);
+      card.hidden = !(matchesFilter && matchesQuery);
+      if (!card.hidden) visible += 1;
+    });
+    if (count) count.textContent = String(visible);
+    if (empty) empty.hidden = visible !== 0;
+  };
+  form?.addEventListener('submit', event => {
+    event.preventDefault();
+    apply();
+  });
+  query?.addEventListener('input', apply);
+  buttons.forEach(button => button.addEventListener('click', () => {
+    active = button.dataset.directoryValue || 'all';
+    buttons.forEach(item => item.classList.toggle('is-active', item === button));
+    apply();
+  }));
+}
+
 function initTraVelV2() {
   if (document.documentElement.dataset.traVelV2Ready === 'true') return;
   document.documentElement.dataset.traVelV2Ready = 'true';
@@ -1487,6 +1522,7 @@ function initTraVelV2() {
   initNavigation();
   initMap();
   initControls();
+  initDirectory();
   initFlightSearch();
   initHotelSearch();
   initInsuranceQuote();

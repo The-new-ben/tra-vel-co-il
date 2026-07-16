@@ -53,6 +53,40 @@ function tra_vel_v2_robots_policy( $robots ) {
 add_filter( 'wp_robots', 'tra_vel_v2_robots_policy' );
 
 /**
+ * Build a non-commercial ItemList for the editorial destination directory.
+ *
+ * Unreviewed destinations are represented as named places without public guide
+ * URLs, preventing draft pages or noindex map facets from entering the graph.
+ *
+ * @return array<string, mixed>
+ */
+function tra_vel_v2_directory_item_list() {
+	$path = TRA_VEL_V2_PATH . '/assets/data/editorial-directory.json';
+	$data = file_exists( $path ) ? json_decode( file_get_contents( $path ), true ) : array();
+	$destinations = isset( $data['destinations'] ) && is_array( $data['destinations'] ) ? $data['destinations'] : array();
+	$items = array();
+	foreach ( $destinations as $index => $destination ) {
+		$items[] = array(
+			'@type'    => 'ListItem',
+			'position' => $index + 1,
+			'item'     => array(
+				'@type'            => 'TouristDestination',
+				'name'             => sanitize_text_field( $destination['city'] ?? '' ),
+				'containedInPlace' => array(
+					'@type' => 'Country',
+					'name'  => sanitize_text_field( $destination['country'] ?? '' ),
+				),
+			),
+		);
+	}
+	return array(
+		'@type'           => 'ItemList',
+		'numberOfItems'   => count( $items ),
+		'itemListElement' => $items,
+	);
+}
+
+/**
  * Build the Tra-Vel entity graph.
  *
  * @return array<string, mixed>
@@ -76,6 +110,20 @@ function tra_vel_v2_schema_data() {
 			'url'   => home_url( '/' ),
 		),
 	);
+
+	if ( is_page_template( 'page-directory.php' ) ) {
+		$url = get_permalink( get_queried_object_id() );
+		$graph[] = array(
+			'@type'      => 'CollectionPage',
+			'@id'        => $url . '#webpage',
+			'url'        => $url,
+			'name'       => get_the_title(),
+			'inLanguage' => 'he-IL',
+			'isPartOf'   => array( '@id' => $site_id ),
+			'mainEntity' => tra_vel_v2_directory_item_list(),
+		);
+		return array( '@context' => 'https://schema.org', '@graph' => $graph );
+	}
 
 	if ( ! is_singular() || ! tra_vel_v2_is_destination_guide() ) {
 		return array( '@context' => 'https://schema.org', '@graph' => $graph );
@@ -211,3 +259,18 @@ function tra_vel_v2_enrich_yoast_article_schema( $data ) {
 	return $data;
 }
 add_filter( 'wpseo_schema_article', 'tra_vel_v2_enrich_yoast_article_schema' );
+
+/**
+ * Identify directory pages as collections inside Yoast's graph.
+ *
+ * @param array<string, mixed> $data Yoast WebPage schema.
+ * @return array<string, mixed>
+ */
+function tra_vel_v2_enrich_yoast_directory_schema( $data ) {
+	if ( is_page_template( 'page-directory.php' ) ) {
+		$data['@type']      = 'CollectionPage';
+		$data['mainEntity'] = tra_vel_v2_directory_item_list();
+	}
+	return $data;
+}
+add_filter( 'wpseo_schema_webpage', 'tra_vel_v2_enrich_yoast_directory_schema' );

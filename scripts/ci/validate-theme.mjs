@@ -18,6 +18,7 @@ const requiredFiles = [
   'page-map.php',
   'page-destination.php',
   'page-experience.php',
+  'page-directory.php',
   'page-saved.php',
   'inc/setup.php',
   'inc/assets.php',
@@ -74,6 +75,7 @@ const requiredFiles = [
   'assets/data/traveler-workspace.schema.json',
   'assets/data/supplier-handoff.schema.json',
   'assets/data/guide-source-packet.schema.json',
+  'assets/data/editorial-directory.json',
   'assets/vendor/lucide.min.js',
   'assets/images/earth-blue-marble.jpg',
   'assets/images/thailand.jpg'
@@ -134,10 +136,12 @@ if (!appJs.includes('initTripPackageSearch')) failures.push('The app script does
 if (!appJs.includes('workspaceUrl')) failures.push('The app script is not connected to the private traveler workspace contract.');
 if (!appJs.includes('initTravelerWorkspace')) failures.push('The app script does not initialize the saved-trip workspace.');
 if (!appJs.includes('createSaveOfferButton')) failures.push('Comparison cards cannot save decisions into the traveler workspace.');
+if (!appJs.includes('initDirectory')) failures.push('The destination directory does not initialize its search and filters.');
 
 const seoSource = readFileSync(join(themeRoot, 'inc/seo.php'), 'utf8');
 if (!seoSource.includes('BreadcrumbList')) failures.push('Destination guides are missing breadcrumb structured data.');
 if (!seoSource.includes('lastReviewed')) failures.push('Destination guide schema is missing source-review freshness.');
+if (!seoSource.includes('CollectionPage') || !seoSource.includes('ItemList')) failures.push('Editorial directories are missing CollectionPage and ItemList schema.');
 if (seoSource.includes("'FAQPage'") || seoSource.includes('"FAQPage"')) failures.push('Travel guides must not chase unavailable FAQ rich results.');
 if (!seoSource.includes("$robots['noindex']")) failures.push('Faceted and personal routes are missing an explicit noindex policy.');
 
@@ -146,6 +150,25 @@ if (!destinationPage.includes('tra_vel_v2_render_guide_evidence')) failures.push
 if (/[$₪]\s?\d/.test(destinationPage)) failures.push('Destination templates must not hard-code demo prices that can be mistaken for live inventory.');
 if (destinationPage.includes('data-map-result')) failures.push('Destination guide cards must not be overwritten by global demo discovery results.');
 if (!destinationPage.includes('data-guide-map-card')) failures.push('Destination guides are missing their isolated map decision card.');
+
+const directoryPage = readFileSync(join(themeRoot, 'page-directory.php'), 'utf8');
+for (const marker of ['data-directory-root', 'data-directory-filter', 'data-directory-grid', 'directory-map-pin', 'editorial-directory.json']) {
+  if (!directoryPage.includes(marker)) failures.push(`Destination directory is missing ${marker}.`);
+}
+if (/[$₪]\s?\d/.test(directoryPage)) failures.push('The destination directory must not hard-code commercial prices.');
+
+try {
+  const directory = JSON.parse(readFileSync(join(themeRoot, 'assets/data/editorial-directory.json'), 'utf8'));
+  if (directory.version !== 1) failures.push('Editorial directory manifest version must be 1.');
+  if (!Array.isArray(directory.destinations) || directory.destinations.length < 6) failures.push('Editorial directory requires at least six destination decisions.');
+  const ids = directory.destinations.map((destination) => destination.id);
+  if (new Set(ids).size !== ids.length) failures.push('Editorial directory destination IDs must be unique.');
+  const budapest = directory.destinations.find((destination) => destination.id === 'budapest');
+  if (!budapest || budapest.word_count < 5000 || budapest.source_count < 10) failures.push('Budapest directory evidence is not connected to the flagship guide gate.');
+  if (directory.destinations.some((destination) => destination.guide_status !== 'published' && destination.guide_path)) failures.push('Unreviewed directory guides must not expose a public guide path.');
+} catch (error) {
+  failures.push(`Editorial directory manifest is invalid JSON: ${error.message}`);
+}
 
 const guideSyncPath = join(repoRoot, 'scripts', 'wp', 'sync-guide.ps1');
 if (!existsSync(guideSyncPath)) failures.push('The guarded WordPress guide synchronization pipeline is missing.');
