@@ -59,6 +59,12 @@ $pages = @(
         Excerpt = 'בחירת מלון לפי אזור, מסלול, תנאים ועלות כוללת.'
     },
     [pscustomobject]@{
+        Slug = 'packages'
+        Title = 'חבילות טיסה ומלון'
+        Template = 'page-experience.php'
+        Excerpt = 'הרכבת חבילה דינמית עם טיסה, מלון, כבודה, העברות, ביטוח ומחיר מלא לכל ההרכב.'
+    },
+    [pscustomobject]@{
         Slug = 'travel-insurance'
         Title = 'ביטוח נסיעות'
         Template = 'page-experience.php'

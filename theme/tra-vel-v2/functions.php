@@ -9,7 +9,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'TRA_VEL_V2_VERSION', '0.8.2' );
+define( 'TRA_VEL_V2_VERSION', '0.9.0' );
 define( 'TRA_VEL_V2_PATH', get_template_directory() );
 define( 'TRA_VEL_V2_URI', get_template_directory_uri() );
 
@@ -22,3 +22,4 @@ require_once TRA_VEL_V2_PATH . '/inc/discovery.php';
 require_once TRA_VEL_V2_PATH . '/inc/flights/bootstrap.php';
 require_once TRA_VEL_V2_PATH . '/inc/hotels/bootstrap.php';
 require_once TRA_VEL_V2_PATH . '/inc/insurance/bootstrap.php';
+require_once TRA_VEL_V2_PATH . '/inc/packages/bootstrap.php';
