@@ -25,7 +25,7 @@ The first two publish-ready packets are:
 
 Both hubs live below `/destinations/`, expose visible source evidence and connect their editorial decisions to the globe and commercial comparison pages.
 
-The next source-ready packet is `athens-2026.sources.json`. It establishes the official evidence set and canonical intent before long-form drafting. It must not be synchronized as a public destination until its 5,000-word Hebrew article, decision tables, internal links and publish-time rechecks pass CI.
+The third publish-ready packet is `athens-2026.sources.json`. Its 5,398-word Hebrew guide connects the city-break and island-gateway decisions to official transport, airport, cultural-ticket, accessibility, entry and Israeli consular sources without competing with the future Greece family-island comparison.
 
 ## Publication states
 

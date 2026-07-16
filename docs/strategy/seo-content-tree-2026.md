@@ -51,9 +51,9 @@ Published flagship hubs as of 2026-07-16:
 - `/destinations/budapest/`: 5,000+ visible Hebrew words, 16 reviewed sources and three decision tables.
 - `/destinations/thailand/`: 5,000+ visible Hebrew words, 18 reviewed sources and three decision tables covering the regional, seasonal and airport-chain decisions required for a long-haul trip.
 
-Source-ready hub queue:
+Published Athens hub:
 
-- `/destinations/athens/`: 17 official or first-party sources mapped to airport transport, public transport, neighborhoods, culture, accessibility, entry and Israeli consular decisions. The page remains unpublished until the complete Hebrew guide and volatile-fact recheck pass the repository gate.
+- `/destinations/athens/`: 5,398 visible Hebrew words, 17 official or first-party sources, six decision tables, ten practical FAQs, and mapped decisions covering airport transport, public transport, neighborhoods, culture, accessibility, entry and Israeli consular support.
 
 The Athens cluster owns the city-break and island-gateway intent. Its first supporting pages are: flights from Tel Aviv to Athens, airport to city or Piraeus, where to stay in Athens, Athens with children, and Athens plus a Greek island. A future Greece family-island comparison owns the separate “which island” intent so it does not compete with the Athens hub.
 
