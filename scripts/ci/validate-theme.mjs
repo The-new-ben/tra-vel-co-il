@@ -356,6 +356,7 @@ if (!experiencePage.includes('data-package-search')) failures.push('The packages
 if (!experiencePage.includes('data-package-map')) failures.push('The packages page is missing its total-trip map.');
 if (!appCss.includes('.package-search-form,.package-route-row') || !appCss.includes('contain: inline-size paint') || !appCss.includes('direction: ltr') || !appCss.includes('direction: rtl')) failures.push('The mobile package composer is missing its RTL-safe inline overflow containment.');
 if (!appCss.includes('.experience-card-grid { display: flex; direction: ltr;') || !appCss.includes('.package-journey-map { position: relative; top: auto; min-height: 570px; contain: paint;')) failures.push('The supporting content and journey map are missing mobile paint containment.');
+if (!appCss.includes('.flight-results-grid { display: flex; direction: ltr;') || !appCss.includes('.hotel-results-grid { display: flex; direction: ltr;') || !appCss.includes('.insurance-plan-grid { display: flex; direction: ltr;')) failures.push('The mobile commerce result rails are missing RTL-safe paint containment.');
 if (!experiencePage.includes('data-package-results')) failures.push('The packages page is missing its dynamic comparison region.');
 
 const supplierInterface = readFileSync(join(themeRoot, 'inc/suppliers/interface-supplier-adapter.php'), 'utf8');
