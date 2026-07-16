@@ -20,6 +20,9 @@ const requiredFiles = [
   'page-experience.php',
   'page-directory.php',
   'page-saved.php',
+  'page-account.php',
+  'page-partners.php',
+  'inc/auth.php',
   'inc/setup.php',
   'inc/assets.php',
   'inc/discovery.php',
@@ -312,6 +315,17 @@ const savedPage = readFileSync(join(themeRoot, 'page-saved.php'), 'utf8');
 if (!savedPage.includes('data-traveler-workspace')) failures.push('The saved-trip page is missing its functional workspace root.');
 if (!savedPage.includes('data-workspace-map')) failures.push('The saved-trip page is missing its interactive decision map.');
 if (!savedPage.includes('data-workspace-preferences')) failures.push('The saved-trip page is missing traveler preference controls.');
+
+const headerPage = readFileSync(join(themeRoot, 'header.php'), 'utf8');
+for (const marker of ['mobile-primary-navigation', 'mobile-nav-disclosure', '/account/', '/partners/']) {
+  if (!headerPage.includes(marker)) failures.push(`The navigation is missing ${marker}.`);
+}
+const accountPage = readFileSync(join(themeRoot, 'page-account.php'), 'utf8');
+if (!accountPage.includes('wp_login_form')) failures.push('The account page is missing the native secure WordPress login form.');
+const authSource = readFileSync(join(themeRoot, 'inc/auth.php'), 'utf8');
+if (!authSource.includes("shortcode_exists( 'nextend_social_login' )")) failures.push('Social login must stay hidden until a real provider plugin is configured.');
+const partnerPage = readFileSync(join(themeRoot, 'page-partners.php'), 'utf8');
+if (!partnerPage.includes('tra_vel_v2_user_can_access_supplier_portal')) failures.push('The partner center is missing its capability gate.');
 
 const handoffController = readFileSync(join(themeRoot, 'inc/handoffs/class-supplier-handoff-controller.php'), 'utf8');
 if (!handoffController.includes("'https' !== $scheme")) failures.push('Supplier handoffs must enforce HTTPS.');

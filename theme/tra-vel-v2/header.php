@@ -51,7 +51,40 @@ $overlay_header = is_front_page() || is_page_template( 'page-destination.php' ) 
 			<a class="nav-link" href="<?php echo esc_url( home_url( '/guides/' ) ); ?>"><?php esc_html_e( 'מדריכים', 'tra-vel-v2' ); ?></a>
 			<a class="nav-link" href="<?php echo esc_url( home_url( '/ai-planner/' ) ); ?>"><?php esc_html_e( 'מתכנן AI', 'tra-vel-v2' ); ?></a>
 		</nav>
-		<div class="header-actions"><a class="round-button" href="<?php echo esc_url( home_url( '/saved/' ) ); ?>" aria-label="<?php esc_attr_e( 'שמורים', 'tra-vel-v2' ); ?>"><i data-lucide="heart"></i></a><a class="header-cta" href="<?php echo esc_url( home_url( '/#search' ) ); ?>"><?php esc_html_e( 'מצאו לי חופשה', 'tra-vel-v2' ); ?></a><button class="mobile-menu-button" aria-expanded="false" aria-label="<?php esc_attr_e( 'פתיחת תפריט', 'tra-vel-v2' ); ?>"><i data-lucide="menu"></i></button></div>
-		<div class="mobile-drawer"><a href="<?php echo esc_url( home_url( '/packages/' ) ); ?>"><?php esc_html_e( 'חבילות טיסה + מלון', 'tra-vel-v2' ); ?></a><a href="<?php echo esc_url( home_url( '/flights/' ) ); ?>"><?php esc_html_e( 'טיסות', 'tra-vel-v2' ); ?></a><a href="<?php echo esc_url( home_url( '/hotels/' ) ); ?>"><?php esc_html_e( 'מלונות', 'tra-vel-v2' ); ?></a><a href="<?php echo esc_url( home_url( '/travel-map/' ) ); ?>"><?php esc_html_e( 'מפת המחירים החכמה', 'tra-vel-v2' ); ?></a><a href="<?php echo esc_url( home_url( '/destinations/' ) ); ?>"><?php esc_html_e( 'יעדים ומדריכים', 'tra-vel-v2' ); ?></a><a href="<?php echo esc_url( home_url( '/travel-insurance/' ) ); ?>"><?php esc_html_e( 'ביטוח נסיעות', 'tra-vel-v2' ); ?></a></div>
+		<div class="header-actions">
+			<a class="round-button" href="<?php echo esc_url( home_url( '/saved/' ) ); ?>" aria-label="<?php esc_attr_e( 'נסיעות שמורות', 'tra-vel-v2' ); ?>"><i data-lucide="heart"></i></a>
+			<a class="round-button account-button" href="<?php echo esc_url( home_url( '/account/' ) ); ?>" aria-label="<?php esc_attr_e( 'החשבון שלי', 'tra-vel-v2' ); ?>"><i data-lucide="user-round"></i></a>
+			<a class="header-cta" href="<?php echo esc_url( home_url( '/#search' ) ); ?>"><?php esc_html_e( 'מצאו לי חופשה', 'tra-vel-v2' ); ?></a>
+			<button class="mobile-menu-button" type="button" aria-expanded="false" aria-controls="mobile-primary-navigation" aria-label="<?php esc_attr_e( 'פתיחת תפריט', 'tra-vel-v2' ); ?>"><i data-lucide="menu"></i></button>
+		</div>
+		<nav class="mobile-drawer" id="mobile-primary-navigation" aria-label="<?php esc_attr_e( 'ניווט ראשי בנייד', 'tra-vel-v2' ); ?>" aria-hidden="true">
+			<div class="mobile-drawer-head">
+				<div><small>Tra-Vel 360</small><strong><?php esc_html_e( 'כל הנסיעה, במקום אחד', 'tra-vel-v2' ); ?></strong></div>
+				<button class="mobile-drawer-close" type="button" aria-label="<?php esc_attr_e( 'סגירת תפריט', 'tra-vel-v2' ); ?>"><i data-lucide="x"></i></button>
+			</div>
+			<a class="mobile-drawer-map" href="<?php echo esc_url( home_url( '/travel-map/' ) ); ?>"><i data-lucide="earth"></i><span><strong><?php esc_html_e( 'פתחו את מפת המסע', 'tra-vel-v2' ); ?></strong><small><?php esc_html_e( 'יעדים, מסלולים וכלים לתכנון חזותי', 'tra-vel-v2' ); ?></small></span><i data-lucide="arrow-left"></i></a>
+			<div class="mobile-nav-section">
+				<button class="mobile-nav-disclosure" type="button" aria-expanded="true" aria-controls="mobile-book-links"><span><?php esc_html_e( 'מזמינים', 'tra-vel-v2' ); ?></span><i data-lucide="chevron-down"></i></button>
+				<div class="mobile-nav-links is-open" id="mobile-book-links">
+					<a href="<?php echo esc_url( home_url( '/flights/' ) ); ?>"><i data-lucide="plane"></i><span><strong><?php esc_html_e( 'טיסות', 'tra-vel-v2' ); ?></strong><small><?php esc_html_e( 'ישיר, קונקשן ומחיר כולל', 'tra-vel-v2' ); ?></small></span></a>
+					<a href="<?php echo esc_url( home_url( '/hotels/' ) ); ?>"><i data-lucide="hotel"></i><span><strong><?php esc_html_e( 'מלונות', 'tra-vel-v2' ); ?></strong><small><?php esc_html_e( 'אזור, תנאים ועלות מלאה', 'tra-vel-v2' ); ?></small></span></a>
+					<a href="<?php echo esc_url( home_url( '/packages/' ) ); ?>"><i data-lucide="package"></i><span><strong><?php esc_html_e( 'טיסה ומלון', 'tra-vel-v2' ); ?></strong><small><?php esc_html_e( 'חבילה אחת לכל ההרכב', 'tra-vel-v2' ); ?></small></span></a>
+					<a href="<?php echo esc_url( home_url( '/travel-insurance/' ) ); ?>"><i data-lucide="shield-check"></i><span><strong><?php esc_html_e( 'ביטוח נסיעות', 'tra-vel-v2' ); ?></strong><small><?php esc_html_e( 'כיסוי שמתאים למסלול', 'tra-vel-v2' ); ?></small></span></a>
+				</div>
+			</div>
+			<div class="mobile-nav-section">
+				<button class="mobile-nav-disclosure" type="button" aria-expanded="false" aria-controls="mobile-discover-links"><span><?php esc_html_e( 'מגלים ומתכננים', 'tra-vel-v2' ); ?></span><i data-lucide="chevron-down"></i></button>
+				<div class="mobile-nav-links" id="mobile-discover-links">
+					<a href="<?php echo esc_url( home_url( '/destinations/' ) ); ?>"><i data-lucide="map-pinned"></i><span><strong><?php esc_html_e( 'יעדים', 'tra-vel-v2' ); ?></strong><small><?php esc_html_e( 'בחרו לפי תקציב, עונה וסגנון', 'tra-vel-v2' ); ?></small></span></a>
+					<a href="<?php echo esc_url( home_url( '/guides/' ) ); ?>"><i data-lucide="book-open"></i><span><strong><?php esc_html_e( 'מדריכי עומק', 'tra-vel-v2' ); ?></strong><small><?php esc_html_e( 'המידע שצריך לפני שסוגרים', 'tra-vel-v2' ); ?></small></span></a>
+					<a href="<?php echo esc_url( home_url( '/ai-planner/' ) ); ?>"><i data-lucide="sparkles"></i><span><strong><?php esc_html_e( 'מתכנן הנסיעות', 'tra-vel-v2' ); ?></strong><small><?php esc_html_e( 'הופכים בקשה למסלול ברור', 'tra-vel-v2' ); ?></small></span></a>
+				</div>
+			</div>
+			<div class="mobile-account-grid">
+				<a href="<?php echo esc_url( home_url( '/account/' ) ); ?>"><i data-lucide="user-round"></i><span><strong><?php esc_html_e( 'החשבון שלי', 'tra-vel-v2' ); ?></strong><small><?php esc_html_e( 'כניסה והעדפות', 'tra-vel-v2' ); ?></small></span></a>
+				<a href="<?php echo esc_url( home_url( '/saved/' ) ); ?>"><i data-lucide="heart"></i><span><strong><?php esc_html_e( 'נסיעות שמורות', 'tra-vel-v2' ); ?></strong><small><?php esc_html_e( 'השוואות ומעקב', 'tra-vel-v2' ); ?></small></span></a>
+			</div>
+			<a class="mobile-partner-link" href="<?php echo esc_url( home_url( '/partners/' ) ); ?>"><i data-lucide="briefcase-business"></i><?php esc_html_e( 'כניסה לספקים ושותפים', 'tra-vel-v2' ); ?><i data-lucide="arrow-left"></i></a>
+		</nav>
 	</div>
 </header>

@@ -96,7 +96,7 @@ add_filter( 'wpseo_schema_website', 'tra_vel_v2_enrich_yoast_website_schema' );
  * @return array<string, bool>
  */
 function tra_vel_v2_robots_policy( $robots ) {
-	$private_page = is_page_template( 'page-saved.php' ) || is_page( 'saved' );
+	$private_page = is_page_template( 'page-saved.php' ) || is_page_template( 'page-account.php' ) || is_page( array( 'saved', 'account' ) );
 	$facet_keys   = array(
 		'origin', 'destination', 'depart', 'return', 'adults', 'children',
 		'currency', 'sort', 'stops', 'budget', 'hotel_class', 'amenities',
