@@ -151,6 +151,18 @@ function setDiscoveryStatus(mode, message) {
   if (status) status.textContent = message;
 }
 
+function updateWeatherAttribution(providerStatus) {
+  const attribution = document.querySelector('[data-weather-attribution]');
+  if (!attribution) return;
+  const weather = providerStatus?.weather;
+  const visible = weather?.connected === true && typeof weather.attribution_url === 'string';
+  attribution.hidden = !visible;
+  if (visible) {
+    attribution.href = weather.attribution_url;
+    attribution.textContent = weather.attribution || 'Weather data by Open-Meteo · CC BY 4.0';
+  }
+}
+
 async function hydrateDiscovery(params = {}) {
   const endpoint = window.traVelV2?.discoveryUrl;
   if (!endpoint || !document.querySelector('.price-pin[data-destination]')) return;
@@ -165,14 +177,17 @@ async function hydrateDiscovery(params = {}) {
     const payload = await response.json();
     destinationData = Object.fromEntries(payload.destinations.map(item => [item.id, normalizeDestination(item)]));
     discoveryRoutes = payload.routes || [];
+    updateWeatherAttribution(payload.provider_status);
     updatePins();
     const selected = destinationData[params.destination] ? params.destination : (destinationData[activeDestination] ? activeDestination : Object.keys(destinationData)[0]);
     if (selected) setActiveDestination(selected, document.querySelector(`[data-destination="${selected}"]`));
     renderRoutes(discoveryRoutes);
     const layerName = payload.layers?.find(layer => layer.id === activeLayer)?.label || 'מחירים';
-    setDiscoveryStatus(payload.meta.data_mode, `${layerName} · ${payload.meta.result_count} יעדים · נתוני הדגמה שקופים`);
+    const modeLabel = payload.meta.data_mode === 'live' ? 'נתוני ספקים חיים' : (payload.meta.data_mode === 'mixed' ? 'שילוב נתונים חיים והדגמה' : 'נתוני הדגמה שקופים');
+    setDiscoveryStatus(payload.meta.data_mode, `${layerName} · ${payload.meta.result_count} יעדים · ${modeLabel}`);
   } catch (error) {
     destinationData = { ...fallbackDestinations };
+    updateWeatherAttribution(null);
     updatePins();
     setActiveDestination(activeDestination, document.querySelector(`[data-destination="${activeDestination}"]`));
     setDiscoveryStatus('fallback', 'מצב הדגמה מקומי · החיבור לספקים עדיין לא פעיל');

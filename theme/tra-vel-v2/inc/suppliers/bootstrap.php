@@ -9,5 +9,6 @@ defined( 'ABSPATH' ) || exit;
 
 require_once __DIR__ . '/interface-supplier-adapter.php';
 require_once __DIR__ . '/class-demo-supplier-adapter.php';
+require_once __DIR__ . '/class-open-meteo-supplier-adapter.php';
 require_once __DIR__ . '/class-supplier-registry.php';
 require_once __DIR__ . '/class-discovery-repository.php';

@@ -24,6 +24,7 @@ const requiredFiles = [
   'inc/suppliers/bootstrap.php',
   'inc/suppliers/interface-supplier-adapter.php',
   'inc/suppliers/class-demo-supplier-adapter.php',
+  'inc/suppliers/class-open-meteo-supplier-adapter.php',
   'inc/suppliers/class-supplier-registry.php',
   'inc/suppliers/class-discovery-repository.php',
   'inc/template-tags.php',

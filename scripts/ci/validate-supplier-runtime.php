@@ -35,6 +35,12 @@ function absint( $value ) {
 function wp_json_encode( $value ) {
 	return json_encode( $value );
 }
+function wp_parse_url( $url ) {
+	return parse_url( $url );
+}
+function esc_url_raw( $url ) {
+	return filter_var( $url, FILTER_SANITIZE_URL );
+}
 function apply_filters( $hook, $value ) {
 	unset( $hook );
 	return $value;
@@ -82,6 +88,7 @@ tv2_assert( 'fresh' === $second['runtime']['cache_state'], 'second request must 
 tv2_assert( 6 === count( $first['data']['destinations'] ), 'demo destination count changed' );
 tv2_assert( 'demo' === $first['data']['data_mode'], 'demo adapter must remain demo mode' );
 tv2_assert( true === $first['runtime']['adapters']['curated_demo']['healthy'], 'demo adapter is not healthy' );
+tv2_assert( false === $first['runtime']['adapters']['open_meteo_commercial']['configured'], 'commercial weather adapter must be opt-in' );
 
 class Tra_Vel_V2_Test_Registry extends Tra_Vel_V2_Supplier_Registry {
 	public $fail = false;
