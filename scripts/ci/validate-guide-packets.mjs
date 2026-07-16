@@ -42,6 +42,8 @@ for (const file of packetFiles) {
   if (packet.locale !== 'he-IL') fail(file, 'locale must be he-IL.');
   if (typeof packet.title !== 'string' || packet.title.trim().length < 2) fail(file, 'title is required.');
   if (typeof packet.excerpt !== 'string' || packet.excerpt.trim().length < 50) fail(file, 'excerpt must contain at least 50 characters.');
+  if (/[—–]/u.test(packet.excerpt || '')) fail(file, 'public excerpts must not use em dash or en dash punctuation.');
+  if (/מפת העריכה|במחקר|בדיקת מערכת|מדריך דגל/u.test(packet.excerpt || '')) fail(file, 'public excerpts contain internal project language.');
   if (typeof packet.author !== 'string' || packet.author.trim().length < 2) fail(file, 'author is required.');
   if (typeof packet.reviewer !== 'string' || packet.reviewer.trim().length < 2) fail(file, 'reviewer is required.');
   if (!/^[a-z0-9-]+$/.test(packet.id || '')) fail(file, 'id must be a lowercase slug.');
