@@ -4,9 +4,19 @@ on:
   workflow_dispatch:
     inputs:
       backup_name:
-        description: Backup directory name, or latest
+        description: Exact Tra-Vel V2 backup directory name
         required: true
-        default: latest
+        default: ""
+        type: string
+      expected_current_fingerprint:
+        description: SHA-256 fingerprint of the currently installed theme content
+        required: true
+        default: ""
+        type: string
+      expected_restored_fingerprint:
+        description: Trusted SHA-256 fingerprint of the selected backup content
+        required: true
+        default: ""
         type: string
       confirmation:
         description: Enter ROLLBACK TRA-VEL V2
@@ -34,25 +44,33 @@ jobs:
       SITE_URL: ${{ vars.WP_SITE_URL }}
       SMOKE_PATHS: ${{ vars.SMOKE_PATHS }}
       EXPECT_THEME_MARKER: ${{ vars.EXPECT_THEME_MARKER }}
-      WP_USERNAME: ${{ secrets.WP_USERNAME }}
-      WP_APP_PASSWORD: ${{ secrets.WP_APP_PASSWORD }}
       BACKUP_NAME: ${{ inputs.backup_name }}
+      EXPECTED_CURRENT_FINGERPRINT: ${{ inputs.expected_current_fingerprint }}
+      EXPECTED_RESTORED_FINGERPRINT: ${{ inputs.expected_restored_fingerprint }}
       ROLLBACK_CONFIRMATION: ${{ inputs.confirmation }}
     steps:
       - name: Check out deployment scripts
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Validate rollback gate
         shell: bash
+        env:
+          WP_USERNAME: ${{ secrets.WP_USERNAME }}
+          WP_APP_PASSWORD: ${{ secrets.WP_APP_PASSWORD }}
         run: |
           set -euo pipefail
           node scripts/ci/validate-theme-deploy-contract.mjs
           [[ "$ROLLBACK_CONFIRMATION" == "ROLLBACK TRA-VEL V2" ]] || { echo "Rollback confirmation did not match." >&2; exit 1; }
           [[ "$WP_SITE_URL" =~ ^https:// ]] || { echo "WP_SITE_URL must use HTTPS." >&2; exit 1; }
           [[ -n "$WP_USERNAME" && -n "$WP_APP_PASSWORD" ]] || { echo "WordPress deployment secrets are missing." >&2; exit 1; }
-          [[ "$BACKUP_NAME" == "latest" || "$BACKUP_NAME" =~ ^tra-vel-v2-[0-9]{8}T[0-9]{6}Z-[A-Za-z0-9]+$ ]] || { echo "Backup name is invalid." >&2; exit 1; }
+          [[ "$BACKUP_NAME" =~ ^tra-vel-v2-[0-9]{8}T[0-9]{6}Z-[A-Za-z0-9]+$ ]] || { echo "Backup name is invalid." >&2; exit 1; }
+          [[ "$EXPECTED_CURRENT_FINGERPRINT" =~ ^[a-f0-9]{64}$ ]] || { echo "Expected current theme fingerprint is invalid." >&2; exit 1; }
+          [[ "$EXPECTED_RESTORED_FINGERPRINT" =~ ^[a-f0-9]{64}$ ]] || { echo "Expected restored theme fingerprint is invalid." >&2; exit 1; }
 
       - name: Restore selected backup
+        env:
+          WP_USERNAME: ${{ secrets.WP_USERNAME }}
+          WP_APP_PASSWORD: ${{ secrets.WP_APP_PASSWORD }}
         run: bash scripts/deploy/rollback-theme.sh "$BACKUP_NAME"
 
       - name: Smoke test restored website

@@ -5,6 +5,9 @@ import { fileURLToPath } from 'node:url';
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(scriptDir, '..', '..');
 const schema = JSON.parse(readFileSync(join(repoRoot, 'theme', 'tra-vel-v2', 'assets', 'data', 'supplier-handoff.schema.json'), 'utf8'));
+const handoffRoot = join(repoRoot, 'theme', 'tra-vel-v2', 'inc', 'handoffs');
+const bridge = readFileSync(join(handoffRoot, 'class-agent-quote-case-handoff-bridge.php'), 'utf8');
+const whatsapp = readFileSync(join(handoffRoot, 'class-whatsapp-sales-handoff-provider.php'), 'utf8');
 const failures = [];
 const fail = message => failures.push(message);
 
@@ -17,6 +20,15 @@ if (schema.properties?.price_recheck?.const !== true) fail('Supplier handoff mus
 if (schema.properties?.booking_on_partner?.type !== 'boolean') fail('Handoff contract must disclose whether booking happens with a partner.');
 if (!schema.properties?.conversion_type?.enum?.includes('assisted_quote') || !schema.properties?.conversion_type?.enum?.includes('partner_booking')) fail('Handoff contract must distinguish assisted quotes from partner bookings.');
 if (schema.additionalProperties !== false) fail('Handoff responses must reject undeclared fields.');
+
+for (const marker of ['tra_vel_agent_quote_case_prepare_handoff', 'rest_do_request', "'owned'", "'tra-vel-concierge'", "'handoff_url'"]) {
+  if (!bridge.includes(marker)) fail(`Agent quote-case handoff bridge must retain ${marker}.`);
+}
+if (!bridge.includes("'/tra-vel/v2/handoffs/prepare'")) fail('Agent quote cases must reuse the authoritative supplier-handoff controller.');
+if (!whatsapp.includes("$context['offer_id']")) fail('Owned WhatsApp handoff must include the opaque case/offer reference.');
+for (const forbidden of ['input_text', 'raw_prompt', 'passport', 'payment_card', 'medical']) {
+  if (bridge.includes(forbidden)) fail(`Quote-case handoff bridge must not carry ${forbidden}.`);
+}
 
 if (failures.length) {
   console.error('Tra-Vel supplier handoff contract validation failed:');

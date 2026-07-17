@@ -5,6 +5,8 @@ import { fileURLToPath } from 'node:url';
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const root = resolve(scriptDir, '..', '..');
 const gateway = readFileSync(join(root, 'plugin', 'tra-vel-deploy-gateway', 'includes', 'class-tra-vel-plugin-deploy-controller.php'), 'utf8');
+const builder = readFileSync(join(root, 'scripts', 'ci', 'build_agent_core.py'), 'utf8');
+const workflow = readFileSync(join(root, '.github', 'workflows', 'deploy-agent-core.yml'), 'utf8');
 const bootstrap = readFileSync(join(root, 'scripts', 'wp', 'bootstrap-agent-core.ps1'), 'utf8');
 const configure = readFileSync(join(root, 'scripts', 'wp', 'configure-agent-key.ps1'), 'utf8');
 const deployScript = readFileSync(join(root, 'scripts', 'deploy', 'deploy-agent-core.sh'), 'utf8');
@@ -36,9 +38,17 @@ for (const [needle, message] of [
   ["AND option_value = %s", 'Gateway lock release is not owner-token conditional.'],
   ["tra_vel_agent_downgrade_blocked", 'Gateway does not reject version downgrades.'],
   ["tra_vel_agent_same_version_changed", 'Gateway does not reject changed same-version artifacts.'],
+  ["const BACKUP_FINGERPRINT_FILE = '.tra-vel-backup-fingerprint.json'", 'Gateway backup fingerprint marker is missing.'],
+  ["directory_fingerprint", 'Gateway does not fingerprint extracted and installed Agent Core content.'],
+  ["tra_vel_agent_installed_fingerprint_mismatch", 'Gateway does not fail closed on installed content mismatch.'],
+  ["write_backup_fingerprint", 'Gateway does not persist backup content identity.'],
+  ["read_backup_fingerprint", 'Gateway does not verify backup content identity before rollback.'],
+  ["tra_vel_agent_fresh_recovery_fingerprint_changed", 'Fresh-install recovery is not bound to installed content identity.'],
   ["tra_vel_agent_filesystem_unavailable", 'Gateway does not fail closed when WordPress filesystem initialization fails.'],
   ["tra_vel_agent_installed_identity_mismatch", 'Gateway does not verify the actually installed Agent Core version.'],
   ["tra_vel_agent_live_plugin_missing", 'Rollback does not surface failure to restore the quarantined live plugin.'],
+  ["tra_vel_agent_rollback_scope_changed", 'Rollback is not guarded by the expected current content fingerprint.'],
+  ["tra_vel_agent_rollback_target_changed", 'Rollback does not verify the expected backup content before live mutation.'],
   ["remove_failed_fresh_install", 'Gateway cannot remove a failed fresh Agent Core release after health verification.'],
   ["overwrite_package' => true", 'Gateway does not explicitly overwrite the fixed plugin package.'],
 ]) requireText(gateway, needle, message);
@@ -72,19 +82,33 @@ for (const [needle, message] of [
   ['DEPLOY TRA-VEL AGENT CORE', 'Direct Agent Core deployment lacks the exact server deployment phrase.'],
   ['deployment_confirmation=', 'Direct Agent Core deployment does not send the deployment confirmation.'],
   ['AGENT_DEPLOY_RESULT_FILE', 'Direct Agent Core deployment does not preserve the rollback identifier for health recovery.'],
+  ['deploy gateway 0.3.0 or newer', 'Direct Agent Core deployment does not require a content-aware gateway.'],
+  ['content_sha256', 'Direct Agent Core deployment does not validate installed content identity.'],
 ]) requireText(deployScript, needle, message);
 
 for (const [needle, message] of [
   ['ROLLBACK TRA-VEL AGENT CORE', 'Agent Core rollback script lacks its exact confirmation phrase.'],
   ['/plugin/agent-core/rollback', 'Agent Core rollback script does not use the restricted rollback route.'],
   ['--data-urlencode "confirmation=', 'Agent Core rollback script does not send server-side confirmation.'],
+  ['EXPECTED_CURRENT_FINGERPRINT', 'Agent Core rollback does not require the expected current release fingerprint.'],
+  ['expected_current_fingerprint=', 'Agent Core rollback does not bind the mutation to the expected current release.'],
+  ['EXPECTED_RESTORED_FINGERPRINT', 'Agent Core rollback does not require the expected restored release fingerprint.'],
+  ['expected_restored_fingerprint=', 'Agent Core rollback does not bind the selected backup to the expected restored release.'],
+  ['content_sha256', 'Agent Core rollback does not verify restored content identity.'],
 ]) requireText(rollbackScript, needle, message);
 
 for (const [needle, message] of [
   ['REMOVE FAILED TRA-VEL AGENT CORE', 'Fresh-install cleanup script lacks its exact confirmation phrase.'],
   ['/plugin/agent-core/recovery/fresh', 'Fresh-install cleanup script does not use the restricted recovery route.'],
   ['sha256=', 'Fresh-install cleanup is not bound to the exact failed package checksum.'],
+  ['content_sha256', 'Fresh-install cleanup does not verify the removed content identity.'],
 ]) requireText(removeFreshScript, needle, message);
+
+for (const [source, needle, message] of [
+  [builder, 'def content_fingerprint', 'Agent Core packaging does not calculate the extracted content fingerprint.'],
+  [builder, '"content_sha256": content_digest', 'Agent Core manifest does not carry the extracted content fingerprint.'],
+  [workflow, 'deployed["content_sha256"] == manifest["content_sha256"]', 'Production verification does not compare installed content to the build manifest.'],
+]) requireText(source, needle, message);
 
 if (failures.length) {
   console.error('Tra-Vel Agent Core deployment contract validation failed:');
@@ -92,4 +116,4 @@ if (failures.length) {
   process.exit(1);
 }
 
-console.log('Tra-Vel Agent Core deployment contract validation passed (fixed slug, checksum, capability, backup, rollback, and secret-safe configuration).');
+console.log('Tra-Vel Agent Core deployment contract validation passed (fixed slug, package and content identity, capability, verified backup, rollback, and secret-safe configuration).');

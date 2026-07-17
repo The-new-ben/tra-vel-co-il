@@ -1,14 +1,18 @@
 # Tra-Vel Agent Core
 
-Status: first production-safe vertical slice in implementation  
+Status: production-safe interpretation, revision, and durable assisted-request slice
 Contract version: `1.0.0`  
-Plugin: `plugin/tra-vel-agent-core/` version `0.1.1`
+Plugin: `plugin/tra-vel-agent-core/` version `0.3.0`
 
 ## What this slice does
 
 The Agent Core accepts a typed or confirmed voice request through JSON POST, creates a private time-limited run, asks OpenAI to interpret the request into a strict `TripRequest`, applies deterministic clarification rules, and records append-only events that the interface can display. Every model clarification must identify a supported canonical `TripRequest` field, which lets policy collapse duplicate questions without weakening a blocking requirement. When material information is missing or the traveler changes a planning constraint, `POST /runs/{run_id}/messages` revises that request in place without creating a second run.
 
-It is intentionally narrower than the complete travel agent. It does not claim that suppliers were searched, prices were quoted, inventory was held, or a booking was made. When no contracted supplier tool has executed, the run records `supplier.search.not_started` with `provider_connected: false` and `provider_bookable: false`.
+Version 0.3.0 adds a separate durable `QuoteCase` aggregate for travelers who explicitly consent to human assistance. A quote case freezes minimized, immutable request revisions, provides an exact-owner traveler history, and powers a capability-protected operator queue. AI working state and commercial-assistance state remain separate: an `AgentRun` expires after 24 hours, while an active quote case has a 30-day service window and a normal 90-day deletion boundary.
+
+It is intentionally narrower than the complete travel agent. Creating or updating a quote case does not claim that suppliers were searched, prices were quoted, inventory was held, a message was delivered, or a booking was made. When no contracted supplier tool has executed, the run records `supplier.search.not_started` with `provider_connected: false` and `provider_bookable: false`. Quote-case statuses are limited to truthful assistance states such as `queued`, `in_review`, `needs_information`, and `ready_for_assistance`.
+
+The full state, retention, privacy, handoff, motion, and recovery contract is documented in [Tra-Vel assisted quote cases](QUOTE_CASE_OPERATIONS.md).
 
 ## Runtime boundary
 
@@ -26,6 +30,10 @@ flowchart LR
     H --> I[Supplier search explicitly not started]
     G --> J[Private run and event log]
     I --> J
+    H --> L{Explicit assistance consent?}
+    L -->|Yes| M[Create durable quote case]
+    M --> N[Immutable minimized revision]
+    N --> O[Traveler history and operator queue]
 ```
 
 WordPress is the ownership and audit control plane. The OpenAI model interprets language but cannot promote demo data, set supplier provenance, mark an offer bookable, or execute a consequential action.
@@ -42,6 +50,16 @@ Namespace: `/wp-json/tra-vel-agent/v1`
 | `GET` | `/runs/{uuid}` | HttpOnly ownership cookie or logged-in owner | Read private run state |
 | `GET` | `/runs/{uuid}/events` | HttpOnly ownership cookie or logged-in owner | Read append-only events after a sequence |
 | `POST` | `/runs/{uuid}/messages` | HttpOnly ownership cookie or logged-in owner | Apply a typed or confirmed-voice clarification to the same private run |
+| `POST` | `/runs/{uuid}/quote-cases` | Run owner with explicit consent | Create or replay one durable assisted request for the current request revision |
+| `GET` | `/quote-cases` | HttpOnly quote-owner cookie or logged-in owner | List the traveler's owned assisted requests |
+| `GET` | `/quote-cases/{uuid}` | Exact quote-case owner | Read one minimized case summary |
+| `GET` | `/quote-cases/{uuid}/events` | Exact quote-case owner | Read traveler-visible persisted events after a sequence |
+| `POST` | `/quote-cases/{uuid}/cancel` | Exact quote-case owner | Cancel an active request using its expected version |
+| `POST` | `/quote-cases/{uuid}/claim` | Logged-in user with matching guest-owner cookie | Move a guest case to the exact account owner |
+| `POST` | `/quote-cases/{uuid}/handoffs` | Exact quote-case owner | Prepare an allowlisted assisted handoff and record that preparation only |
+| `GET` | `/operator/quote-cases` | `tra_vel_view_quote_cases` | Read the paginated operator queue |
+| `GET` | `/operator/quote-cases/{uuid}` | `tra_vel_view_quote_cases` | Read operator case detail and history |
+| `POST` | `/operator/quote-cases/{uuid}/transitions` | Quote management capability; assignment also requires assign capability | Apply an allowed, version-checked state transition |
 | `POST` | `/runs/{uuid}/approvals/{uuid}` | Logged-in owner only | Decide one frozen, versioned action |
 | `POST` | `/settings/credential` | Administrator | Store encrypted OpenAI fallback credential |
 | `DELETE` | `/settings/credential` | Administrator | Delete only the encrypted fallback credential |
@@ -55,6 +73,11 @@ Private responses use `Cache-Control: private, no-store, max-age=0` and `X-Robot
 - A logged-in user can access a run only when `owner_user_id` matches.
 - Anonymous runs expire after 24 hours and are deleted by a bounded daily cleanup job.
 - Guests cannot approve purchases, cancellations, amendments, personal-data submission, insurance binding, or supplier requests.
+- Quote cases never reuse the short-lived run bearer. Guests receive a separate 256-bit quote-owner secret in `__Host-tra_vel_quote_owner`; only its SHA-256 hash is stored.
+- Signed-in quote cases belong to the exact WordPress user ID. A guest case can be claimed only while the matching guest cookie is present.
+- If the response that sets a new quote-owner cookie is lost, a retry can recover only the case attached to the same already-authorized source run. Recovery rotates guest ownership or links the case to the signed-in owner and records a public recovery event; knowing a case UUID is insufficient.
+- Before any quote owner token, replay row, or recovery event is written, an atomic source-run allowance permits four accepted create/recovery attempts per day by default; a second visitor/account window permits twelve per ten minutes. Exhaustion is a truthful `429` and leaves the existing owner and history unchanged.
+- Public quote-case responses omit owner hashes, internal IDs, assignment internals, consent metadata, full snapshots, and legal-hold state.
 
 ## Clarification and request revisioning
 
@@ -100,12 +123,29 @@ The key is never returned by REST, written to Git, bundled into the ZIP, or prin
 - `{prefix}tra_vel_agent_events`: append-only ordered audit events
 - `{prefix}tra_vel_agent_approvals`: frozen action snapshot, digest, version, expiry, decision
 - `{prefix}tra_vel_agent_limits`: atomic visitor-window and UTC-day cost reservations
+- `{prefix}tra_vel_quote_cases`: durable case identity, opaque `TV-XXXXXXXX` reference, exact owner, state/version, assignment, activity, expiry, and retention boundary
+- `{prefix}tra_vel_quote_case_revisions`: immutable minimized `TripRequest` snapshots and SHA-256 digests
+- `{prefix}tra_vel_quote_case_events`: append-only ordered traveler/operator history with bounded payloads and payload digests
+- `{prefix}tra_vel_quote_case_idempotency`: replay protection for create, transition, cancel, claim, expiry, and handoff preparation
 
-Approvals do not execute side effects in this slice. Future supplier tools must use an additional atomic idempotency ledger and must record `side_effect.started` and one terminal event.
+Approvals and quote cases do not execute supplier side effects in this slice. Quote-case mutations use transactions, expected aggregate versions, atomic event sequences, and idempotency keys. Same-key concurrent retries replay the committed winner after rollback. Source synchronization is monotonic: an exact digest never resets operator progress, only a strictly newer source revision may freeze a new case revision, and the SQL update repeats that revision guard beside the aggregate-version compare-and-swap. Transient authoritative reads are requeued and true absence remains a no-op. Durable revisions contain only bounded route, date, traveler, budget, scope, and readiness fields; model summaries, prompts, preferences, constraints, contact data, sensitive data, and provider traces are excluded. Future supplier tools still require adapter-specific idempotency and must record `side_effect.started` and one terminal evidence event.
+
+Traveler case details embed at most 20 public events, preserving creation plus the latest activity. Traveler and operator event routes use an `after` sequence cursor, cap `limit` at 50, and return `last_sequence` with `has_more`. Assisted WhatsApp preparations reuse a matching current-version link for five minutes and permit at most six new preparations per rolling hour.
+
+The retention job expires active service cases through the normal versioned mutation path. It deletes 90-day aggregates without legal hold in bounded, locked transactions that remove replay rows, events, revisions, and the parent together, then performs bounded checked sweeps for stale replay rows and historical orphan revision/event children. AgentRun cleanup likewise deletes each expired aggregate transactionally and heals orphan events/approvals. Every cleanup read distinguishes a database failure from an empty result and records operational status. Runtime routes and cross-store synchronization fail closed unless both four-table schemas have their required columns, transactional engines, and concurrency indexes.
+
+## Operator capabilities
+
+- `tra_vel_view_quote_cases` reads the queue and case detail.
+- `tra_vel_manage_quote_cases` applies legal case-state changes.
+- `tra_vel_assign_quote_cases` is additionally required to take a case into review.
+- `tra_vel_dispatch_supplier_requests` is deliberately separate and is not granted to the `tra_vel_quote_operator` role.
+
+Administrators receive all four capabilities. Quote operators receive view, manage, and assign only. No current quote-case route dispatches a supplier request.
 
 ## Protected delivery
 
-`scripts/ci/build_agent_core.py` creates a deterministic, versioned ZIP and SHA-256 manifest. The fixed-scope deploy gateway accepts only `tra-vel-agent-core/tra-vel-agent-core.php`, requires administrator plugin capabilities, an exact server-side deployment phrase, a matching checksum, a higher semantic version, and a single fixed ZIP root. It takes a release backup before overwrite, automatically restores the prior active plugin after an install or activation failure, and exposes a separately confirmed rollback route. The GitHub workflow also rolls back the returned backup when the post-deploy public health contract fails.
+`scripts/ci/build_agent_core.py` creates a deterministic, versioned ZIP and SHA-256 manifest. The fixed-scope deploy gateway accepts only `tra-vel-agent-core/tra-vel-agent-core.php`, requires administrator plugin capabilities, an exact server-side deployment phrase, a matching checksum, a higher semantic version, and a single fixed ZIP root. It takes a release backup before overwrite, automatically restores the prior active plugin after an install or activation failure, and exposes a separately confirmed rollback route. The GitHub workflow rolls back the returned backup when the post-deploy public health contract, quote-case schema, or authenticated operator-queue smoke test fails.
 
 Initial installation uses `scripts/wp/bootstrap-agent-core.ps1` with the exact `INSTALL TRA-VEL AGENT CORE` phrase. It refuses to overwrite an existing Agent Core installation, uses an atomic owner-token lease, validates the package twice, verifies public health, and removes its temporary Code Snippets installer. `scripts/wp/configure-agent-key.ps1` then transfers the ignored local key to the administrator-only encrypted credential route without printing it.
 
@@ -118,8 +158,8 @@ The OpenAI adapter is a boundary, not the product authority. A second OpenAI-com
 ## Next slices
 
 1. Bridge read-only flight, hotel, package, weather, and destination tools through existing repositories.
-2. Generate three materially different proposals with strict cost ledgers and provenance.
-3. Add a dedicated idempotency table before any supplier-side action.
-4. Allow only the existing verified concierge handoff as the first protected commercial action.
+2. Generate three materially different proposals with strict cost ledgers, evidence, expiry, and provenance.
+3. Add adapter-specific supplier idempotency, approval, reconciliation, and recovery before any supplier-side action.
+4. Add evidence-bearing proposal and delivery records before introducing `proposal_ready`, `sent`, price, reservation, payment, or booking states.
 5. Move supplier repositories out of the theme so backend behavior survives a theme switch.
 6. Introduce a TypeScript or Python Agents SDK orchestration service when long-running pause/resume and supplier fan-out require it, while WordPress remains the ownership and approval authority.

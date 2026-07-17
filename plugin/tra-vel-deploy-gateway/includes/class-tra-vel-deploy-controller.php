@@ -79,8 +79,22 @@ class Tra_Vel_Deploy_Controller extends WP_REST_Controller {
 						'required'          => true,
 						'sanitize_callback' => 'sanitize_file_name',
 						'validate_callback' => static function ( $value ) {
-							return 'latest' === $value || 1 === preg_match( '/^tra-vel-v2-\d{8}T\d{6}Z-[A-Za-z0-9]+$/', $value );
+							return 1 === preg_match( '/^tra-vel-v2-\d{8}T\d{6}Z-[A-Za-z0-9]+$/', $value );
 						},
+					),
+					'expected_current_fingerprint' => array(
+						'type'              => 'string',
+						'required'          => true,
+						'pattern'           => '^[a-f0-9]{64}$',
+						'sanitize_callback' => 'sanitize_text_field',
+						'validate_callback' => 'rest_validate_request_arg',
+					),
+					'expected_restored_fingerprint' => array(
+						'type'              => 'string',
+						'required'          => true,
+						'pattern'           => '^[a-f0-9]{64}$',
+						'sanitize_callback' => 'sanitize_text_field',
+						'validate_callback' => 'rest_validate_request_arg',
 					),
 					'confirmation' => array(
 						'type'     => 'string',
@@ -102,7 +116,11 @@ class Tra_Vel_Deploy_Controller extends WP_REST_Controller {
 	 * Return deployment state without exposing credentials or filesystem paths.
 	 */
 	public function get_status() {
-		$theme = wp_get_theme( self::THEME_SLUG );
+		$theme       = wp_get_theme( self::THEME_SLUG );
+		$fingerprint = $theme->exists() ? $this->fingerprint_directory( $this->theme_path() ) : null;
+		if ( is_wp_error( $fingerprint ) ) {
+			return $fingerprint;
+		}
 
 		return rest_ensure_response(
 			array(
@@ -110,6 +128,7 @@ class Tra_Vel_Deploy_Controller extends WP_REST_Controller {
 				'theme'             => self::THEME_SLUG,
 				'installed'         => $theme->exists(),
 				'installed_version' => $theme->exists() ? $theme->get( 'Version' ) : null,
+				'installed_fingerprint' => $fingerprint,
 				'active'            => get_stylesheet() === self::THEME_SLUG,
 				'last_deployment'   => get_option( self::OPTION_LAST, null ),
 				'backups'           => $this->list_backups(),
@@ -142,11 +161,12 @@ class Tra_Vel_Deploy_Controller extends WP_REST_Controller {
 			return $lease;
 		}
 
-		$backup           = null;
-		$had_existing     = false;
-		$mutation_started = false;
-		$activation_tried = false;
-		$previous_active  = (string) get_stylesheet();
+		$backup                  = null;
+		$had_existing            = false;
+		$mutation_started        = false;
+		$activation_tried        = false;
+		$previous_active         = (string) get_stylesheet();
+		$backup_content_sha256   = null;
 
 		try {
 			$filesystem = $this->load_filesystem_api();
@@ -194,13 +214,14 @@ class Tra_Vel_Deploy_Controller extends WP_REST_Controller {
 
 				return rest_ensure_response(
 					array(
-						'ok'        => true,
-						'theme'     => self::THEME_SLUG,
-						'version'   => $package_data['version'],
-						'sha256'    => $actual_hash,
-						'backup'    => null,
-						'active'    => get_stylesheet() === self::THEME_SLUG,
-						'unchanged' => true,
+						'ok'             => true,
+						'theme'          => self::THEME_SLUG,
+						'version'        => $package_data['version'],
+						'sha256'         => $actual_hash,
+						'content_sha256' => $package_data['content_sha256'],
+						'backup'         => null,
+						'active'         => get_stylesheet() === self::THEME_SLUG,
+						'unchanged'      => true,
 					)
 				);
 			}
@@ -211,6 +232,12 @@ class Tra_Vel_Deploy_Controller extends WP_REST_Controller {
 			}
 			if ( $had_existing && ! $backup ) {
 				return new WP_Error( 'tra_vel_backup_missing', 'The installed theme could not be captured before deployment.', array( 'status' => 500 ) );
+			}
+			if ( $backup ) {
+				$backup_content_sha256 = $this->fingerprint_directory( trailingslashit( $this->backup_root() ) . $backup );
+				if ( is_wp_error( $backup_content_sha256 ) ) {
+					return $backup_content_sha256;
+				}
 			}
 
 			$mutation_started = true;
@@ -233,26 +260,29 @@ class Tra_Vel_Deploy_Controller extends WP_REST_Controller {
 			}
 
 			$deployment = array(
-				'deployed_at'   => gmdate( 'c' ),
-				'version'       => $package_data['version'],
-				'sha256'        => $actual_hash,
-				'content_sha256' => $package_data['content_sha256'],
-				'backup'        => $backup,
-				'activated'     => $activate,
-				'previous_theme' => $previous_active,
-				'user_id'       => get_current_user_id(),
+				'deployed_at'          => gmdate( 'c' ),
+				'version'              => $package_data['version'],
+				'sha256'               => $actual_hash,
+				'content_sha256'       => $package_data['content_sha256'],
+				'backup'               => $backup,
+				'backup_content_sha256' => $backup_content_sha256,
+				'activated'            => $activate,
+				'previous_theme'       => $previous_active,
+				'user_id'              => get_current_user_id(),
 			);
 			update_option( self::OPTION_LAST, $deployment, false );
 			$this->prune_backups();
 
 			return new WP_REST_Response(
 				array(
-					'ok'      => true,
-					'theme'   => self::THEME_SLUG,
-					'version' => $package_data['version'],
-					'sha256'  => $actual_hash,
-					'backup'  => $backup,
-					'active'  => get_stylesheet() === self::THEME_SLUG,
+					'ok'                    => true,
+					'theme'                 => self::THEME_SLUG,
+					'version'               => $package_data['version'],
+					'sha256'                => $actual_hash,
+					'content_sha256'        => $package_data['content_sha256'],
+					'backup'                => $backup,
+					'backup_content_sha256' => $backup_content_sha256,
+					'active'                => get_stylesheet() === self::THEME_SLUG,
 				),
 				200
 			);
@@ -271,7 +301,7 @@ class Tra_Vel_Deploy_Controller extends WP_REST_Controller {
 	}
 
 	/**
-	 * Restore a named or latest backup.
+	 * Restore an exact named backup only when current content still matches.
 	 */
 	public function rollback( WP_REST_Request $request ) {
 		$confirmation = $request->get_param( 'confirmation' );
@@ -290,13 +320,21 @@ class Tra_Vel_Deploy_Controller extends WP_REST_Controller {
 				return $filesystem;
 			}
 
+			$expected_current_fingerprint = strtolower( (string) $request->get_param( 'expected_current_fingerprint' ) );
+			$current_fingerprint          = $this->fingerprint_directory( $this->theme_path() );
+			if ( is_wp_error( $current_fingerprint ) || 1 !== preg_match( '/^[a-f0-9]{64}$/', $expected_current_fingerprint ) || ! hash_equals( $expected_current_fingerprint, (string) $current_fingerprint ) ) {
+				return new WP_Error( 'tra_vel_theme_rollback_scope_changed', 'The installed theme content changed before rollback; refusing to overwrite a later release.', array( 'status' => 409 ) );
+			}
+
 			$backup_name = (string) $request->get_param( 'backup' );
 			$backups     = $this->list_backups();
-			if ( 'latest' === $backup_name ) {
-				$backup_name = reset( $backups );
-			}
 			if ( ! $backup_name || ! in_array( $backup_name, $backups, true ) ) {
 				return new WP_Error( 'tra_vel_backup_missing', 'The requested backup was not found.', array( 'status' => 404 ) );
+			}
+			$expected_restored_fingerprint = strtolower( (string) $request->get_param( 'expected_restored_fingerprint' ) );
+			$backup_fingerprint            = $this->fingerprint_directory( trailingslashit( $this->backup_root() ) . $backup_name );
+			if ( is_wp_error( $backup_fingerprint ) || 1 !== preg_match( '/^[a-f0-9]{64}$/', $expected_restored_fingerprint ) || ! hash_equals( $expected_restored_fingerprint, (string) $backup_fingerprint ) ) {
+				return new WP_Error( 'tra_vel_theme_rollback_target_changed', 'The selected theme backup no longer matches the expected restored content; refusing to mutate production.', array( 'status' => 409 ) );
 			}
 
 			$result = $this->restore_backup( $backup_name );
@@ -305,13 +343,18 @@ class Tra_Vel_Deploy_Controller extends WP_REST_Controller {
 			}
 
 			wp_clean_themes_cache( true );
-			$theme = wp_get_theme( self::THEME_SLUG );
+			$theme                = wp_get_theme( self::THEME_SLUG );
+			$restored_fingerprint = $this->fingerprint_directory( $this->theme_path() );
+			if ( ! $theme->exists() || is_wp_error( $restored_fingerprint ) || ! hash_equals( $expected_restored_fingerprint, (string) $restored_fingerprint ) ) {
+				return new WP_Error( 'tra_vel_theme_rollback_identity_missing', 'The restored theme identity could not be verified.', array( 'status' => 500 ) );
+			}
 			update_option(
 				self::OPTION_LAST,
 				array(
 					'rolled_back_at' => gmdate( 'c' ),
 					'backup'         => $backup_name,
 					'version'        => $theme->get( 'Version' ),
+					'content_sha256' => $restored_fingerprint,
 					'user_id'        => get_current_user_id(),
 				),
 				false
@@ -319,10 +362,11 @@ class Tra_Vel_Deploy_Controller extends WP_REST_Controller {
 
 			return rest_ensure_response(
 				array(
-					'ok'       => true,
-					'restored' => $backup_name,
-					'version'  => $theme->get( 'Version' ),
-					'active'   => get_stylesheet() === self::THEME_SLUG,
+					'ok'             => true,
+					'restored'       => $backup_name,
+					'version'        => $theme->get( 'Version' ),
+					'content_sha256' => $restored_fingerprint,
+					'active'          => get_stylesheet() === self::THEME_SLUG,
 				)
 			);
 		} finally {

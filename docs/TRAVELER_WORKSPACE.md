@@ -4,6 +4,14 @@ Tra-Vel V2 1.0 adds a consent-safe personal decision layer. Guests can save norm
 
 The workspace deliberately excludes passport, payment, medical, underwriting and raw AI-conversation data. Server responses use `Cache-Control: private, no-store`, each user is limited to 50 normalized items, saved URLs are constrained to Tra-Vel, and the public schema fixes `sensitive_data_allowed` to `false`.
 
+## Durable assisted requests
+
+Agent Core 0.3.0 adds durable assisted quote cases beside saved comparison items. A traveler can explicitly consent to turn one ready private AI run into an owned request for human assistance. The planner and workspace then show the opaque `TV-XXXXXXXX` reference, persisted status, next action, and traveler-visible event history. This is a separate server-owned aggregate, not another browser-saved card and not a copy of the raw AI conversation.
+
+The truthful states are `queued`, `in_review`, `needs_information`, `ready_for_assistance`, `closed_no_quote`, `cancelled`, and `expired`. Only a server-confirmed current state animates; completed steps settle, loading shimmer represents an HTTP request, and reduced-motion preferences disable nonessential motion. No timer implies that a supplier search, quote, message, reservation, payment, or booking occurred.
+
+Traveler case routes live under `/wp-json/tra-vel-agent/v1/quote-cases`; the operator queue uses capability-protected routes under `/wp-json/tra-vel-agent/v1/operator/quote-cases`. Guest ownership uses a separate HttpOnly quote-owner cookie, signed-in ownership is exact to the WordPress user ID, and active cases have a 30-day service window with a normal 90-day deletion boundary. If the first cookie response is lost, the exact case can be recovered only through its still-owned private source run; a signed-in traveler with the matching guest cookie can claim it into the account. Case details embed at most 20 events, and longer histories load through bounded `after`/`has_more` pages. See [Tra-Vel assisted quote cases](QUOTE_CASE_OPERATIONS.md) for the full state, privacy, idempotency, handoff, and recovery contract.
+
 ## Routes
 
 - `GET /wp-json/tra-vel/v2/workspace` — current signed-in user only.

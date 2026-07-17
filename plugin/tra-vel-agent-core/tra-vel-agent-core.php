@@ -1,8 +1,8 @@
 <?php
 /**
  * Plugin Name: Tra-Vel Agent Core
- * Description: Private AI travel-request, run-event, proposal, and approval foundation for Tra-Vel.
- * Version: 0.2.1
+ * Description: Private AI travel planning plus durable, consented assisted-quote operations for Tra-Vel.
+ * Version: 0.3.0
  * Requires at least: 6.5
  * Requires PHP: 7.4
  * Author: Tra-Vel
@@ -11,7 +11,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'TRA_VEL_AGENT_VERSION', '0.2.1' );
+define( 'TRA_VEL_AGENT_VERSION', '0.3.0' );
 define( 'TRA_VEL_AGENT_FILE', __FILE__ );
 define( 'TRA_VEL_AGENT_PATH', __DIR__ );
 
@@ -21,11 +21,18 @@ require_once TRA_VEL_AGENT_PATH . '/includes/class-tra-vel-agent-openai-provider
 require_once TRA_VEL_AGENT_PATH . '/includes/class-tra-vel-agent-policy.php';
 require_once TRA_VEL_AGENT_PATH . '/includes/class-tra-vel-agent-store.php';
 require_once TRA_VEL_AGENT_PATH . '/includes/class-tra-vel-agent-controller.php';
+require_once TRA_VEL_AGENT_PATH . '/includes/class-tra-vel-quote-case-policy.php';
+require_once TRA_VEL_AGENT_PATH . '/includes/class-tra-vel-quote-case-store.php';
+require_once TRA_VEL_AGENT_PATH . '/includes/class-tra-vel-quote-case-capabilities.php';
+require_once TRA_VEL_AGENT_PATH . '/includes/class-tra-vel-quote-case-controller.php';
+require_once TRA_VEL_AGENT_PATH . '/includes/class-tra-vel-quote-case-admin.php';
 
 register_activation_hook(
 	TRA_VEL_AGENT_FILE,
 	static function () {
 		Tra_Vel_Agent_Store::install();
+		Tra_Vel_Quote_Case_Store::install();
+		Tra_Vel_Quote_Case_Capabilities::install();
 		if ( ! wp_next_scheduled( 'tra_vel_agent_cleanup' ) ) {
 			wp_schedule_event( time() + HOUR_IN_SECONDS, 'daily', 'tra_vel_agent_cleanup' );
 		}
@@ -36,16 +43,40 @@ register_deactivation_hook(
 	TRA_VEL_AGENT_FILE,
 	static function () {
 		wp_clear_scheduled_hook( 'tra_vel_agent_cleanup' );
+		if ( function_exists( 'wp_unschedule_hook' ) ) {
+			wp_unschedule_hook( 'tra_vel_quote_case_sync_retry' );
+		}
 	}
 );
 
 add_action( 'tra_vel_agent_cleanup', array( 'Tra_Vel_Agent_Store', 'cleanup_expired' ) );
+add_action( 'tra_vel_agent_cleanup', array( 'Tra_Vel_Quote_Case_Store', 'cleanup' ) );
 
 add_action(
 	'plugins_loaded',
 	static function () {
 		Tra_Vel_Agent_Store::maybe_upgrade();
+		Tra_Vel_Quote_Case_Store::maybe_upgrade();
+		Tra_Vel_Quote_Case_Capabilities::maybe_install();
 	}
+);
+
+add_action(
+	'tra_vel_agent_run_revised',
+	static function ( $run ) {
+		if ( is_array( $run ) ) {
+			( new Tra_Vel_Quote_Case_Store() )->sync_from_run( $run );
+		}
+	},
+	10,
+	1
+);
+
+add_action(
+	'tra_vel_quote_case_sync_retry',
+	array( 'Tra_Vel_Quote_Case_Store', 'run_scheduled_sync' ),
+	10,
+	3
 );
 
 add_action(
@@ -54,5 +85,10 @@ add_action(
 		$provider = apply_filters( 'tra_vel_agent_request_provider', null );
 		$controller = new Tra_Vel_Agent_Controller( null, $provider instanceof Tra_Vel_Agent_Provider ? $provider : null );
 		$controller->register_routes();
+		( new Tra_Vel_Quote_Case_Controller() )->register_routes();
 	}
 );
+
+if ( is_admin() ) {
+	( new Tra_Vel_Quote_Case_Admin() )->register_hooks();
+}

@@ -2,10 +2,10 @@
 Contributors: tra-vel
 Requires at least: 6.5
 Requires PHP: 7.4
-Stable tag: 0.2.1
+Stable tag: 0.3.0
 License: Proprietary
 
-Private AI travel-request interpretation, persistent run events, and protected approval foundations for Tra-Vel.
+Private AI travel planning, durable assisted-quote cases, operator progress, and protected approval foundations for Tra-Vel.
 
 == Description ==
 
@@ -13,13 +13,21 @@ This plugin is the server-side control plane for Tra-Vel agent runs. It stores p
 
 Raw natural-language prompts are processed in memory and are not persisted. Anonymous ownership secrets are held in Secure, HttpOnly, SameSite cookies and are not returned to JavaScript. Atomic database counters cap live provider requests per visitor and per UTC day, while owner-token leases limit concurrent provider work to two requests by default.
 
-Version 0.2.1 accepts natural-language clarification and preference changes inside the same private run and prevents duplicate clarification prompts for the same material field. It does not search suppliers, quote live prices, or execute bookings. Its health response reports those capabilities as unavailable and its event log explicitly records that supplier search has not started.
+Version 0.3.0 separates short-lived AI working state from durable, consented assisted-quote cases. A ready private plan can enter a 30-day human review queue with an immutable minimized request revision, optimistic state version, append-only event history, separate guest owner cookie, authenticated claim path, restricted operator role, and 90-day retention boundary. State-driven progress never claims supplier search, a live price, message delivery, or booking execution without corresponding evidence. Those transaction capabilities remain disabled in health.
 
 == Security ==
 
 Use a hosting environment variable or wp-config.php constant for the OpenAI key when possible. The administrator-only encrypted-option fallback requires sodium. Keys are never returned by REST.
 
 == Changelog ==
+
+= 0.3.0 =
+* Added durable assisted-quote cases with separate revisions, events, idempotency, retention, and guest ownership.
+* Added exact traveler read/cancel/claim/handoff boundaries and an optimistic operator state machine.
+* Added a least-privilege quote operator role and event-driven admin queue.
+* Added fail-closed transactional schema gates, bounded recovery retries, and atomic quote-create/recovery limits.
+* Made source synchronization monotonic and healed historical orphan retention rows with checked cleanup status.
+* Kept supplier search, proposal generation, dispatch, and booking execution truthfully disabled.
 
 = 0.2.1 =
 * Deduplicated model and deterministic clarification prompts by material field.

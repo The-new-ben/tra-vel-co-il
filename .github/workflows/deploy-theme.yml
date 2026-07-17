@@ -18,7 +18,7 @@ on:
         default: true
         type: boolean
       activate_theme:
-        description: Activate tra-vel-v2 after a successful upload
+        description: Reserved; protected auto-recovery deployments are upload-only
         required: true
         default: false
         type: boolean
@@ -28,7 +28,7 @@ on:
         default: ""
         type: string
       activation_confirmation:
-        description: To activate, enter ACTIVATE TRA-VEL V2
+        description: Reserved; activation is not accepted by this protected workflow
         required: false
         default: ""
         type: string
@@ -47,7 +47,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Check out selected revision
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Validate source
         shell: bash
@@ -61,6 +61,7 @@ jobs:
           node scripts/ci/validate-trip-package-contract.mjs
           node scripts/ci/validate-traveler-workspace-contract.mjs
           node scripts/ci/validate-supplier-handoff-contract.mjs
+          node scripts/ci/validate-quote-case-theme.mjs
           node scripts/ci/validate-guide-packets.mjs
           node scripts/ci/validate-theme-deploy-contract.mjs
           php scripts/ci/validate-supplier-runtime.php
@@ -80,7 +81,7 @@ jobs:
         run: bash scripts/ci/build-theme.sh
 
       - name: Upload deployment artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: tra-vel-v2-deploy-${{ github.run_id }}
           path: dist/
@@ -105,14 +106,15 @@ jobs:
       SITE_URL: ${{ vars.WP_SITE_URL }}
       SMOKE_PATHS: ${{ vars.SMOKE_PATHS }}
       EXPECT_THEME_MARKER: ${{ vars.EXPECT_THEME_MARKER }}
-      WP_USERNAME: ${{ secrets.WP_USERNAME }}
-      WP_APP_PASSWORD: ${{ secrets.WP_APP_PASSWORD }}
+      THEME_DEPLOY_RESULT_FILE: theme-deploy-result.json
+      THEME_DEPLOY_PRESTATE_FILE: theme-deploy-prestate.json
+      REQUIRE_EXISTING_THEME: true
     steps:
       - name: Check out repository scripts
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Download deployment artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: tra-vel-v2-deploy-${{ github.run_id }}
           path: dist
@@ -121,12 +123,31 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          archive="$(find dist -maxdepth 1 -name 'tra-vel-v2-*.zip' -print -quit)"
-          test -n "$archive"
+          manifest_identity="$(python3 - <<'PY'
+          import json
+          import re
+          data = json.load(open("dist/manifest.json", encoding="utf-8"))
+          if data.get("theme") != "tra-vel-v2":
+              raise SystemExit("Manifest contains an unexpected theme identity.")
+          version = str(data.get("version", ""))
+          sha256 = str(data.get("sha256", ""))
+          archive = str(data.get("archive", ""))
+          if not re.fullmatch(r"\d+\.\d+\.\d+(?:[-+][A-Za-z0-9.-]+)?", version):
+              raise SystemExit("Manifest contains an invalid version.")
+          if not re.fullmatch(r"[a-f0-9]{64}", sha256):
+              raise SystemExit("Manifest contains an invalid SHA-256 digest.")
+          if not re.fullmatch(r"tra-vel-v2-[A-Za-z0-9.+-]+-[a-f0-9]{7}\.zip", archive):
+              raise SystemExit("Manifest contains an invalid archive name.")
+          print(f"{archive}|{version}|{sha256}")
+          PY
+          )"
+          IFS='|' read -r manifest_archive manifest_version expected <<< "$manifest_identity"
+          archive="dist/${manifest_archive}"
+          test -f "$archive"
           unzip -t "$archive"
-          expected="$(python3 -c 'import json; print(json.load(open("dist/manifest.json"))["sha256"])')"
           actual="$(sha256sum "$archive" | cut -d' ' -f1)"
           [[ "$expected" == "$actual" ]]
+          echo "Verified packaged theme ${manifest_version} at ${expected}."
 
       - name: Report dry run
         if: ${{ env.DRY_RUN == 'true' }}
@@ -137,6 +158,9 @@ jobs:
       - name: Validate production gate
         if: ${{ env.DRY_RUN != 'true' }}
         shell: bash
+        env:
+          WP_USERNAME: ${{ secrets.WP_USERNAME }}
+          WP_APP_PASSWORD: ${{ secrets.WP_APP_PASSWORD }}
         run: |
           set -euo pipefail
           [[ "$DEPLOY_ENABLED" == "true" ]] || { echo "DEPLOY_ENABLED must be true in the production environment." >&2; exit 1; }
@@ -144,21 +168,326 @@ jobs:
           [[ "$DEPLOYMENT_CONFIRMATION" == "DEPLOY TRA-VEL V2" ]] || { echo "Deployment confirmation did not match." >&2; exit 1; }
           [[ "$WP_SITE_URL" =~ ^https:// ]] || { echo "WP_SITE_URL must use HTTPS." >&2; exit 1; }
           [[ -n "$WP_USERNAME" && -n "$WP_APP_PASSWORD" ]] || { echo "WordPress deployment secrets are missing." >&2; exit 1; }
-          if [[ "$ACTIVATE_THEME" == "true" && "$ACTIVATION_CONFIRMATION" != "ACTIVATE TRA-VEL V2" ]]; then
-            echo "Activation confirmation did not match." >&2
-            exit 1
-          fi
+          [[ "$ACTIVATE_THEME" == "false" ]] || { echo "Protected automatic-recovery deployments are upload-only because the current rollback endpoint cannot restore a different previously active theme." >&2; exit 1; }
 
       - name: Upload isolated theme through WordPress REST
+        id: deploy_theme
+        if: ${{ env.DRY_RUN != 'true' }}
+        shell: bash
+        env:
+          WP_USERNAME: ${{ secrets.WP_USERNAME }}
+          WP_APP_PASSWORD: ${{ secrets.WP_APP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          manifest_archive="$(python3 -c 'import json; print(json.load(open("dist/manifest.json", encoding="utf-8"))["archive"])')"
+          archive="dist/${manifest_archive}"
+          bash scripts/deploy/deploy-theme.sh "$archive"
+
+      - name: Capture deployment receipt identity
+        id: deployment_receipt
         if: ${{ env.DRY_RUN != 'true' }}
         shell: bash
         run: |
-          archive="$(find dist -maxdepth 1 -name 'tra-vel-v2-*.zip' -print -quit)"
-          bash scripts/deploy/deploy-theme.sh "$archive"
+          set -euo pipefail
+          python3 - "$THEME_DEPLOY_RESULT_FILE" "$GITHUB_OUTPUT" <<'PY'
+          import json
+          import re
+          import sys
+          data = json.load(open(sys.argv[1], encoding="utf-8"))
+          backup = data.get("backup") or ""
+          if backup and not re.fullmatch(r"tra-vel-v2-\d{8}T\d{6}Z-[A-Za-z0-9]+", backup):
+              raise SystemExit("Deployment returned an invalid rollback identifier.")
+          content_sha256 = str(data.get("content_sha256", ""))
+          if not re.fullmatch(r"[a-f0-9]{64}", content_sha256):
+              raise SystemExit("Deployment returned an invalid installed content fingerprint.")
+          backup_content_sha256 = str(data.get("backup_content_sha256") or "")
+          if backup and not re.fullmatch(r"[a-f0-9]{64}", backup_content_sha256):
+              raise SystemExit("Deployment returned an invalid backup content fingerprint.")
+          with open(sys.argv[2], "a", encoding="utf-8") as output:
+              output.write(f"version={data['version']}\n")
+              output.write(f"sha256={data['sha256']}\n")
+              output.write(f"content_sha256={content_sha256}\n")
+              output.write(f"backup={backup}\n")
+              output.write(f"backup_content_sha256={backup_content_sha256}\n")
+              output.write(f"unchanged={str(data.get('unchanged') is True).lower()}\n")
+          PY
 
-      - name: Smoke test website
-        if: ${{ env.DRY_RUN != 'true' }}
-        run: bash scripts/deploy/smoke-test.sh "$WP_SITE_URL"
+      - name: Verify deployed identity and website, or restore exact backup
+        if: ${{ always() && !cancelled() && env.DRY_RUN != 'true' && steps.deploy_theme.outcome != 'skipped' }}
+        shell: bash
+        env:
+          WP_USERNAME: ${{ secrets.WP_USERNAME }}
+          WP_APP_PASSWORD: ${{ secrets.WP_APP_PASSWORD }}
+        run: |
+          set -uo pipefail
+          verified=false
+          if curl --fail-with-body --silent --show-error --max-time 30 \
+            --user "${WP_USERNAME}:${WP_APP_PASSWORD}" \
+            "${WP_SITE_URL%/}/wp-json/tra-vel-deploy/v1/theme/status" > theme-status.json \
+            && python3 - <<'PY' \
+            && bash scripts/deploy/smoke-test.sh "$WP_SITE_URL"
+          import json
+          import os
+          import re
+
+          def require(condition, message):
+              if not condition:
+                  raise SystemExit(message)
+
+          manifest = json.load(open("dist/manifest.json", encoding="utf-8"))
+          deployed = json.load(open("theme-deploy-result.json", encoding="utf-8"))
+          prestate = json.load(open("theme-deploy-prestate.json", encoding="utf-8"))
+          status = json.load(open("theme-status.json", encoding="utf-8"))
+
+          require(manifest.get("theme") == "tra-vel-v2", "Manifest theme identity mismatch.")
+          require(bool(re.fullmatch(r"\d+\.\d+\.\d+(?:[-+][A-Za-z0-9.-]+)?", str(manifest.get("version", "")))), "Manifest version is invalid.")
+          require(bool(re.fullmatch(r"[a-f0-9]{64}", str(manifest.get("sha256", "")))), "Manifest checksum is invalid.")
+          require(prestate.get("theme") == manifest["theme"], "Pre-deployment theme identity mismatch.")
+          require(prestate.get("installed") is True, "Pre-deployment theme was not installed.")
+          require(bool(re.fullmatch(r"\d+\.\d+\.\d+(?:[-+][A-Za-z0-9.-]+)?", str(prestate.get("installed_version", "")))), "Pre-deployment version is invalid.")
+          require(bool(re.fullmatch(r"[a-f0-9]{64}", str(prestate.get("installed_fingerprint", "")))), "Pre-deployment content fingerprint is invalid.")
+          require(isinstance(prestate.get("active"), bool), "Pre-deployment active state is invalid.")
+          require(deployed.get("ok") is True, "Deployment receipt is not successful.")
+          require(deployed.get("theme") == manifest["theme"], "Deployment receipt theme mismatch.")
+          require(deployed.get("version") == manifest["version"], "Deployment receipt version mismatch.")
+          require(deployed.get("sha256") == manifest["sha256"], "Deployment receipt checksum mismatch.")
+          require(bool(re.fullmatch(r"[a-f0-9]{64}", str(deployed.get("content_sha256", "")))), "Deployment receipt content fingerprint is invalid.")
+          require(status.get("theme") == manifest["theme"], "Remote theme identity mismatch.")
+          require(status.get("installed") is True, "Remote theme is not installed.")
+          require(status.get("installed_version") == manifest["version"], "Remote installed version mismatch.")
+          require(status.get("installed_fingerprint") == deployed["content_sha256"], "Remote installed content fingerprint mismatch.")
+          require(status.get("active") is deployed.get("active"), "Remote active state differs from the deployment receipt.")
+          require(status.get("active") is prestate["active"], "Upload-only deployment changed active state.")
+
+          backup = deployed.get("backup") or ""
+          backup_content = deployed.get("backup_content_sha256") or ""
+          if backup:
+              require(bool(re.fullmatch(r"tra-vel-v2-\d{8}T\d{6}Z-[A-Za-z0-9]+", backup)), "Deployment backup identifier is invalid.")
+              require(backup in status.get("backups", []), "Deployment backup is not listed remotely.")
+              require(backup_content == prestate["installed_fingerprint"], "Deployment backup content differs from prestate.")
+
+          unchanged = deployed.get("unchanged") is True
+          if unchanged:
+              require(not backup, "Unchanged deployment unexpectedly returned a backup.")
+              require(not backup_content, "Unchanged deployment unexpectedly returned backup content identity.")
+              require(prestate["installed_version"] == manifest["version"], "Unchanged deployment version differs from prestate.")
+          else:
+              require(bool(backup), "Changed deployment did not return a backup.")
+              require(prestate["installed_version"] != manifest["version"], "Changed deployment did not advance installed version.")
+              last = status.get("last_deployment")
+              require(isinstance(last, dict), "Remote last deployment is missing.")
+              require(last.get("version") == manifest["version"], "Remote last deployment version mismatch.")
+              require(last.get("sha256") == manifest["sha256"], "Remote last deployment checksum mismatch.")
+              require(last.get("content_sha256") == deployed["content_sha256"], "Remote last deployment content fingerprint mismatch.")
+              require((last.get("backup") or "") == backup, "Remote last deployment backup mismatch.")
+              require(last.get("backup_content_sha256") == backup_content, "Remote last deployment backup content mismatch.")
+
+          if os.environ.get("ACTIVATE_THEME") == "true":
+              require(deployed.get("active") is True and status.get("active") is True, "Requested activation was not observed.")
+
+          print(f"Verified deployed theme {manifest['version']} at {manifest['sha256']}; backup={backup or 'none'}")
+          PY
+          then
+            verified=true
+          fi
+
+          if [[ "$verified" != "true" ]]; then
+            if ! curl --fail-with-body --silent --show-error --max-time 30 \
+              --retry 3 --retry-delay 2 --retry-all-errors \
+              --user "${WP_USERNAME}:${WP_APP_PASSWORD}" \
+              "${WP_SITE_URL%/}/wp-json/tra-vel-deploy/v1/theme/status" > theme-recovery-status.json; then
+              echo "Post-deploy verification failed and current remote identity could not be rechecked; refusing an ambiguous rollback." >&2
+              exit 1
+            fi
+
+            if ! python3 - <<'PY' > theme-recovery.txt
+          import json
+          from pathlib import Path
+          import re
+
+          def require(condition, message):
+              if not condition:
+                  raise SystemExit(message)
+
+          manifest = json.load(open("dist/manifest.json", encoding="utf-8"))
+          prestate = json.load(open("theme-deploy-prestate.json", encoding="utf-8"))
+          status = json.load(open("theme-recovery-status.json", encoding="utf-8"))
+          backup_pattern = r"tra-vel-v2-\d{8}T\d{6}Z-[A-Za-z0-9]+"
+
+          require(manifest.get("theme") == "tra-vel-v2", "Manifest theme identity mismatch.")
+          require(bool(re.fullmatch(r"\d+\.\d+\.\d+(?:[-+][A-Za-z0-9.-]+)?", str(manifest.get("version", "")))), "Manifest version is invalid.")
+          require(bool(re.fullmatch(r"[a-f0-9]{64}", str(manifest.get("sha256", "")))), "Manifest checksum is invalid.")
+          require(prestate.get("theme") == manifest["theme"], "Pre-deployment theme identity mismatch.")
+          require(prestate.get("installed") is True, "Pre-deployment theme was not installed.")
+          require(bool(re.fullmatch(r"\d+\.\d+\.\d+(?:[-+][A-Za-z0-9.-]+)?", str(prestate.get("installed_version", "")))), "Pre-deployment version is invalid.")
+          require(bool(re.fullmatch(r"[a-f0-9]{64}", str(prestate.get("installed_fingerprint", "")))), "Pre-deployment content fingerprint is invalid.")
+          require(isinstance(prestate.get("active"), bool), "Pre-deployment active state is invalid.")
+
+          last = status.get("last_deployment")
+          last = last if isinstance(last, dict) else {}
+          last_backup = last.get("backup") or ""
+          last_content = str(last.get("content_sha256", ""))
+          last_backup_content = str(last.get("backup_content_sha256", ""))
+
+          receipt = None
+          receipt_path = Path("theme-deploy-result.json")
+          if receipt_path.is_file():
+              try:
+                  candidate = json.load(open(receipt_path, encoding="utf-8"))
+                  if (
+                      candidate.get("ok") is True
+                      and candidate.get("theme") == manifest["theme"]
+                      and candidate.get("version") == manifest["version"]
+                      and candidate.get("sha256") == manifest["sha256"]
+                      and bool(re.fullmatch(r"[a-f0-9]{64}", str(candidate.get("content_sha256", ""))))
+                      and isinstance(candidate.get("active"), bool)
+                      and isinstance(candidate.get("unchanged"), bool)
+                  ):
+                      receipt = candidate
+              except (OSError, ValueError, TypeError):
+                  receipt = None
+
+          unchanged = bool(receipt and receipt["unchanged"] is True)
+          receipt_backup = (receipt.get("backup") or "") if receipt else ""
+          receipt_backup_content = str(receipt.get("backup_content_sha256") or "") if receipt else ""
+          if receipt_backup and not re.fullmatch(backup_pattern, receipt_backup):
+              raise SystemExit("Deployment returned an invalid rollback identifier.")
+          if unchanged and (receipt_backup or receipt_backup_content):
+              raise SystemExit("An unchanged deployment cannot name mutation backup content.")
+          if receipt_backup and receipt_backup_content != prestate["installed_fingerprint"]:
+              raise SystemExit("Deployment backup content differs from prestate.")
+
+          backup = receipt_backup or last_backup
+          expected_content = str(receipt.get("content_sha256", "")) if receipt else last_content
+          post_matches = (
+              status.get("theme") == manifest["theme"]
+              and status.get("installed") is True
+              and status.get("installed_version") == manifest["version"]
+              and status.get("installed_fingerprint") == expected_content
+              and status.get("active") is prestate["active"]
+          )
+          last_matches = (
+              last.get("version") == manifest["version"]
+              and last.get("sha256") == manifest["sha256"]
+              and last_content == expected_content
+              and bool(re.fullmatch(r"[a-f0-9]{64}", expected_content))
+              and bool(re.fullmatch(backup_pattern, last_backup))
+              and last_backup_content == prestate["installed_fingerprint"]
+              and last_backup in status.get("backups", [])
+          )
+          mutation_evidence = (
+              not unchanged
+              and prestate["installed_version"] != manifest["version"]
+              and post_matches
+              and last_matches
+              and backup == last_backup
+          )
+          print(f"{backup if mutation_evidence else ''}|{str(unchanged).lower()}|{str(mutation_evidence).lower()}|{expected_content if mutation_evidence else ''}|{prestate['installed_fingerprint'] if mutation_evidence else ''}")
+          PY
+            then
+              echo "Post-deploy verification failed and pre/post release identity could not be validated; refusing an ambiguous rollback." >&2
+              exit 1
+            fi
+
+            IFS='|' read -r backup unchanged mutation_evidence expected_current_fingerprint expected_restored_fingerprint < theme-recovery.txt
+            if [[ "$mutation_evidence" == "true" && -n "$backup" && "$expected_current_fingerprint" =~ ^[a-f0-9]{64}$ && "$expected_restored_fingerprint" =~ ^[a-f0-9]{64}$ ]]; then
+              if ! curl --fail-with-body --silent --show-error --max-time 30 \
+                --retry 3 --retry-delay 2 --retry-all-errors \
+                --user "${WP_USERNAME}:${WP_APP_PASSWORD}" \
+                "${WP_SITE_URL%/}/wp-json/tra-vel-deploy/v1/theme/status" > theme-rollback-guard.json \
+                || ! python3 - "$backup" "$expected_current_fingerprint" "$expected_restored_fingerprint" <<'PY'
+          import json
+          import re
+          import sys
+          def require(condition, message):
+              if not condition:
+                  raise SystemExit(message)
+          manifest = json.load(open("dist/manifest.json", encoding="utf-8"))
+          prestate = json.load(open("theme-deploy-prestate.json", encoding="utf-8"))
+          status = json.load(open("theme-rollback-guard.json", encoding="utf-8"))
+          backup = sys.argv[1]
+          expected_current_fingerprint = sys.argv[2]
+          expected_restored_fingerprint = sys.argv[3]
+          require(bool(re.fullmatch(r"tra-vel-v2-\d{8}T\d{6}Z-[A-Za-z0-9]+", backup)), "Rollback backup identifier is invalid.")
+          require(bool(re.fullmatch(r"[a-f0-9]{64}", expected_current_fingerprint)), "Expected current content fingerprint is invalid.")
+          require(expected_restored_fingerprint == prestate["installed_fingerprint"], "Expected restored content fingerprint differs from prestate.")
+          require(status.get("theme") == manifest["theme"], "Remote theme changed before rollback.")
+          require(status.get("installed") is True, "Remote theme disappeared before rollback.")
+          require(status.get("installed_version") == manifest["version"], "Remote version changed before rollback.")
+          require(status.get("installed_fingerprint") == expected_current_fingerprint, "Remote content changed before rollback.")
+          require(status.get("active") is prestate["active"], "Remote active state changed before rollback.")
+          require(backup in status.get("backups", []), "Rollback backup is no longer listed.")
+          last = status.get("last_deployment")
+          require(isinstance(last, dict), "Remote deployment identity is missing before rollback.")
+          require(last.get("version") == manifest["version"], "Remote deployment version changed before rollback.")
+          require(last.get("sha256") == manifest["sha256"], "Remote deployment checksum changed before rollback.")
+          require(last.get("content_sha256") == expected_current_fingerprint, "Remote deployment content changed before rollback.")
+          require(last.get("backup") == backup, "Remote deployment backup changed before rollback.")
+          require(last.get("backup_content_sha256") == expected_restored_fingerprint, "Remote deployment backup content changed before rollback.")
+          PY
+              then
+                echo "Remote release identity changed before rollback; refusing to overwrite a later deployment." >&2
+                exit 1
+              fi
+
+              echo "Post-deploy verification failed; restoring the exact captured backup ${backup}." >&2
+              export ROLLBACK_CONFIRMATION="ROLLBACK TRA-VEL V2"
+              export EXPECTED_CURRENT_FINGERPRINT="$expected_current_fingerprint"
+              export EXPECTED_RESTORED_FINGERPRINT="$expected_restored_fingerprint"
+              if ! bash scripts/deploy/rollback-theme.sh "$backup"; then
+                echo "Automatic rollback failed and requires immediate operator attention." >&2
+                exit 1
+              fi
+              if ! curl --fail-with-body --silent --show-error --max-time 30 \
+                --retry 3 --retry-delay 2 --retry-all-errors \
+                --user "${WP_USERNAME}:${WP_APP_PASSWORD}" \
+                "${WP_SITE_URL%/}/wp-json/tra-vel-deploy/v1/theme/status" > theme-rollback-status.json \
+                || ! python3 - "$backup" <<'PY'
+          import json
+          import sys
+          def require(condition, message):
+              if not condition:
+                  raise SystemExit(message)
+          prestate = json.load(open("theme-deploy-prestate.json", encoding="utf-8"))
+          status = json.load(open("theme-rollback-status.json", encoding="utf-8"))
+          backup = sys.argv[1]
+          require(status.get("theme") == prestate["theme"], "Restored theme identity mismatch.")
+          require(status.get("installed") is True, "Restored theme is not installed.")
+          require(status.get("installed_version") == prestate["installed_version"], "Restored version does not match prestate.")
+          require(status.get("installed_fingerprint") == prestate["installed_fingerprint"], "Restored content fingerprint does not match prestate.")
+          require(status.get("active") is prestate["active"], "Restored active state does not match prestate.")
+          last = status.get("last_deployment")
+          require(isinstance(last, dict), "Rollback status record is missing.")
+          require(last.get("backup") == backup, "Rollback status backup mismatch.")
+          require(last.get("version") == prestate["installed_version"], "Rollback status version mismatch.")
+          require(last.get("content_sha256") == prestate["installed_fingerprint"], "Rollback status content fingerprint mismatch.")
+          PY
+              then
+                echo "The rollback endpoint returned success, but the restored release identity did not match pre-deployment state." >&2
+                exit 1
+              fi
+              if ! bash scripts/deploy/smoke-test.sh "$WP_SITE_URL"; then
+                echo "The exact backup was restored and identity-verified, but the post-rollback smoke test still failed." >&2
+                exit 1
+              fi
+            elif [[ "$unchanged" == "true" ]]; then
+              echo "Post-deploy verification failed after an idempotent no-change response; no mutation was made, so rollback was intentionally skipped." >&2
+            else
+              echo "Post-deploy verification failed without proof that this run changed the remote release; rollback was safely withheld." >&2
+            fi
+            exit 1
+          fi
+
+      - name: Preserve deployment receipt
+        if: ${{ always() && !cancelled() && env.DRY_RUN != 'true' && hashFiles('theme-deploy-prestate.json') != '' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: tra-vel-v2-deploy-receipt-${{ github.run_id }}
+          path: |
+            theme-deploy-prestate.json
+            theme-deploy-result.json
+          if-no-files-found: error
+          retention-days: 90
 
       - name: Publish deployment summary
         if: always()
@@ -170,4 +499,8 @@ jobs:
             echo "- Dry run: ${DRY_RUN}"
             echo "- Activation requested: ${ACTIVATE_THEME:-false}"
             echo "- Site: ${WP_SITE_URL:-not configured}"
+            echo "- Deployed version: ${{ steps.deployment_receipt.outputs.version || 'not deployed' }}"
+            echo "- Deployed SHA-256: ${{ steps.deployment_receipt.outputs.sha256 || 'not deployed' }}"
+            echo "- Installed content fingerprint: ${{ steps.deployment_receipt.outputs.content_sha256 || 'not deployed' }}"
+            echo "- Captured rollback backup: ${{ steps.deployment_receipt.outputs.backup || 'none' }}"
           } >> "$GITHUB_STEP_SUMMARY"
