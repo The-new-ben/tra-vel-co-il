@@ -222,9 +222,7 @@ jobs:
         run: |
           set -uo pipefail
           verified=false
-          if curl --fail-with-body --silent --show-error --max-time 30 \
-            --user "${WP_USERNAME}:${WP_APP_PASSWORD}" \
-            "${WP_SITE_URL%/}/wp-json/tra-vel-deploy/v1/theme/status" > theme-status.json \
+          if bash scripts/deploy/get-theme-status.sh theme-status.json \
             && python3 - <<'PY' \
             && bash scripts/deploy/smoke-test.sh "$WP_SITE_URL"
           import json
@@ -293,10 +291,7 @@ jobs:
           fi
 
           if [[ "$verified" != "true" ]]; then
-            if ! curl --fail-with-body --silent --show-error --max-time 30 \
-              --retry 3 --retry-delay 2 --retry-all-errors \
-              --user "${WP_USERNAME}:${WP_APP_PASSWORD}" \
-              "${WP_SITE_URL%/}/wp-json/tra-vel-deploy/v1/theme/status" > theme-recovery-status.json; then
+            if ! bash scripts/deploy/get-theme-status.sh theme-recovery-status.json; then
               echo "Post-deploy verification failed and current remote identity could not be rechecked; refusing an ambiguous rollback." >&2
               exit 1
             fi
@@ -392,10 +387,7 @@ jobs:
 
             IFS='|' read -r backup unchanged mutation_evidence expected_current_fingerprint expected_restored_fingerprint < theme-recovery.txt
             if [[ "$mutation_evidence" == "true" && -n "$backup" && "$expected_current_fingerprint" =~ ^[a-f0-9]{64}$ && "$expected_restored_fingerprint" =~ ^[a-f0-9]{64}$ ]]; then
-              if ! curl --fail-with-body --silent --show-error --max-time 30 \
-                --retry 3 --retry-delay 2 --retry-all-errors \
-                --user "${WP_USERNAME}:${WP_APP_PASSWORD}" \
-                "${WP_SITE_URL%/}/wp-json/tra-vel-deploy/v1/theme/status" > theme-rollback-guard.json \
+              if ! bash scripts/deploy/get-theme-status.sh theme-rollback-guard.json \
                 || ! python3 - "$backup" "$expected_current_fingerprint" "$expected_restored_fingerprint" <<'PY'
           import json
           import re
@@ -439,10 +431,7 @@ jobs:
                 echo "Automatic rollback failed and requires immediate operator attention." >&2
                 exit 1
               fi
-              if ! curl --fail-with-body --silent --show-error --max-time 30 \
-                --retry 3 --retry-delay 2 --retry-all-errors \
-                --user "${WP_USERNAME}:${WP_APP_PASSWORD}" \
-                "${WP_SITE_URL%/}/wp-json/tra-vel-deploy/v1/theme/status" > theme-rollback-status.json \
+              if ! bash scripts/deploy/get-theme-status.sh theme-rollback-status.json \
                 || ! python3 - "$backup" <<'PY'
           import json
           import sys

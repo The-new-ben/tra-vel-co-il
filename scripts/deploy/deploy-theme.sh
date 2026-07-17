@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 ARCHIVE="${1:-}"
 : "${WP_SITE_URL:?WP_SITE_URL is required}"
 : "${WP_USERNAME:?WP_USERNAME is required}"
@@ -28,15 +30,12 @@ if [[ "${ACTIVATE_THEME:-false}" == "true" && "${ACTIVATION_CONFIRMATION:-}" != 
 fi
 
 SHA256="$(sha256sum "$ARCHIVE" | cut -d' ' -f1)"
-STATUS_URL="${WP_SITE_URL%/}/wp-json/tra-vel-deploy/v1/theme/status"
 DEPLOY_URL="${WP_SITE_URL%/}/wp-json/tra-vel-deploy/v1/theme"
 RESPONSE_FILE="$(mktemp)"
 trap 'rm -f "$RESPONSE_FILE"' EXIT
 
 echo "Checking the authenticated deployment gateway."
-curl --fail-with-body --silent --show-error --max-time 30 \
-  --user "${WP_USERNAME}:${WP_APP_PASSWORD}" \
-  "$STATUS_URL" > "$RESPONSE_FILE"
+bash "${SCRIPT_DIR}/get-theme-status.sh" "$RESPONSE_FILE"
 python3 - "$RESPONSE_FILE" "${THEME_DEPLOY_PRESTATE_FILE:-}" "${REQUIRE_EXISTING_THEME:-false}" <<'PY'
 import json
 import os
