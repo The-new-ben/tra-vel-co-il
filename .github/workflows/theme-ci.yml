@@ -82,6 +82,7 @@ jobs:
       - name: Validate JavaScript syntax
         run: |
           node --check theme/tra-vel-v2/assets/js/app.js
+          node --check theme/tra-vel-v2/assets/js/globe-3d.js
           node --check plugin/tra-vel-agent-core/assets/admin/quote-cases.js
 
       - name: Validate PowerShell syntax

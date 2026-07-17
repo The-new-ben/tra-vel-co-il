@@ -33,7 +33,7 @@ class Tra_Vel_V2_Open_Meteo_Supplier_Adapter implements Tra_Vel_V2_Supplier_Adap
 	}
 
 	public function get_cache_version() {
-		return 'open-meteo-current-v1';
+		return 'open-meteo-current-v2-utc';
 	}
 
 	public function fetch( $context ) {
@@ -59,7 +59,7 @@ class Tra_Vel_V2_Open_Meteo_Supplier_Adapter implements Tra_Vel_V2_Supplier_Adap
 				'latitude'  => implode( ',', $latitudes ),
 				'longitude' => implode( ',', $longitudes ),
 				'current'   => 'temperature_2m,apparent_temperature,weather_code,is_day',
-				'timezone'  => 'auto',
+				'timezone'  => 'GMT',
 				'apikey'    => $this->get_api_key(),
 			),
 			$this->get_endpoint()
@@ -88,14 +88,18 @@ class Tra_Vel_V2_Open_Meteo_Supplier_Adapter implements Tra_Vel_V2_Supplier_Adap
 			return new WP_Error( 'open_meteo_invalid_response', 'Open-Meteo returned an invalid location set.' );
 		}
 
-		$updates     = array();
-		$observed_at = null;
+		$updates        = array();
+		$observed_times = array();
 		foreach ( $destinations as $index => $destination ) {
 			$current = isset( $weather[ $index ]['current'] ) ? $weather[ $index ]['current'] : array();
-			if ( ! isset( $current['temperature_2m'], $current['weather_code'] ) || ! is_numeric( $current['temperature_2m'] ) ) {
+			if ( ! isset( $current['temperature_2m'], $current['weather_code'], $current['time'] ) || ! is_numeric( $current['temperature_2m'] ) ) {
 				return new WP_Error( 'open_meteo_invalid_current', 'Open-Meteo current conditions are incomplete.' );
 			}
-			$observed_at = isset( $current['time'] ) ? sanitize_text_field( $current['time'] ) : gmdate( 'c' );
+			$observed_at = $this->normalize_utc_observed_at( $current['time'] );
+			if ( ! $observed_at ) {
+				return new WP_Error( 'open_meteo_invalid_time', 'Open-Meteo returned an ambiguous observation time.' );
+			}
+			$observed_times[] = $observed_at;
 			$updates[]   = array(
 				'id'      => $destination['id'],
 				'weather' => array(
@@ -111,13 +115,14 @@ class Tra_Vel_V2_Open_Meteo_Supplier_Adapter implements Tra_Vel_V2_Supplier_Adap
 			);
 		}
 
+		$observed_times = array_values( array_unique( $observed_times ) );
 		return array(
 			'provider_status' => array(
 				'weather' => array(
 					'connected'       => true,
 					'adapter'         => $this->get_id(),
 					'readiness'       => 'live',
-					'observed_at'     => $observed_at,
+					'observed_at'     => 1 === count( $observed_times ) ? $observed_times[0] : null,
 					'attribution'     => 'Weather data by Open-Meteo (CC BY 4.0)',
 					'attribution_url' => 'https://open-meteo.com/',
 					'license_url'     => 'https://creativecommons.org/licenses/by/4.0/',
@@ -125,6 +130,22 @@ class Tra_Vel_V2_Open_Meteo_Supplier_Adapter implements Tra_Vel_V2_Supplier_Adap
 			),
 			'destinations' => $updates,
 		);
+	}
+
+	/**
+	 * The request pins Open-Meteo to GMT; normalize its offset-free ISO minute to RFC3339 UTC.
+	 */
+	private function normalize_utc_observed_at( $value ) {
+		if ( ! is_string( $value ) || ! preg_match( '/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?$/', $value ) ) {
+			return null;
+		}
+		$format = 16 === strlen( $value ) ? '!Y-m-d\TH:i' : '!Y-m-d\TH:i:s';
+		$date   = DateTimeImmutable::createFromFormat( $format, $value, new DateTimeZone( 'UTC' ) );
+		$errors = DateTimeImmutable::getLastErrors();
+		if ( false === $date || ( is_array( $errors ) && ( $errors['warning_count'] || $errors['error_count'] ) ) ) {
+			return null;
+		}
+		return $date->format( 'Y-m-d\TH:i:s\Z' );
 	}
 
 	private function load_destinations() {

@@ -34,6 +34,7 @@ $search_value = isset( $_GET['q'] ) ? sanitize_text_field( wp_unslash( $_GET['q'
 				<div class="budget-row"><strong><?php esc_html_e( 'תקציב מועדף לאדם', 'tra-vel-v2' ); ?></strong><span class="budget-value" data-budget-value>$950</span></div>
 				<input data-budget type="range" min="200" max="1600" step="25" value="950" aria-label="<?php esc_attr_e( 'תקציב מועדף לאדם', 'tra-vel-v2' ); ?>">
 				<div class="filter-scale"><span>$200</span><span>$1,600</span></div>
+				<p class="budget-coverage-note" data-budget-coverage data-coverage="loading" role="status" aria-live="polite"><?php esc_html_e( 'בודקים על אילו יעדים אפשר להחיל את התקציב לפי מחירי ספק נוכחיים.', 'tra-vel-v2' ); ?></p>
 			</div>
 
 			<div class="filter-block">
@@ -92,7 +93,7 @@ $search_value = isset( $_GET['q'] ) ? sanitize_text_field( wp_unslash( $_GET['q'
 				</nav>
 
 				<div class="world-canvas" data-map-canvas data-data-mode="loading" aria-label="<?php esc_attr_e( 'גלובוס יעדים אינטראקטיבי', 'tra-vel-v2' ); ?>">
-					<div class="globe globe-webgl" data-globe-3d data-discovery-globe data-origin-latitude="32.0005" data-origin-longitude="34.8708" data-texture="<?php echo esc_url( tra_vel_v2_asset_uri( 'images/earth-blue-marble-2048.jpg' ) ); ?>" tabindex="0" role="group" aria-label="<?php esc_attr_e( 'גלובוס תלת ממדי. גררו לסיבוב, השתמשו בחצים במקלדת ובחרו יעד.', 'tra-vel-v2' ); ?>">
+					<div class="globe globe-webgl" data-globe-3d data-discovery-globe data-origin-latitude="32.0005" data-origin-longitude="34.8708" data-supported-radius-km="100" data-texture="<?php echo esc_url( tra_vel_v2_asset_uri( 'images/earth-blue-marble-2048.jpg' ) ); ?>" tabindex="0" role="group" aria-label="<?php esc_attr_e( 'גלובוס תלת ממדי. גררו לסיבוב, לחצו על כל נקודה בכדור הארץ או הקישו Enter כדי לבחור את מרכז התצוגה.', 'tra-vel-v2' ); ?>">
 						<canvas data-globe-canvas aria-hidden="true"></canvas>
 						<svg class="globe-route-layer" data-globe-routes width="100%" height="100%" aria-hidden="true"><path data-globe-route></path></svg>
 						<span class="origin-point" data-globe-origin aria-label="<?php esc_attr_e( 'תל אביב, נקודת מוצא', 'tra-vel-v2' ); ?>"></span>
@@ -102,7 +103,7 @@ $search_value = isset( $_GET['q'] ) ? sanitize_text_field( wp_unslash( $_GET['q'
 						<button class="price-pin pin-bangkok is-active" data-destination="bangkok" data-latitude="13.7563" data-longitude="100.5018" aria-pressed="true" type="button"><?php esc_html_e( 'בנגקוק', 'tra-vel-v2' ); ?></button>
 						<button class="price-pin pin-tokyo" data-destination="tokyo" data-latitude="35.6762" data-longitude="139.6503" aria-pressed="false" type="button"><?php esc_html_e( 'טוקיו', 'tra-vel-v2' ); ?></button>
 						<button class="price-pin pin-lisbon" data-destination="lisbon" data-latitude="38.7223" data-longitude="-9.1393" aria-pressed="false" type="button"><?php esc_html_e( 'ליסבון', 'tra-vel-v2' ); ?></button>
-						<span class="sr-only" data-globe-live aria-live="polite"></span>
+						<span class="sr-only" data-globe-live role="status" aria-live="polite" aria-atomic="true"></span>
 					</div>
 				</div>
 			</div>
@@ -112,6 +113,11 @@ $search_value = isset( $_GET['q'] ) ? sanitize_text_field( wp_unslash( $_GET['q'
 				<p class="map-data-status" data-layer-status role="status"><?php esc_html_e( 'מעדכן יעדים ומסלולים', 'tra-vel-v2' ); ?></p>
 				<a class="map-imagery-attribution" href="https://visibleearth.nasa.gov/images/74218/december-blue-marble-next-generation/74226l" target="_blank" rel="noopener noreferrer">NASA Blue Marble</a>
 				<a class="map-weather-attribution" data-weather-attribution href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer" hidden>Weather data by Open-Meteo · CC BY 4.0</a>
+			</div>
+			<div class="map-selection-rail" data-globe-selection data-state="supported" tabindex="-1">
+				<span class="map-selection-signal" aria-hidden="true"><i data-lucide="map-pin-check"></i></span>
+				<span class="map-selection-copy"><small data-globe-selection-kicker><?php esc_html_e( 'הנקודה התקבלה', 'tra-vel-v2' ); ?></small><strong data-globe-selection-title><?php esc_html_e( 'בנגקוק נבחרה. תוכנית 360° נפתחה.', 'tra-vel-v2' ); ?></strong><span data-globe-selection-detail><?php esc_html_e( '12 תחומי החלטה מסודרים מתחת למפה. מחירים והזמנה יאומתו בחיפוש חי.', 'tra-vel-v2' ); ?></span></span>
+				<a data-globe-selection-action href="#destination-plan-title"><?php esc_html_e( 'צפו בתוכנית', 'tra-vel-v2' ); ?><i data-lucide="arrow-down"></i></a>
 			</div>
 		</section>
 	</div>
@@ -127,7 +133,7 @@ $search_value = isset( $_GET['q'] ) ? sanitize_text_field( wp_unslash( $_GET['q'
 					<div class="map-price-state"><div><small data-result-state-label><?php esc_html_e( 'מחיר וזמינות', 'tra-vel-v2' ); ?></small><strong data-result-total><?php esc_html_e( 'בדיקה חיה', 'tra-vel-v2' ); ?></strong></div><p><span data-result-price><?php esc_html_e( 'בדיקה חיה', 'tra-vel-v2' ); ?></span> <span data-result-note><?php esc_html_e( 'המחיר יופיע לאחר חיפוש מול ספקים מחוברים.', 'tra-vel-v2' ); ?></span></p></div>
 					<div class="map-destination-actions"><a data-result-guide href="<?php echo esc_url( home_url( '/destinations/' ) ); ?>"><i data-lucide="book-open"></i><?php esc_html_e( 'מדריך ליעד', 'tra-vel-v2' ); ?></a><a data-result-hotels href="<?php echo esc_url( home_url( '/hotels/' ) ); ?>"><i data-lucide="bed-double"></i><?php esc_html_e( 'אזורי לינה', 'tra-vel-v2' ); ?></a><a data-result-insurance href="<?php echo esc_url( home_url( '/travel-insurance/' ) ); ?>"><i data-lucide="shield-check"></i><?php esc_html_e( 'ביטוח מתאים', 'tra-vel-v2' ); ?></a></div>
 					<section class="destination-plan-360" data-destination-plan aria-labelledby="destination-plan-title">
-						<header class="destination-plan-head"><div><span class="eyebrow">Tra-Vel 360°</span><h3 id="destination-plan-title" data-plan-title><?php esc_html_e( 'התוכנית החכמה לבנגקוק', 'tra-vel-v2' ); ?></h3></div><span class="destination-plan-state" data-plan-state role="status" aria-live="polite"><?php esc_html_e( 'היעד נבחר · שאר השלבים מוכנים לבדיקה', 'tra-vel-v2' ); ?></span></header>
+						<header class="destination-plan-head"><div><span class="eyebrow">Tra-Vel 360°</span><h3 id="destination-plan-title" data-plan-title><?php esc_html_e( 'התוכנית החכמה לבנגקוק', 'tra-vel-v2' ); ?></h3></div><span class="destination-plan-state" data-plan-state><?php esc_html_e( 'היעד נבחר · שאר השלבים מוכנים לבדיקה', 'tra-vel-v2' ); ?></span></header>
 						<p data-plan-summary><?php esc_html_e( 'בחרו את סגנון הנסיעה ונארגן את ההחלטות לפי מה שחשוב לכם.', 'tra-vel-v2' ); ?></p>
 						<div class="destination-plan-intents" role="group" aria-label="<?php esc_attr_e( 'סגנון התוכנית', 'tra-vel-v2' ); ?>">
 							<button class="is-active" data-plan-intent="smart" type="button" aria-pressed="true"><?php esc_html_e( 'הכי חכם', 'tra-vel-v2' ); ?></button>
@@ -154,7 +160,26 @@ $search_value = isset( $_GET['q'] ) ? sanitize_text_field( wp_unslash( $_GET['q'
 							<a data-plan-cover href="<?php echo esc_url( home_url( '/travel-insurance/' ) ); ?>"><i data-lucide="shield-plus"></i><span><small><?php esc_html_e( 'ביטוח וציוד', 'tra-vel-v2' ); ?></small><strong data-plan-cover-title><?php esc_html_e( 'כיסוי לפי המסלול', 'tra-vel-v2' ); ?></strong><em><?php esc_html_e( 'רפואה, כבודה, ספורט וביטול', 'tra-vel-v2' ); ?></em></span></a>
 							<a data-plan-total data-plan-layer="deals" href="<?php echo esc_url( home_url( '/packages/' ) ); ?>"><i data-lucide="badge-dollar-sign"></i><span><small><?php esc_html_e( 'עלות הנסיעה', 'tra-vel-v2' ); ?></small><strong data-plan-total-title><?php esc_html_e( 'עדיין לא חושבה בחבילה מלאה', 'tra-vel-v2' ); ?></strong><em><?php esc_html_e( 'עברו למרכיב החבילה כדי לבדוק את כל הרכיבים', 'tra-vel-v2' ); ?></em></span></a>
 						</div>
-						<div class="destination-plan-actions"><a class="destination-plan-primary" data-plan-ai href="<?php echo esc_url( home_url( '/ai-planner/' ) ); ?>"><i data-lucide="sparkles"></i><?php esc_html_e( 'תנו לסוכן לבנות את כל הנסיעה', 'tra-vel-v2' ); ?></a><a data-plan-guide href="<?php echo esc_url( home_url( '/destinations/' ) ); ?>"><?php esc_html_e( 'פתחו מדריך עומק', 'tra-vel-v2' ); ?><i data-lucide="arrow-left"></i></a></div>
+						<section class="destination-decision-cockpit" aria-labelledby="destination-decision-title">
+							<header class="destination-decision-head">
+								<div><span class="eyebrow"><?php esc_html_e( 'מרכז ההחלטות', 'tra-vel-v2' ); ?></span><h4 id="destination-decision-title"><?php esc_html_e( 'כל מה שצריך לסגור סביב הנסיעה', 'tra-vel-v2' ); ?></h4><p data-plan-coverage-copy><?php esc_html_e( '12 תחומי החלטה מופו. זהו כיסוי תכנוני, לא אישור הזמנה.', 'tra-vel-v2' ); ?></p></div>
+								<div class="destination-plan-meter" data-plan-meter role="progressbar" aria-label="<?php esc_attr_e( 'כיסוי תחומי ההחלטה', 'tra-vel-v2' ); ?>" aria-valuemin="0" aria-valuemax="12" aria-valuenow="12"><strong data-plan-meter-count>12/12</strong><span><i data-plan-meter-fill style="--plan-coverage:100%"></i></span><small><?php esc_html_e( 'תחומים מסודרים', 'tra-vel-v2' ); ?></small></div>
+							</header>
+							<div class="destination-decision-grid" data-plan-modules>
+								<details data-plan-module="mobility" open><summary><i data-lucide="car-taxi-front"></i><span><strong data-plan-module-title><?php esc_html_e( 'הגעה ותחבורה מקומית', 'tra-vel-v2' ); ?></strong><small data-plan-module-state><?php esc_html_e( 'בסיס תכנוני מוכן', 'tra-vel-v2' ); ?></small></span><i data-lucide="chevron-down"></i></summary><div><p data-plan-module-detail><?php esc_html_e( 'זמן ההעברה מהשדה מוכר. סוג ההסעה, המחיר והמסלול ייבדקו לפי המלון והשעה.', 'tra-vel-v2' ); ?></p><a data-plan-module-action href="<?php echo esc_url( home_url( '/packages/' ) ); ?>"><?php esc_html_e( 'השוו העברות', 'tra-vel-v2' ); ?><i data-lucide="arrow-left"></i></a></div></details>
+								<details data-plan-module="dining"><summary><i data-lucide="utensils"></i><span><strong data-plan-module-title><?php esc_html_e( 'אוכל, כשרות והעדפות', 'tra-vel-v2' ); ?></strong><small data-plan-module-state><?php esc_html_e( 'ממתין להעדפות', 'tra-vel-v2' ); ?></small></span><i data-lucide="chevron-down"></i></summary><div><p data-plan-module-detail><?php esc_html_e( 'מוסיפים רמת כשרות, אלרגיות, ילדים וסגנון אוכל לפני שמרכיבים מסלול יומי.', 'tra-vel-v2' ); ?></p><a data-plan-module-action href="<?php echo esc_url( home_url( '/ai-planner/' ) ); ?>"><?php esc_html_e( 'הוסיפו העדפות לסוכן', 'tra-vel-v2' ); ?><i data-lucide="arrow-left"></i></a></div></details>
+								<details data-plan-module="entry"><summary><i data-lucide="passport"></i><span><strong data-plan-module-title><?php esc_html_e( 'כניסה, דרכון ואשרות', 'tra-vel-v2' ); ?></strong><small data-plan-module-state><?php esc_html_e( 'נדרשים פרטי נוסע', 'tra-vel-v2' ); ?></small></span><i data-lucide="chevron-down"></i></summary><div><p data-plan-module-detail><?php esc_html_e( 'בודקים אזרחות, תוקף דרכון, מסלול ותאריך מול מקור רשמי לפני רכישה.', 'tra-vel-v2' ); ?></p><a data-plan-module-action href="<?php echo esc_url( home_url( '/guides/' ) ); ?>"><?php esc_html_e( 'פתחו בדיקת כניסה', 'tra-vel-v2' ); ?><i data-lucide="arrow-left"></i></a></div></details>
+								<details data-plan-module="connectivity"><summary><i data-lucide="wifi"></i><span><strong data-plan-module-title><?php esc_html_e( 'תקשורת ו-eSIM', 'tra-vel-v2' ); ?></strong><small data-plan-module-state><?php esc_html_e( 'אפשרויות מוכנות להשוואה', 'tra-vel-v2' ); ?></small></span><i data-lucide="chevron-down"></i></summary><div><p data-plan-module-detail><?php esc_html_e( 'משווים eSIM, חבילת נדידה ו-SIM מקומי לפי ימים, נפח גלישה ושיתוף אינטרנט.', 'tra-vel-v2' ); ?></p><a data-plan-module-action href="<?php echo esc_url( home_url( '/guides/' ) ); ?>"><?php esc_html_e( 'השוו חיבור לנסיעה', 'tra-vel-v2' ); ?><i data-lucide="arrow-left"></i></a></div></details>
+								<details data-plan-module="accessibility"><summary><i data-lucide="accessibility"></i><span><strong data-plan-module-title><?php esc_html_e( 'משפחה ונגישות', 'tra-vel-v2' ); ?></strong><small data-plan-module-state><?php esc_html_e( 'ממתין להרכב ולצרכים', 'tra-vel-v2' ); ?></small></span><i data-lucide="chevron-down"></i></summary><div><p data-plan-module-detail><?php esc_html_e( 'גילים, עגלה, הליכה, מעלית, חדרים מחוברים וסיוע בשדה משנים את כל התוכנית.', 'tra-vel-v2' ); ?></p><a data-plan-module-action href="<?php echo esc_url( home_url( '/ai-planner/' ) ); ?>"><?php esc_html_e( 'התאימו את התוכנית', 'tra-vel-v2' ); ?><i data-lucide="arrow-left"></i></a></div></details>
+								<details data-plan-module="equipment"><summary><i data-lucide="backpack"></i><span><strong data-plan-module-title><?php esc_html_e( 'ציוד, כבודה והשכרה', 'tra-vel-v2' ); ?></strong><small data-plan-module-state><?php esc_html_e( 'ממתין לפעילויות', 'tra-vel-v2' ); ?></small></span><i data-lucide="chevron-down"></i></summary><div><p data-plan-module-detail><?php esc_html_e( 'מחברים ציוד לפעילויות, לתנאי הכבודה ולאפשרות לשכור במקום במקום לסחוב.', 'tra-vel-v2' ); ?></p><a data-plan-module-action href="<?php echo esc_url( home_url( '/guides/' ) ); ?>"><?php esc_html_e( 'בנו רשימת ציוד', 'tra-vel-v2' ); ?><i data-lucide="arrow-left"></i></a></div></details>
+							</div>
+							<aside class="destination-cost-ledger" data-plan-ledger>
+								<header><span><small><?php esc_html_e( 'עלות מקצה לקצה', 'tra-vel-v2' ); ?></small><strong data-plan-ledger-total><?php esc_html_e( 'נדרש חיפוש חי', 'tra-vel-v2' ); ?></strong></span><span class="destination-ledger-state" data-plan-ledger-state><?php esc_html_e( '12 רכיבי עלות במעקב', 'tra-vel-v2' ); ?></span></header>
+								<div data-plan-ledger-list><span><b><?php esc_html_e( 'טיסה וכבודה', 'tra-vel-v2' ); ?></b><em><?php esc_html_e( 'ממתין לחיפוש', 'tra-vel-v2' ); ?></em></span><span><b><?php esc_html_e( 'לינה ומסים', 'tra-vel-v2' ); ?></b><em><?php esc_html_e( 'ממתין לתאריכים', 'tra-vel-v2' ); ?></em></span><span><b><?php esc_html_e( 'העברות ותחבורה', 'tra-vel-v2' ); ?></b><em><?php esc_html_e( 'בתכנון', 'tra-vel-v2' ); ?></em></span><span><b><?php esc_html_e( 'חוויות ואוכל', 'tra-vel-v2' ); ?></b><em><?php esc_html_e( 'בתכנון', 'tra-vel-v2' ); ?></em></span><span><b><?php esc_html_e( 'ביטוח ותקשורת', 'tra-vel-v2' ); ?></b><em><?php esc_html_e( 'ממתין להתאמה', 'tra-vel-v2' ); ?></em></span><span><b><?php esc_html_e( 'ציוד ושונות', 'tra-vel-v2' ); ?></b><em><?php esc_html_e( 'ממתין למסלול', 'tra-vel-v2' ); ?></em></span></div>
+								<p data-plan-ledger-truth><?php esc_html_e( 'לא מוצג חיסכון עד שיש מחיר בסיס בר-השוואה, זמינות ומועד בדיקה.', 'tra-vel-v2' ); ?></p>
+							</aside>
+						</section>
+						<div class="destination-plan-actions"><a class="destination-plan-primary" data-plan-ai href="<?php echo esc_url( home_url( '/ai-planner/' ) ); ?>"><i data-lucide="sparkles"></i><?php esc_html_e( 'תנו לסוכן לבנות את כל הנסיעה', 'tra-vel-v2' ); ?></a><button data-plan-save type="button"><i data-lucide="bookmark-plus"></i><span><?php esc_html_e( 'שמרו את התוכנית', 'tra-vel-v2' ); ?></span></button><a data-plan-guide href="<?php echo esc_url( home_url( '/destinations/' ) ); ?>"><?php esc_html_e( 'פתחו מדריך עומק', 'tra-vel-v2' ); ?><i data-lucide="arrow-left"></i></a></div>
 						<p class="destination-plan-truth"><i data-lucide="shield-check"></i><span data-plan-truth><?php esc_html_e( 'היעד נבחר. מחירים, זמינות והזמנה עדיין לא נבדקו.', 'tra-vel-v2' ); ?></span></p>
 					</section>
 				</div>
@@ -162,7 +187,8 @@ $search_value = isset( $_GET['q'] ) ? sanitize_text_field( wp_unslash( $_GET['q'
 
 			<aside class="route-sheet" id="route-comparison">
 				<div class="sheet-head"><div><span class="eyebrow"><?php esc_html_e( 'הדרך שמתאימה לכם', 'tra-vel-v2' ); ?></span><h2 data-route-title><?php esc_html_e( 'תל אביב לבנגקוק: השוואת מסלולים', 'tra-vel-v2' ); ?></h2></div><span><?php esc_html_e( 'מחיר, זמן, כבודה וגמישות', 'tra-vel-v2' ); ?></span></div>
-				<div class="mini-routes" data-route-list aria-live="polite"></div>
+				<div class="mini-routes" data-route-list aria-live="off"></div>
+				<span class="sr-only" data-route-status role="status" aria-live="polite" aria-atomic="true"></span>
 			</aside>
 		</div>
 	</section>

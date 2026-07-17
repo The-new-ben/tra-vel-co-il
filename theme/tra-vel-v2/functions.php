@@ -9,7 +9,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'TRA_VEL_V2_VERSION', '1.13.0' );
+define( 'TRA_VEL_V2_VERSION', '1.14.0' );
 define( 'TRA_VEL_V2_PATH', get_template_directory() );
 define( 'TRA_VEL_V2_URI', get_template_directory_uri() );
 

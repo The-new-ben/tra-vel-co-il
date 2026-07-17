@@ -1,5 +1,5 @@
 {
-  "contract_version": "1.0.0",
+  "contract_version": "1.1.0",
   "data_mode": "demo",
   "currency": "USD",
   "origin": {
@@ -24,9 +24,22 @@
       "geo": { "latitude": 47.4979, "longitude": 19.0402 },
       "position": { "x": 43, "y": 32 },
       "airport": { "code": "BUD", "name": "Budapest Ferenc Liszt", "direct": true, "flight_minutes": 210, "transfer_minutes": 35 },
-      "deal": { "headline_price": 214, "total_per_person": 596, "currency": "USD", "trend_pct": -14, "nights": 4, "insight": "מלון 4★ במרכז והעברות כלולים בחישוב", "bookable": false },
+      "deal": { "headline_price": 214, "total_per_person": 596, "currency": "USD", "trend_pct": -14, "nights": 4, "total_scope": "destination_deal", "insight": "מלון 4★ במרכז והעברות כלולים בחישוב", "bookable": false },
       "hotel": { "name": "Danube Central Hotel", "area": "District V", "rating": 4.4, "nightly": 130, "nights": 4, "room_total": 520, "per_person_total": 260, "currency": "USD", "tour_ready": false },
       "weather": { "temperature_c": 17, "condition": "נעים", "season_fit": "טוב" },
+      "planning": {
+        "reviewed_on": "2026-07-17",
+        "source_label": "Tra-Vel editorial planning profile",
+        "modules": {
+          "mobility": { "state": "editorial", "headline": "מהשדה למרכז ולתחבורה הציבורית", "detail": "מתחילים מזמן העברה משוער של 35 דקות, ואז בודקים שאטל, מונית ותחבורה ציבורית לפי שעת הנחיתה והמלון.", "next_action": "השוו העברות" },
+          "dining": { "state": "needs_details", "headline": "אוכל וכשרות לפי אזור הלינה", "detail": "רמת כשרות, אלרגיות, ילדים ותקציב לארוחה נדרשים לפני בניית מסלול מסעדות.", "next_action": "הוסיפו העדפות אוכל" },
+          "entry": { "state": "needs_details", "headline": "בדיקת כניסה לפי דרכון ותאריך", "detail": "מאמתים אזרחות, תוקף דרכון ודרישות כניסה מול מקור רשמי לפני רכישת הכרטיס.", "next_action": "בדקו תנאי כניסה" },
+          "connectivity": { "state": "editorial", "headline": "eSIM מול נדידה ו-Wi-Fi", "detail": "משווים חבילה לפי ארבעה ימי שימוש, נפח גלישה, שיתוף אינטרנט וכיסוי מחוץ למרכז.", "next_action": "השוו חיבור" },
+          "accessibility": { "state": "needs_details", "headline": "קצב הליכה, מעליות והרכב משפחתי", "detail": "גילים, עגלה, מגבלת הליכה וחדרים מחוברים קובעים את האזור ואת סדר הימים.", "next_action": "התאימו צרכים" },
+          "equipment": { "state": "needs_details", "headline": "כבודה וציוד לפי עונה", "detail": "מחברים מזג אוויר, פעילויות ותנאי כבודה לרשימה אחת לפני היציאה.", "next_action": "בנו רשימת ציוד" }
+        },
+        "cost_scope": { "state": "partial", "categories": ["flight", "baggage", "stay", "taxes", "transfers", "local_transport", "activities", "dining", "insurance", "connectivity", "equipment", "entry"] }
+      },
       "tags": ["טיסה ישירה", "4 לילות", "ארוחת בוקר"],
       "image": "city-budapest.webp"
     },
@@ -37,9 +50,22 @@
       "geo": { "latitude": 37.9838, "longitude": 23.7275 },
       "position": { "x": 48, "y": 43 },
       "airport": { "code": "ATH", "name": "Athens International", "direct": true, "flight_minutes": 135, "transfer_minutes": 40 },
-      "deal": { "headline_price": 189, "total_per_person": 534, "currency": "USD", "trend_pct": -7, "nights": 3, "insight": "המחיר הנמוך ביותר השבוע לחופשה קצרה", "bookable": false },
+      "deal": { "headline_price": 189, "total_per_person": 534, "currency": "USD", "trend_pct": -7, "nights": 3, "total_scope": "destination_deal", "insight": "אפשרות תכנון לחופשה קצרה של שלושה לילות", "bookable": false },
       "hotel": { "name": "Plaka View", "area": "Plaka", "rating": 4.2, "nightly": 145, "nights": 3, "room_total": 435, "per_person_total": 218, "currency": "USD", "tour_ready": false },
       "weather": { "temperature_c": 23, "condition": "שמשי", "season_fit": "מצוין" },
+      "planning": {
+        "reviewed_on": "2026-07-17",
+        "source_label": "Tra-Vel editorial planning profile",
+        "modules": {
+          "mobility": { "state": "editorial", "headline": "מהשדה לפלאקה, למרכז או לפיראוס", "detail": "זמן העברה בסיסי של 40 דקות משתנה לפי יעד הלינה והמשך לאיים; משווים מטרו, אוטובוס ומונית.", "next_action": "השוו העברות" },
+          "dining": { "state": "needs_details", "headline": "טברנות, כשרות וארוחות בדרך", "detail": "מוסיפים רמת כשרות, אלרגיות, שעות ותקציב כדי לשלב אוכל בלי לפגוע במסלול.", "next_action": "הוסיפו העדפות אוכל" },
+          "entry": { "state": "needs_details", "headline": "בדיקת כניסה לפי דרכון ומסלול", "detail": "מאמתים דרכון, אזרחות ודרישות מעבר אם ממשיכים דרך נמל או שדה נוסף.", "next_action": "בדקו תנאי כניסה" },
+          "connectivity": { "state": "editorial", "headline": "חיבור בעיר ובהמשך לאיים", "detail": "משווים eSIM, נדידה ו-SIM מקומי לפי ימים, כיסוי ושיתוף אינטרנט.", "next_action": "השוו חיבור" },
+          "accessibility": { "state": "needs_details", "headline": "עליות, מדרכות, עגלה וסיוע", "detail": "רמת הליכה, עגלה, מעלית וקרבה לתחבורה משפיעות על שכונת הלינה ועל קצב היום.", "next_action": "התאימו צרכים" },
+          "equipment": { "state": "needs_details", "headline": "ציוד עיר, חוף או הפלגה", "detail": "רשימת הציוד משתנה אם נשארים בעיר, ממשיכים לאי או מוסיפים שיט.", "next_action": "בנו רשימת ציוד" }
+        },
+        "cost_scope": { "state": "partial", "categories": ["flight", "baggage", "stay", "taxes", "transfers", "local_transport", "activities", "dining", "insurance", "connectivity", "equipment", "entry"] }
+      },
       "tags": ["טיסה ישירה", "3 לילות", "ביטול גמיש"],
       "image": "athens-acropolis.jpg"
     },
@@ -50,9 +76,22 @@
       "geo": { "latitude": 25.2048, "longitude": 55.2708 },
       "position": { "x": 59, "y": 53 },
       "airport": { "code": "DXB", "name": "Dubai International", "direct": true, "flight_minutes": 205, "transfer_minutes": 25 },
-      "deal": { "headline_price": 236, "total_per_person": 690, "currency": "USD", "trend_pct": -11, "nights": 4, "insight": "המחיר ירד היום; טרולי והעברה מחושבים", "bookable": false },
+      "deal": { "headline_price": 236, "total_per_person": 690, "currency": "USD", "trend_pct": -11, "nights": 4, "total_scope": "destination_deal", "insight": "המחיר ירד היום; טרולי והעברה מחושבים", "bookable": false },
       "hotel": { "name": "Creek Design Hotel", "area": "Dubai Creek", "rating": 4.5, "nightly": 170, "nights": 4, "room_total": 680, "per_person_total": 340, "currency": "USD", "tour_ready": false },
       "weather": { "temperature_c": 31, "condition": "חם ויבש", "season_fit": "טוב" },
+      "planning": {
+        "reviewed_on": "2026-07-17",
+        "source_label": "Tra-Vel editorial planning profile",
+        "modules": {
+          "mobility": { "state": "editorial", "headline": "שדה, מטרו, מונית ומרחקים בין אזורים", "detail": "זמן העברה בסיסי של 25 דקות נבדק מחדש לפי הטרמינל, שעת הנחיתה ואזור המלון.", "next_action": "השוו העברות" },
+          "dining": { "state": "needs_details", "headline": "כשרות, הזמנות ותקציב לארוחה", "detail": "מגדירים כשרות, אלרגיות וסגנון אוכל כדי להתאים מסעדות למרחקים ולשעות הפעילות.", "next_action": "הוסיפו העדפות אוכל" },
+          "entry": { "state": "needs_details", "headline": "דרישות כניסה ומעבר לפי נוסע", "detail": "מאמתים דרכון, אזרחות ותנאי כניסה או קונקשן מול מקור רשמי לפני רכישה.", "next_action": "בדקו תנאי כניסה" },
+          "connectivity": { "state": "editorial", "headline": "eSIM, נדידה וחיבור בין האמירויות", "detail": "משווים נפח, שיחות, נקודה חמה וכיסוי אם יוצאים מדובאי.", "next_action": "השוו חיבור" },
+          "accessibility": { "state": "needs_details", "headline": "מרחקי הליכה, חום והרכב נוסעים", "detail": "גילים, נגישות, שעות חמות ומרחקים בין אזורים קובעים את בחירת המלון וההסעות.", "next_action": "התאימו צרכים" },
+          "equipment": { "state": "needs_details", "headline": "ציוד לחום, חוף ופעילות", "detail": "מחברים עונה, קוד לבוש, פעילויות ותנאי כבודה לרשימה מתאימה.", "next_action": "בנו רשימת ציוד" }
+        },
+        "cost_scope": { "state": "partial", "categories": ["flight", "baggage", "stay", "taxes", "transfers", "local_transport", "activities", "dining", "insurance", "connectivity", "equipment", "entry"] }
+      },
       "tags": ["טיסה ישירה", "סופ״ש", "טרולי כלול"],
       "image": "hero-budapest-900.webp"
     },
@@ -63,9 +102,22 @@
       "geo": { "latitude": 13.7563, "longitude": 100.5018 },
       "position": { "x": 72, "y": 61 },
       "airport": { "code": "BKK", "name": "Suvarnabhumi Airport", "direct": true, "flight_minutes": 680, "transfer_minutes": 45 },
-      "deal": { "headline_price": 742, "total_per_person": 1347, "currency": "USD", "trend_pct": -8, "nights": 12, "insight": "חיסכון של $157 דרך דובאי מול טיסה ישירה", "bookable": false },
+      "deal": { "headline_price": 742, "total_per_person": 1347, "currency": "USD", "trend_pct": -8, "nights": 12, "total_scope": "destination_deal", "insight": "חלופת קונקשן להשוואה מול מסלול ישיר; המחירים להמחשה בלבד", "bookable": false },
       "hotel": { "name": "Siam Riverside", "area": "Siam", "rating": 4.6, "nightly": 65, "nights": 12, "room_total": 780, "per_person_total": 390, "currency": "USD", "tour_ready": false },
       "weather": { "temperature_c": 29, "condition": "חם עם ממטרים", "season_fit": "טוב" },
+      "planning": {
+        "reviewed_on": "2026-07-17",
+        "source_label": "Tra-Vel editorial planning profile",
+        "modules": {
+          "mobility": { "state": "editorial", "headline": "מהשדה לסיאם והמשך בתוך תאילנד", "detail": "זמן העברה בסיסי של 45 דקות הוא רק נקודת פתיחה; בודקים שדה, שעה, מלון והמשך לאיים.", "next_action": "השוו העברות" },
+          "dining": { "state": "needs_details", "headline": "אוכל רחוב, מסעדות וכשרות", "detail": "רמת כשרות, אלרגיות, ילדים ותקציב קובעים את אזורי האוכל ואת התכנון היומי.", "next_action": "הוסיפו העדפות אוכל" },
+          "entry": { "state": "needs_details", "headline": "כניסה, דרכון וטיסות פנים", "detail": "מאמתים אזרחות, תוקף דרכון, משך שהייה וכללי מעבר לפני סגירת המסלול.", "next_action": "בדקו תנאי כניסה" },
+          "connectivity": { "state": "editorial", "headline": "חיבור בבנגקוק, באיים ובדרך", "detail": "משווים eSIM ו-SIM מקומי לפי כיסוי מחוץ לעיר, נפח ושיתוף אינטרנט.", "next_action": "השוו חיבור" },
+          "accessibility": { "state": "needs_details", "headline": "חום, הליכה, ילדים ונגישות", "detail": "קצב, עגלה, מגבלת הליכה וחדרים משפחתיים משנים את סדר הימים והמעברים.", "next_action": "התאימו צרכים" },
+          "equipment": { "state": "needs_details", "headline": "ציוד עיר, איים, צלילה וגשם", "detail": "ממפים פעילויות ואז מחליטים מה לארוז, מה לשכור ומה דורש כבודה או כיסוי ייעודי.", "next_action": "בנו רשימת ציוד" }
+        },
+        "cost_scope": { "state": "partial", "categories": ["flight", "baggage", "stay", "taxes", "transfers", "local_transport", "activities", "dining", "insurance", "connectivity", "equipment", "entry"] }
+      },
       "tags": ["12 לילות", "עצירה אחת", "כבודה כלולה"],
       "image": "thailand.jpg"
     },
@@ -76,9 +128,22 @@
       "geo": { "latitude": 35.6762, "longitude": 139.6503 },
       "position": { "x": 84, "y": 39 },
       "airport": { "code": "HND", "name": "Tokyo Haneda", "direct": false, "flight_minutes": 930, "transfer_minutes": 35 },
-      "deal": { "headline_price": 918, "total_per_person": 1810, "currency": "USD", "trend_pct": -4, "nights": 10, "insight": "חלון מחיר טוב לנובמבר עם עצירה אחת", "bookable": false },
+      "deal": { "headline_price": 918, "total_per_person": 1810, "currency": "USD", "trend_pct": -4, "nights": 10, "total_scope": "destination_deal", "insight": "חלון מחיר טוב לנובמבר עם עצירה אחת", "bookable": false },
       "hotel": { "name": "Shinjuku Base", "area": "Shinjuku", "rating": 4.3, "nightly": 148, "nights": 10, "room_total": 1480, "per_person_total": 740, "currency": "USD", "tour_ready": false },
       "weather": { "temperature_c": 18, "condition": "קריר ובהיר", "season_fit": "מצוין" },
+      "planning": {
+        "reviewed_on": "2026-07-17",
+        "source_label": "Tra-Vel editorial planning profile",
+        "modules": {
+          "mobility": { "state": "editorial", "headline": "מהנדה לשינג׳וקו ורכבות בין ערים", "detail": "זמן העברה בסיסי של 35 דקות נבדק לפי שדה, רכבת, כבודה ושעת ההגעה.", "next_action": "השוו העברות" },
+          "dining": { "state": "needs_details", "headline": "הזמנות, כשרות, אלרגיות ותקציב", "detail": "מגדירים מגבלות וסגנון אוכל מראש כדי לשלב מסעדות בלי נסיעות מיותרות.", "next_action": "הוסיפו העדפות אוכל" },
+          "entry": { "state": "needs_details", "headline": "בדיקת כניסה לפי דרכון ותאריך", "detail": "מאמתים דרישות כניסה, תוקף דרכון וכללי קונקשן מול מקור רשמי.", "next_action": "בדקו תנאי כניסה" },
+          "connectivity": { "state": "editorial", "headline": "eSIM, Wi-Fi וניווט רציף", "detail": "משווים נפח, מהירות, נקודה חמה וכיסוי אם המסלול יוצא מטוקיו.", "next_action": "השוו חיבור" },
+          "accessibility": { "state": "needs_details", "headline": "תחנות גדולות, הליכה ומזוודות", "detail": "מגבלת הליכה, ילדים, עגלה, מעלית ומזוודות משפיעות על המלון ועל החלפות הרכבת.", "next_action": "התאימו צרכים" },
+          "equipment": { "state": "needs_details", "headline": "ציוד עונתי, כבודה ומשלוח", "detail": "מחברים מזג אוויר, קניות וטיולי יום כדי לצמצם סחיבה ולתכנן מקום בכבודה.", "next_action": "בנו רשימת ציוד" }
+        },
+        "cost_scope": { "state": "partial", "categories": ["flight", "baggage", "stay", "taxes", "transfers", "local_transport", "activities", "dining", "insurance", "connectivity", "equipment", "entry"] }
+      },
       "tags": ["עצירה אחת", "10 לילות", "כבודה כלולה"],
       "image": "city-prague.webp"
     },
@@ -89,17 +154,133 @@
       "geo": { "latitude": 38.7223, "longitude": -9.1393 },
       "position": { "x": 29, "y": 43 },
       "airport": { "code": "LIS", "name": "Humberto Delgado", "direct": false, "flight_minutes": 470, "transfer_minutes": 25 },
-      "deal": { "headline_price": 327, "total_per_person": 910, "currency": "USD", "trend_pct": -6, "nights": 7, "insight": "שילוב טיסות חכם דרך רומא עם כרטיס אחד", "bookable": false },
+      "deal": { "headline_price": 327, "total_per_person": 910, "currency": "USD", "trend_pct": -6, "nights": 7, "total_scope": "destination_deal", "insight": "שילוב טיסות חכם דרך רומא עם כרטיס אחד", "bookable": false },
       "hotel": { "name": "Baixa Story Hotel", "area": "Baixa", "rating": 4.5, "nightly": 132, "nights": 7, "room_total": 924, "per_person_total": 462, "currency": "USD", "tour_ready": false },
       "weather": { "temperature_c": 21, "condition": "נעים ורוחי", "season_fit": "טוב" },
+      "planning": {
+        "reviewed_on": "2026-07-17",
+        "source_label": "Tra-Vel editorial planning profile",
+        "modules": {
+          "mobility": { "state": "editorial", "headline": "מהשדה לבאישה ועליות בתוך העיר", "detail": "זמן העברה בסיסי של 25 דקות נבדק מול שעה, מלון, מטרו, מונית ומרחק בעלייה.", "next_action": "השוו העברות" },
+          "dining": { "state": "needs_details", "headline": "מסעדות, כשרות וימי טיול", "detail": "מוסיפים כשרות, אלרגיות, תקציב ושעות כדי לשלב אוכל במסלול לעיר ולסינטרה.", "next_action": "הוסיפו העדפות אוכל" },
+          "entry": { "state": "needs_details", "headline": "בדיקת כניסה וקונקשן", "detail": "מאמתים דרכון, אזרחות ותנאי מעבר לפי הכרטיס והמדינה שבה עוצרים.", "next_action": "בדקו תנאי כניסה" },
+          "connectivity": { "state": "editorial", "headline": "eSIM לעיר ולטיולי יום", "detail": "משווים נפח, כיסוי מחוץ לליסבון ושיתוף אינטרנט לפי שבעה ימי נסיעה.", "next_action": "השוו חיבור" },
+          "accessibility": { "state": "needs_details", "headline": "עליות, אבנים, חשמליות וקצב", "detail": "מגבלת הליכה, עגלה ונגישות משנות את אזור הלינה ואת בחירת התחבורה.", "next_action": "התאימו צרכים" },
+          "equipment": { "state": "needs_details", "headline": "נעליים, רוח, חוף וכבודה", "detail": "מחברים עונה וטיולי יום לרשימה שמפרידה בין ציוד חובה לבין מה שאפשר לרכוש במקום.", "next_action": "בנו רשימת ציוד" }
+        },
+        "cost_scope": { "state": "partial", "categories": ["flight", "baggage", "stay", "taxes", "transfers", "local_transport", "activities", "dining", "insurance", "connectivity", "equipment", "entry"] }
+      },
       "tags": ["7 לילות", "עצירה אחת", "מלון מומלץ"],
       "image": "city-prague.webp"
     }
   ],
   "route_sets": {
+    "budapest": [
+      {
+        "id": "budapest-direct",
+        "currency": "USD",
+        "label": "טיסה ישירה לבודפשט",
+        "badge": "הכי פשוט",
+        "duration_minutes": 210,
+        "stops": 0,
+        "via": null,
+        "ticket_mode": "single",
+        "risk": "low",
+        "emissions_kg": 610,
+        "score": 91,
+        "costs": { "flight": 214, "baggage": 45, "hotel": 260, "transfers": 35, "insurance": 38, "overnight": 0, "total": 592 },
+        "pros": ["הדרך הקצרה ביותר", "ללא החלפת מטוס", "כרטיס אחד"],
+        "cons": ["פחות גמישות בשעות", "המחיר דורש אימות חי"]
+      },
+      {
+        "id": "budapest-vienna",
+        "currency": "USD",
+        "label": "דרך וינה והמשך יבשתי",
+        "badge": "חלופה גמישה",
+        "duration_minutes": 360,
+        "stops": 1,
+        "via": "VIE",
+        "ticket_mode": "separate",
+        "risk": "medium",
+        "emissions_kg": 570,
+        "score": 77,
+        "costs": { "flight": 180, "baggage": 55, "hotel": 260, "transfers": 50, "insurance": 38, "overnight": 0, "total": 583 },
+        "pros": ["אפשרות לשלב יעד נוסף", "חלופה כאשר הישיר אינו מתאים"],
+        "cons": ["שני מקטעים נפרדים", "זמן דרך ארוך יותר"]
+      }
+    ],
+    "athens": [
+      {
+        "id": "athens-direct",
+        "currency": "USD",
+        "label": "טיסה ישירה לאתונה",
+        "badge": "הכי מהיר",
+        "duration_minutes": 135,
+        "stops": 0,
+        "via": null,
+        "ticket_mode": "single",
+        "risk": "low",
+        "emissions_kg": 390,
+        "score": 94,
+        "costs": { "flight": 189, "baggage": 40, "hotel": 218, "transfers": 30, "insurance": 34, "overnight": 0, "total": 511 },
+        "pros": ["זמן טיסה קצר", "ללא החלפה", "מתאים לחופשה קצרה"],
+        "cons": ["זמינות משתנה לפי יום", "המחיר דורש אימות חי"]
+      },
+      {
+        "id": "athens-larnaca",
+        "currency": "USD",
+        "label": "דרך לרנקה",
+        "badge": "חלופה בשעות אחרות",
+        "duration_minutes": 300,
+        "stops": 1,
+        "via": "LCA",
+        "ticket_mode": "single",
+        "risk": "low",
+        "emissions_kg": 465,
+        "score": 76,
+        "costs": { "flight": 158, "baggage": 55, "hotel": 218, "transfers": 40, "insurance": 34, "overnight": 0, "total": 505 },
+        "pros": ["עשוי לפתוח שעות נוספות", "כרטיס אחד כאשר מוצע כך"],
+        "cons": ["החלפת מטוס", "כמעט שלוש שעות יותר"]
+      }
+    ],
+    "dubai": [
+      {
+        "id": "dubai-direct",
+        "currency": "USD",
+        "label": "טיסה ישירה לדובאי",
+        "badge": "הכי נוח",
+        "duration_minutes": 205,
+        "stops": 0,
+        "via": null,
+        "ticket_mode": "single",
+        "risk": "low",
+        "emissions_kg": 720,
+        "score": 92,
+        "costs": { "flight": 236, "baggage": 55, "hotel": 340, "transfers": 45, "insurance": 40, "overnight": 0, "total": 716 },
+        "pros": ["ללא החלפת מטוס", "זמן דרך קצר", "כרטיס אחד"],
+        "cons": ["המחיר משתנה במהירות", "יש לבדוק טרמינל וכבודה"]
+      },
+      {
+        "id": "dubai-amman",
+        "currency": "USD",
+        "label": "דרך עמאן",
+        "badge": "חלופת קונקשן",
+        "duration_minutes": 390,
+        "stops": 1,
+        "via": "AMM",
+        "ticket_mode": "single",
+        "risk": "low",
+        "emissions_kg": 760,
+        "score": 74,
+        "costs": { "flight": 205, "baggage": 65, "hotel": 340, "transfers": 55, "insurance": 40, "overnight": 0, "total": 705 },
+        "pros": ["חלופה כאשר הישיר יקר", "כרטיס אחד כאשר מוצע כך"],
+        "cons": ["החלפת מטוס אחת", "יותר משלוש שעות בדרך"]
+      }
+    ],
     "bangkok": [
       {
         "id": "bangkok-direct",
+        "currency": "USD",
         "label": "ישיר עם EL AL",
         "badge": "הכי נוח",
         "duration_minutes": 680,
@@ -115,6 +296,7 @@
       },
       {
         "id": "bangkok-dubai",
+        "currency": "USD",
         "label": "דרך דובאי",
         "badge": "הבחירה החכמה",
         "duration_minutes": 840,
@@ -125,13 +307,14 @@
         "emissions_kg": 1690,
         "score": 93,
         "costs": { "flight": 742, "baggage": 88, "hotel": 390, "transfers": 55, "insurance": 72, "overnight": 0, "total": 1347 },
-        "pros": ["חיסכון של $159", "כרטיס אחד", "עצירה נוחה של 1:55"],
+        "pros": ["כרטיס אחד לכל הדרך", "עצירה נוחה של 1:55", "איזון בין זמן לנוחות"],
         "cons": ["2:40 שעות יותר", "החלפת מטוס אחת"]
       },
       {
         "id": "bangkok-athens",
+        "currency": "USD",
         "label": "עצירת לילה באתונה",
-        "badge": "הכי זול",
+        "badge": "עצירה ארוכה",
         "duration_minutes": 1470,
         "stops": 1,
         "via": "ATH",
@@ -140,8 +323,108 @@
         "emissions_kg": 1775,
         "score": 71,
         "costs": { "flight": 621, "baggage": 110, "hotel": 390, "transfers": 55, "insurance": 72, "overnight": 75, "total": 1323 },
-        "pros": ["המחיר הכולל הנמוך ביותר", "אפשר להוסיף ערב באתונה"],
+        "pros": ["מסלול גמיש דרך אתונה", "אפשר להוסיף ערב באתונה"],
         "cons": ["כרטיסים נפרדים", "סיכון בהחמצת המשך", "לילה נוסף בדרך"]
+      }
+    ],
+    "tokyo": [
+      {
+        "id": "tokyo-dubai",
+        "currency": "USD",
+        "label": "דרך דובאי להנדה",
+        "badge": "כרטיס אחד",
+        "duration_minutes": 930,
+        "stops": 1,
+        "via": "DXB",
+        "ticket_mode": "single",
+        "risk": "low",
+        "emissions_kg": 2380,
+        "score": 90,
+        "costs": { "flight": 918, "baggage": 95, "hotel": 740, "transfers": 60, "insurance": 85, "overnight": 0, "total": 1898 },
+        "pros": ["כרטיס אחד", "העברת כבודה רציפה כאשר כלול", "נחיתה בהנדה"],
+        "cons": ["דרך ארוכה", "יש לבדוק זמן קונקשן"]
+      },
+      {
+        "id": "tokyo-bangkok",
+        "currency": "USD",
+        "label": "דרך בנגקוק עם עצירת לילה",
+        "badge": "מסלול משולב",
+        "duration_minutes": 1740,
+        "stops": 1,
+        "via": "BKK",
+        "ticket_mode": "separate",
+        "risk": "medium",
+        "emissions_kg": 2520,
+        "score": 68,
+        "costs": { "flight": 845, "baggage": 120, "hotel": 740, "transfers": 70, "insurance": 85, "overnight": 80, "total": 1940 },
+        "pros": ["אפשר לשלב יעד נוסף", "גמישות בתאריכים מסוימים"],
+        "cons": ["כרטיסים נפרדים", "לילה בדרך", "סיכון תפעולי גבוה יותר"]
+      },
+      {
+        "id": "tokyo-seoul",
+        "currency": "USD",
+        "label": "דרך סיאול לנריטה",
+        "badge": "חלופה ללא לינת ביניים",
+        "duration_minutes": 1050,
+        "stops": 1,
+        "via": "ICN",
+        "ticket_mode": "single",
+        "risk": "low",
+        "emissions_kg": 2300,
+        "score": 84,
+        "costs": { "flight": 886, "baggage": 100, "hotel": 740, "transfers": 65, "insurance": 85, "overnight": 0, "total": 1876 },
+        "pros": ["ללא לינת ביניים", "כרטיס אחד כאשר מוצע כך", "חלופת נחיתה בנריטה"],
+        "cons": ["זמן דרך ארוך יותר", "יש לבדוק טרמינל וזמן מעבר"]
+      }
+    ],
+    "lisbon": [
+      {
+        "id": "lisbon-rome",
+        "currency": "USD",
+        "label": "דרך רומא בכרטיס אחד",
+        "badge": "האיזון החכם",
+        "duration_minutes": 470,
+        "stops": 1,
+        "via": "FCO",
+        "ticket_mode": "single",
+        "risk": "low",
+        "emissions_kg": 1260,
+        "score": 89,
+        "costs": { "flight": 327, "baggage": 70, "hotel": 462, "transfers": 45, "insurance": 50, "overnight": 0, "total": 954 },
+        "pros": ["כרטיס אחד", "עצירה אחת", "חיבור נוח כאשר הזמן מספיק"],
+        "cons": ["אין מסלול ישיר", "יש לבדוק כבודה וזמן מעבר"]
+      },
+      {
+        "id": "lisbon-athens",
+        "currency": "USD",
+        "label": "דרך אתונה עם עצירת לילה",
+        "badge": "חלופה גמישה",
+        "duration_minutes": 1180,
+        "stops": 1,
+        "via": "ATH",
+        "ticket_mode": "separate",
+        "risk": "medium",
+        "emissions_kg": 1390,
+        "score": 66,
+        "costs": { "flight": 285, "baggage": 95, "hotel": 462, "transfers": 55, "insurance": 50, "overnight": 70, "total": 1017 },
+        "pros": ["אפשר לשלב ערב באתונה", "חלופה לתאריכים מסוימים"],
+        "cons": ["כרטיסים נפרדים", "לילה בדרך", "זמן כולל ארוך"]
+      },
+      {
+        "id": "lisbon-madrid",
+        "currency": "USD",
+        "label": "דרך מדריד בכרטיס אחד",
+        "badge": "חלופה ללא לינת ביניים",
+        "duration_minutes": 520,
+        "stops": 1,
+        "via": "MAD",
+        "ticket_mode": "single",
+        "risk": "low",
+        "emissions_kg": 1190,
+        "score": 86,
+        "costs": { "flight": 305, "baggage": 75, "hotel": 462, "transfers": 48, "insurance": 50, "overnight": 0, "total": 940 },
+        "pros": ["ללא לינת ביניים", "כרטיס אחד כאשר מוצע כך", "עצירה אחת"],
+        "cons": ["אין מסלול ישיר", "יש לאמת כבודה וזמן מעבר"]
       }
     ]
   }

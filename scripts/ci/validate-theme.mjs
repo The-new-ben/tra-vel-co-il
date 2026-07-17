@@ -166,7 +166,9 @@ if (!appJs.includes('initTravelerWorkspace')) failures.push('The app script does
 if (!appJs.includes('createSaveOfferButton')) failures.push('Comparison cards cannot save decisions into the traveler workspace.');
 if (!appJs.includes('initDirectory')) failures.push('The destination directory does not initialize its search and filters.');
 if (!appJs.includes('discoveryDataMode')) failures.push('Map prices are not gated by the live supplier data mode.');
-if (!appJs.includes('hasLiveRouteData = discoveryLiveLayers.airports')) failures.push('Route cards can expose non-live prices as customer inventory.');
+if (!appJs.includes('hasLiveRouteData = discoverySnapshotIsCurrent() && hasRouteSnapshot') || !appJs.includes('צילום ספק קודם · נדרש רענון')) failures.push('Route cards can expose non-current prices without an explicit stale-snapshot label.');
+if (!appJs.includes('discoveryCacheFreshness') || !appJs.includes('discoverySourceFreshness') || !appJs.includes('discoveryFreshnessLabel()')) failures.push('The client collapses cache refresh failures and stale supplier observations into one misleading freshness state.');
+if (!appJs.includes("const modeLabel = discoveryFreshness !== 'current'") || !appJs.includes('הסכומים מסומנים כתצפית קודמת: ${discoveryFreshnessLabel()}')) failures.push('Fallback or source-stale supplier data can still be described as a current update or a failed cache refresh.');
 if (!appJs.includes('מחיר ותנאים יאומתו בחיפוש חי')) failures.push('Non-live route tradeoffs can expose unsupported savings or conditions.');
 if (!appJs.includes('resolveDiscoveryLiveLayers') || !appJs.includes('discoveryLiveLayers.deals') || !appJs.includes('discoveryLiveLayers.weather')) failures.push('Mixed supplier mode is not separated into truthful layer-level provenance.');
 if (!appJs.includes('payload.field_provenance') || !appJs.includes('weather_season') || /function resolveDiscoveryLiveLayers\(providerStatus/.test(appJs)) failures.push('The map can still infer live fields from provider connection instead of server-owned field provenance.');
@@ -176,11 +178,12 @@ if (!appJs.includes("activeLayer = layer && discoveryLayers.has(layer) ? layer :
 if (!appJs.includes('destinationDirectoryUrl(destinationId, planningContext)') || !appJs.includes("destinationPlanUrl('/guides/', params)")) failures.push('Globe destinations without directory coverage can still open an empty filtered guide directory.');
 
 const mapPage = readFileSync(join(themeRoot, 'page-map.php'), 'utf8');
-for (const marker of ['map-view-layout', 'map-support-section', 'map-destination-panel', 'map-depth-section', 'destination-plan-360', 'data-destination-plan', 'data-plan-intent', 'data-plan-flight', 'data-plan-stay', 'data-plan-cover', 'data-plan-total', 'data-mobile-filter-host', 'data-globe-3d', 'data-globe-canvas', 'data-globe-route']) {
+for (const marker of ['map-view-layout', 'map-support-section', 'map-destination-panel', 'map-depth-section', 'destination-plan-360', 'data-destination-plan', 'data-plan-intent', 'data-plan-flight', 'data-plan-stay', 'data-plan-cover', 'data-plan-total', 'data-mobile-filter-host', 'data-budget-coverage', 'data-globe-3d', 'data-globe-canvas', 'data-globe-route', 'data-supported-radius-km', 'data-globe-selection', 'destination-decision-cockpit', 'data-plan-meter', 'data-plan-modules', 'data-plan-ledger', 'data-plan-save']) {
   if (!mapPage.includes(marker)) failures.push(`The unobstructed map architecture is missing ${marker}.`);
 }
 if (mapPage.includes('map-search-floating')) failures.push('The map search must not float over the globe.');
 if (mapPage.includes('style="left:') || mapPage.includes('style="right:')) failures.push('Map information must not use inline overlay positioning.');
+if (!(mapPage.indexOf('class="map-layer-buttons"') < mapPage.indexOf('class="world-canvas"'))) failures.push('Mobile map control DOM order does not match the controls-first visual order.');
 if (!appCss.includes('.theme-map-shell .route-sheet { position: static')) failures.push('Route comparison must remain below the globe in document flow.');
 if (!appCss.includes('.map-mobile-controls { display: none !important; }')) failures.push('The legacy fixed mobile map bar is still allowed to cover the globe.');
 if (!appCss.includes('.whatsapp-button { right: 20px !important; bottom: 20px !important; width: 58px !important;')) failures.push('The legacy WhatsApp action can still cover primary desktop content.');
@@ -191,23 +194,56 @@ if (!/function bindDestinationPin[\s\S]{0,420}addEventListener\('click'[\s\S]{0,
 for (const marker of ['reconcileDestinationPins', 'data-discovery-globe', 'discoveryRequestGeneration', 'AbortController', 'setRouteListBusy(true)', 'renderDiscoveryEmptyState', 'initDestinationPlan', 'updateDestinationPlan', 'mapDestinationWorkspaceItem', 'max_stops', 'max_duration', 'allow_overnight']) {
   if (!appJs.includes(marker)) failures.push(`Map discovery state is missing ${marker}.`);
 }
+for (const marker of ['discoverySelectedPlan', 'initGlobePointSelection', 'renderUnsupportedGlobeSelection', 'renderDestinationDecisionCockpit', 'activePlanCostLedger', 'selectedPlanForDestination', 'לא נמציא יעד']) {
+  if (!appJs.includes(marker)) failures.push(`The every-click 360-degree planning kernel is missing ${marker}.`);
+}
+const fallbackDestinationSource = appJs.match(/const fallbackDestinations = \{([\s\S]*?)\n\};/)?.[1] || '';
+const fallbackDestinationCount = (fallbackDestinationSource.match(/\bid:\s*'/g) || []).length;
+if (!fallbackDestinationCount || (fallbackDestinationSource.match(/\blatitude:/g) || []).length < fallbackDestinationCount || (fallbackDestinationSource.match(/\blongitude:/g) || []).length < fallbackDestinationCount) failures.push('Fallback destinations can lose their Earth coordinates after an empty or filtered response.');
+if (!appJs.includes("event.target.closest('[data-globe-3d][data-discovery-globe]')")) failures.push('Free-point Earth selection can still alter compact guide globes that have no 360-degree result surface.');
+if (!appJs.includes('function resetDestinationPlanTransientState') || (appJs.match(/resetDestinationPlanTransientState\(plan/g) || []).length < 2 || !appJs.includes("plan.removeAttribute('data-destination')")) failures.push('Empty or unsupported Earth selections can retain a previous destination plan or confirmed motion state.');
+const fallbackAssignmentIndex = appJs.indexOf('destinationData = { ...fallbackDestinations };');
+const fallbackRouteResetIndex = appJs.indexOf("activeRouteId = '';", fallbackAssignmentIndex);
+const fallbackSelectionIndex = appJs.indexOf('setActiveDestination(fallbackDestination', fallbackAssignmentIndex);
+if (fallbackAssignmentIndex < 0 || fallbackRouteResetIndex < fallbackAssignmentIndex || fallbackSelectionIndex < fallbackRouteResetIndex) failures.push('A request fallback can rebuild plan links before clearing the previously selected route.');
+if (!appCss.includes('.map-selection-rail { position: relative') || appCss.includes('.map-selection-rail { position: fixed') || appCss.includes('.map-selection-rail { position: absolute')) failures.push('The globe selection handoff must remain in document flow and outside the Earth paint surface.');
+for (const marker of ['.destination-decision-cockpit', '.destination-decision-grid', '.destination-cost-ledger', '@keyframes mapSelectionSignal', '@keyframes globeRouteConfirm']) {
+  if (!appCss.includes(marker)) failures.push(`The 360-degree decision cockpit styling is missing ${marker}.`);
+}
 if (!appCss.includes('@keyframes destinationPlanReveal') || !appCss.includes('@media (prefers-reduced-motion: reduce)')) failures.push('The 360-degree destination plan needs truthful progressive motion and a reduced-motion path.');
 if (!appJs.includes('updateDestinationPlanStages') || !appCss.includes('@keyframes destinationStageConfirm')) failures.push('The 360-degree progress display is not connected to real layer and response state.');
 if (!frontPage.includes('data-home-plan aria-busy="false"') || !appJs.includes("homePlan.setAttribute('aria-busy', String(mode === 'loading'))") || !appCss.includes('@keyframes homePlanConfirm')) failures.push('The homepage 360-degree plan must expose and animate confirmed request progress.');
 if (!appCss.includes('.home-plan-360[aria-busy="true"] [data-home-plan-summary],.home-plan-360.is-updating [data-home-plan-summary]')) failures.push('The homepage progress motion does not provide a reduced-motion path.');
 if (!appJs.includes('runConfirmedPlanAnimation') || !appCss.includes('.is-updating:not([aria-busy="true"])') || !appJs.includes("plan.classList.remove('is-updating')")) failures.push('Confirmed progress animation can leak into a later loading request.');
+if (!appJs.includes('traVelMotionGeneration') || !appJs.includes('responseConfirmed: false')) failures.push('Progress motion is not generation-safe or still treats pre-request selection as a confirmed response.');
+if (!appJs.includes("settledDiscoveryResponseState") || !appJs.includes("responseState: 'fallback'") || !appJs.includes('אפשרויות מצילום קודם') || !appJs.includes('מוכן לחיפוש מחדש')) failures.push('Settled stale and fallback discovery responses can remain presented as actively updating.');
+if (!appJs.includes('מעדכנים את השוואת המסלולים ליעד ולבחירות החדשות') || !/function setRouteListBusy[\s\S]{0,360}list\.replaceChildren\(\)/.test(appJs)) failures.push('A destination refresh can leave the previous destination route cards visible under the new title.');
+if (!appJs.includes('discoveryRequestPending') || !appJs.includes('!discoveryRequestPending && discoverySnapshotIsCurrent()') || !/mode === 'loading'[\s\S]{0,500}save\.disabled = true/.test(appJs) || !/data-map-result[\s\S]{0,140}button\.disabled = true/.test(appJs)) failures.push('Map and plan saves can retain or persist a previous live snapshot while discovery is loading.');
+if (!appJs.includes('const current = !discoveryRequestPending && discoverySnapshotIsCurrent()') || !/mode === 'loading'[\s\S]{0,520}updatePins\(\)[\s\S]{0,520}responseState: 'pending'/.test(appJs) || !appJs.includes('selectedPlanForResponse')) failures.push('A new discovery request can leave previous-result prices or supplier modules visible as the incoming result.');
+if (!appJs.includes("['complete_live', 'partial_live', 'stale_complete', 'stale_partial']")) failures.push('The client can discard truthful complete or stale-complete cost-ledger states.');
+if ((appJs.match(/\['stale_complete', 'stale_partial'\]\.includes\(ledger\.state\)/g) || []).length < 2) failures.push('A stale complete cost ledger can lose its previous-snapshot warning.');
+if (!/data-plan-ledger-state[\s\S]{0,120}'12 /.test(mapPage)) failures.push('The initial decision cockpit does not match the canonical twelve-row cost ledger.');
+if (!appJs.includes('discoveryBudgetCoverage') || !appJs.includes('budgetCoverageLabel()') || !appJs.includes('budget_filter_active') || !appCss.includes('.budget-coverage-note')) failures.push('Partial or absent live-price budget coverage is not disclosed beside the budget control and result status.');
+if (!appJs.includes('activeRouteSelectionLocked') || !appJs.includes("button.setAttribute('aria-pressed'") || !appJs.includes('payload.recommended?.id')) failures.push('Route recommendations and explicit user route choices are not statefully distinguished.');
+if (appJs.includes('Math.max(...discoveryRoutes') || appJs.includes('savings: saved > 0')) failures.push('Client code can still invent verified savings from non-comparable route totals.');
 if (!appJs.includes("{ traVelMap: true, focus: activeDestination || '' }") || !appJs.includes('event.state?.focus') || !appJs.includes('{ focus: historyFocus }')) failures.push('Map Back and Forward history cannot restore an unlocked focused destination.');
 if (!appJs.includes('}, 12000)') || !appJs.includes('timedOut')) failures.push('A stalled discovery request can leave animated progress and controls busy indefinitely.');
 if (!appCss.includes('.home-globe-stack .globe { position: relative; inset: auto;') || !appCss.includes('touch-action: pan-y; cursor: default;') || !appCss.includes('.home-globe-stack .globe-tools { position: static;')) failures.push('The homepage globe can trap mobile scrolling or place controls over the Earth.');
 
 const globeJs = readFileSync(join(themeRoot, 'assets/js/globe-3d.js'), 'utf8');
-for (const marker of ['getContext(\'webgl\'', 'pointerdown', 'IntersectionObserver', 'ResizeObserver', 'prefers-reduced-motion', 'focusDestination', 'boxesOverlap']) {
+for (const marker of ['getContext(\'webgl\'', 'pointerdown', 'IntersectionObserver', 'ResizeObserver', 'prefers-reduced-motion', 'focusDestination', 'boxesOverlap', 'greatCircleDistanceKm', 'globePointFromScreen', 'travelglobe:select', 'supportedRadiusKm', 'pointer.moved', "event.key === 'Enter'", 'pulseRoute']) {
   if (!globeJs.includes(marker)) failures.push(`The production 3D globe is missing ${marker}.`);
 }
 if ((globeJs.match(/state\.visible = document\.visibilityState !== 'hidden'/g) || []).length < 3) failures.push('Globe drag, keyboard and zoom input must wake event-driven rendering.');
 if (!globeJs.includes('mobile && !active ? 44') || !globeJs.includes('const markerHeight = mobile ? 44 : 34')) failures.push('Globe collision geometry does not match the 44px mobile marker targets.');
 if (/addEventListener\(\s*['"]focus['"][\s\S]{0,160}focusDestination/.test(globeJs)) failures.push('Globe markers must not move on focus before their pointer click can synchronize the supporting destination and route panels.');
 if (/https?:\/\//.test(globeJs)) failures.push('The 3D globe must not load unapproved third-party runtime code or textures.');
+if (!/pointerup[\s\S]{0,260}!pointer\.moved[\s\S]{0,220}selectScreenPoint/.test(globeJs)) failures.push('Globe taps are not separated from drags before selecting an Earth point.');
+if (!globeJs.includes('zPitch > 1 / state.distance') || !globeJs.includes("addEventListener('lostpointercapture'")) failures.push('Globe visibility culling or pointer cleanup is not hardened for the perspective camera.');
+if (!globeJs.includes("options.pulse === true") || !appJs.includes('pulseRoute: responseSupportsConfirmedMotion') || !appJs.includes('globeAnimate: false')) failures.push('Stale or fallback discovery outcomes can still receive confirmed route motion.');
+if (!globeJs.includes("root.classList.contains('globe-3d-unavailable')") || !globeJs.includes('return handled;') || !appJs.includes('const handled = window.traVelGlobe3D.zoom')) failures.push('The static Earth zoom fallback is unreachable when WebGL is unavailable.');
+if (!appCss.includes('.theme-map-shell .world-canvas .globe { width: min(640px,100%);') || !appCss.includes('@media (max-width: 1000px)') || !appCss.includes('.theme-map-shell .map-view-layout { grid-template-columns: 1fr;') || !appCss.includes('.theme-map-shell .map-layer-buttons { order: 1;') || !appCss.includes('.theme-map-shell .world-canvas { order: 2;')) failures.push('Tablet map sizing or visual order can clip the Earth or diverge from DOM focus order.');
+if (!appCss.includes('.map-selection-rail.is-updating .map-selection-signal,.map-selection-rail.is-updating .map-selection-copy') || !appCss.includes('.theme-map-shell .globe-webgl.is-routing .globe-route-layer path { animation: none !important; }')) failures.push('New globe progress motion is missing its reduced-motion path.');
 const globeTextureSize = statSync(join(themeRoot, 'assets/images/earth-blue-marble-2048.jpg')).size;
 if (globeTextureSize > 500000) failures.push(`The mobile globe texture is too large (${globeTextureSize} bytes).`);
 
@@ -297,8 +333,13 @@ const supplierRegistry = readFileSync(join(themeRoot, 'inc/suppliers/class-suppl
 if (!discoveryController.includes("'selected_destination' => $selected_id ? $selected_id : null") || !discoveryController.includes("in_array( $selection_target, $destination_ids, true )") || !discoveryController.includes("$route['destination_id'] = $selected_id")) failures.push('Discovery routes are not bound to the resolved visible destination.');
 if (!discoveryController.includes("$selection_target = $destination ? $destination : $focus") || !discoveryController.includes("'focus'") || !appJs.includes("focus: focusedDestination")) failures.push('Layer changes cannot preserve transient globe focus without hard-filtering the destination set.');
 if (!/['"]focus['"][\s\S]{0,220}['"]validate_callback['"]\s*=>\s*['"]rest_validate_request_arg['"]/.test(discoveryController) || !/['"]destination['"][\s\S]{0,220}['"]validate_callback['"]\s*=>\s*['"]rest_validate_request_arg['"]/.test(discoveryController)) failures.push('Destination and transient focus REST parameters lack strict type validation.');
-if (!discoveryController.includes("$field_provenance['deals']['live']") || /\$package_prices_live|\$component_prices_live/.test(discoveryController)) failures.push('Discovery budget filtering is not gated by live deal-field provenance.');
-if (!supplierRegistry.includes('detect_field_provenance') || !supplierRegistry.includes("array( 'deals', 'packages' )") || !supplierRegistry.includes("'weather_season'")) failures.push('Supplier merging does not fail closed at field-level provenance boundaries.');
+if (!discoveryController.includes("field_live_destination_ids( $field_provenance, 'deals' )") || !discoveryController.includes('in_array( $item[\'id\'], $live_deal_destination_ids, true )') || /\$package_prices_live|\$component_prices_live/.test(discoveryController)) failures.push('Discovery budget filtering is not gated by exact destination deal-price provenance.');
+for (const marker of ['prepare_selected_plan', 'planning_profile_module', 'prepare_selected_plan_cost_ledger', 'selected_plan_schema', "'selected_plan'", "'booking_confirmed'", "'comparable_verified'"]) {
+  if (!discoveryController.includes(marker)) failures.push(`The discovery REST response is missing truthful selected-plan behavior: ${marker}.`);
+}
+if (!discoveryController.includes('$usable_live_route') || !discoveryController.includes("'savings'             => null") || !discoveryController.includes("'state'       => $is_live ? ( $supplier_current ? 'live' : 'stale' ) : 'needs_search'")) failures.push('The selected-plan ledger can expose demo, stale, incomplete, or non-comparable prices without truthful state gating.');
+if (!discoveryController.includes("'retrieved_at'") || !discoveryController.includes("'cost_components'") || !discoveryController.includes("'total_live'")) failures.push('Selected-plan monetary provenance is missing retrieval, component ownership, or total-scope metadata.');
+if (!supplierRegistry.includes('detect_field_provenance') || !supplierRegistry.includes("array( 'deals', 'packages' )") || !supplierRegistry.includes("'weather_season'") || !supplierRegistry.includes('route_cost_metadata') || !supplierRegistry.includes("'retrieved_at'")) failures.push('Supplier merging does not fail closed at destination and component provenance boundaries.');
 for (const marker of ["'trip'", "'max_stops'", "'max_duration'", "'allow_overnight'", "'comfort' === $sort"]) {
   if (!discoveryController.includes(marker)) failures.push(`Discovery intent filtering is missing ${marker}.`);
 }

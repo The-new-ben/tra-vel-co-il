@@ -17,12 +17,28 @@ The production globe is a progressively enhanced travel-discovery surface. It us
 ## Interaction contract
 
 - Pointer drag rotates the globe.
+- A short pointer tap inside the visible sphere is ray-cast back to latitude and longitude. It resolves to a reviewed city only inside a strict 100 km point radius. Every other coordinate remains an explicit free map point and opens an honest agent handoff instead of silently changing the user's place.
+- A point outside supported coverage still produces a truthful result: the coordinates are retained, the interface states that structured coverage is unavailable, and the AI continuation receives the point without inventing a city.
 - Destination buttons remain real DOM controls above the canvas.
 - Selecting or focusing a destination rotates it to the center and updates the information section below the map.
 - Plus and minus controls provide a simple-pointer zoom alternative.
-- Arrow keys rotate the globe, plus and minus zoom, and Home resets the view.
+- Arrow keys rotate the globe, plus and minus zoom, Home resets the view, and Enter or Space selects the geographic point at the center of the current view.
 - Reduced-motion preferences disable animated camera transitions.
-- Mobile non-selected destinations use 24 by 24 pixel hit targets with smaller visual dots.
+- Mobile non-selected destinations retain 44 by 44 pixel hit targets with smaller visual dots.
+
+Tap and drag are separated by an eight-pixel movement threshold and a 700 ms tap window. Vertical browser scrolling remains available through `touch-action: pan-y`; a cancelled browser gesture cannot become an Earth selection.
+
+## Selected Area 360 kernel
+
+Every supported selection opens a normal-flow decision cockpit below the globe. The discovery response owns a `selected_plan` with twelve areas: route, stay, mobility, activities, dining, weather, entry, connectivity, accessibility, insurance, equipment, and total cost. Each module declares `live`, `editorial`, `needs_details`, `needs_search`, `unknown`, or `unavailable` state plus provenance and a next action.
+
+The coverage meter describes mapped decision areas, not booking completion. The cost ledger always lists the complete in-scope category set and exposes an amount only when destination-scoped, component-level supplier provenance owns that value and currency. Route totals remain hidden unless the supplier explicitly owns the total scope. Savings remain hidden until a server contract proves an equivalent comparison cohort, comparator identity, dates, travelers, inclusions, taxes, currency, and retrieval time. Route selection updates the shared cockpit, save context, AI context, and cost ledger.
+
+Selection, route, module, ledger, and meter transitions animate confirmed interface changes. Reduced-motion users receive the same states with no motion. No new result, action, or progress surface is positioned over the Earth.
+
+Supplier origin and freshness are separate dimensions. A failed or in-progress refresh can preserve the last observed supplier snapshot and its timestamps, but every affected module and amount switches to a stale state, live-price filtering is disabled, the response is not cached, and confirmation motion does not run. Only `fresh` or newly resolved `miss` responses may complete supplier-backed progress stages.
+
+The race-condition acceptance test is Bangkok, Tokyo, then Lisbon in rapid succession. Only Lisbon may finish, announce, animate confirmed stages, or enable its plan state. Aborted and late responses must not mutate the newest selection.
 
 ## Geographic projection
 

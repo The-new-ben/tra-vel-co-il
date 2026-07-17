@@ -188,6 +188,49 @@
     return normalizeAngle(to - from);
   }
 
+  function greatCircleDistanceKm(first, second) {
+    const latitudeDelta = (second.latitude - first.latitude) * DEG;
+    const longitudeDelta = (second.longitude - first.longitude) * DEG;
+    const firstLatitude = first.latitude * DEG;
+    const secondLatitude = second.latitude * DEG;
+    const haversine = Math.sin(latitudeDelta / 2) ** 2 +
+      Math.cos(firstLatitude) * Math.cos(secondLatitude) * Math.sin(longitudeDelta / 2) ** 2;
+    return 6371 * 2 * Math.atan2(Math.sqrt(haversine), Math.sqrt(Math.max(0, 1 - haversine)));
+  }
+
+  function globePointFromScreen(x, y, width, height, state) {
+    if (!(width > 0) || !(height > 0)) return null;
+    const field = 1 / Math.tan(40 * DEG / 2);
+    const aspect = width / height;
+    const ndcX = (x / width) * 2 - 1;
+    const ndcY = 1 - (y / height) * 2;
+    const ray = [ndcX * aspect / field, ndcY / field, -1];
+    const rayLength = Math.hypot(...ray);
+    const direction = ray.map(component => component / rayLength);
+    const cameraToCenter = state.distance;
+    const projection = direction[2] * cameraToCenter;
+    const discriminant = projection ** 2 - (cameraToCenter ** 2 - 1);
+    if (discriminant < 0) return null;
+    const distanceAlongRay = -projection - Math.sqrt(discriminant);
+    if (!(distanceAlongRay > 0)) return null;
+
+    const xYaw = direction[0] * distanceAlongRay;
+    const yPitch = direction[1] * distanceAlongRay;
+    const zPitch = direction[2] * distanceAlongRay + state.distance;
+    const cosPitch = Math.cos(state.pitch);
+    const sinPitch = Math.sin(state.pitch);
+    const yWorld = yPitch * cosPitch + zPitch * sinPitch;
+    const zYaw = -yPitch * sinPitch + zPitch * cosPitch;
+    const cosYaw = Math.cos(state.yaw);
+    const sinYaw = Math.sin(state.yaw);
+    const xWorld = xYaw * cosYaw - zYaw * sinYaw;
+    const zWorld = xYaw * sinYaw + zYaw * cosYaw;
+    return {
+      latitude: Math.asin(clamp(yWorld, -1, 1)) / DEG,
+      longitude: Math.atan2(xWorld, zWorld) / DEG
+    };
+  }
+
   function projectedPoint(latitude, longitude, state, width, height) {
     const latitudeRadians = latitude * DEG;
     const longitudeRadians = longitude * DEG;
@@ -211,7 +254,7 @@
       x: (xNdc * 0.5 + 0.5) * width,
       y: (-yNdc * 0.5 + 0.5) * height,
       depth: zPitch,
-      visible: zPitch > 0.035 && denominator > 0
+      visible: zPitch > 1 / state.distance && denominator > 0
     };
   }
 
@@ -272,6 +315,7 @@
       animation: null,
       frame: 0,
       pointer: null,
+      routeTimer: 0,
       textureReady: false
     };
     const origin = {
@@ -320,7 +364,7 @@
     }
 
     function updateMarkers(width, height) {
-      const mobile = window.matchMedia('(max-width: 760px)').matches;
+      const mobile = window.matchMedia('(max-width: 1000px)').matches;
       const projected = new Map();
       const candidates = [];
       markers().forEach(marker => {
@@ -440,13 +484,28 @@
       requestRender();
     }
 
-    function focusDestination(id, animate = true) {
+    function pulseRoute() {
+      root.classList.remove('is-routing');
+      if (state.routeTimer) window.clearTimeout(state.routeTimer);
+      if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        void root.offsetWidth;
+        root.classList.add('is-routing');
+        state.routeTimer = window.setTimeout(() => root.classList.remove('is-routing'), 920);
+      }
+    }
+
+    function focusDestination(id, options = true) {
+      if (root.classList.contains('globe-3d-unavailable')) return false;
+      const animate = typeof options === 'object' ? options.animate !== false : Boolean(options);
+      const pulse = typeof options === 'object' ? options.pulse === true : Boolean(options);
       const marker = root.querySelector(`.price-pin[data-destination="${CSS.escape(id)}"]`);
-      if (!marker) return;
+      if (!marker) return false;
       const latitude = Number(marker.dataset.latitude);
       const longitude = Number(marker.dataset.longitude);
-      if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
+      if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return false;
+      if (!animate) state.animation = null;
       state.selected = id;
+      if (pulse) pulseRoute();
       markers().forEach(item => {
         const active = item.dataset.destination === id;
         item.classList.toggle('is-active', active);
@@ -460,13 +519,60 @@
         state.pitch = clamp(targetPitch, -70 * DEG, 70 * DEG);
         requestRender();
       }
-      if (liveRegion) liveRegion.textContent = `${marker.textContent.trim()} במרכז הגלובוס`;
+      if (liveRegion) liveRegion.textContent = `${marker.getAttribute('aria-label') || marker.textContent.trim()} במרכז הגלובוס`;
+      return true;
+    }
+
+    function selectScreenPoint(clientX, clientY, inputType = 'pointer') {
+      if (!root.matches('[data-discovery-globe]')) {
+        if (liveRegion) liveRegion.textContent = 'בחירת נקודה חופשית זמינה במסך המפה המלא.';
+        return false;
+      }
+      const rectangle = root.getBoundingClientRect();
+      const point = globePointFromScreen(clientX - rectangle.left, clientY - rectangle.top, rectangle.width, rectangle.height, state);
+      if (!point) {
+        if (liveRegion) liveRegion.textContent = 'הנקודה מחוץ לכדור הארץ. נסו לבחור בתוך הגלובוס.';
+        return false;
+      }
+      const candidates = markers()
+        .filter(marker => state.available.has(marker.dataset.destination))
+        .map(marker => ({
+          id: marker.dataset.destination,
+          label: marker.getAttribute('aria-label') || marker.textContent.trim(),
+          latitude: Number(marker.dataset.latitude),
+          longitude: Number(marker.dataset.longitude)
+        }))
+        .filter(marker => Number.isFinite(marker.latitude) && Number.isFinite(marker.longitude))
+        .map(marker => ({ ...marker, distanceKm: greatCircleDistanceKm(point, marker) }))
+        .sort((first, second) => first.distanceKm - second.distanceKm);
+      const nearest = candidates[0] || null;
+      const supportedRadiusKm = clamp(Number(root.dataset.supportedRadiusKm || 100), 100, 5000);
+      const supported = Boolean(nearest && nearest.distanceKm <= supportedRadiusKm);
+      const detail = {
+        latitude: Number(point.latitude.toFixed(4)),
+        longitude: Number(point.longitude.toFixed(4)),
+        inputType,
+        supported,
+        supportedRadiusKm,
+        nearestDestination: nearest?.id || '',
+        nearestLabel: nearest?.label || '',
+        distanceKm: nearest ? Math.round(nearest.distanceKm) : null
+      };
+      root.dispatchEvent(new CustomEvent('travelglobe:select', { bubbles: true, detail }));
+      if (liveRegion) {
+        liveRegion.textContent = supported
+          ? `${nearest.label} נבחרה. תוכנית 360 מעלות מתעדכנת מתחת למפה.`
+          : `הנקודה נבחרה. אין עדיין כיסוי מובנה באזור הזה, והסוכן יכול להמשיך ממנה.`;
+      }
+      return true;
     }
 
     function zoom(direction) {
+      if (root.classList.contains('globe-3d-unavailable')) return false;
       state.visible = document.visibilityState !== 'hidden';
       const change = direction === 'in' ? -0.32 : 0.32;
       animateTo(state.yaw, state.pitch, clamp(state.distance + change, 2.25, 4.8), 260);
+      return true;
     }
 
     function setDestinations(data) {
@@ -519,10 +625,18 @@
     image.src = root.dataset.texture;
 
     root.addEventListener('pointerdown', event => {
-      if (event.target.closest('.price-pin')) return;
+      if (!event.isPrimary || event.button !== 0 || event.target.closest('.price-pin')) return;
       state.visible = document.visibilityState !== 'hidden';
       state.animation = null;
-      state.pointer = { id: event.pointerId, x: event.clientX, y: event.clientY };
+      state.pointer = {
+        id: event.pointerId,
+        x: event.clientX,
+        y: event.clientY,
+        startX: event.clientX,
+        startY: event.clientY,
+        moved: false,
+        startedAt: performance.now()
+      };
       root.classList.add('is-dragging');
       root.setPointerCapture(event.pointerId);
     });
@@ -530,6 +644,7 @@
       if (!state.pointer || state.pointer.id !== event.pointerId) return;
       const deltaX = event.clientX - state.pointer.x;
       const deltaY = event.clientY - state.pointer.y;
+      if (Math.hypot(event.clientX - state.pointer.startX, event.clientY - state.pointer.startY) > 8) state.pointer.moved = true;
       state.pointer.x = event.clientX;
       state.pointer.y = event.clientY;
       state.yaw = normalizeAngle(state.yaw + deltaX * 0.0062);
@@ -538,23 +653,41 @@
     });
     const endPointer = event => {
       if (!state.pointer || state.pointer.id !== event.pointerId) return;
+      const pointer = state.pointer;
       state.pointer = null;
       root.classList.remove('is-dragging');
       if (root.hasPointerCapture(event.pointerId)) root.releasePointerCapture(event.pointerId);
+      if (event.type === 'pointerup' && !pointer.moved && performance.now() - pointer.startedAt < 700) {
+        selectScreenPoint(event.clientX, event.clientY, 'pointer');
+      }
     };
     root.addEventListener('pointerup', endPointer);
     root.addEventListener('pointercancel', endPointer);
+    root.addEventListener('lostpointercapture', endPointer);
     root.addEventListener('keydown', event => {
       if (event.target.closest('.price-pin')) return;
       state.visible = document.visibilityState !== 'hidden';
       const step = event.shiftKey ? 18 * DEG : 8 * DEG;
-      if (event.key === 'ArrowLeft') state.yaw = normalizeAngle(state.yaw - step);
-      else if (event.key === 'ArrowRight') state.yaw = normalizeAngle(state.yaw + step);
-      else if (event.key === 'ArrowUp') state.pitch = clamp(state.pitch - step, -70 * DEG, 70 * DEG);
-      else if (event.key === 'ArrowDown') state.pitch = clamp(state.pitch + step, -70 * DEG, 70 * DEG);
-      else if (event.key === '+' || event.key === '=') zoom('in');
+      if (event.key === 'ArrowLeft') {
+        state.animation = null;
+        state.yaw = normalizeAngle(state.yaw - step);
+      } else if (event.key === 'ArrowRight') {
+        state.animation = null;
+        state.yaw = normalizeAngle(state.yaw + step);
+      } else if (event.key === 'ArrowUp') {
+        state.animation = null;
+        state.pitch = clamp(state.pitch - step, -70 * DEG, 70 * DEG);
+      } else if (event.key === 'ArrowDown') {
+        state.animation = null;
+        state.pitch = clamp(state.pitch + step, -70 * DEG, 70 * DEG);
+      } else if (event.key === '+' || event.key === '=') zoom('in');
       else if (event.key === '-') zoom('out');
       else if (event.key === 'Home') animateTo(0, 12 * DEG, 3.15);
+      else if (event.key === 'Enter' || event.key === ' ') {
+        state.animation = null;
+        const rectangle = root.getBoundingClientRect();
+        selectScreenPoint(rectangle.left + rectangle.width / 2, rectangle.top + rectangle.height / 2, 'keyboard');
+      }
       else return;
       event.preventDefault();
       requestRender();
@@ -581,7 +714,7 @@
     });
 
     requestRender();
-    return { focusDestination, zoom, setDestinations, clearSelection, requestRender };
+    return { focusDestination, zoom, setDestinations, clearSelection, pulseRoute, requestRender };
   }
 
   function initialize() {
@@ -592,8 +725,8 @@
   }
 
   window.traVelGlobe3D = {
-    focusDestination(id, animate = true) {
-      controllers.forEach(controller => controller.focusDestination(id, animate));
+    focusDestination(id, options = true) {
+      controllers.forEach(controller => controller.focusDestination(id, options));
     },
     setDestinations(data) {
       controllers.forEach(controller => controller.setDestinations(data));
@@ -602,7 +735,12 @@
       controllers.forEach(controller => controller.clearSelection());
     },
     zoom(direction) {
-      controllers.forEach(controller => controller.zoom(direction));
+      let handled = false;
+      controllers.forEach(controller => { handled = controller.zoom(direction) || handled; });
+      return handled;
+    },
+    pulseRoute() {
+      controllers.forEach(controller => controller.pulseRoute());
     },
     requestRender() {
       controllers.forEach(controller => controller.requestRender());
