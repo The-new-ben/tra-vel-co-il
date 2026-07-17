@@ -145,6 +145,7 @@ if (!appCss.includes('direction: rtl')) failures.push('RTL direction is missing 
 if (!appCss.includes("../images/earth-blue-marble.jpg")) failures.push('The production globe image path is not theme-relative.');
 
 const appJs = readFileSync(join(themeRoot, 'assets/js/app.js'), 'utf8');
+const frontPage = readFileSync(join(themeRoot, 'front-page.php'), 'utf8');
 if (!appJs.includes('window.traVelV2')) failures.push('The app script is not connected to localized WordPress configuration.');
 if (!appJs.includes('agentRestUrl') || !appJs.includes("agentApiRequest('/runs'")) failures.push('The AI planner is not connected to the private Agent Core POST contract.');
 if (!appJs.includes('window.sessionStorage') || !appJs.includes("credentials: 'same-origin'")) failures.push('The private agent run ID is not retained per tab or requests do not include the protected same-origin cookie.');
@@ -165,11 +166,17 @@ if (!appJs.includes('initTravelerWorkspace')) failures.push('The app script does
 if (!appJs.includes('createSaveOfferButton')) failures.push('Comparison cards cannot save decisions into the traveler workspace.');
 if (!appJs.includes('initDirectory')) failures.push('The destination directory does not initialize its search and filters.');
 if (!appJs.includes('discoveryDataMode')) failures.push('Map prices are not gated by the live supplier data mode.');
-if (!appJs.includes("hasLiveRouteData = discoveryDataMode === 'live'")) failures.push('Route cards can expose non-live prices as customer inventory.');
+if (!appJs.includes('hasLiveRouteData = discoveryLiveLayers.airports')) failures.push('Route cards can expose non-live prices as customer inventory.');
 if (!appJs.includes('מחיר ותנאים יאומתו בחיפוש חי')) failures.push('Non-live route tradeoffs can expose unsupported savings or conditions.');
+if (!appJs.includes('resolveDiscoveryLiveLayers') || !appJs.includes('discoveryLiveLayers.deals') || !appJs.includes('discoveryLiveLayers.weather')) failures.push('Mixed supplier mode is not separated into truthful layer-level provenance.');
+if (!appJs.includes('payload.field_provenance') || !appJs.includes('weather_season') || /function resolveDiscoveryLiveLayers\(providerStatus/.test(appJs)) failures.push('The map can still infer live fields from provider connection instead of server-owned field provenance.');
+if (!appJs.includes('התנאים הנוכחיים עודכנו. התאמת העונה תיבדק לפי תאריך הנסיעה')) failures.push('Live current weather can still certify an editorial season recommendation.');
+if (!appJs.includes("trip_destination: data.id")) failures.push('Map insurance actions do not preserve the selected destination context.');
+if (!appJs.includes("activeLayer = layer && discoveryLayers.has(layer) ? layer : 'deals'") || !appJs.includes("activePlanIntent = intent && destinationPlanIntents[intent] ? intent : 'smart'") || !appJs.includes('intentConstraints')) failures.push('Map history and intent-only deep links cannot restore deterministic discovery defaults.');
+if (!appJs.includes('destinationDirectoryUrl(destinationId, planningContext)') || !appJs.includes("destinationPlanUrl('/guides/', params)")) failures.push('Globe destinations without directory coverage can still open an empty filtered guide directory.');
 
 const mapPage = readFileSync(join(themeRoot, 'page-map.php'), 'utf8');
-for (const marker of ['map-view-layout', 'map-support-section', 'map-destination-panel', 'map-depth-section', 'data-globe-3d', 'data-globe-canvas', 'data-globe-route']) {
+for (const marker of ['map-view-layout', 'map-support-section', 'map-destination-panel', 'map-depth-section', 'destination-plan-360', 'data-destination-plan', 'data-plan-intent', 'data-plan-flight', 'data-plan-stay', 'data-plan-cover', 'data-plan-total', 'data-mobile-filter-host', 'data-globe-3d', 'data-globe-canvas', 'data-globe-route']) {
   if (!mapPage.includes(marker)) failures.push(`The unobstructed map architecture is missing ${marker}.`);
 }
 if (mapPage.includes('map-search-floating')) failures.push('The map search must not float over the globe.');
@@ -178,14 +185,28 @@ if (!appCss.includes('.theme-map-shell .route-sheet { position: static')) failur
 if (!appCss.includes('.map-mobile-controls { display: none !important; }')) failures.push('The legacy fixed mobile map bar is still allowed to cover the globe.');
 if (!appCss.includes('.whatsapp-button { right: 20px !important; bottom: 20px !important; width: 58px !important;')) failures.push('The legacy WhatsApp action can still cover primary desktop content.');
 if (!appCss.includes('.whatsapp-button { display: none !important; }')) failures.push('The legacy WhatsApp action can still cover mobile content and inline actions.');
-if (!appCss.includes('.theme-map-shell .globe-webgl .price-pin:not(.is-active) { width: 24px; height: 24px; min-width: 24px;')) failures.push('Mobile globe destination targets must retain a 24px hit area.');
+if (!appCss.includes('.theme-map-shell .globe-webgl .price-pin:not(.is-active) { width: 44px; height: 44px; min-width: 44px;')) failures.push('Mobile globe destination targets must retain a 44px hit area.');
 if (!appCss.includes('transform: scale(var(--globe-depth,1));')) failures.push('Globe depth must scale the visual marker without shrinking its mobile hit area.');
+if (!/function bindDestinationPin[\s\S]{0,420}addEventListener\('click'[\s\S]{0,220}setActiveDestination\([\s\S]{0,220}hydrateDiscovery\(/.test(appJs)) failures.push('Globe marker clicks must synchronize the destination support panel before refreshing discovery data.');
+for (const marker of ['reconcileDestinationPins', 'data-discovery-globe', 'discoveryRequestGeneration', 'AbortController', 'setRouteListBusy(true)', 'renderDiscoveryEmptyState', 'initDestinationPlan', 'updateDestinationPlan', 'mapDestinationWorkspaceItem', 'max_stops', 'max_duration', 'allow_overnight']) {
+  if (!appJs.includes(marker)) failures.push(`Map discovery state is missing ${marker}.`);
+}
+if (!appCss.includes('@keyframes destinationPlanReveal') || !appCss.includes('@media (prefers-reduced-motion: reduce)')) failures.push('The 360-degree destination plan needs truthful progressive motion and a reduced-motion path.');
+if (!appJs.includes('updateDestinationPlanStages') || !appCss.includes('@keyframes destinationStageConfirm')) failures.push('The 360-degree progress display is not connected to real layer and response state.');
+if (!frontPage.includes('data-home-plan aria-busy="false"') || !appJs.includes("homePlan.setAttribute('aria-busy', String(mode === 'loading'))") || !appCss.includes('@keyframes homePlanConfirm')) failures.push('The homepage 360-degree plan must expose and animate confirmed request progress.');
+if (!appCss.includes('.home-plan-360[aria-busy="true"] [data-home-plan-summary],.home-plan-360.is-updating [data-home-plan-summary]')) failures.push('The homepage progress motion does not provide a reduced-motion path.');
+if (!appJs.includes('runConfirmedPlanAnimation') || !appCss.includes('.is-updating:not([aria-busy="true"])') || !appJs.includes("plan.classList.remove('is-updating')")) failures.push('Confirmed progress animation can leak into a later loading request.');
+if (!appJs.includes("{ traVelMap: true, focus: activeDestination || '' }") || !appJs.includes('event.state?.focus') || !appJs.includes('{ focus: historyFocus }')) failures.push('Map Back and Forward history cannot restore an unlocked focused destination.');
+if (!appJs.includes('}, 12000)') || !appJs.includes('timedOut')) failures.push('A stalled discovery request can leave animated progress and controls busy indefinitely.');
+if (!appCss.includes('.home-globe-stack .globe { position: relative; inset: auto;') || !appCss.includes('touch-action: pan-y; cursor: default;') || !appCss.includes('.home-globe-stack .globe-tools { position: static;')) failures.push('The homepage globe can trap mobile scrolling or place controls over the Earth.');
 
 const globeJs = readFileSync(join(themeRoot, 'assets/js/globe-3d.js'), 'utf8');
 for (const marker of ['getContext(\'webgl\'', 'pointerdown', 'IntersectionObserver', 'ResizeObserver', 'prefers-reduced-motion', 'focusDestination', 'boxesOverlap']) {
   if (!globeJs.includes(marker)) failures.push(`The production 3D globe is missing ${marker}.`);
 }
 if ((globeJs.match(/state\.visible = document\.visibilityState !== 'hidden'/g) || []).length < 3) failures.push('Globe drag, keyboard and zoom input must wake event-driven rendering.');
+if (!globeJs.includes('mobile && !active ? 44') || !globeJs.includes('const markerHeight = mobile ? 44 : 34')) failures.push('Globe collision geometry does not match the 44px mobile marker targets.');
+if (/addEventListener\(\s*['"]focus['"][\s\S]{0,160}focusDestination/.test(globeJs)) failures.push('Globe markers must not move on focus before their pointer click can synchronize the supporting destination and route panels.');
 if (/https?:\/\//.test(globeJs)) failures.push('The 3D globe must not load unapproved third-party runtime code or textures.');
 const globeTextureSize = statSync(join(themeRoot, 'assets/images/earth-blue-marble-2048.jpg')).size;
 if (globeTextureSize > 500000) failures.push(`The mobile globe texture is too large (${globeTextureSize} bytes).`);
@@ -199,6 +220,9 @@ if (!seoSource.includes('lastReviewed')) failures.push('Destination guide schema
 if (!seoSource.includes('CollectionPage') || !seoSource.includes('ItemList')) failures.push('Editorial directories are missing CollectionPage and ItemList schema.');
 if (seoSource.includes("'FAQPage'") || seoSource.includes('"FAQPage"')) failures.push('Travel guides must not chase unavailable FAQ rich results.');
 if (!seoSource.includes("$robots['noindex']")) failures.push('Faceted and personal routes are missing an explicit noindex policy.');
+for (const facet of ['focus', 'layer', 'intent', 'trip', 'max_stops', 'max_duration', 'allow_overnight', 'trip_destination']) {
+  if (!seoSource.includes(`'${facet}'`)) failures.push(`The SEO noindex policy is missing ${facet}.`);
+}
 if (!seoSource.includes("add_filter( 'document_title_parts', 'tra_vel_v2_document_title_parts' )")) failures.push('Public document titles are not protected from the legacy Europe-only site name.');
 if (!seoSource.includes("add_filter( 'wpseo_title', 'tra_vel_v2_public_seo_title' )") || !seoSource.includes("add_filter( 'wpseo_schema_website', 'tra_vel_v2_enrich_yoast_website_schema' )")) failures.push('Yoast can still expose the legacy Europe-only site name.');
 
@@ -218,7 +242,10 @@ if (/מפת העריכה|במחקר|בדיקת מערכת|מדריך דגל|מח
 if (/[—–]/u.test(destinationPage) || /[—–]/u.test(publicDirectoryPage)) failures.push('Public destination templates must not use em dash or en dash punctuation.');
 const commercialExperiencePage = readFileSync(join(themeRoot, 'page-experience.php'), 'utf8');
 if (/הגרסה הבאה|המבנה והמסע מוכנים|יחוברו ספקים/u.test(commercialExperiencePage)) failures.push('Commercial experience pages expose internal roadmap language.');
+if (/החיבור בבנייה/u.test(commercialExperiencePage) || /ספק חלקי/u.test(appJs)) failures.push('Consumer comparison status exposes internal build or supplier language.');
 if (!commercialExperiencePage.includes('commercial-assurance')) failures.push('Commercial experience pages are missing the assisted-sales trust boundary.');
+if (!commercialExperiencePage.includes("'easy'      => 'comfort'") || !commercialExperiencePage.includes("'adventure' => 'adventure'") || !commercialExperiencePage.includes('checked( $flight_direct )') || !commercialExperiencePage.includes('$package_budget_total')) failures.push('Package planning does not preserve map intent, directness, and budget context.');
+if (!commercialExperiencePage.includes('$allow_overnight') || !appJs.includes('allow_overnight: discoveryQuery.allow_overnight ? 1')) failures.push('The 360-degree AI and package handoffs drop the overnight preference.');
 
 const directoryPage = readFileSync(join(themeRoot, 'page-directory.php'), 'utf8');
 for (const marker of ['data-directory-root', 'data-directory-filter', 'data-directory-grid', 'directory-map-pin', 'editorial-directory.json']) {
@@ -254,6 +281,15 @@ else {
 }
 
 const discoveryController = readFileSync(join(themeRoot, 'inc/discovery.php'), 'utf8');
+const supplierRegistry = readFileSync(join(themeRoot, 'inc/suppliers/class-supplier-registry.php'), 'utf8');
+if (!discoveryController.includes("'selected_destination' => $selected_id ? $selected_id : null") || !discoveryController.includes("in_array( $selection_target, $destination_ids, true )") || !discoveryController.includes("$route['destination_id'] = $selected_id")) failures.push('Discovery routes are not bound to the resolved visible destination.');
+if (!discoveryController.includes("$selection_target = $destination ? $destination : $focus") || !discoveryController.includes("'focus'") || !appJs.includes("focus: focusedDestination")) failures.push('Layer changes cannot preserve transient globe focus without hard-filtering the destination set.');
+if (!/['"]focus['"][\s\S]{0,220}['"]validate_callback['"]\s*=>\s*['"]rest_validate_request_arg['"]/.test(discoveryController) || !/['"]destination['"][\s\S]{0,220}['"]validate_callback['"]\s*=>\s*['"]rest_validate_request_arg['"]/.test(discoveryController)) failures.push('Destination and transient focus REST parameters lack strict type validation.');
+if (!discoveryController.includes("$field_provenance['deals']['live']") || /\$package_prices_live|\$component_prices_live/.test(discoveryController)) failures.push('Discovery budget filtering is not gated by live deal-field provenance.');
+if (!supplierRegistry.includes('detect_field_provenance') || !supplierRegistry.includes("array( 'deals', 'packages' )") || !supplierRegistry.includes("'weather_season'")) failures.push('Supplier merging does not fail closed at field-level provenance boundaries.');
+for (const marker of ["'trip'", "'max_stops'", "'max_duration'", "'allow_overnight'", "'comfort' === $sort"]) {
+  if (!discoveryController.includes(marker)) failures.push(`Discovery intent filtering is missing ${marker}.`);
+}
 if (/function\s+get_items\s*\(\s*WP_REST_Request\b/.test(discoveryController)) {
   failures.push('REST controller overrides must keep the untyped WP_REST_Controller method signature for PHP 8 compatibility.');
 }
@@ -264,6 +300,8 @@ const flightController = readFileSync(join(themeRoot, 'inc/flights/class-flight-
 if (/function\s+get_items\s*\(\s*WP_REST_Request\b/.test(flightController)) {
   failures.push('Flight REST controller overrides must keep the untyped WP_REST_Controller method signature for PHP 8 compatibility.');
 }
+if (!flightController.includes("'max_duration'") || !flightController.includes("'maximum' => 3000") || !commercialExperiencePage.includes('name="max_duration"')) failures.push('Map route-duration intent is not enforced by the flight search contract.');
+if (!flightController.includes("'max_stops'      => array( 'type' => 'integer', 'default' => 1, 'minimum' => 0, 'maximum' => 3")) failures.push('Map and flight search disagree on the supported stop range.');
 if (!flightController.includes("'/flights/cache'")) failures.push('The flight cache administration route is missing.');
 if (!flightController.includes("current_user_can( 'manage_options' )")) failures.push('Flight cache mutation lacks a manage_options capability check.');
 
@@ -349,6 +387,7 @@ if (!appJs.includes('startCommercialHandoff') || !appJs.includes('tra-vel-concie
 if (!handoffController.includes('allowed_hosts')) failures.push('Supplier handoffs must enforce an explicit host allowlist.');
 
 const experiencePage = readFileSync(join(themeRoot, 'page-experience.php'), 'utf8');
+if (!experiencePage.includes('$agent_destination') || !experiencePage.includes('$agent_intents') || !experiencePage.includes('esc_textarea( $agent_prompt )')) failures.push('Destination-to-agent handoff cannot safely prefill the private AI request.');
 if (!experiencePage.includes('data-flight-search')) failures.push('The flights page is missing its functional search form.');
 if (!experiencePage.includes('data-flight-results')) failures.push('The flights page is missing its dynamic results region.');
 if (!experiencePage.includes('data-hotel-search')) failures.push('The hotels page is missing its functional search form.');
@@ -374,7 +413,6 @@ for (const method of ['get_id', 'get_verticals', 'is_configured', 'get_mode', 'g
   if (!supplierInterface.includes(`function ${method}(`)) failures.push(`Supplier adapter contract is missing ${method}().`);
 }
 
-const frontPage = readFileSync(join(themeRoot, 'front-page.php'), 'utf8');
 if (/<a\b[^>]*class="ai-input"[^>]*>[\s\S]*?<button\b/.test(frontPage)) {
   failures.push('The AI planner link contains an invalid nested button.');
 }

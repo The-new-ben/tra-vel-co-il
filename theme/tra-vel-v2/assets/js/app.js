@@ -13,9 +13,181 @@ let discoveryRoutes = [];
 let activeLayer = 'deals';
 let activeDestination = 'bangkok';
 let discoveryDataMode = 'demo';
+let discoveryFieldProvenance = {};
+let discoveryLiveLayers = { deals: false, hotels: false, airports: false, airportDetails: false, weather: false };
+let discoveryRequestController = null;
+let discoveryRequestGeneration = 0;
+let activePlanIntent = 'smart';
+let discoveryDestinationLocked = false;
+const discoveryLayers = new Set(['deals', 'hotels', 'airports', 'weather']);
+const discoverySorts = new Set(['smart', 'price', 'time', 'comfort']);
+const discoveryTrips = new Set(['all', 'short', 'long']);
+const discoveryDefaults = {
+  q: '',
+  budget: 950,
+  direct: false,
+  sort: 'smart',
+  trip: 'all',
+  max_stops: 1,
+  max_duration: 960,
+  allow_overnight: false
+};
+let discoveryQuery = { ...discoveryDefaults };
+const destinationPlanIntents = {
+  smart: { label: 'החכמה', summary: 'מאזנים זמן, נוחות, גמישות ועלות מלאה לפני שבוחרים.' },
+  value: { label: 'המשתלמת', summary: 'בודקים מה מקבלים בכל שקל ולא מסתפקים במחיר הכותרת.' },
+  easy: { label: 'הקלה', summary: 'מצמצמים החלפות, נסיעות וסיכון כדי לפשט את כל הדרך.' },
+  romantic: { label: 'הזוגית', summary: 'בונים קצב רגוע, אזור לינה נכון וחוויות שמתאימות לשניים.' },
+  family: { label: 'המשפחתית', summary: 'מתעדפים חדר נכון, מרחקים קצרים, גמישות וביטוח מתאים.' },
+  adventure: { label: 'ההרפתקנית', summary: 'משלבים טבע, פעילות וציוד בלי לוותר על בטיחות ולוגיסטיקה.' },
+  surprise: { label: 'המפתיעה', summary: 'נותנים לסוכן להציע חלופה יצירתית במסגרת הכוונה והתקציב.' }
+};
+const destinationPlanIntentConstraints = {
+  smart: { sort: 'smart', trip: 'all', max_stops: 1, max_duration: 960, allow_overnight: false },
+  value: { sort: 'price', trip: 'all', max_stops: 1, max_duration: 960, allow_overnight: false },
+  easy: { sort: 'comfort', trip: 'all', max_stops: 1, max_duration: 960, allow_overnight: false },
+  romantic: { sort: 'comfort', trip: 'short', max_stops: 1, max_duration: 960, allow_overnight: false },
+  family: { sort: 'comfort', trip: 'all', max_stops: 1, max_duration: 960, allow_overnight: false },
+  adventure: { sort: 'smart', trip: 'long', max_stops: 3, max_duration: 3000, allow_overnight: true },
+  surprise: { sort: 'smart', trip: 'all', max_stops: 3, max_duration: 3000, allow_overnight: true }
+};
+const directoryDestinationAliases = { bangkok: 'thailand' };
+const directoryDestinationIds = new Set(['budapest', 'prague', 'vienna', 'thailand', 'athens', 'tokyo']);
 
 function renderIcons() {
   if (window.lucide) window.lucide.createIcons({ attrs: { 'stroke-width': 1.8 } });
+}
+
+function clampDiscoveryNumber(value, minimum, maximum, fallback) {
+  const number = Number(value);
+  return Number.isFinite(number) ? Math.min(maximum, Math.max(minimum, Math.round(number))) : fallback;
+}
+
+function isMapWorkspacePage() {
+  return Boolean(document.querySelector('.theme-map-shell'));
+}
+
+function readDiscoveryStateFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const layer = params.get('layer');
+  const intent = params.get('intent');
+  const sort = params.get('sort');
+  const trip = params.get('trip');
+  activeLayer = layer && discoveryLayers.has(layer) ? layer : 'deals';
+  activePlanIntent = intent && destinationPlanIntents[intent] ? intent : 'smart';
+  const intentConstraints = destinationPlanIntentConstraints[activePlanIntent] || destinationPlanIntentConstraints.smart;
+  discoveryQuery = {
+    q: String(params.get('q') || '').slice(0, 160),
+    budget: params.has('budget') ? clampDiscoveryNumber(params.get('budget'), 200, 1600, discoveryDefaults.budget) : discoveryDefaults.budget,
+    direct: ['1', 'true'].includes(params.get('direct')),
+    sort: sort && discoverySorts.has(sort) ? sort : intentConstraints.sort,
+    trip: trip && discoveryTrips.has(trip) ? trip : intentConstraints.trip,
+    max_stops: params.has('max_stops') ? clampDiscoveryNumber(params.get('max_stops'), 0, 3, intentConstraints.max_stops) : intentConstraints.max_stops,
+    max_duration: params.has('max_duration') ? clampDiscoveryNumber(params.get('max_duration'), 60, 3000, intentConstraints.max_duration) : intentConstraints.max_duration,
+    allow_overnight: params.has('allow_overnight') ? ['1', 'true'].includes(params.get('allow_overnight')) : intentConstraints.allow_overnight
+  };
+  const destination = String(params.get('destination') || '').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 60);
+  discoveryDestinationLocked = Boolean(destination);
+  if (destination) activeDestination = destination;
+}
+
+function normalizeFieldProvenance(provenance = {}) {
+  const fields = ['deals', 'hotels', 'airports', 'routes', 'weather_current', 'weather_season'];
+  return Object.fromEntries(fields.map(field => [field, {
+    live: provenance?.[field]?.live === true,
+    source: typeof provenance?.[field]?.source === 'string' ? provenance[field].source : '',
+    observed_at: typeof provenance?.[field]?.observed_at === 'string' ? provenance[field].observed_at : ''
+  }]));
+}
+
+function resolveDiscoveryLiveLayers(provenance = {}) {
+  const fields = normalizeFieldProvenance(provenance);
+  return {
+    deals: fields.deals.live,
+    hotels: fields.hotels.live,
+    airports: fields.routes.live,
+    airportDetails: fields.airports.live,
+    weather: fields.weather_current.live
+  };
+}
+
+function destinationDirectoryUrl(destinationId, params = {}) {
+  const directoryId = directoryDestinationAliases[destinationId] || destinationId;
+  return directoryDestinationIds.has(directoryId)
+    ? destinationPlanUrl('/guides/', { destination: directoryId, ...params })
+    : destinationPlanUrl('/guides/', params);
+}
+
+function discoveryRequestParams(overrides = {}) {
+  const request = {
+    ...discoveryQuery,
+    layer: activeLayer,
+    ...overrides
+  };
+  if (!Object.prototype.hasOwnProperty.call(overrides, 'destination') && discoveryDestinationLocked && activeDestination) {
+    request.destination = activeDestination;
+  }
+  return request;
+}
+
+function syncDiscoveryControls() {
+  const budget = document.querySelector('[data-budget]');
+  if (budget) {
+    budget.value = String(Math.min(Number(budget.max || 5000), Math.max(Number(budget.min || 0), discoveryQuery.budget)));
+    const value = document.querySelector('[data-budget-value]');
+    if (value) value.textContent = `$${Number(discoveryQuery.budget).toLocaleString('en-US')}`;
+  }
+  document.querySelectorAll('[data-filter-kind="sort"] [data-filter-value]').forEach(button => {
+    const selected = button.dataset.filterValue === discoveryQuery.sort;
+    button.classList.toggle('is-active', selected);
+    button.setAttribute('aria-pressed', String(selected));
+  });
+  document.querySelectorAll('[data-filter-kind="trip"] [data-filter-value]').forEach(button => {
+    const selected = button.dataset.filterValue === discoveryQuery.trip;
+    button.classList.toggle('is-active', selected);
+    button.setAttribute('aria-pressed', String(selected));
+  });
+  const direct = document.querySelector('[data-direct-filter]');
+  direct?.classList.toggle('is-active', discoveryQuery.direct);
+  direct?.setAttribute('aria-pressed', String(discoveryQuery.direct));
+  const maxStops = document.querySelector('[data-max-stops]');
+  const maxDuration = document.querySelector('[data-max-duration]');
+  const overnight = document.querySelector('[data-allow-overnight]');
+  if (maxStops) maxStops.checked = discoveryQuery.max_stops <= 1;
+  if (maxDuration) maxDuration.checked = discoveryQuery.max_duration <= 960;
+  if (overnight) overnight.checked = discoveryQuery.allow_overnight;
+  document.querySelectorAll('[data-map-layer]').forEach(button => {
+    const selected = button.dataset.mapLayer === activeLayer;
+    button.classList.toggle('is-active', selected);
+    button.setAttribute('aria-pressed', String(selected));
+  });
+  document.querySelectorAll('[data-plan-intent]').forEach(button => {
+    const selected = button.dataset.planIntent === activePlanIntent;
+    button.classList.toggle('is-active', selected);
+    button.setAttribute('aria-pressed', String(selected));
+  });
+  const mapQuery = document.querySelector('.map-search-bar [name="q"]');
+  if (mapQuery) mapQuery.value = discoveryQuery.q;
+}
+
+function syncDiscoveryUrl(mode = 'push') {
+  if (!isMapWorkspacePage()) return;
+  const url = new URL(window.location.href);
+  const keys = ['destination', 'layer', 'intent', 'q', 'budget', 'direct', 'sort', 'trip', 'max_stops', 'max_duration', 'allow_overnight'];
+  keys.forEach(key => url.searchParams.delete(key));
+  if (discoveryDestinationLocked && activeDestination) url.searchParams.set('destination', activeDestination);
+  if (activeLayer !== 'deals') url.searchParams.set('layer', activeLayer);
+  if (activePlanIntent !== 'smart') url.searchParams.set('intent', activePlanIntent);
+  if (discoveryQuery.q) url.searchParams.set('q', discoveryQuery.q);
+  if (discoveryQuery.budget !== discoveryDefaults.budget) url.searchParams.set('budget', String(discoveryQuery.budget));
+  if (discoveryQuery.direct) url.searchParams.set('direct', '1');
+  if (discoveryQuery.sort !== discoveryDefaults.sort) url.searchParams.set('sort', discoveryQuery.sort);
+  if (discoveryQuery.trip !== discoveryDefaults.trip) url.searchParams.set('trip', discoveryQuery.trip);
+  if (discoveryQuery.max_stops !== discoveryDefaults.max_stops) url.searchParams.set('max_stops', String(discoveryQuery.max_stops));
+  if (discoveryQuery.max_duration !== discoveryDefaults.max_duration) url.searchParams.set('max_duration', String(discoveryQuery.max_duration));
+  if (discoveryQuery.allow_overnight) url.searchParams.set('allow_overnight', '1');
+  const method = mode === 'replace' ? 'replaceState' : 'pushState';
+  window.history[method]({ traVelMap: true, focus: activeDestination || '' }, '', `${url.pathname}${url.search}${url.hash}`);
 }
 
 function replaceChildrenWithSpans(element, values) {
@@ -32,17 +204,27 @@ function normalizeDestination(item) {
     id: item.id,
     city: item.city,
     country: item.country,
+    url: item.url,
     price: item.deal.headline_formatted,
     total: item.deal.total_formatted,
+    totalAmount: Number(item.deal.total_per_person) || 0,
+    currency: item.deal.currency || 'USD',
     note: item.deal.insight,
+    nights: item.deal.nights,
     image: item.image,
     tags: item.tags,
     airport: `${item.airport.code} · ${item.airport.flight_duration_label}`,
     airportCode: item.airport.code,
+    airportDirect: item.airport.direct === true,
+    flightDuration: item.airport.flight_duration_label,
+    transferMinutes: item.airport.transfer_minutes,
     hotel: `${item.hotel.area} · ${item.hotel.rating}★`,
+    hotelArea: item.hotel.area,
+    hotelName: item.hotel.name,
     hotelPrice: item.hotel.nightly_formatted,
     weather: `${item.weather.temperature_c}°C`,
     weatherCondition: item.weather.condition,
+    seasonFit: item.weather.season_fit,
     latitude: item.geo.latitude,
     longitude: item.geo.longitude,
     x: item.position.x,
@@ -51,14 +233,44 @@ function normalizeDestination(item) {
 }
 
 function pinLabel(data) {
-  if (activeLayer === 'hotels') return discoveryDataMode === 'live' ? (data.hotelPrice || data.total) : data.city;
+  if (activeLayer === 'hotels') return discoveryLiveLayers.hotels ? (data.hotelPrice || data.total) : data.city;
   if (activeLayer === 'airports') return data.airportCode || data.airport;
-  if (activeLayer === 'weather') return data.weather;
-  return discoveryDataMode === 'live' ? data.price : data.city;
+  if (activeLayer === 'weather') return discoveryLiveLayers.weather ? data.weather : data.city;
+  return discoveryLiveLayers.deals ? data.price : data.city;
+}
+
+function bindDestinationPin(pin) {
+  if (!pin || pin.dataset.selectionBound === 'true') return;
+  pin.dataset.selectionBound = 'true';
+  pin.addEventListener('click', event => {
+    event.stopPropagation();
+    discoveryDestinationLocked = true;
+    setActiveDestination(pin.dataset.destination, pin, false);
+    syncDiscoveryUrl('push');
+    hydrateDiscovery(discoveryRequestParams({ destination: pin.dataset.destination }));
+  });
+}
+
+function reconcileDestinationPins() {
+  document.querySelectorAll('[data-discovery-globe]').forEach(globe => {
+    Object.values(destinationData).forEach(data => {
+      let pin = Array.from(globe.querySelectorAll('.price-pin[data-destination]')).find(item => item.dataset.destination === data.id);
+      if (!pin) {
+        pin = document.createElement('button');
+        pin.type = 'button';
+        pin.className = 'price-pin';
+        pin.dataset.destination = data.id;
+        pin.setAttribute('aria-pressed', 'false');
+        globe.append(pin);
+      }
+      bindDestinationPin(pin);
+    });
+  });
 }
 
 function updatePins() {
-  document.querySelectorAll('.price-pin[data-destination]').forEach(pin => {
+  reconcileDestinationPins();
+  document.querySelectorAll('[data-discovery-globe] .price-pin[data-destination]').forEach(pin => {
     const data = destinationData[pin.dataset.destination];
     pin.hidden = !data;
     if (!data) return;
@@ -75,40 +287,373 @@ function updatePins() {
   window.traVelGlobe3D?.setDestinations(destinationData);
 }
 
-function setActiveDestination(key, pin) {
+function setActiveDestination(key, pin, animatePlan = true) {
   const data = destinationData[key];
   if (!data) return;
-  const hasLivePrices = discoveryDataMode === 'live';
-  const displayTags = hasLivePrices ? (data.tags || []) : ['מדריך ליעד', 'אזורי לינה', 'מסלולים אפשריים'];
+  const hasLiveDealPrices = discoveryLiveLayers.deals;
+  const hasLiveHotelPrices = discoveryLiveLayers.hotels;
+  const hasLiveRouteData = discoveryLiveLayers.airports;
+  const hasLiveAirportDetails = discoveryLiveLayers.airportDetails;
+  const hasLiveWeather = discoveryLiveLayers.weather;
+  const hasLiveSeason = discoveryFieldProvenance?.weather_season?.live === true;
+  const displayTags = hasLiveDealPrices ? (data.tags || []) : ['מדריך ליעד', 'אזורי לינה', 'מסלולים אפשריים'];
+  const layerStates = {
+    deals: {
+      label: 'מחיר וזמינות',
+      total: hasLiveDealPrices ? data.total : 'בדיקה חיה',
+      price: hasLiveDealPrices ? data.price : 'בדיקת מחיר',
+      note: hasLiveDealPrices ? data.note : 'מחיר וזמינות יוצגו אחרי בחירת תאריכים והרכב.'
+    },
+    hotels: {
+      label: 'לינה באזור הנכון',
+      total: hasLiveHotelPrices ? (data.hotelPrice || data.total) : 'בדיקת מלונות',
+      price: data.hotelArea || 'אזור לינה',
+      note: hasLiveHotelPrices ? 'מחיר החדר והתנאים מעודכנים למועד הבדיקה.' : 'מחיר חדר, מסים וביטול יוצגו אחרי בחירת תאריכים.'
+    },
+    airports: {
+      label: 'שדה ודרך',
+      total: data.airportCode || 'בדיקת שדה',
+      price: data.airportDirect ? 'מסלול ישיר אפשרי' : 'נדרש קונקשן',
+      note: 'זמן, כבודה ותנאי כרטיס יאומתו בחיפוש טיסות.'
+    },
+    weather: {
+      label: 'מזג אוויר ועונה',
+      total: hasLiveWeather ? data.weather : 'לפי תאריך',
+      price: hasLiveWeather ? (data.weatherCondition || 'בדיקה חיה') : 'בחרו מועד',
+      note: hasLiveWeather
+        ? (hasLiveSeason ? `התאמת עונה מעודכנת: ${data.seasonFit || 'לפי מסלול'}.` : 'התנאים הנוכחיים עודכנו. התאמת העונה תיבדק לפי תאריך הנסיעה.')
+        : 'תחזית תוצג רק למועד נסיעה מוגדר.'
+    }
+  };
+  const layerState = layerStates[activeLayer] || layerStates.deals;
   activeDestination = key;
-  document.querySelectorAll('.price-pin').forEach(item => item.classList.toggle('is-active', item.dataset.destination === key));
+  document.querySelectorAll('.price-pin[data-destination]').forEach(item => {
+    const active = item.dataset.destination === key;
+    item.classList.toggle('is-active', active);
+    if (item.matches('button')) item.setAttribute('aria-pressed', String(active));
+    else if (active) item.setAttribute('aria-current', 'location');
+    else item.removeAttribute('aria-current');
+  });
   pin?.classList.add('is-active');
   window.traVelGlobe3D?.focusDestination(key, Boolean(pin));
 
   document.querySelectorAll('[data-map-result]').forEach(card => {
+    card.dataset.destination = key;
+    card.removeAttribute('data-empty');
     const image = card.querySelector('[data-result-image]');
     if (image) {
+      image.hidden = false;
       image.src = data.image;
       image.alt = `${data.city}, ${data.country}`;
     }
     const fields = {
       '[data-result-city]': `${data.city}, ${data.country}`,
-      '[data-result-price]': hasLivePrices ? data.price : 'בדיקה חיה',
-      '[data-result-total]': hasLivePrices ? data.total : 'בדיקה חיה',
-      '[data-result-note]': hasLivePrices ? data.note : 'המחיר יופיע לאחר חיפוש מול ספקים מחוברים.',
-      '[data-result-airport]': hasLivePrices ? data.airport : (data.airportCode || 'שדות תעופה'),
-      '[data-result-hotel]': hasLivePrices ? data.hotel : 'אזורי לינה',
-      '[data-result-weather]': hasLivePrices ? `${data.weather} · ${data.weatherCondition || ''}` : 'מזג אוויר לפי תאריך'
+      '[data-result-state-label]': layerState.label,
+      '[data-result-price]': layerState.price,
+      '[data-result-total]': layerState.total,
+      '[data-result-note]': layerState.note,
+      '[data-result-airport]': hasLiveAirportDetails ? data.airport : (data.airportCode || 'שדות תעופה'),
+      '[data-result-hotel]': hasLiveHotelPrices ? data.hotel : (data.hotelArea || 'אזורי לינה'),
+      '[data-result-weather]': hasLiveWeather ? `${data.weather} · ${data.weatherCondition || ''}` : 'מזג אוויר לפי תאריך'
     };
     Object.entries(fields).forEach(([selector, value]) => {
       const field = card.querySelector(selector);
       if (field) field.textContent = value;
     });
     replaceChildrenWithSpans(card.querySelector('[data-result-tags]'), displayTags);
+    const cardLinks = {
+      '[data-result-guide]': data.url || destinationPlanUrl('/destinations/', { destination: data.id }),
+      '[data-result-hotels]': destinationPlanUrl('/hotels/', { destination: data.airportCode || '', area: data.hotelArea || '' }),
+      '[data-result-insurance]': destinationPlanUrl('/travel-insurance/', { trip_destination: data.id })
+    };
+    Object.entries(cardLinks).forEach(([selector, href]) => {
+      const link = card.querySelector(selector);
+      if (link) link.href = href;
+    });
+    const saveButton = card.querySelector('.save-button');
+    if (saveButton) {
+      const saved = isWorkspaceItemSaved(normalizeWorkspaceItem(mapDestinationWorkspaceItem(data)).id);
+      saveButton.disabled = false;
+      saveButton.classList.toggle('is-saved', saved);
+      saveButton.setAttribute('aria-label', saved ? 'נשמר לנסיעה' : `שמירת ${data.city} לנסיעה`);
+    }
   });
 
   const routeTitle = document.querySelector('[data-route-title]');
-  if (routeTitle) routeTitle.textContent = `תל אביב אל ${data.city}: השוואת מסלולים`;
+  if (routeTitle) routeTitle.textContent = `מתל אביב ל${data.city}: השוואת מסלולים`;
+  const homeRouteBoard = document.querySelector('[data-home-route-board]');
+  const homeRouteEmpty = document.querySelector('[data-home-route-empty]');
+  if (homeRouteBoard && homeRouteEmpty) {
+    const hasHomepageComparison = key === 'bangkok';
+    homeRouteBoard.hidden = !hasHomepageComparison;
+    homeRouteEmpty.hidden = hasHomepageComparison;
+  }
+  updateHomeDestinationPlan(data, animatePlan);
+  updateDestinationPlan(data, animatePlan);
+}
+
+function renderDiscoveryEmptyState() {
+  activeDestination = '';
+  window.traVelGlobe3D?.clearSelection();
+  document.querySelectorAll('.price-pin[data-destination]').forEach(item => {
+    item.classList.remove('is-active');
+    if (item.matches('button')) item.setAttribute('aria-pressed', 'false');
+    else item.removeAttribute('aria-current');
+  });
+  document.querySelectorAll('[data-map-result]').forEach(card => {
+    card.dataset.empty = 'true';
+    card.removeAttribute('data-destination');
+    const image = card.querySelector('[data-result-image]');
+    if (image) image.hidden = true;
+    const fields = {
+      '[data-result-city]': 'לא נמצא יעד שתואם לבחירות',
+      '[data-result-state-label]': 'תוצאת הסינון',
+      '[data-result-price]': 'נדרש שינוי סינון',
+      '[data-result-total]': 'אין תוצאה',
+      '[data-result-note]': 'נסו להרחיב תקציב, גמישות או יעדים.',
+      '[data-result-airport]': 'שדות תעופה',
+      '[data-result-hotel]': 'אזורי לינה',
+      '[data-result-weather]': 'מזג אוויר'
+    };
+    Object.entries(fields).forEach(([selector, value]) => {
+      const field = card.querySelector(selector);
+      if (field) field.textContent = value;
+    });
+    replaceChildrenWithSpans(card.querySelector('[data-result-tags]'), ['הרחיבו תקציב', 'שנו תאריכים', 'פתחו יעדים']);
+    const saveButton = card.querySelector('.save-button');
+    if (saveButton) {
+      saveButton.disabled = true;
+      saveButton.classList.remove('is-saved');
+      saveButton.setAttribute('aria-label', 'אין יעד זמין לשמירה');
+    }
+    const fallbackLinks = {
+      '[data-result-guide]': destinationPlanUrl('/destinations/'),
+      '[data-result-hotels]': destinationPlanUrl('/hotels/'),
+      '[data-result-insurance]': destinationPlanUrl('/travel-insurance/')
+    };
+    Object.entries(fallbackLinks).forEach(([selector, href]) => {
+      const link = card.querySelector(selector);
+      if (link) link.href = href;
+    });
+  });
+  const routeTitle = document.querySelector('[data-route-title]');
+  if (routeTitle) routeTitle.textContent = 'אין מסלול עד שבוחרים יעד תואם';
+  const homeRouteBoard = document.querySelector('[data-home-route-board]');
+  const homeRouteEmpty = document.querySelector('[data-home-route-empty]');
+  if (homeRouteBoard && homeRouteEmpty) {
+    homeRouteBoard.hidden = true;
+    homeRouteEmpty.hidden = false;
+  }
+  const homePlanSummary = document.querySelector('[data-home-plan-summary]');
+  if (homePlanSummary) homePlanSummary.textContent = 'שנו את הבחירות כדי לפתוח תוכנית 360° ליעד מתאים.';
+  document.querySelectorAll('[data-home-plan-flight],[data-home-plan-stay],[data-home-plan-guide],[data-home-plan-ai],[data-home-plan-full]').forEach(link => {
+    link.setAttribute('aria-disabled', 'true');
+    link.removeAttribute('href');
+  });
+  discoveryRoutes = [];
+  renderRoutes(discoveryRoutes);
+  const plan = document.querySelector('[data-destination-plan]');
+  if (plan) {
+    plan.dataset.state = 'empty';
+    plan.setAttribute('aria-busy', 'false');
+    const title = plan.querySelector('[data-plan-title]');
+    const state = plan.querySelector('[data-plan-state]');
+    const summary = plan.querySelector('[data-plan-summary]');
+    if (title) title.textContent = 'התוכנית מחכה ליעד מתאים';
+    if (state) state.textContent = 'שנו את הבחירות כדי להמשיך';
+    if (summary) summary.textContent = 'לא נשאיר מידע ישן מתחת למפה כאשר אין תוצאה תואמת.';
+    plan.querySelectorAll('[data-plan-flight],[data-plan-stay],[data-plan-experience],[data-plan-weather],[data-plan-cover],[data-plan-total],[data-plan-guide]').forEach(link => {
+      link.setAttribute('aria-disabled', 'true');
+      link.tabIndex = -1;
+      link.removeAttribute('href');
+    });
+    const ai = plan.querySelector('[data-plan-ai]');
+    if (ai) ai.href = destinationPlanUrl('/ai-planner/', { mode: 'surprise' });
+  }
+}
+
+function destinationPlanUrl(path, params = {}) {
+  const url = new URL(path, window.location.origin);
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== '' && value !== undefined && value !== null) url.searchParams.set(key, String(value));
+  });
+  return url.toString();
+}
+
+function updateDestinationPlanStages(plan, responseConfirmed) {
+  const currentStage = { deals: 'total', hotels: 'stay', airports: 'route', weather: 'experience' }[activeLayer] || 'route';
+  const routeCount = responseConfirmed && discoveryLiveLayers.airports ? discoveryRoutes.length : 0;
+  const labels = {
+    destination: 'נבחר',
+    route: responseConfirmed ? (routeCount ? `${routeCount} אפשרויות התקבלו` : 'מוכן להשוואה') : 'מעדכנים',
+    stay: responseConfirmed ? (discoveryLiveLayers.hotels ? 'מידע עדכני התקבל' : 'מוכן לבדיקה') : 'מעדכנים',
+    experience: responseConfirmed ? (discoveryLiveLayers.weather ? 'תנאי מזג אוויר התקבלו' : 'מוכן לתכנון') : 'מעדכנים',
+    cover: responseConfirmed ? 'מוכן להתאמה' : 'מעדכנים',
+    total: responseConfirmed ? (discoveryLiveLayers.deals ? 'נתון מחיר התקבל' : 'ממתין לחיפוש מלא') : 'מעדכנים'
+  };
+  plan.querySelectorAll('[data-plan-stage]').forEach(stage => {
+    const stageName = stage.dataset.planStage || '';
+    const isCurrent = stageName === currentStage;
+    const isInformed = stageName === 'destination' || (responseConfirmed && (
+      (stageName === 'route' && discoveryLiveLayers.airports) ||
+      (stageName === 'stay' && discoveryLiveLayers.hotels) ||
+      (stageName === 'total' && discoveryLiveLayers.deals)
+    ));
+    stage.classList.toggle('is-current', isCurrent);
+    stage.classList.toggle('is-informed', isInformed);
+    stage.classList.toggle('is-pending', !responseConfirmed && stageName !== 'destination');
+    if (isCurrent) stage.setAttribute('aria-current', 'step');
+    else stage.removeAttribute('aria-current');
+    const detail = stage.querySelector('small');
+    if (detail && labels[stageName]) detail.textContent = labels[stageName];
+  });
+}
+
+function runConfirmedPlanAnimation(container, tailSelector) {
+  if (!container) return;
+  container.classList.remove('is-updating');
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  void container.offsetWidth;
+  container.classList.add('is-updating');
+  const tail = container.querySelector(tailSelector);
+  let fallbackTimer = 0;
+  const finish = () => {
+    container.classList.remove('is-updating');
+    if (fallbackTimer) window.clearTimeout(fallbackTimer);
+  };
+  tail?.addEventListener('animationend', finish, { once: true });
+  fallbackTimer = window.setTimeout(finish, 1400);
+}
+
+function updateDestinationPlan(data, animate = true) {
+  const plan = document.querySelector('[data-destination-plan]');
+  if (!plan || !data) return;
+  const intent = destinationPlanIntents[activePlanIntent] || destinationPlanIntents.smart;
+  const currentLayerHasLiveData = discoveryLiveLayers[activeLayer] === true;
+  const anyLiveData = Object.values(discoveryLiveLayers).some(Boolean);
+  const hasLiveSeason = discoveryFieldProvenance?.weather_season?.live === true;
+  const airportCode = data.airportCode || '';
+  const destinationId = data.id || '';
+  const layerLabel = { deals: 'עלות מלאה', hotels: 'לינה', airports: 'טיסה ודרך', weather: 'מזג אוויר' }[activeLayer] || 'תכנון';
+  plan.dataset.destination = destinationId;
+  plan.dataset.intent = activePlanIntent;
+  plan.dataset.state = currentLayerHasLiveData ? 'live' : 'planning';
+
+  const fields = {
+    '[data-plan-title]': `התוכנית ${intent.label} ל${data.city}`,
+    '[data-plan-state]': `${layerLabel} במוקד · שאר השלבים נשארים מחוברים`,
+    '[data-plan-summary]': `${intent.summary} כל החלטה נשארת מחוברת ל${data.city} ולבחירות שלכם.`,
+    '[data-plan-flight-title]': activePlanIntent === 'easy'
+      ? (data.airportDirect ? 'מתחילים במסלול הישיר' : 'מחפשים קונקשן מוגן ופשוט')
+      : (activePlanIntent === 'value' ? 'משווים עלות מלאה בין דרכים' : 'ישיר מול קונקשן חכם'),
+    '[data-plan-flight-detail]': [airportCode, data.flightDuration, 'כבודה ותנאי כרטיס'].filter(Boolean).join(' · '),
+    '[data-plan-stay-title]': activePlanIntent === 'family'
+      ? 'אזור נוח למשפחה ולמעברים קצרים'
+      : (activePlanIntent === 'romantic' ? 'אזור שקט ונעים לשניים' : (data.hotelArea ? `מתחילים באזור ${data.hotelArea}` : 'בוחרים אזור לפני מלון')),
+    '[data-plan-stay-detail]': [data.nights ? `${data.nights} לילות` : '', 'תחבורה', 'ביטול ועלות מלאה'].filter(Boolean).join(' · '),
+    '[data-plan-experience-title]': activePlanIntent === 'adventure'
+      ? 'טבע, פעילות, ציוד וימי התאוששות'
+      : (activePlanIntent === 'romantic' ? 'אוכל, שקיעה וזמן חופשי' : (activePlanIntent === 'family' ? 'פעילויות לפי גיל וקצב' : 'מסלול לפי הכוונה שלכם')),
+    '[data-plan-weather-title]': discoveryLiveLayers.weather && data.weather ? `${data.weather} · ${data.weatherCondition || ''}` : 'בדיקה לפי תאריך',
+    '[data-plan-weather-detail]': discoveryLiveLayers.weather
+      ? (hasLiveSeason ? `התאמת עונה מעודכנת: ${data.seasonFit || 'לפי מועד'}` : 'התנאים הנוכחיים עודכנו. התאמת העונה תיבדק לפי תאריך הנסיעה')
+      : 'מזג אוויר יאומת לפי תאריך הנסיעה',
+    '[data-plan-cover-title]': activePlanIntent === 'adventure' ? 'כיסוי פעילות וציוד ייעודי' : 'כיסוי לפי המסלול והנוסעים',
+    '[data-plan-total-title]': 'עדיין לא חושבה בחבילה מלאה',
+    '[data-plan-truth]': anyLiveData
+      ? 'יש נתונים עדכניים לחלק מהמסע. העלות הכוללת והזמינות יאומתו לפני אישור.'
+      : 'היעד נבחר. מחירים, זמינות והזמנה עדיין לא נבדקו.'
+  };
+  Object.entries(fields).forEach(([selector, value]) => {
+    const element = plan.querySelector(selector);
+    if (element) element.textContent = value;
+  });
+
+  const planningContext = {
+    intent: activePlanIntent,
+    budget: discoveryQuery.budget,
+    trip: discoveryQuery.trip,
+    max_stops: discoveryQuery.max_stops,
+    max_duration: discoveryQuery.max_duration,
+    allow_overnight: discoveryQuery.allow_overnight ? 1 : '',
+    direct: discoveryQuery.direct ? 1 : ''
+  };
+  const links = {
+    '[data-plan-flight]': destinationPlanUrl('/flights/', { destination: airportCode, ...planningContext }),
+    '[data-plan-stay]': destinationPlanUrl('/hotels/', { destination: airportCode, area: data.hotelArea || '', ...planningContext }),
+    '[data-plan-experience]': destinationDirectoryUrl(destinationId, planningContext),
+    '[data-plan-weather]': destinationPlanUrl('/travel-map/', { destination: destinationId, layer: 'weather', intent: activePlanIntent, ...discoveryQuery }),
+    '[data-plan-cover]': destinationPlanUrl('/travel-insurance/', { trip_destination: destinationId, intent: activePlanIntent }),
+    '[data-plan-total]': destinationPlanUrl('/packages/', { destination: airportCode, ...planningContext }),
+    '[data-plan-guide]': data.url || destinationPlanUrl('/destinations/', { destination: destinationId }),
+    '[data-plan-ai]': destinationPlanUrl('/ai-planner/', {
+      destination: destinationId,
+      ...planningContext
+    })
+  };
+  Object.entries(links).forEach(([selector, href]) => {
+    const link = plan.querySelector(selector);
+    if (link) {
+      link.href = href;
+      link.removeAttribute('aria-disabled');
+      link.removeAttribute('tabindex');
+    }
+  });
+  plan.querySelectorAll('[data-plan-layer]').forEach(option => option.classList.toggle('is-layer-active', option.dataset.planLayer === activeLayer));
+  updateDestinationPlanStages(plan, animate);
+
+  if (animate) {
+    runConfirmedPlanAnimation(plan, '.destination-plan-options > a:last-child');
+  } else plan.classList.remove('is-updating');
+}
+
+function updateHomeDestinationPlan(data, animate = true) {
+  if (!data) return;
+  const airportCode = data.airportCode || '';
+  const destinationId = data.id || '';
+  const homePlan = document.querySelector('[data-home-plan]');
+  if (homePlan) {
+    homePlan.dataset.destination = destinationId;
+    homePlan.setAttribute('aria-busy', 'false');
+  }
+  const summary = document.querySelector('[data-home-plan-summary]');
+  if (summary) summary.textContent = `${data.city} נבחרה. עכשיו מחברים דרך, לינה, חוויות והגנה לתוכנית אחת.`;
+  const context = { destination: destinationId, intent: activePlanIntent };
+  const links = {
+    '[data-home-plan-flight]': destinationPlanUrl('/flights/', { destination: airportCode, intent: activePlanIntent }),
+    '[data-home-plan-stay]': destinationPlanUrl('/hotels/', { destination: airportCode, area: data.hotelArea || '', intent: activePlanIntent }),
+    '[data-home-plan-guide]': data.url || destinationPlanUrl('/destinations/', { destination: destinationId }),
+    '[data-home-plan-ai]': destinationPlanUrl('/ai-planner/', context),
+    '[data-home-plan-full]': destinationPlanUrl('/travel-map/', context)
+  };
+  Object.entries(links).forEach(([selector, href]) => {
+    const link = document.querySelector(selector);
+    if (link) {
+      link.href = href;
+      link.removeAttribute('aria-disabled');
+    }
+  });
+  if (homePlan && animate) {
+    runConfirmedPlanAnimation(homePlan, '.home-plan-full');
+  } else homePlan?.classList.remove('is-updating');
+}
+
+function initDestinationPlan() {
+  const plan = document.querySelector('[data-destination-plan]');
+  if (!plan) return;
+  plan.addEventListener('click', event => {
+    const disabledLink = event.target.closest('a[aria-disabled="true"]');
+    if (disabledLink) event.preventDefault();
+  });
+  plan.querySelectorAll('[data-plan-intent]').forEach(button => button.addEventListener('click', () => {
+    discoveryDestinationLocked = true;
+    activePlanIntent = destinationPlanIntents[button.dataset.planIntent] ? button.dataset.planIntent : 'smart';
+    discoveryQuery = { ...discoveryQuery, ...(destinationPlanIntentConstraints[activePlanIntent] || {}) };
+    syncDiscoveryControls();
+    updateDestinationPlan(destinationData[activeDestination], false);
+    syncDiscoveryUrl('push');
+    hydrateDiscovery(discoveryRequestParams());
+  }));
 }
 
 function appendTextElement(parent, tag, text, className = '') {
@@ -293,6 +838,16 @@ function isWorkspaceItemSaved(itemId) {
   return readLocalWorkspace().items.some(item => item.id === itemId);
 }
 
+function refreshMapSaveControls() {
+  const data = destinationData[activeDestination];
+  if (!data) return;
+  const saved = isWorkspaceItemSaved(normalizeWorkspaceItem(mapDestinationWorkspaceItem(data)).id);
+  document.querySelectorAll('[data-map-result] .save-button').forEach(button => {
+    button.classList.toggle('is-saved', saved);
+    button.setAttribute('aria-label', saved ? 'נשמר לנסיעה' : `שמירת ${data.city} לנסיעה`);
+  });
+}
+
 async function saveWorkspaceItem(rawItem, button) {
   const item = normalizeWorkspaceItem(rawItem);
   if (!item.external_id || !item.title) return;
@@ -302,7 +857,11 @@ async function saveWorkspaceItem(rawItem, button) {
   workspace.items = [item, ...workspace.items.filter(saved => saved.id !== item.id)].slice(0, 50);
   writeLocalWorkspace(workspace);
   button?.classList.add('is-saved');
-  if (button) button.querySelector('span').textContent = 'נשמר לנסיעה';
+  if (button) {
+    const label = button.querySelector('span');
+    if (label) label.textContent = 'נשמר לנסיעה';
+    button.setAttribute('aria-label', 'נשמר לנסיעה');
+  }
   showWorkspaceToast(window.traVelV2?.isLoggedIn ? 'נשמר במכשיר ומסתנכרן לחשבון' : 'נשמר באופן פרטי במכשיר הזה', 'heart');
   try {
     const serverWorkspace = await workspaceRequest('/items', {method: 'POST', body: JSON.stringify(item)});
@@ -328,20 +887,35 @@ function createSaveOfferButton(item) {
   return button;
 }
 
+function mapDestinationWorkspaceItem(data) {
+  return {
+    kind: 'destination',
+    external_id: data.id,
+    title: `${data.city}, ${data.country}`,
+    subtitle: `${data.airportCode || 'יעד'} · ${data.hotelArea || 'אזור לינה לבחירה'}`,
+    destination: data.city,
+    route: `TLV → ${data.airportCode || data.city}`,
+    price_label: discoveryLiveLayers.deals ? data.total : 'נדרש חיפוש חי',
+    price_amount: discoveryLiveLayers.deals ? data.totalAmount : 0,
+    currency: data.currency || 'USD',
+    data_mode: discoveryLiveLayers.deals ? 'live' : 'editorial',
+    href: data.url || destinationPlanUrl('/destinations/', { destination: data.id })
+  };
+}
+
 function renderRoutes(routes) {
   const list = document.querySelector('[data-route-list]');
   if (!list) return;
   list.replaceChildren();
   if (!routes.length) {
-    appendTextElement(list, 'p', 'עדיין אין השוואת מסלולים מלאה ליעד הזה. שכבת הספקים תוסיף אותה.', 'route-empty');
+    appendTextElement(list, 'p', 'עדיין אין השוואת מסלולים מלאה ליעד הזה. אפשר להמשיך לחיפוש ולבדוק זמינות עדכנית.', 'route-empty');
     return;
   }
-  const bestScore = Math.max(...routes.map(route => route.score));
-  routes.forEach(route => {
-    const hasLiveRouteData = discoveryDataMode === 'live';
+  routes.forEach((route, index) => {
+    const hasLiveRouteData = discoveryLiveLayers.airports;
     const routePrice = hasLiveRouteData ? route.costs.total_formatted : 'בדיקת מחיר';
     const button = document.createElement('button');
-    button.className = `mini-route${route.score === bestScore ? ' is-selected' : ''}`;
+    button.className = `mini-route${index === 0 ? ' is-selected' : ''}`;
     button.type = 'button';
     button.dataset.route = route.id;
     button.dataset.routeSummary = `${route.label} · ${routePrice}`;
@@ -360,6 +934,13 @@ function renderRoutes(routes) {
   });
 }
 
+function setRouteListBusy(busy) {
+  const list = document.querySelector('[data-route-list]');
+  if (!list) return;
+  list.setAttribute('aria-busy', String(busy));
+  list.querySelectorAll('button').forEach(button => { button.disabled = busy; });
+}
+
 function selectRoute(card) {
   document.querySelectorAll('[data-route]').forEach(item => item.classList.remove('is-selected'));
   card.classList.add('is-selected');
@@ -372,6 +953,27 @@ function setDiscoveryStatus(mode, message) {
   if (canvas) canvas.dataset.dataMode = mode;
   const status = document.querySelector('[data-layer-status]');
   if (status) status.textContent = message;
+  const plan = document.querySelector('[data-destination-plan]');
+  if (plan) {
+    plan.dataset.requestState = mode;
+    plan.setAttribute('aria-busy', String(mode === 'loading'));
+    const planState = plan.querySelector('[data-plan-state]');
+    if (mode === 'loading') {
+      plan.classList.remove('is-updating');
+      updateDestinationPlanStages(plan, false);
+      if (planState) planState.textContent = 'מעדכנים את התוכנית לפי הבחירה שלכם';
+    }
+  }
+  const homePlan = document.querySelector('[data-home-plan]');
+  if (homePlan) {
+    homePlan.dataset.requestState = mode;
+    homePlan.setAttribute('aria-busy', String(mode === 'loading'));
+    const homeSummary = homePlan.querySelector('[data-home-plan-summary]');
+    if (mode === 'loading') {
+      homePlan.classList.remove('is-updating');
+      if (homeSummary) homeSummary.textContent = 'היעד נבחר. בודקים דרך, לינה, חוויות ותנאים...';
+    }
+  }
 }
 
 function updateWeatherAttribution(providerStatus) {
@@ -388,37 +990,81 @@ function updateWeatherAttribution(providerStatus) {
 
 async function hydrateDiscovery(params = {}) {
   const endpoint = window.traVelV2?.discoveryUrl;
-  if (!endpoint || !document.querySelector('.price-pin[data-destination]')) return;
+  if (!endpoint || !document.querySelector('[data-discovery-globe] .price-pin[data-destination]')) return;
+  const requestParams = discoveryRequestParams(params);
   const url = new URL(endpoint, window.location.origin);
-  Object.entries(params).forEach(([key, value]) => {
+  Object.entries(requestParams).forEach(([key, value]) => {
     if (value !== '' && value !== undefined && value !== false) url.searchParams.set(key, String(value));
   });
+  discoveryRequestController?.abort();
+  const controller = typeof AbortController === 'function' ? new AbortController() : null;
+  discoveryRequestController = controller;
+  const generation = ++discoveryRequestGeneration;
+  let timedOut = false;
+  const timeoutId = controller ? window.setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, 12000) : 0;
   setDiscoveryStatus('loading', 'מעדכן יעדים ומסלולים...');
+  setRouteListBusy(true);
   try {
-    const response = await fetch(url, { headers: { Accept: 'application/json' } });
+    const response = await fetch(url, { headers: { Accept: 'application/json' }, ...(controller ? { signal: controller.signal } : {}) });
     if (!response.ok) throw new Error(`Discovery request failed: ${response.status}`);
     const payload = await response.json();
+    if (generation !== discoveryRequestGeneration) return;
     discoveryDataMode = payload.meta?.data_mode || 'demo';
+    discoveryFieldProvenance = normalizeFieldProvenance(payload.field_provenance);
+    discoveryLiveLayers = resolveDiscoveryLiveLayers(discoveryFieldProvenance);
     destinationData = Object.fromEntries(payload.destinations.map(item => [item.id, normalizeDestination(item)]));
-    discoveryRoutes = payload.routes || [];
     updateWeatherAttribution(payload.provider_status);
     updatePins();
-    const selected = destinationData[params.destination] ? params.destination : (destinationData[activeDestination] ? activeDestination : Object.keys(destinationData)[0]);
-    if (selected) setActiveDestination(selected, document.querySelector(`[data-destination="${selected}"]`));
-    renderRoutes(discoveryRoutes);
-    const layerName = activeLayer === 'deals' && discoveryDataMode !== 'live'
+    const resolvedDestination = payload.meta?.selected_destination || '';
+    const selected = destinationData[resolvedDestination]
+      ? resolvedDestination
+      : (destinationData[requestParams.destination] ? requestParams.destination : Object.keys(destinationData)[0]);
+    if (selected) {
+      discoveryRoutes = resolvedDestination === selected && Array.isArray(payload.routes)
+        ? payload.routes.filter(route => route.destination_id === selected)
+        : [];
+      setActiveDestination(selected, document.querySelector(`[data-destination="${selected}"]`));
+      renderRoutes(discoveryRoutes);
+      syncDiscoveryUrl('replace');
+    } else {
+      renderDiscoveryEmptyState();
+      syncDiscoveryUrl('replace');
+    }
+    const layerName = activeLayer === 'deals' && !discoveryLiveLayers.deals
       ? 'יעדים'
       : (payload.layers?.find(layer => layer.id === activeLayer)?.label || 'יעדים');
-    const modeLabel = discoveryDataMode === 'live' ? 'מחירים מעודכנים' : 'מחירים יופיעו בחיפוש חי';
+    const liveModeLabels = { deals: 'מחירי הצעה מעודכנים', hotels: 'מחירי לינה מעודכנים', airports: 'נתוני דרך מעודכנים', weather: 'תנאי מזג אוויר נוכחיים' };
+    const verificationLabels = { deals: 'מחיר יוצג לאחר חיפוש', hotels: 'מחיר חדר ותנאים ייבדקו בחיפוש', airports: 'זמן, עצירות ותנאים ייבדקו בחיפוש', weather: 'תחזית תוצג לפי תאריך הנסיעה' };
+    const modeLabel = discoveryLiveLayers[activeLayer]
+      ? liveModeLabels[activeLayer]
+      : verificationLabels[activeLayer];
     setDiscoveryStatus(discoveryDataMode, `${layerName} · ${payload.meta.result_count} יעדים · ${modeLabel}`);
   } catch (error) {
+    if ((error?.name === 'AbortError' && !timedOut) || generation !== discoveryRequestGeneration) return;
     discoveryDataMode = 'demo';
+    discoveryFieldProvenance = normalizeFieldProvenance();
+    discoveryLiveLayers = { deals: false, hotels: false, airports: false, airportDetails: false, weather: false };
     destinationData = { ...fallbackDestinations };
+    discoveryRoutes = [];
     updateWeatherAttribution(null);
     updatePins();
-    setActiveDestination(activeDestination, document.querySelector(`[data-destination="${activeDestination}"]`));
-    setDiscoveryStatus('fallback', '6 יעדים זמינים · מחירים יופיעו בחיפוש חי');
+    const fallbackDestination = destinationData[requestParams.destination] ? requestParams.destination : Object.keys(destinationData)[0];
+    if (fallbackDestination) {
+      setActiveDestination(fallbackDestination, document.querySelector(`[data-destination="${fallbackDestination}"]`));
+      syncDiscoveryUrl('replace');
+    }
+    renderRoutes(discoveryRoutes);
+    setDiscoveryStatus('fallback', timedOut ? 'העדכון החי נעצר בזמן · 6 יעדים נשארו זמינים לתכנון' : '6 יעדים זמינים · מחירים יופיעו בחיפוש חי');
     console.warn(error);
+  } finally {
+    if (timeoutId) window.clearTimeout(timeoutId);
+    if (generation === discoveryRequestGeneration) {
+      setRouteListBusy(false);
+      if (discoveryRequestController === controller) discoveryRequestController = null;
+    }
   }
 }
 
@@ -531,7 +1177,7 @@ async function searchFlights(form) {
     if (!response.ok) throw new Error(payload.message || `Flight search failed: ${response.status}`);
     renderFlightOffers(payload);
     const modeLabels = { live: 'מחירי ספקים חיים', mixed: 'נתונים חיים ואומדנים', demo: 'מחירים לאימות בחיפוש' };
-    const cacheLabels = { miss: 'עודכן עכשיו', fresh: 'תוצאה שמורה ועדכנית', stale_refreshing: 'מעדכן ברקע', stale_error: 'תוצאה אחרונה תקינה', degraded_fallback: 'ספק חלקי' };
+    const cacheLabels = { miss: 'עודכן עכשיו', fresh: 'תוצאה שמורה ועדכנית', stale_refreshing: 'מעדכן ברקע', stale_error: 'תוצאה אחרונה תקינה', degraded_fallback: 'חלק מהתוצאות אינן זמינות כרגע' };
     if (status) status.textContent = `${payload.meta.result_count} אפשרויות · ${modeLabels[payload.meta.data_mode] || modeLabels.demo} · ${cacheLabels[payload.meta.cache_state] || 'עודכן'}`;
     form.dataset.state = payload.meta.data_mode;
   } catch (error) {
@@ -566,7 +1212,12 @@ function initFlightSearch() {
     event.preventDefault();
     searchFlights(form);
   });
-  searchFlights(form);
+  if (form.dataset.autoSearch === 'false') {
+    const status = document.querySelector('[data-flight-status]');
+    if (status) status.textContent = form.dataset.initialStatus || 'היעד נשמר בטופס. התחילו חיפוש כשתרצו לבדוק זמינות.';
+  } else {
+    searchFlights(form);
+  }
 }
 
 function setHotelAreaDetail(area) {
@@ -720,7 +1371,7 @@ async function searchHotels(form) {
     renderHotelAreaMap(payload, form);
     renderHotelProperties(payload);
     const modeLabels = {live: 'מחירי ספקים חיים', mixed: 'נתונים חיים ואומדנים', demo: 'מחירים לאימות בחיפוש'};
-    const cacheLabels = {miss: 'עודכן עכשיו', fresh: 'תוצאה שמורה ועדכנית', stale_refreshing: 'מעדכן ברקע', stale_error: 'תוצאה אחרונה תקינה', degraded_fallback: 'ספק חלקי'};
+    const cacheLabels = {miss: 'עודכן עכשיו', fresh: 'תוצאה שמורה ועדכנית', stale_refreshing: 'מעדכן ברקע', stale_error: 'תוצאה אחרונה תקינה', degraded_fallback: 'חלק מהתוצאות אינן זמינות כרגע'};
     if (status) status.textContent = `${payload.meta.result_count} מקומות · ${payload.search.nights} לילות · ${modeLabels[payload.meta.data_mode] || modeLabels.demo} · ${cacheLabels[payload.meta.cache_state] || 'עודכן'}`;
     form.dataset.state = payload.meta.data_mode;
   } catch (error) {
@@ -759,7 +1410,12 @@ function initHotelSearch() {
     form.elements.area.value = '';
     searchHotels(form);
   });
-  searchHotels(form);
+  if (form.dataset.autoSearch === 'false') {
+    const status = document.querySelector('[data-hotel-status]');
+    if (status) status.textContent = form.dataset.initialStatus || 'היעד נשמר בטופס. התחילו חיפוש כשתרצו לבדוק זמינות.';
+  } else {
+    searchHotels(form);
+  }
 }
 
 const insuranceAddonLabels = {
@@ -929,7 +1585,7 @@ async function searchInsuranceQuotes(form) {
     const policyNote = document.querySelector('[data-insurance-policy-note]');
     if (policyNote) policyNote.textContent = `${payload.destination.medical_cost_context} ${payload.destination.policy_note}`;
     const modeLabels = {live: 'נתוני מבטחים מחוברים', mixed: 'נתונים חיים ואומדנים', demo: 'כיסויים ומחירים לאימות'};
-    const cacheLabels = {miss: 'עודכן עכשיו', fresh: 'תוצאה שמורה ועדכנית', stale_refreshing: 'מעדכן ברקע', stale_error: 'תוצאה אחרונה תקינה', degraded_fallback: 'ספק חלקי', bypass_sensitive: 'לא נשמר מטעמי פרטיות'};
+    const cacheLabels = {miss: 'עודכן עכשיו', fresh: 'תוצאה שמורה ועדכנית', stale_refreshing: 'מעדכן ברקע', stale_error: 'תוצאה אחרונה תקינה', degraded_fallback: 'חלק מהתוצאות אינן זמינות כרגע', bypass_sensitive: 'לא נשמר מטעמי פרטיות'};
     const assessment = payload.meta.medical_assessment_required ? ' · נדרש בירור רפואי' : '';
     if (status) status.textContent = `${payload.meta.result_count} חלופות · ${payload.query.trip_days} ימים · ${modeLabels[payload.meta.data_mode] || modeLabels.demo}${assessment} · ${cacheLabels[payload.meta.cache_state] || 'עודכן'}`;
     form.dataset.state = payload.meta.data_mode;
@@ -959,15 +1615,25 @@ function initInsuranceQuote() {
   });
   form.addEventListener('submit', event => {
     event.preventDefault();
+    if (form.dataset.contextSupported === 'false') {
+      const status = document.querySelector('[data-insurance-status]');
+      if (status) status.textContent = form.dataset.initialStatus || 'ההשוואה ליעד הזה עדיין אינה זמינה.';
+      return;
+    }
     searchInsuranceQuotes(form);
   });
   document.querySelector('[data-insurance-risk-reset]')?.addEventListener('click', () => {
     form.elements.trip_type.value = 'city_break';
     form.elements.adventure_sports.checked = false;
     form.elements.winter_sports.checked = false;
-    searchInsuranceQuotes(form);
+    if (form.dataset.contextSupported !== 'false') searchInsuranceQuotes(form);
   });
-  searchInsuranceQuotes(form);
+  if (form.dataset.contextSupported === 'false') {
+    const status = document.querySelector('[data-insurance-status]');
+    if (status) status.textContent = form.dataset.initialStatus || 'ההשוואה ליעד הזה עדיין אינה זמינה.';
+  } else {
+    searchInsuranceQuotes(form);
+  }
 }
 
 let packageComparisonPayload = null;
@@ -1173,7 +1839,7 @@ async function searchTripPackages(form) {
     if (!response.ok) throw new Error(payload.message || `Package search failed: ${response.status}`);
     renderTripPackages(payload);
     const modeLabels = {live: 'נתוני ספקים מחוברים', mixed: 'נתונים חיים ואומדנים', demo: 'רכיבים לאימות בחיפוש'};
-    const cacheLabels = {miss: 'עודכן עכשיו', fresh: 'תוצאה שמורה ועדכנית', stale_refreshing: 'מתעדכן ברקע', stale_error: 'תוצאה אחרונה תקינה', degraded_fallback: 'ספק חלקי'};
+    const cacheLabels = {miss: 'עודכן עכשיו', fresh: 'תוצאה שמורה ועדכנית', stale_refreshing: 'מתעדכן ברקע', stale_error: 'תוצאה אחרונה תקינה', degraded_fallback: 'חלק מהתוצאות אינן זמינות כרגע'};
     if (status) status.textContent = `${payload.meta.result_count} חלופות · ${payload.trip.nights} לילות · מחיר לכל ${payload.trip.travelers} הנוסעים · ${modeLabels[payload.meta.data_mode] || modeLabels.demo} · ${cacheLabels[payload.meta.cache_state] || 'עודכן'}`;
     form.dataset.state = payload.meta.data_mode;
   } catch (error) {
@@ -1206,7 +1872,12 @@ function initTripPackageSearch() {
     searchTripPackages(form);
   });
   document.querySelector('[data-package-map-reset]')?.addEventListener('click', () => selectTripPackage(packageComparisonPayload?.recommended));
-  searchTripPackages(form);
+  if (form.dataset.autoSearch === 'false') {
+    const status = document.querySelector('[data-package-status]');
+    if (status) status.textContent = form.dataset.initialStatus || 'היעד נשמר במרכיב. התחילו חיפוש כשתרצו לבדוק חלופות.';
+  } else {
+    searchTripPackages(form);
+  }
 }
 
 function workspaceKindMeta(kind) {
@@ -1438,10 +2109,13 @@ async function saveWorkspacePreferences(form) {
 
 async function initTravelerWorkspace() {
   const root = document.querySelector('[data-traveler-workspace]');
-  if (!root) return;
+  const hasMapSaveControls = Boolean(document.querySelector('[data-map-result] .save-button'));
+  if (!root && !hasMapSaveControls) return;
   travelerWorkspace = readLocalWorkspace();
-  renderWorkspaceDashboard();
-  hydrateWorkspacePreferences(travelerWorkspace.preferences);
+  if (root) {
+    renderWorkspaceDashboard();
+    hydrateWorkspacePreferences(travelerWorkspace.preferences);
+  }
   document.querySelectorAll('[data-workspace-filter]').forEach(button => button.addEventListener('click', () => {
     activeWorkspaceFilter = button.dataset.workspaceFilter;
     document.querySelectorAll('[data-workspace-filter]').forEach(filter => filter.classList.toggle('is-active', filter === button));
@@ -1461,8 +2135,11 @@ async function initTravelerWorkspace() {
     const local = readLocalWorkspace();
     travelerWorkspace = mergeTravelerWorkspaces(local, serverWorkspace);
     writeLocalWorkspace(travelerWorkspace);
-    renderWorkspaceDashboard();
-    hydrateWorkspacePreferences(travelerWorkspace.preferences);
+    if (root) {
+      renderWorkspaceDashboard();
+      hydrateWorkspacePreferences(travelerWorkspace.preferences);
+    }
+    refreshMapSaveControls();
   } catch (error) {
     const status = document.querySelector('[data-workspace-status]');
     if (status) status.textContent = 'מוצגות השמירות במכשיר; הסנכרון לחשבון אינו זמין כרגע.';
@@ -1536,10 +2213,29 @@ function initNavigation() {
 }
 
 function initMap() {
-  document.querySelectorAll('.price-pin[data-destination]').forEach(pin => pin.addEventListener('click', event => {
-    event.stopPropagation();
-    setActiveDestination(pin.dataset.destination, pin);
-    hydrateDiscovery({ destination: pin.dataset.destination, layer: activeLayer });
+  const filterPanel = document.querySelector('.theme-map-shell .filter-panel');
+  const filterHost = document.querySelector('[data-mobile-filter-host]');
+  const mapWorkspace = document.querySelector('.theme-map-shell .map-workspace');
+  const mapMain = document.querySelector('.theme-map-shell .map-main-column');
+  const filterToggle = document.querySelector('[data-filter-toggle]');
+  const mobileFilterMedia = window.matchMedia('(max-width: 760px)');
+  const syncFilterPlacement = () => {
+    if (!filterPanel || !filterHost || !mapWorkspace || !mapMain) return;
+    if (mobileFilterMedia.matches) {
+      if (filterPanel.parentElement !== filterHost) filterHost.append(filterPanel);
+    } else if (filterPanel.parentElement !== mapWorkspace) {
+      mapWorkspace.insertBefore(filterPanel, mapMain);
+      filterPanel.classList.remove('is-open');
+      document.querySelector('[data-filter-toggle]')?.setAttribute('aria-expanded', 'false');
+    }
+  };
+  syncFilterPlacement();
+  mobileFilterMedia.addEventListener?.('change', syncFilterPlacement);
+
+  document.querySelectorAll('.price-pin[data-destination]').forEach(bindDestinationPin);
+  document.querySelectorAll('[data-map-result] .save-button').forEach(button => button.addEventListener('click', () => {
+    const data = destinationData[activeDestination];
+    if (data) saveWorkspaceItem(mapDestinationWorkspaceItem(data), button);
   }));
 
   document.querySelectorAll('[data-map-zoom]').forEach(button => button.addEventListener('click', () => {
@@ -1550,48 +2246,82 @@ function initMap() {
       return;
     }
     const current = Number(globe.dataset.scale || 1);
-    const next = button.dataset.mapZoom === 'in' ? Math.min(current + .12, 1.45) : Math.max(current - .12, .78);
+    const isHomepageGlobe = Boolean(globe.closest('.home-globe-stack'));
+    const next = button.dataset.mapZoom === 'in'
+      ? Math.min(current + (isHomepageGlobe ? .03 : .12), isHomepageGlobe ? 1.03 : 1.45)
+      : Math.max(current - (isHomepageGlobe ? .08 : .12), isHomepageGlobe ? .84 : .78);
     globe.dataset.scale = next;
     globe.style.scale = next;
   }));
 
   document.querySelectorAll('[data-route]').forEach(card => card.addEventListener('click', () => selectRoute(card)));
   document.querySelectorAll('[data-map-layer]').forEach(button => button.addEventListener('click', () => {
+    discoveryDestinationLocked = false;
+    const focusedDestination = activeDestination;
     activeLayer = button.dataset.mapLayer;
-    document.querySelectorAll('[data-map-layer]').forEach(item => {
-      const selected = item === button;
-      item.classList.toggle('is-active', selected);
-      item.setAttribute('aria-pressed', String(selected));
-    });
+    syncDiscoveryControls();
     updatePins();
-    setActiveDestination(activeDestination);
-    hydrateDiscovery({ destination: activeDestination, layer: activeLayer });
+    setActiveDestination(activeDestination, null, false);
+    syncDiscoveryUrl('push');
+    hydrateDiscovery(discoveryRequestParams({ focus: focusedDestination }));
   }));
 
   const budget = document.querySelector('[data-budget]');
   const value = document.querySelector('[data-budget-value]');
   budget?.addEventListener('input', () => { if (value) value.textContent = `$${budget.value}`; });
   document.querySelector('[data-discovery-apply]')?.addEventListener('click', () => {
+    discoveryDestinationLocked = false;
     const sort = document.querySelector('[data-filter-kind="sort"] .is-active')?.dataset.filterValue || 'smart';
+    const trip = document.querySelector('[data-filter-kind="trip"] .is-active')?.dataset.filterValue || 'all';
     const direct = document.querySelector('[data-direct-filter]')?.getAttribute('aria-pressed') === 'true';
-    hydrateDiscovery({ budget: budget?.value || 5000, direct, sort, layer: activeLayer });
+    const maxStops = document.querySelector('[data-max-stops]')?.checked ? 1 : 3;
+    const maxDuration = document.querySelector('[data-max-duration]')?.checked ? 960 : 3000;
+    const allowOvernight = Boolean(document.querySelector('[data-allow-overnight]')?.checked);
+    discoveryQuery = {
+      ...discoveryQuery,
+      budget: clampDiscoveryNumber(budget?.value, 200, 1600, discoveryDefaults.budget),
+      direct,
+      sort,
+      trip,
+      max_stops: maxStops,
+      max_duration: maxDuration,
+      allow_overnight: allowOvernight
+    };
+    syncDiscoveryControls();
+    syncDiscoveryUrl('push');
+    hydrateDiscovery(discoveryRequestParams());
     document.querySelector('.filter-panel')?.classList.remove('is-open');
+    filterToggle?.setAttribute('aria-expanded', 'false');
+    if (mobileFilterMedia.matches) filterToggle?.focus();
   });
 
-  const filterPanel = document.querySelector('.filter-panel');
   document.addEventListener('click', event => {
     const filterButton = event.target.closest?.('[data-filter-toggle]');
     if (filterButton) {
       const opening = !filterPanel?.classList.contains('is-open');
       filterPanel?.classList.toggle('is-open', opening);
       filterButton.setAttribute('aria-expanded', String(opening));
+      if (opening) window.requestAnimationFrame(() => filterPanel?.querySelector('[data-filter-close]')?.focus());
       return;
     }
     if (event.target.closest?.('[data-filter-close]')) {
       filterPanel?.classList.remove('is-open');
-      document.querySelector('[data-filter-toggle]')?.setAttribute('aria-expanded', 'false');
+      filterToggle?.setAttribute('aria-expanded', 'false');
+      filterToggle?.focus();
     }
   }, true);
+
+  if (isMapWorkspacePage()) {
+    window.addEventListener('popstate', event => {
+      readDiscoveryStateFromUrl();
+      const historyFocus = String(event.state?.focus || '').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 60);
+      if (!discoveryDestinationLocked && historyFocus && destinationData[historyFocus]) activeDestination = historyFocus;
+      syncDiscoveryControls();
+      updatePins();
+      if (destinationData[activeDestination]) setActiveDestination(activeDestination, null, false);
+      hydrateDiscovery(discoveryRequestParams(!discoveryDestinationLocked && historyFocus ? { focus: historyFocus } : {}));
+    });
+  }
 }
 
 function initControls() {
@@ -1602,8 +2332,11 @@ function initControls() {
     if (searchDock && button.dataset.productAction) searchDock.action = button.dataset.productAction;
   }));
   document.querySelectorAll('[data-filter-kind] button').forEach(button => button.addEventListener('click', () => {
-    button.closest('[data-filter-kind]').querySelectorAll('button').forEach(item => item.classList.remove('is-active'));
-    button.classList.add('is-active');
+    button.closest('[data-filter-kind]').querySelectorAll('button').forEach(item => {
+      const selected = item === button;
+      item.classList.toggle('is-active', selected);
+      item.setAttribute('aria-pressed', String(selected));
+    });
   }));
   document.querySelectorAll('.filter-chips:not([data-filter-kind]) button, .experience-chips button').forEach(button => button.addEventListener('click', () => button.classList.toggle('is-active')));
   document.querySelectorAll('.toggle').forEach(toggle => toggle.addEventListener('click', () => {
@@ -2192,6 +2925,8 @@ function initDirectory() {
   const count = root.querySelector('[data-directory-count]');
   const empty = root.querySelector('[data-directory-empty]');
   const buttons = [...root.querySelectorAll('[data-directory-value]')];
+  const requestedDestination = new URLSearchParams(window.location.search).get('destination') || '';
+  let destinationFilter = directoryDestinationAliases[requestedDestination] || requestedDestination;
   let active = 'all';
   const normalize = value => String(value || '').toLocaleLowerCase('he-IL').trim();
   const apply = () => {
@@ -2200,7 +2935,8 @@ function initDirectory() {
     cards.forEach(card => {
       const matchesFilter = active === 'all' || card.dataset.region === active || card.dataset.experience === active;
       const matchesQuery = !phrase || normalize(card.dataset.search).includes(phrase);
-      card.hidden = !(matchesFilter && matchesQuery);
+      const matchesDestination = !destinationFilter || card.dataset.directoryDestination === destinationFilter;
+      card.hidden = !(matchesFilter && matchesQuery && matchesDestination);
       if (!card.hidden) visible += 1;
     });
     if (count) count.textContent = String(visible);
@@ -2210,24 +2946,35 @@ function initDirectory() {
     event.preventDefault();
     apply();
   });
-  query?.addEventListener('input', apply);
+  query?.addEventListener('input', () => {
+    destinationFilter = '';
+    apply();
+  });
   buttons.forEach(button => button.addEventListener('click', () => {
+    destinationFilter = '';
     active = button.dataset.directoryValue || 'all';
     buttons.forEach(item => item.classList.toggle('is-active', item === button));
     apply();
   }));
+  apply();
 }
 
 function initTraVelV2() {
   if (document.documentElement.dataset.traVelV2Ready === 'true') return;
   document.documentElement.dataset.traVelV2Ready = 'true';
+  readDiscoveryStateFromUrl();
   const heroCampaign = document.querySelector('[data-hero-campaign]');
-  if (heroCampaign?.dataset.mapState && destinationData[heroCampaign.dataset.mapState]) {
+  const initialActivePin = document.querySelector('.price-pin.is-active[data-destination]');
+  const hasRequestedDestination = new URLSearchParams(window.location.search).has('destination');
+  if (!hasRequestedDestination && heroCampaign?.dataset.mapState && destinationData[heroCampaign.dataset.mapState]) {
     activeDestination = heroCampaign.dataset.mapState;
+  } else if (!hasRequestedDestination && initialActivePin?.dataset.destination && destinationData[initialActivePin.dataset.destination]) {
+    activeDestination = initialActivePin.dataset.destination;
   }
   renderIcons();
   initNavigation();
   initMap();
+  initDestinationPlan();
   initControls();
   initAIConversationEntry();
   initDirectory();
@@ -2236,10 +2983,9 @@ function initTraVelV2() {
   initInsuranceQuote();
   initTripPackageSearch();
   initTravelerWorkspace();
-  const urlParams = new URLSearchParams(window.location.search);
-  const query = urlParams.get('q') || '';
-  const destination = urlParams.get('destination') || activeDestination;
-  hydrateDiscovery({ q: query, destination, layer: activeLayer });
+  syncDiscoveryControls();
+  syncDiscoveryUrl('replace');
+  hydrateDiscovery(discoveryRequestParams());
 }
 
 if (document.readyState === 'loading') {

@@ -98,9 +98,11 @@ add_filter( 'wpseo_schema_website', 'tra_vel_v2_enrich_yoast_website_schema' );
 function tra_vel_v2_robots_policy( $robots ) {
 	$private_page = is_page_template( 'page-saved.php' ) || is_page_template( 'page-account.php' ) || is_page( array( 'saved', 'account' ) );
 	$facet_keys   = array(
-		'origin', 'destination', 'depart', 'return', 'adults', 'children',
+		'q', 'origin', 'destination', 'focus', 'layer', 'depart', 'return', 'departure_date', 'return_date', 'checkin', 'checkout', 'start_date', 'end_date', 'adults', 'children', 'infants', 'rooms',
 		'currency', 'sort', 'stops', 'budget', 'hotel_class', 'amenities',
+		'direct', 'trip', 'max_stops', 'max_duration', 'allow_overnight', 'area', 'trip_destination',
 		'neighborhood', 'insurance', 'activities', 'map_lat', 'map_lng', 'map_zoom',
+		'prompt', 'intent', 'mode', 'cabin', 'trip_style', 'insurance_tier',
 	);
 	$has_facets   = (bool) array_intersect( $facet_keys, array_keys( wp_unslash( $_GET ) ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 
