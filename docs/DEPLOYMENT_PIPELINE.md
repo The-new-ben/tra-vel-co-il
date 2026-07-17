@@ -98,7 +98,7 @@ Obtain the exact backup name and current `installed_fingerprint` from the authen
 
 ### Agent Core deploy
 
-`.github/workflows/deploy-agent-core.yml` packages and validates the private agent plugin. A real dispatch requires the protected production environment, `DEPLOY TRA-VEL AGENT CORE`, and, when requested, `ACTIVATE TRA-VEL AGENT CORE`. The health gate requires the exact manifest version and checksum returned by deployment. A failed update restores its named backup; a failed first install is deactivated and removed through the narrowly scoped recovery route.
+`.github/workflows/deploy-agent-core.yml` packages and validates the private agent plugin. A real dispatch requires the protected production environment, `DEPLOY TRA-VEL AGENT CORE`, and, when requested, `ACTIVATE TRA-VEL AGENT CORE`. The post-deploy gate performs six bounded, cache-busted checks with redirects disabled. It accepts only JSON, authenticates the operator queue without placing the Application Password in a command argument, and requires the exact manifest version, deployment receipt, capabilities, and transactional schema state. Retry logs contain only status, content type, and byte count. A 330-second outer watchdog prevents a slow response from consuming the job-level timeout before rollback can run. A failed update restores its named backup only after all checks are exhausted or the watchdog stops the verifier; a failed first install is deactivated and removed through the narrowly scoped recovery route.
 
 ## GitHub production environment
 
@@ -153,7 +153,7 @@ Activate only after validation:
 
 1. Install deploy gateway 0.3.0 with `scripts/wp/bootstrap-deploy-gateway.ps1`; confirm the temporary snippet is inactive and neutralized or deleted.
 2. Confirm both authenticated theme and Agent Core status endpoints.
-3. Install and activate Agent Core 0.3.0 with `scripts/wp/bootstrap-agent-core.ps1` and `INSTALL TRA-VEL AGENT CORE`.
+3. Deploy and activate Agent Core 0.3.0 with the protected Agent Core workflow. Use `scripts/wp/bootstrap-agent-core.ps1` and `INSTALL TRA-VEL AGENT CORE` only when no Agent Core installation exists yet.
 4. Store the OpenAI key through `scripts/wp/configure-agent-key.ps1`; confirm encrypted storage without printing the secret.
 5. Create a real private run and verify the structured request, HttpOnly ownership cookie, event log, no supplier claims, and exact provider usage.
 6. Upload Tra-Vel V2 1.13.0 with the protected theme workflow. If V2 is already active, it stays active; otherwise activation requires a separately controlled operation after validation.

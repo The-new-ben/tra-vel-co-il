@@ -7,11 +7,14 @@ const root = resolve(scriptDir, '..', '..');
 const gateway = readFileSync(join(root, 'plugin', 'tra-vel-deploy-gateway', 'includes', 'class-tra-vel-plugin-deploy-controller.php'), 'utf8');
 const builder = readFileSync(join(root, 'scripts', 'ci', 'build_agent_core.py'), 'utf8');
 const workflow = readFileSync(join(root, '.github', 'workflows', 'deploy-agent-core.yml'), 'utf8');
+const themeCi = readFileSync(join(root, '.github', 'workflows', 'theme-ci.yml'), 'utf8');
 const bootstrap = readFileSync(join(root, 'scripts', 'wp', 'bootstrap-agent-core.ps1'), 'utf8');
 const configure = readFileSync(join(root, 'scripts', 'wp', 'configure-agent-key.ps1'), 'utf8');
 const deployScript = readFileSync(join(root, 'scripts', 'deploy', 'deploy-agent-core.sh'), 'utf8');
 const rollbackScript = readFileSync(join(root, 'scripts', 'deploy', 'rollback-agent-core.sh'), 'utf8');
 const removeFreshScript = readFileSync(join(root, 'scripts', 'deploy', 'remove-failed-agent-core.sh'), 'utf8');
+const healthVerifier = readFileSync(join(root, 'scripts', 'ci', 'verify_agent_deploy.py'), 'utf8');
+const healthValidator = readFileSync(join(root, 'scripts', 'ci', 'validate_agent_health_verification.py'), 'utf8');
 const failures = [];
 
 const requireText = (source, needle, message) => {
@@ -107,8 +110,42 @@ for (const [needle, message] of [
 for (const [source, needle, message] of [
   [builder, 'def content_fingerprint', 'Agent Core packaging does not calculate the extracted content fingerprint.'],
   [builder, '"content_sha256": content_digest', 'Agent Core manifest does not carry the extracted content fingerprint.'],
-  [workflow, 'deployed["content_sha256"] == manifest["content_sha256"]', 'Production verification does not compare installed content to the build manifest.'],
+  [healthVerifier, 'hmac.compare_digest(manifest[key], deployed[key])', 'Production verification does not compare the deployment receipt to the build manifest.'],
 ]) requireText(source, needle, message);
+
+for (const [needle, message] of [
+  ['timeout --signal=TERM --kill-after=5s 330s python3 scripts/ci/verify_agent_deploy.py', 'Agent Core workflow does not enforce a total watchdog around the bounded production verifier.'],
+  ['--attempts 6', 'Agent Core workflow does not use a bounded multi-attempt health gate.'],
+  ['python3 scripts/ci/validate_agent_health_verification.py', 'Agent Core package job does not exercise the health gate validator.'],
+  ['bash scripts/deploy/rollback-agent-core.sh "$backup"', 'Exhausted Agent Core health verification no longer triggers rollback.'],
+]) requireText(workflow, needle, message);
+
+requireText(
+  themeCi,
+  'python3 scripts/ci/validate_agent_health_verification.py',
+  'Pull-request CI does not exercise the Agent Core health verifier runtime contract.',
+);
+
+for (const [needle, message] of [
+  ['class NoRedirectHandler', 'Health verification can follow a missing REST route redirect to the homepage.'],
+  ['"Accept": "application/json"', 'Health verification does not request JSON explicitly.'],
+  ['"Cache-Control": "no-cache, no-store"', 'Health verification does not bypass stale endpoint caches.'],
+  ['MAX_RESPONSE_BYTES', 'Health verification does not bound response-body memory.'],
+  ['media_type == "application/json" or media_type.endswith("+json")', 'Health verification can accept a 200 HTML fallback.'],
+  ['status={self.status} content_type={self.content_type} bytes={self.byte_count}', 'Health verification does not report only bounded response metadata.'],
+  ['secrets.token_hex(8)', 'Health verification does not cache-bust each readiness attempt.'],
+  ['basic_authorization(config.username, config.app_password)', 'Operator queue verification is not authenticated in memory.'],
+  ['config.base_delay_seconds * (2 ** (attempt - 1))', 'Health verification does not use bounded exponential backoff.'],
+  ['health.get("plugin_version") == manifest.get("version")', 'Health verification can accept a stale plugin version.'],
+  ['except Exception as error:  # Fail closed without rendering request headers or response bodies.', 'Unexpected verifier failures may expose protected response data.'],
+]) requireText(healthVerifier, needle, message);
+
+for (const [needle, message] of [
+  ['A 200 HTML fallback was accepted', 'Health validator does not reject a 200 HTML fallback.'],
+  ['failed_attempts == [1, 2, 3, 4]', 'Health validator does not prove retry exhaustion is bounded.'],
+  ['Exhausted verification did not fail closed for rollback.', 'Health validator does not prove rollback signaling after exhaustion.'],
+  ['"not-printed" not in line', 'Health validator does not check secret-safe retry diagnostics.'],
+]) requireText(healthValidator, needle, message);
 
 if (failures.length) {
   console.error('Tra-Vel Agent Core deployment contract validation failed:');
@@ -116,4 +153,4 @@ if (failures.length) {
   process.exit(1);
 }
 
-console.log('Tra-Vel Agent Core deployment contract validation passed (fixed slug, package and content identity, capability, verified backup, rollback, and secret-safe configuration).');
+console.log('Tra-Vel Agent Core deployment contract validation passed (fixed identity, bounded JSON-only health retries, capability checks, verified backup, rollback, and secret-safe configuration).');
