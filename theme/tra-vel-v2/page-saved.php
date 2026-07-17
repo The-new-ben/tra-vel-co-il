@@ -14,19 +14,22 @@ get_header();
 			<div class="workspace-hero-copy">
 				<span class="eyebrow">Tra-Vel Trip Space</span>
 				<h1><?php esc_html_e( 'הטיול שלכם. כל ההחלטות במקום אחד.', 'tra-vel-v2' ); ?></h1>
-				<p><?php esc_html_e( 'שומרים טיסות, מלונות וחבילות, מצמידים יעד מחיר ורואים את כל האפשרויות על מפה אחת בלי לאבד את ההקשר.', 'tra-vel-v2' ); ?></p>
+				<p><?php esc_html_e( 'שומרים טיסות, מלונות וחבילות, מצמידים יעד מחיר ורואים את כל האפשרויות במסלול החלטה אחד בלי לאבד את ההקשר.', 'tra-vel-v2' ); ?></p>
 				<div class="workspace-hero-metrics" aria-label="<?php esc_attr_e( 'סיכום סביבת העבודה', 'tra-vel-v2' ); ?>">
 					<span><strong data-workspace-count>0</strong><?php esc_html_e( 'אפשרויות שמורות', 'tra-vel-v2' ); ?></span>
 					<span><strong data-workspace-watch-count>0</strong><?php esc_html_e( 'מעקבי מחיר', 'tra-vel-v2' ); ?></span>
 					<span><strong data-workspace-destination-count>0</strong><?php esc_html_e( 'יעדים', 'tra-vel-v2' ); ?></span>
 				</div>
 			</div>
-			<div class="workspace-orbit" data-workspace-map aria-label="<?php esc_attr_e( 'מפת האפשרויות השמורות', 'tra-vel-v2' ); ?>">
-				<div class="workspace-orbit-glow" aria-hidden="true"></div>
-				<span class="workspace-origin"><b>TLV</b><small><?php esc_html_e( 'נקודת היציאה', 'tra-vel-v2' ); ?></small></span>
-				<div data-workspace-map-pins></div>
+			<div class="workspace-orbit-column">
+				<div class="workspace-orbit" data-workspace-map data-coordinate-mode="option-orbit" aria-label="<?php esc_attr_e( 'מסלול האפשרויות השמורות. המיקום במרחב הוא לצורך השוואה ואינו מיקום גאוגרפי.', 'tra-vel-v2' ); ?>">
+					<p class="workspace-orbit-label" data-workspace-orbit-label><?php esc_html_e( 'מסלול אפשרויות · לא מיקום גאוגרפי', 'tra-vel-v2' ); ?></p>
+					<div class="workspace-orbit-glow" aria-hidden="true"></div>
+					<span class="workspace-origin"><b>TLV</b><small><?php esc_html_e( 'נקודת היציאה', 'tra-vel-v2' ); ?></small></span>
+					<div data-workspace-map-pins></div>
+				</div>
 				<article class="workspace-map-detail" data-workspace-map-detail>
-					<small><?php esc_html_e( 'הבחירה על המפה', 'tra-vel-v2' ); ?></small>
+					<small><?php esc_html_e( 'הבחירה במסלול האפשרויות', 'tra-vel-v2' ); ?></small>
 					<h2 data-workspace-map-title><?php esc_html_e( 'שמרו אפשרות כדי להתחיל', 'tra-vel-v2' ); ?></h2>
 					<p data-workspace-map-copy><?php esc_html_e( 'האפשרויות שתשמרו מהשוואת הטיסות, המלונות והחבילות יופיעו כאן.', 'tra-vel-v2' ); ?></p>
 					<strong data-workspace-map-price><?php esc_html_e( 'טרם נקבע', 'tra-vel-v2' ); ?></strong>
@@ -38,6 +41,11 @@ get_header();
 	<section class="section workspace-command-section">
 		<div class="page-width workspace-command-grid">
 			<div class="workspace-command-main">
+				<section class="workspace-quote-section" data-workspace-quote-cases aria-labelledby="workspace-quote-title" aria-busy="true">
+					<div class="workspace-quote-heading"><div><span class="eyebrow">Tra-Vel Assistance</span><h2 id="workspace-quote-title"><?php esc_html_e( 'בקשות סיוע פעילות', 'tra-vel-v2' ); ?></h2></div><p data-workspace-quote-status role="status" aria-live="polite"><?php esc_html_e( 'טוען בקשות פעילות...', 'tra-vel-v2' ); ?></p></div>
+					<div class="workspace-quote-grid" data-workspace-quote-grid></div>
+					<div class="workspace-quote-empty" data-workspace-quote-empty hidden><i data-lucide="clipboard-check"></i><div><strong><?php esc_html_e( 'אין כרגע בקשת סיוע פעילה', 'tra-vel-v2' ); ?></strong><p><?php esc_html_e( 'כשתוכנית AI תהיה מוכנה, תוכלו להעביר את הבקשה המובנית לצוות ולראות כאן התקדמות אמיתית.', 'tra-vel-v2' ); ?></p></div><a href="<?php echo esc_url( home_url( '/ai-planner/' ) ); ?>"><?php esc_html_e( 'פתחו את המתכנן', 'tra-vel-v2' ); ?></a></div>
+				</section>
 				<div class="section-heading workspace-heading">
 					<div>
 						<span class="eyebrow">Decision board</span>
@@ -64,8 +72,8 @@ get_header();
 				<div class="workspace-auth-card">
 					<i data-lucide="<?php echo is_user_logged_in() ? 'cloud-check' : 'hard-drive'; ?>"></i>
 					<div>
-						<strong><?php echo is_user_logged_in() ? esc_html__( 'נשמר גם בחשבון', 'tra-vel-v2' ) : esc_html__( 'נשמר במכשיר הזה', 'tra-vel-v2' ); ?></strong>
-						<p><?php echo is_user_logged_in() ? esc_html__( 'השמירות מסונכרנות בצורה פרטית עם חשבון WordPress שלכם.', 'tra-vel-v2' ) : esc_html__( 'אין צורך בחשבון. המידע נשאר בדפדפן ואינו נשלח לשרת.', 'tra-vel-v2' ); ?></p>
+						<strong><?php echo is_user_logged_in() ? esc_html__( 'סנכרון חשבון זמין', 'tra-vel-v2' ) : esc_html__( 'נשמר במכשיר הזה', 'tra-vel-v2' ); ?></strong>
+						<p><?php echo is_user_logged_in() ? esc_html__( 'אחרי כל שמירה יוצג אם הסנכרון הפרטי לחשבון אושר או אם נשמר רק במכשיר.', 'tra-vel-v2' ) : esc_html__( 'אין צורך בחשבון. המידע נשאר בדפדפן ואינו נשלח לשרת.', 'tra-vel-v2' ); ?></p>
 					</div>
 					<?php if ( ! is_user_logged_in() ) : ?>
 						<a href="<?php echo esc_url( wp_login_url( get_permalink() ) ); ?>"><?php esc_html_e( 'התחברו כדי לסנכרן', 'tra-vel-v2' ); ?></a>

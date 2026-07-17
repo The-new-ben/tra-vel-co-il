@@ -46,6 +46,9 @@ function tra_vel_v2_register_whatsapp_sales_handoff( $providers ) {
 				__( 'שלום, אני רוצה הצעת מחיר מאומתת דרך Tra-Vel.', 'tra-vel-v2' ),
 				sprintf( __( 'מה מחפשים: %s', 'tra-vel-v2' ), $vertical_labels[ $context['vertical'] ] ?? $context['vertical'] ),
 			);
+			if ( ! empty( $context['offer_id'] ) ) {
+				$lines[] = sprintf( __( 'מספר בקשה: %s', 'tra-vel-v2' ), sanitize_text_field( $context['offer_id'] ) );
+			}
 			$route = array_values( array_filter( array( $context['origin'], $context['destination'] ) ) );
 			if ( $route ) {
 				$lines[] = sprintf( __( 'מסלול: %s', 'tra-vel-v2' ), implode( ' ← ', $route ) );
@@ -75,4 +78,3 @@ function tra_vel_v2_register_whatsapp_sales_handoff( $providers ) {
 	return $providers;
 }
 add_filter( 'tra_vel_v2_handoff_providers', 'tra_vel_v2_register_whatsapp_sales_handoff' );
-

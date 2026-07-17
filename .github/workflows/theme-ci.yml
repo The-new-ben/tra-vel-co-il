@@ -53,6 +53,8 @@ jobs:
           node scripts/ci/validate-supplier-handoff-contract.mjs
           node scripts/ci/validate-guide-packets.mjs
           node scripts/ci/validate-agent-contract.mjs
+          node scripts/ci/validate-quote-case-contract.mjs
+          node scripts/ci/validate-quote-case-theme.mjs
           node scripts/ci/validate-agent-deploy-contract.mjs
           node scripts/ci/validate-theme-deploy-contract.mjs
           php scripts/ci/validate-supplier-runtime.php
@@ -66,6 +68,7 @@ jobs:
           php scripts/ci/validate-open-meteo-adapter.php
           php scripts/ci/validate-agent-policy-runtime.php
           php scripts/ci/validate-agent-controller-runtime.php
+          php scripts/ci/validate-quote-case-runtime.php
 
       - name: Lint WordPress PHP
         shell: bash
@@ -76,7 +79,9 @@ jobs:
           done < <(find theme/tra-vel-v2 plugin/tra-vel-deploy-gateway plugin/tra-vel-agent-core -type f -name '*.php' -print0)
 
       - name: Validate JavaScript syntax
-        run: node --check theme/tra-vel-v2/assets/js/app.js
+        run: |
+          node --check theme/tra-vel-v2/assets/js/app.js
+          node --check plugin/tra-vel-agent-core/assets/admin/quote-cases.js
 
       - name: Validate PowerShell syntax
         shell: pwsh

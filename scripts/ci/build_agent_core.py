@@ -72,6 +72,26 @@ def archive_info(path: PurePosixPath) -> zipfile.ZipInfo:
     return info
 
 
+def content_fingerprint(sources: list[Path]) -> str:
+    """Match the gateway's archive-independent directory fingerprint."""
+    digest = hashlib.sha256()
+    for source in sources:
+        relative = source.relative_to(PLUGIN_DIR).as_posix()
+        relative_bytes = relative.encode("utf-8")
+        payload = source.read_bytes()
+        digest.update(
+            str(len(relative_bytes)).encode("ascii")
+            + b":"
+            + relative_bytes
+            + b":"
+            + str(len(payload)).encode("ascii")
+            + b":"
+        )
+        digest.update(payload)
+        digest.update(b"\n")
+    return digest.hexdigest()
+
+
 if not PLUGIN_MAIN.is_file():
     fail(f"Agent Core plugin entrypoint is missing: {PLUGIN_MAIN}")
 
@@ -89,6 +109,9 @@ archive_name = f"{PLUGIN_SLUG}-{version}-{revision_label}.zip"
 archive_path = DIST_DIR / archive_name
 
 DIST_DIR.mkdir(parents=True, exist_ok=True)
+unsafe_entries = [source for source in sorted(PLUGIN_DIR.rglob("*")) if source.is_symlink() or source.name.startswith(".env")]
+if unsafe_entries:
+    fail(f"Agent Core contains an unsafe package entry: {unsafe_entries[0].relative_to(PLUGIN_DIR)}")
 sources = [source for source in sorted(PLUGIN_DIR.rglob("*")) if include_file(source)]
 if not sources:
     fail(f"Agent Core plugin contains no packageable files: {PLUGIN_DIR}")
@@ -115,6 +138,7 @@ with zipfile.ZipFile(archive_path, "r") as archive:
         fail(f"Built package failed its CRC check: {bad_file}")
 
 digest = hashlib.sha256(archive_path.read_bytes()).hexdigest()
+content_digest = content_fingerprint(sources)
 manifest = {
     "plugin": PLUGIN_SLUG,
     "plugin_file": f"{PLUGIN_SLUG}/{PLUGIN_SLUG}.php",
@@ -122,6 +146,7 @@ manifest = {
     "revision": revision_value,
     "archive": archive_name,
     "sha256": digest,
+    "content_sha256": content_digest,
     "files": len(sources),
     "bytes": archive_path.stat().st_size,
 }
@@ -130,3 +155,4 @@ MANIFEST_PATH.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\
 print(f"Built {archive_path}")
 print(f"Manifest {MANIFEST_PATH}")
 print(f"SHA256 {digest}")
+print(f"Content SHA256 {content_digest}")

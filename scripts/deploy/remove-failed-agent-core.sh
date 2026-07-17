@@ -38,10 +38,11 @@ curl --fail-with-body --silent --show-error --max-time 180 \
 
 python3 - "$RESPONSE_FILE" <<'PY'
 import json
+import re
 import sys
 
 data = json.load(open(sys.argv[1], encoding="utf-8"))
-if data.get("ok") is not True or data.get("removed") is not True:
+if data.get("ok") is not True or data.get("removed") is not True or not re.fullmatch(r"[a-f0-9]{64}", str(data.get("content_sha256", ""))):
     raise SystemExit("WordPress did not confirm failed fresh Agent Core removal.")
 print(f"Removed failed fresh Agent Core {data['version']} ({data['sha256'][:12]}...).")
 PY

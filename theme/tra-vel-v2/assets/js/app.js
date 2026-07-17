@@ -17,6 +17,10 @@ let discoveryFieldProvenance = {};
 let discoveryLiveLayers = { deals: false, hotels: false, airports: false, airportDetails: false, weather: false };
 let discoveryRequestController = null;
 let discoveryRequestGeneration = 0;
+let hotelSearchController = null;
+let hotelSearchGeneration = 0;
+let insuranceSearchController = null;
+let insuranceSearchGeneration = 0;
 let activePlanIntent = 'smart';
 let discoveryDestinationLocked = false;
 const discoveryLayers = new Set(['deals', 'hotels', 'airports', 'weather']);
@@ -56,6 +60,14 @@ const directoryDestinationIds = new Set(['budapest', 'prague', 'vienna', 'thaila
 
 function renderIcons() {
   if (window.lucide) window.lucide.createIcons({ attrs: { 'stroke-width': 1.8 } });
+}
+
+function prefersReducedMotion() {
+  return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
+}
+
+function preferredScrollBehavior() {
+  return prefersReducedMotion() ? 'auto' : 'smooth';
 }
 
 function clampDiscoveryNumber(value, minimum, maximum, fallback) {
@@ -512,7 +524,7 @@ function updateDestinationPlanStages(plan, responseConfirmed) {
 function runConfirmedPlanAnimation(container, tailSelector) {
   if (!container) return;
   container.classList.remove('is-updating');
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  if (prefersReducedMotion()) return;
   void container.offsetWidth;
   container.classList.add('is-updating');
   const tail = container.querySelector(tailSelector);
@@ -667,6 +679,14 @@ function appendTextElement(parent, tag, text, className = '') {
 const workspaceLocalKey = 'traVelV2.workspace.v1';
 let travelerWorkspace = null;
 let activeWorkspaceFilter = 'all';
+let workspaceLocalStorageAvailable = true;
+const workspaceQuoteCaseRuntime = {
+  timer: 0,
+  failures: 0,
+  inFlight: false,
+  controller: null,
+  snapshot: new Map()
+};
 
 function defaultLocalWorkspace() {
   return {
@@ -680,6 +700,7 @@ function defaultLocalWorkspace() {
 function readLocalWorkspace() {
   try {
     const parsed = JSON.parse(window.localStorage.getItem(workspaceLocalKey) || 'null');
+    workspaceLocalStorageAvailable = true;
     if (!parsed || parsed.version !== 1 || !Array.isArray(parsed.items)) return defaultLocalWorkspace();
     return {
       ...defaultLocalWorkspace(),
@@ -688,17 +709,22 @@ function readLocalWorkspace() {
       preferences: {...defaultLocalWorkspace().preferences, ...(parsed.preferences || {})}
     };
   } catch (error) {
+    workspaceLocalStorageAvailable = false;
     console.warn(error);
     return defaultLocalWorkspace();
   }
 }
 
 function writeLocalWorkspace(workspace) {
-  travelerWorkspace = workspace;
   try {
     window.localStorage.setItem(workspaceLocalKey, JSON.stringify(workspace));
+    travelerWorkspace = workspace;
+    workspaceLocalStorageAvailable = true;
+    return true;
   } catch (error) {
+    workspaceLocalStorageAvailable = false;
     console.warn(error);
+    return false;
   }
 }
 
@@ -835,7 +861,7 @@ function normalizeWorkspaceItem(item) {
 }
 
 function isWorkspaceItemSaved(itemId) {
-  return readLocalWorkspace().items.some(item => item.id === itemId);
+  return (travelerWorkspace || readLocalWorkspace()).items.some(item => item.id === itemId);
 }
 
 function refreshMapSaveControls() {
@@ -850,28 +876,42 @@ function refreshMapSaveControls() {
 
 async function saveWorkspaceItem(rawItem, button) {
   const item = normalizeWorkspaceItem(rawItem);
-  if (!item.external_id || !item.title) return;
-  const workspace = readLocalWorkspace();
+  if (!item.external_id || !item.title) return {localSaved: false, accountSynced: false};
+  const workspace = travelerWorkspace || readLocalWorkspace();
   const existing = workspace.items.find(saved => saved.id === item.id);
   if (existing?.watch) item.watch = existing.watch;
-  workspace.items = [item, ...workspace.items.filter(saved => saved.id !== item.id)].slice(0, 50);
-  writeLocalWorkspace(workspace);
+  const nextWorkspace = {
+    ...workspace,
+    items: [item, ...workspace.items.filter(saved => saved.id !== item.id)].slice(0, 50)
+  };
+  if (!writeLocalWorkspace(nextWorkspace)) {
+    showWorkspaceToast('לא הצלחנו לשמור בדפדפן. בדקו שהאחסון המקומי זמין ונסו שוב.', 'triangle-alert');
+    return {localSaved: false, accountSynced: false};
+  }
   button?.classList.add('is-saved');
   if (button) {
     const label = button.querySelector('span');
     if (label) label.textContent = 'נשמר לנסיעה';
     button.setAttribute('aria-label', 'נשמר לנסיעה');
   }
-  showWorkspaceToast(window.traVelV2?.isLoggedIn ? 'נשמר במכשיר ומסתנכרן לחשבון' : 'נשמר באופן פרטי במכשיר הזה', 'heart');
+  if (!window.traVelV2?.isLoggedIn) {
+    showWorkspaceToast('נשמר באופן פרטי במכשיר הזה', 'heart');
+    return {localSaved: true, accountSynced: false};
+  }
+  showWorkspaceToast('נשמר במכשיר. בודקים סנכרון לחשבון...', 'cloud');
   try {
     const serverWorkspace = await workspaceRequest('/items', {method: 'POST', body: JSON.stringify(item)});
     if (serverWorkspace) {
-      writeLocalWorkspace(mergeTravelerWorkspaces(workspace, serverWorkspace));
+      writeLocalWorkspace(mergeTravelerWorkspaces(nextWorkspace, serverWorkspace));
+      showWorkspaceToast('השמירה אושרה בחשבון ובמכשיר', 'cloud-check');
+      return {localSaved: true, accountSynced: true};
     }
+    showWorkspaceToast('נשמר במכשיר; סנכרון החשבון אינו זמין כרגע', 'cloud-off');
   } catch (error) {
     showWorkspaceToast('נשמר במכשיר; הסנכרון לחשבון ינסה שוב בהמשך', 'cloud-off');
     console.warn(error);
   }
+  return {localSaved: true, accountSynced: false};
 }
 
 function createSaveOfferButton(item) {
@@ -952,7 +992,14 @@ function setDiscoveryStatus(mode, message) {
   const canvas = document.querySelector('[data-map-canvas]');
   if (canvas) canvas.dataset.dataMode = mode;
   const status = document.querySelector('[data-layer-status]');
-  if (status) status.textContent = message;
+  if (status) {
+    const allowedStates = new Set(['loading', 'live', 'demo', 'fallback', 'error']);
+    const state = allowedStates.has(mode)
+      ? mode
+      : (mode === 'mixed' && discoveryLiveLayers[activeLayer] ? 'live' : 'demo');
+    status.dataset.state = state;
+    status.textContent = message;
+  }
   const plan = document.querySelector('[data-destination-plan]');
   if (plan) {
     plan.dataset.requestState = mode;
@@ -1026,7 +1073,8 @@ async function hydrateDiscovery(params = {}) {
       discoveryRoutes = resolvedDestination === selected && Array.isArray(payload.routes)
         ? payload.routes.filter(route => route.destination_id === selected)
         : [];
-      setActiveDestination(selected, document.querySelector(`[data-destination="${selected}"]`));
+      const responseSupportsConfirmedMotion = !['fallback', 'error'].includes(discoveryDataMode);
+      setActiveDestination(selected, document.querySelector(`[data-destination="${selected}"]`), responseSupportsConfirmedMotion);
       renderRoutes(discoveryRoutes);
       syncDiscoveryUrl('replace');
     } else {
@@ -1041,7 +1089,10 @@ async function hydrateDiscovery(params = {}) {
     const modeLabel = discoveryLiveLayers[activeLayer]
       ? liveModeLabels[activeLayer]
       : verificationLabels[activeLayer];
-    setDiscoveryStatus(discoveryDataMode, `${layerName} · ${payload.meta.result_count} יעדים · ${modeLabel}`);
+    const confirmedState = ['fallback', 'error'].includes(discoveryDataMode)
+      ? discoveryDataMode
+      : (discoveryLiveLayers[activeLayer] ? 'live' : 'demo');
+    setDiscoveryStatus(confirmedState, `${layerName} · ${payload.meta.result_count} יעדים · ${modeLabel}`);
   } catch (error) {
     if ((error?.name === 'AbortError' && !timedOut) || generation !== discoveryRequestGeneration) return;
     discoveryDataMode = 'demo';
@@ -1053,11 +1104,11 @@ async function hydrateDiscovery(params = {}) {
     updatePins();
     const fallbackDestination = destinationData[requestParams.destination] ? requestParams.destination : Object.keys(destinationData)[0];
     if (fallbackDestination) {
-      setActiveDestination(fallbackDestination, document.querySelector(`[data-destination="${fallbackDestination}"]`));
+      setActiveDestination(fallbackDestination, document.querySelector(`[data-destination="${fallbackDestination}"]`), false);
       syncDiscoveryUrl('replace');
     }
     renderRoutes(discoveryRoutes);
-    setDiscoveryStatus('fallback', timedOut ? 'העדכון החי נעצר בזמן · 6 יעדים נשארו זמינים לתכנון' : '6 יעדים זמינים · מחירים יופיעו בחיפוש חי');
+    setDiscoveryStatus(fallbackDestination ? 'fallback' : 'error', timedOut ? 'העדכון החי נעצר בזמן · 6 יעדים נשארו זמינים לתכנון' : '6 יעדים זמינים · מחירים יופיעו בחיפוש חי');
     console.warn(error);
   } finally {
     if (timeoutId) window.clearTimeout(timeoutId);
@@ -1361,12 +1412,20 @@ async function searchHotels(form) {
   });
   const url = new URL(endpoint, window.location.origin);
   params.forEach((value, key) => url.searchParams.set(key, value));
+  hotelSearchController?.abort();
+  const controller = typeof AbortController === 'function' ? new AbortController() : null;
+  hotelSearchController = controller;
+  const generation = ++hotelSearchGeneration;
   submit.disabled = true;
   form.dataset.state = 'loading';
   if (status) status.textContent = 'משווה אזור, מחיר מלא, תנאים וזמן למסלול...';
   try {
-    const response = await fetch(url, {headers: {Accept: 'application/json'}});
+    const response = await fetch(url, {
+      headers: {Accept: 'application/json'},
+      ...(controller ? {signal: controller.signal} : {})
+    });
     const payload = await response.json();
+    if (generation !== hotelSearchGeneration) return;
     if (!response.ok) throw new Error(payload.message || `Hotel search failed: ${response.status}`);
     renderHotelAreaMap(payload, form);
     renderHotelProperties(payload);
@@ -1375,12 +1434,16 @@ async function searchHotels(form) {
     if (status) status.textContent = `${payload.meta.result_count} מקומות · ${payload.search.nights} לילות · ${modeLabels[payload.meta.data_mode] || modeLabels.demo} · ${cacheLabels[payload.meta.cache_state] || 'עודכן'}`;
     form.dataset.state = payload.meta.data_mode;
   } catch (error) {
+    if (error?.name === 'AbortError' || generation !== hotelSearchGeneration) return;
     document.querySelector('[data-hotel-results]')?.replaceChildren();
     if (status) status.textContent = 'לא הצלחנו להשלים את השוואת המלונות. בדקו את התאריכים ונסו שוב.';
     form.dataset.state = 'error';
     console.warn(error);
   } finally {
-    submit.disabled = false;
+    if (generation === hotelSearchGeneration) {
+      submit.disabled = false;
+      if (hotelSearchController === controller) hotelSearchController = null;
+    }
   }
 }
 
@@ -1569,6 +1632,10 @@ async function searchInsuranceQuotes(form) {
     if (!params.has(name)) params.set(name, 'false');
   });
   const requestBody = Object.fromEntries(params.entries());
+  insuranceSearchController?.abort();
+  const controller = typeof AbortController === 'function' ? new AbortController() : null;
+  insuranceSearchController = controller;
+  const generation = ++insuranceSearchGeneration;
   submit.disabled = true;
   form.dataset.state = 'loading';
   if (status) status.textContent = 'משווה גבולות, הרחבות, שירות, חריגים ומחיר משוער...';
@@ -1576,9 +1643,11 @@ async function searchInsuranceQuotes(form) {
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: {Accept: 'application/json', 'Content-Type': 'application/json'},
-      body: JSON.stringify(requestBody)
+      body: JSON.stringify(requestBody),
+      ...(controller ? {signal: controller.signal} : {})
     });
     const payload = await response.json();
+    if (generation !== insuranceSearchGeneration) return;
     if (!response.ok) throw new Error(payload.message || `Insurance comparison failed: ${response.status}`);
     renderInsuranceRiskMap(payload, form);
     renderInsurancePlans(payload);
@@ -1590,12 +1659,16 @@ async function searchInsuranceQuotes(form) {
     if (status) status.textContent = `${payload.meta.result_count} חלופות · ${payload.query.trip_days} ימים · ${modeLabels[payload.meta.data_mode] || modeLabels.demo}${assessment} · ${cacheLabels[payload.meta.cache_state] || 'עודכן'}`;
     form.dataset.state = payload.meta.data_mode;
   } catch (error) {
+    if (error?.name === 'AbortError' || generation !== insuranceSearchGeneration) return;
     document.querySelector('[data-insurance-results]')?.replaceChildren();
     if (status) status.textContent = 'לא הצלחנו להשלים את ההשוואה. בדקו תאריכים ונסו שוב.';
     form.dataset.state = 'error';
     console.warn(error);
   } finally {
-    submit.disabled = false;
+    if (generation === insuranceSearchGeneration) {
+      submit.disabled = false;
+      if (insuranceSearchController === controller) insuranceSearchController = null;
+    }
   }
 }
 
@@ -1663,7 +1736,7 @@ function selectTripPackage(packageId, shouldFocus = false) {
     const element = document.querySelector(selector);
     if (element) element.textContent = value;
   });
-  if (shouldFocus) document.querySelector('[data-package-map-detail]')?.scrollIntoView({behavior: 'smooth', block: 'center'});
+  if (shouldFocus) document.querySelector('[data-package-map-detail]')?.scrollIntoView({behavior: preferredScrollBehavior(), block: 'center'});
 }
 
 function renderPackageMap(payload) {
@@ -1928,6 +2001,10 @@ function selectWorkspaceMapItem(itemId) {
 function renderWorkspaceMap(items) {
   const pins = document.querySelector('[data-workspace-map-pins]');
   if (!pins) return;
+  const orbit = pins.closest('[data-workspace-map]');
+  if (orbit) orbit.dataset.coordinateMode = 'option-orbit';
+  const orbitLabel = orbit?.querySelector('[data-workspace-orbit-label]');
+  if (orbitLabel) orbitLabel.textContent = 'מסלול אפשרויות · לא מיקום גאוגרפי';
   pins.replaceChildren();
   const positions = [[64,28],[38,21],[24,43],[57,52],[73,43],[40,62],[18,67],[82,64]];
   items.slice(0, 8).forEach((item, index) => {
@@ -1937,7 +2014,7 @@ function renderWorkspaceMap(items) {
     button.dataset.workspaceMapPin = item.id;
     button.style.left = `${positions[index][0]}%`;
     button.style.top = `${positions[index][1]}%`;
-    button.setAttribute('aria-label', `${item.title}, ${item.price_label || workspaceMoney(item)}`);
+    button.setAttribute('aria-label', `${item.title}, ${item.price_label || workspaceMoney(item)}, נקודה במסלול האפשרויות ולא מיקום גאוגרפי`);
     button.setAttribute('aria-pressed', String(index === 0));
     appendTextElement(button, 'strong', item.price_label || workspaceMoney(item));
     appendTextElement(button, 'span', item.destination || item.title);
@@ -1949,31 +2026,57 @@ function renderWorkspaceMap(items) {
 
 async function removeWorkspaceItem(itemId) {
   const workspace = travelerWorkspace || readLocalWorkspace();
-  workspace.items = workspace.items.filter(item => item.id !== itemId);
-  writeLocalWorkspace(workspace);
+  const nextWorkspace = {...workspace, items: workspace.items.filter(item => item.id !== itemId)};
+  if (!writeLocalWorkspace(nextWorkspace)) {
+    showWorkspaceToast('האפשרות לא הוסרה כי השינוי לא נשמר בדפדפן.', 'triangle-alert');
+    return {localSaved: false, accountSynced: false};
+  }
   renderWorkspaceDashboard();
   showWorkspaceToast('האפשרות הוסרה מהנסיעה', 'trash-2');
   try {
-    await workspaceRequest(`/items/${encodeURIComponent(itemId)}`, {method: 'DELETE'});
+    const serverWorkspace = await workspaceRequest(`/items/${encodeURIComponent(itemId)}`, {method: 'DELETE'});
+    if (window.traVelV2?.isLoggedIn && !serverWorkspace) {
+      showWorkspaceToast('האפשרות הוסרה במכשיר; סנכרון החשבון אינו זמין כרגע', 'cloud-off');
+      return {localSaved: true, accountSynced: false};
+    }
+    return {localSaved: true, accountSynced: Boolean(serverWorkspace)};
   } catch (error) {
+    showWorkspaceToast('האפשרות הוסרה במכשיר; השינוי בחשבון לא אושר', 'cloud-off');
     console.warn(error);
+    return {localSaved: true, accountSynced: false};
   }
 }
 
 async function toggleWorkspaceWatch(itemId) {
   const workspace = travelerWorkspace || readLocalWorkspace();
   const item = workspace.items.find(saved => saved.id === itemId);
-  if (!item) return;
+  if (!item) return {localSaved: false, accountSynced: false};
   const enabled = !item.watch?.enabled;
   const target = enabled ? Math.max(1, Math.round((item.price_amount || 0) * .95)) : 0;
-  item.watch = {enabled, target_amount: target, delivery_enabled: false, status: enabled ? 'awaiting_live_supplier' : 'off'};
-  writeLocalWorkspace(workspace);
+  const nextWorkspace = {
+    ...workspace,
+    items: workspace.items.map(saved => saved.id === itemId ? {
+      ...saved,
+      watch: {enabled, target_amount: target, delivery_enabled: false, status: enabled ? 'awaiting_live_supplier' : 'off'}
+    } : saved)
+  };
+  if (!writeLocalWorkspace(nextWorkspace)) {
+    showWorkspaceToast('יעד המחיר לא השתנה כי השינוי לא נשמר בדפדפן.', 'triangle-alert');
+    return {localSaved: false, accountSynced: false};
+  }
   renderWorkspaceDashboard(itemId);
   showWorkspaceToast(enabled ? 'יעד המחיר נשמר; המשלוח ייפתח עם ספק חי' : 'מעקב המחיר הוסר', enabled ? 'bell-ring' : 'bell-off');
   try {
-    await workspaceRequest(`/items/${encodeURIComponent(itemId)}/watch`, {method: 'PUT', body: JSON.stringify({enabled, target_amount: target})});
+    const serverWorkspace = await workspaceRequest(`/items/${encodeURIComponent(itemId)}/watch`, {method: 'PUT', body: JSON.stringify({enabled, target_amount: target})});
+    if (window.traVelV2?.isLoggedIn && !serverWorkspace) {
+      showWorkspaceToast('יעד המחיר נשמר במכשיר; סנכרון החשבון אינו זמין כרגע', 'cloud-off');
+      return {localSaved: true, accountSynced: false};
+    }
+    return {localSaved: true, accountSynced: Boolean(serverWorkspace)};
   } catch (error) {
+    showWorkspaceToast('יעד המחיר נשמר במכשיר; השינוי בחשבון לא אושר', 'cloud-off');
     console.warn(error);
+    return {localSaved: true, accountSynced: false};
   }
 }
 
@@ -2019,11 +2122,11 @@ function renderWorkspaceCard(item) {
   const mapButton = document.createElement('button');
   mapButton.type = 'button';
   const mapIcon = document.createElement('i');
-  mapIcon.dataset.lucide = 'map-pin';
-  mapButton.append(mapIcon, document.createTextNode('על המפה'));
+  mapIcon.dataset.lucide = 'orbit';
+  mapButton.append(mapIcon, document.createTextNode('במסלול האפשרויות'));
   mapButton.addEventListener('click', () => {
     selectWorkspaceMapItem(item.id);
-    document.querySelector('[data-workspace-map]')?.scrollIntoView({behavior: 'smooth', block: 'center'});
+    document.querySelector('[data-workspace-map]')?.scrollIntoView({behavior: preferredScrollBehavior(), block: 'center'});
   });
   const watchButton = document.createElement('button');
   watchButton.type = 'button';
@@ -2068,7 +2171,10 @@ function renderWorkspaceDashboard(preferredItemId = '') {
   renderWorkspaceMap(items);
   if (preferredItemId) selectWorkspaceMapItem(preferredItemId);
   const status = document.querySelector('[data-workspace-status]');
-  if (status) status.textContent = items.length ? `${items.length} אפשרויות · נשמרות באופן פרטי · התראות אינן פעילות עדיין` : 'סביבת העבודה מוכנה. שמרו אפשרות אחת כדי להתחיל להשוות.';
+  if (status) {
+    const storageLabel = workspaceLocalStorageAvailable ? 'נשמרות באופן פרטי' : 'זמינות בלשונית הזאת בלבד';
+    status.textContent = items.length ? `${items.length} אפשרויות · ${storageLabel} · התראות אינן פעילות עדיין` : 'סביבת העבודה מוכנה. שמרו אפשרות אחת כדי להתחיל להשוות.';
+  }
   renderIcons();
 }
 
@@ -2093,17 +2199,242 @@ async function saveWorkspacePreferences(form) {
   };
   if (preferences.home_airport.length !== 3) {
     showWorkspaceToast('יש להזין קוד שדה תעופה בן שלוש אותיות', 'triangle-alert');
-    return;
+    return {localSaved: false, accountSynced: false};
   }
   const workspace = travelerWorkspace || readLocalWorkspace();
-  workspace.preferences = preferences;
-  writeLocalWorkspace(workspace);
-  showWorkspaceToast(window.traVelV2?.isLoggedIn ? 'ההעדפות נשמרו ומסתנכרנות לחשבון' : 'ההעדפות נשמרו במכשיר הזה', 'sliders-horizontal');
+  const nextWorkspace = {...workspace, preferences};
+  if (!writeLocalWorkspace(nextWorkspace)) {
+    showWorkspaceToast('ההעדפות לא נשמרו בדפדפן. בדקו את הגדרות האחסון ונסו שוב.', 'triangle-alert');
+    return {localSaved: false, accountSynced: false};
+  }
+  if (!window.traVelV2?.isLoggedIn) {
+    showWorkspaceToast('ההעדפות נשמרו במכשיר הזה', 'sliders-horizontal');
+    return {localSaved: true, accountSynced: false};
+  }
+  showWorkspaceToast('ההעדפות נשמרו במכשיר. בודקים סנכרון לחשבון...', 'cloud');
   try {
     const serverWorkspace = await workspaceRequest('/preferences', {method: 'PUT', body: JSON.stringify(preferences)});
-    if (serverWorkspace) writeLocalWorkspace(mergeTravelerWorkspaces(workspace, serverWorkspace));
+    if (serverWorkspace) {
+      writeLocalWorkspace(mergeTravelerWorkspaces(nextWorkspace, serverWorkspace));
+      showWorkspaceToast('ההעדפות אושרו בחשבון ובמכשיר', 'cloud-check');
+      return {localSaved: true, accountSynced: true};
+    }
+    showWorkspaceToast('ההעדפות נשמרו במכשיר; סנכרון החשבון אינו זמין כרגע', 'cloud-off');
   } catch (error) {
+    showWorkspaceToast('ההעדפות נשמרו במכשיר; השינוי בחשבון לא אושר', 'cloud-off');
     console.warn(error);
+  }
+  return {localSaved: true, accountSynced: false};
+}
+
+function renderWorkspaceQuoteCaseCard(initialCase, confirmedForward = false) {
+  let caseData = initialCase;
+  const card = document.createElement('article');
+  card.className = `workspace-quote-card${confirmedForward ? ' is-advancing' : ''}`;
+  card.dataset.status = String(caseData.status || 'queued');
+  card.dataset.version = String(Math.max(0, Number(caseData.version) || 0));
+
+  const head = document.createElement('div');
+  head.className = 'workspace-quote-card-head';
+  const identity = document.createElement('div');
+  appendTextElement(identity, 'small', 'בקשת סיוע');
+  appendTextElement(identity, 'strong', caseData.reference || caseData.case_id, 'workspace-quote-reference');
+  const status = document.createElement('span');
+  status.className = 'workspace-quote-card-status';
+  status.textContent = quoteCaseStatusLabel(caseData);
+  head.append(identity, status);
+  card.append(head);
+
+  appendTextElement(card, 'h3', quoteCaseSummaryText(caseData));
+  const progress = document.createElement('div');
+  progress.className = 'workspace-quote-card-progress';
+  const progressState = quoteCaseProgressState(caseData.status);
+  ['תוכנית', 'תור', 'בדיקה', 'המשך'].forEach((label, index) => {
+    const item = document.createElement('span');
+    const state = quoteCaseStepState(progressState, index);
+    item.dataset.state = state;
+    item.textContent = label;
+    progress.append(item);
+  });
+  card.append(progress);
+
+  const next = document.createElement('div');
+  next.className = 'workspace-quote-card-next';
+  const nextIcon = document.createElement('i');
+  nextIcon.dataset.lucide = 'route';
+  const nextCopy = document.createElement('div');
+  appendTextElement(nextCopy, 'small', 'הפעולה הבאה');
+  appendTextElement(nextCopy, 'p', quoteCaseNextAction(caseData));
+  next.append(nextIcon, nextCopy);
+  card.append(next);
+
+  const meta = document.createElement('div');
+  meta.className = 'workspace-quote-card-meta';
+  appendTextElement(meta, 'span', `גרסת תוכנית ${Math.max(1, Number(caseData.source?.request_revision) || 1)}`);
+  appendTextElement(meta, 'time', caseData.updated_at ? `עודכן ${formatQuoteCaseTime(caseData.updated_at, true)}` : 'ממתין לעדכון');
+  card.append(meta);
+
+  const actionStatus = document.createElement('p');
+  actionStatus.className = 'workspace-quote-action-status';
+  actionStatus.setAttribute('role', 'status');
+  actionStatus.setAttribute('aria-live', 'polite');
+  card.append(actionStatus);
+
+  const actions = document.createElement('div');
+  actions.className = 'workspace-quote-card-actions';
+  const open = document.createElement('button');
+  open.type = 'button';
+  const openIcon = document.createElement('i');
+  openIcon.dataset.lucide = 'sparkles';
+  open.append(openIcon, document.createTextNode('פתחו את התוכנית'));
+  open.addEventListener('click', () => {
+    if (caseData.source?.run_id) storeAgentRunSession(caseData.source.run_id);
+    window.location.assign(safeWorkspaceHref(`${window.traVelV2?.homeUrl || '/'}ai-planner/`));
+  });
+  const handoff = document.createElement('button');
+  handoff.type = 'button';
+  handoff.className = 'is-secondary';
+  const handoffIcon = document.createElement('i');
+  handoffIcon.dataset.lucide = 'message-circle';
+  handoff.append(handoffIcon, document.createTextNode('המשיכו בוואטסאפ'));
+  handoff.addEventListener('click', async () => {
+    if (handoff.dataset.state === 'loading') return;
+    const popup = window.open('about:blank', '_blank');
+    if (popup) popup.opener = null;
+    handoff.dataset.state = 'loading';
+    handoff.disabled = true;
+    actionStatus.dataset.state = 'running';
+    actionStatus.textContent = 'מכינים קישור מאובטח עם מספר הבקשה...';
+    try {
+      const payload = await requestQuoteCaseHandoff(caseData, handoff);
+      const updatedCase = normalizeQuoteCasePayload(payload);
+      if (updatedCase) caseData = updatedCase;
+      const url = safeQuoteCaseHandoffUrl(payload?.handoff_url);
+      if (!url) throw new Error('The handoff URL is unavailable.');
+      delete handoff.dataset.idempotencyKey;
+      actionStatus.dataset.state = payload?.replayed ? 'reused' : 'success';
+      actionStatus.textContent = payload?.replayed
+        ? 'הקישור המאובטח הקיים נפתח מחדש ללא עדכון כפול.'
+        : 'הקישור הוכן ונרשם בבקשה.';
+      if (popup) popup.location.replace(url);
+      else window.location.assign(url);
+    } catch (error) {
+      if (popup) popup.close();
+      actionStatus.dataset.state = 'error';
+      actionStatus.textContent = quoteCaseErrorMessage(error);
+    } finally {
+      delete handoff.dataset.state;
+      handoff.disabled = false;
+    }
+  });
+  actions.append(open, handoff);
+  card.append(actions);
+  return card;
+}
+
+function renderWorkspaceQuoteCases(cases, confirmedForwardIds = new Set()) {
+  const root = document.querySelector('[data-workspace-quote-cases]');
+  const grid = root?.querySelector('[data-workspace-quote-grid]');
+  const empty = root?.querySelector('[data-workspace-quote-empty]');
+  const status = root?.querySelector('[data-workspace-quote-status]');
+  if (!root || !grid) return;
+  const active = (Array.isArray(cases) ? cases : [])
+    .filter(caseData => caseData?.case_id && quoteCaseActiveStatuses.has(caseData.status))
+    .sort((a, b) => String(b.updated_at || '').localeCompare(String(a.updated_at || '')));
+  grid.replaceChildren(...active.map(caseData => renderWorkspaceQuoteCaseCard(caseData, confirmedForwardIds.has(caseData.case_id))));
+  if (empty) empty.hidden = active.length > 0;
+  if (status) status.textContent = active.length
+    ? `${active.length} בקשות פעילות עם מצב והיסטוריה מאומתים`
+    : 'אין בקשות פעילות. תוכנית שמוכנה לסיוע תופיע כאן לאחר אישורכם.';
+  root.setAttribute('aria-busy', 'false');
+  renderIcons();
+}
+
+function workspaceQuoteCaseSnapshot(cases) {
+  return new Map((Array.isArray(cases) ? cases : [])
+    .filter(caseData => caseData?.case_id)
+    .map(caseData => [caseData.case_id, {
+      case_id: caseData.case_id,
+      status: String(caseData.status || ''),
+      version: Math.max(0, Number(caseData.version) || 0)
+    }]));
+}
+
+function workspaceQuoteCasesChanged(nextSnapshot) {
+  if (nextSnapshot.size !== workspaceQuoteCaseRuntime.snapshot.size) return true;
+  return [...nextSnapshot].some(([caseId, next]) => {
+    const previous = workspaceQuoteCaseRuntime.snapshot.get(caseId);
+    return !previous || previous.version !== next.version || previous.status !== next.status;
+  });
+}
+
+function scheduleWorkspaceQuoteCasePoll(delay = 20000) {
+  if (workspaceQuoteCaseRuntime.timer) window.clearTimeout(workspaceQuoteCaseRuntime.timer);
+  workspaceQuoteCaseRuntime.timer = 0;
+  if (!document.querySelector('[data-workspace-quote-cases]')) return;
+  const visibilityDelay = document.visibilityState === 'hidden' ? Math.max(delay, 60000) : delay;
+  workspaceQuoteCaseRuntime.timer = window.setTimeout(() => pollWorkspaceQuoteCases(), visibilityDelay);
+}
+
+async function pollWorkspaceQuoteCases() {
+  workspaceQuoteCaseRuntime.timer = 0;
+  if (document.visibilityState === 'hidden') {
+    scheduleWorkspaceQuoteCasePoll(60000);
+    return;
+  }
+  await loadWorkspaceQuoteCases({polling: true});
+}
+
+async function loadWorkspaceQuoteCases({polling = false} = {}) {
+  const root = document.querySelector('[data-workspace-quote-cases]');
+  if (!root || workspaceQuoteCaseRuntime.inFlight) return;
+  const status = root.querySelector('[data-workspace-quote-status]');
+  workspaceQuoteCaseRuntime.inFlight = true;
+  const controller = typeof AbortController === 'function' ? new AbortController() : null;
+  workspaceQuoteCaseRuntime.controller = controller;
+  let timedOut = false;
+  const timeoutId = controller ? window.setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, 15000) : 0;
+  if (!polling) root.setAttribute('aria-busy', 'true');
+  try {
+    const payload = await agentApiRequest('/quote-cases', controller ? {signal: controller.signal} : {});
+    const cases = Array.isArray(payload?.cases) ? payload.cases : [];
+    const nextSnapshot = workspaceQuoteCaseSnapshot(cases);
+    const changed = !polling || workspaceQuoteCasesChanged(nextSnapshot);
+    const confirmedForwardIds = new Set();
+    if (polling && changed) {
+      cases.forEach(caseData => {
+        const previous = workspaceQuoteCaseRuntime.snapshot.get(caseData?.case_id);
+        if (isConfirmedQuoteCaseForward(previous, caseData)) confirmedForwardIds.add(caseData.case_id);
+      });
+    }
+    if (changed) renderWorkspaceQuoteCases(cases, confirmedForwardIds);
+    else root.setAttribute('aria-busy', 'false');
+    workspaceQuoteCaseRuntime.snapshot = nextSnapshot;
+    workspaceQuoteCaseRuntime.failures = 0;
+  } catch (error) {
+    root.setAttribute('aria-busy', 'false');
+    const hiddenAbort = error?.name === 'AbortError' && !timedOut && document.visibilityState === 'hidden';
+    if (!hiddenAbort) {
+      workspaceQuoteCaseRuntime.failures = Math.min(8, workspaceQuoteCaseRuntime.failures + 1);
+      if (status && (!polling || workspaceQuoteCaseRuntime.failures >= 3)) status.textContent = error?.status === 404
+        ? 'שירות בקשות הסיוע עדיין אינו זמין באתר. ננסה להתחבר שוב אוטומטית.'
+        : 'העדכון החי אינו זמין כרגע. המצב האחרון שאושר נשאר מוצג וננסה שוב אוטומטית.';
+      if (!polling) {
+        const empty = root.querySelector('[data-workspace-quote-empty]');
+        if (empty) empty.hidden = false;
+      }
+    }
+  } finally {
+    if (timeoutId) window.clearTimeout(timeoutId);
+    if (workspaceQuoteCaseRuntime.controller === controller) workspaceQuoteCaseRuntime.controller = null;
+    workspaceQuoteCaseRuntime.inFlight = false;
+    const retryDelay = workspaceQuoteCaseRuntime.failures
+      ? Math.min(180000, 10000 * (2 ** Math.min(workspaceQuoteCaseRuntime.failures - 1, 4)))
+      : 20000;
+    scheduleWorkspaceQuoteCasePoll(retryDelay);
   }
 }
 
@@ -2115,6 +2446,14 @@ async function initTravelerWorkspace() {
   if (root) {
     renderWorkspaceDashboard();
     hydrateWorkspacePreferences(travelerWorkspace.preferences);
+    loadWorkspaceQuoteCases();
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState !== 'visible') {
+        workspaceQuoteCaseRuntime.controller?.abort();
+        return;
+      }
+      scheduleWorkspaceQuoteCasePoll(250);
+    });
   }
   document.querySelectorAll('[data-workspace-filter]').forEach(button => button.addEventListener('click', () => {
     activeWorkspaceFilter = button.dataset.workspaceFilter;
@@ -2133,8 +2472,8 @@ async function initTravelerWorkspace() {
   try {
     const serverWorkspace = await workspaceRequest();
     const local = readLocalWorkspace();
-    travelerWorkspace = mergeTravelerWorkspaces(local, serverWorkspace);
-    writeLocalWorkspace(travelerWorkspace);
+    const mergedWorkspace = mergeTravelerWorkspaces(local, serverWorkspace);
+    if (!writeLocalWorkspace(mergedWorkspace)) travelerWorkspace = mergedWorkspace;
     if (root) {
       renderWorkspaceDashboard();
       hydrateWorkspacePreferences(travelerWorkspace.preferences);
@@ -2349,11 +2688,29 @@ const agentActiveRunStorageKey = 'traVelAgent.activeRunId';
 const agentRuntime = {
   runId: '',
   status: '',
+  requestId: '',
+  requestRevision: 0,
   lastSequence: 0,
   events: [],
   eventIds: new Set(),
   pollTimer: 0,
-  pollFailures: 0
+  pollFailures: 0,
+  pollInFlight: false,
+  pollController: null,
+  pollGeneration: 0,
+  pollRunToken: '',
+  quoteCase: null,
+  quoteCaseEvents: [],
+  quoteCaseEventIds: new Set(),
+  quoteCaseLastSequence: 0,
+  quoteCaseDiscardedSequence: 0,
+  quoteCasePollTimer: 0,
+  quoteCasePollFailures: 0,
+  quoteCasePollInFlight: false,
+  quoteCasePollController: null,
+  quoteCasePollGeneration: 0,
+  quoteCasePollCaseToken: '',
+  quoteCaseLoading: false
 };
 
 function readAgentSessionValue(key) {
@@ -2382,15 +2739,66 @@ function storeAgentRunSession(runId) {
   }
 }
 
-function resetAgentRuntime(runId = '') {
+function isCurrentAgentPoll(runId, generation, controller) {
+  return agentRuntime.runId === runId
+    && agentRuntime.pollGeneration === generation
+    && agentRuntime.pollRunToken === runId
+    && agentRuntime.pollController === controller;
+}
+
+function invalidateAgentPoll() {
   if (agentRuntime.pollTimer) window.clearTimeout(agentRuntime.pollTimer);
+  agentRuntime.pollTimer = 0;
+  agentRuntime.pollController?.abort();
+  agentRuntime.pollController = null;
+  agentRuntime.pollGeneration += 1;
+  agentRuntime.pollRunToken = '';
+  agentRuntime.pollInFlight = false;
+}
+
+function isCurrentQuoteCasePoll(caseId, generation, controller) {
+  return agentRuntime.quoteCase?.case_id === caseId
+    && agentRuntime.quoteCasePollGeneration === generation
+    && agentRuntime.quoteCasePollCaseToken === caseId
+    && agentRuntime.quoteCasePollController === controller;
+}
+
+function invalidateQuoteCasePoll() {
+  if (agentRuntime.quoteCasePollTimer) window.clearTimeout(agentRuntime.quoteCasePollTimer);
+  agentRuntime.quoteCasePollTimer = 0;
+  agentRuntime.quoteCasePollController?.abort();
+  agentRuntime.quoteCasePollController = null;
+  agentRuntime.quoteCasePollGeneration += 1;
+  agentRuntime.quoteCasePollCaseToken = '';
+  agentRuntime.quoteCasePollInFlight = false;
+}
+
+function resetAgentRuntime(runId = '') {
+  invalidateAgentPoll();
+  invalidateQuoteCasePoll();
   agentRuntime.runId = runId;
   agentRuntime.status = '';
+  agentRuntime.requestId = '';
+  agentRuntime.requestRevision = 0;
   agentRuntime.lastSequence = 0;
   agentRuntime.events = [];
   agentRuntime.eventIds.clear();
   agentRuntime.pollTimer = 0;
   agentRuntime.pollFailures = 0;
+  agentRuntime.pollInFlight = false;
+  agentRuntime.pollController = null;
+  agentRuntime.pollRunToken = '';
+  agentRuntime.quoteCase = null;
+  agentRuntime.quoteCaseEvents = [];
+  agentRuntime.quoteCaseEventIds.clear();
+  agentRuntime.quoteCaseLastSequence = 0;
+  agentRuntime.quoteCaseDiscardedSequence = 0;
+  agentRuntime.quoteCasePollTimer = 0;
+  agentRuntime.quoteCasePollFailures = 0;
+  agentRuntime.quoteCasePollInFlight = false;
+  agentRuntime.quoteCasePollController = null;
+  agentRuntime.quoteCasePollCaseToken = '';
+  agentRuntime.quoteCaseLoading = false;
 }
 
 function agentRestBase() {
@@ -2417,7 +2825,8 @@ async function agentApiRequest(path, options = {}) {
     method: options.method || 'GET',
     body: options.body || undefined,
     credentials: 'same-origin',
-    headers
+    headers,
+    ...(options.signal ? {signal: options.signal} : {})
   });
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
@@ -2472,10 +2881,26 @@ function setAgentWorkbenchStatus(root, message, state = '') {
   status.dataset.state = state;
 }
 
-function setAgentWorkbenchError(root, message = '') {
+function setAgentWorkbenchError(root, message = '', options = {}) {
   const error = agentWorkbenchRoot(root).querySelector('[data-agent-error]');
   if (!error) return;
-  error.textContent = message;
+  error.replaceChildren();
+  if (message) {
+    const copy = document.createElement('span');
+    copy.textContent = message;
+    error.append(copy);
+  }
+  if (message && options.reconnect === true) {
+    const reconnect = document.createElement('button');
+    reconnect.type = 'button';
+    reconnect.dataset.agentReconnect = '';
+    reconnect.textContent = 'נסו להתחבר עכשיו';
+    reconnect.addEventListener('click', () => reconnectAgentPolling(root));
+    error.append(reconnect);
+    error.dataset.hasAction = 'true';
+  } else {
+    delete error.dataset.hasAction;
+  }
   error.hidden = !message;
 }
 
@@ -2491,6 +2916,14 @@ function resetAgentWorkbench(root) {
   const assumptions = view.querySelector('[data-agent-assumptions]');
   const assumptionList = view.querySelector('[data-agent-assumption-list]');
   const supplier = view.querySelector('[data-agent-supplier-state]');
+  const quoteCase = view.querySelector('[data-agent-quote-case]');
+  const quoteCaseCreate = view.querySelector('[data-quote-case-create]');
+  const quoteCaseActive = view.querySelector('[data-quote-case-active]');
+  const quoteCaseEvents = view.querySelector('[data-quote-case-events]');
+  const quoteCaseEventEmpty = view.querySelector('[data-quote-case-event-empty]');
+  const quoteCaseConsent = view.querySelector('[data-quote-case-consent]');
+  const quoteCaseCreateButton = view.querySelector('[data-quote-case-create-button]');
+  const quoteCaseCreateStatus = view.querySelector('[data-quote-case-create-status]');
   const revisionComposer = view.querySelector('[data-agent-revision-composer]');
   const revisionForm = view.querySelector('[data-agent-revision-form]');
   const revisionStatus = view.querySelector('[data-agent-revision-status]');
@@ -2521,6 +2954,20 @@ function resetAgentWorkbench(root) {
     supplier.textContent = '';
     delete supplier.dataset.state;
   }
+  if (quoteCase) {
+    quoteCase.hidden = true;
+    delete quoteCase.dataset.status;
+  }
+  if (quoteCaseCreate) quoteCaseCreate.hidden = true;
+  if (quoteCaseActive) quoteCaseActive.hidden = true;
+  quoteCaseEvents?.replaceChildren();
+  if (quoteCaseEventEmpty) quoteCaseEventEmpty.hidden = false;
+  if (quoteCaseConsent) quoteCaseConsent.checked = false;
+  if (quoteCaseCreateButton) {
+    quoteCaseCreateButton.disabled = true;
+    delete quoteCaseCreateButton.dataset.idempotencyKey;
+  }
+  if (quoteCaseCreateStatus) quoteCaseCreateStatus.textContent = 'לא יבוצעו חיפוש ספקים, חיוב או הזמנה בשלב הזה.';
   setAgentWorkbenchError(root);
 }
 
@@ -2724,16 +3171,548 @@ function renderAgentSupplierState(root, run) {
   supplier.textContent = '';
 }
 
+const quoteCaseActiveStatuses = new Set(['queued', 'in_review', 'needs_information', 'ready_for_assistance']);
+const quoteCaseTerminalStatuses = new Set(['closed_no_quote', 'cancelled', 'expired']);
+const quoteCaseEventDomLimit = 100;
+
+function normalizeQuoteCasePayload(payload) {
+  const candidate = payload?.case || payload?.quote_case || payload;
+  return candidate && typeof candidate === 'object' && typeof candidate.case_id === 'string' ? candidate : null;
+}
+
+function quoteCaseStatusLabel(caseData) {
+  const labels = {
+    queued: 'הבקשה התקבלה וממתינה לבדיקה',
+    in_review: 'הבקשה נמצאת בבדיקת מומחה',
+    needs_information: 'נדרש מידע נוסף כדי להמשיך',
+    ready_for_assistance: 'הבדיקה מוכנה להמשך עם מומחה',
+    closed_no_quote: 'הבקשה נסגרה ללא הצעה',
+    cancelled: 'הבקשה בוטלה',
+    expired: 'תוקף הבקשה הסתיים'
+  };
+  return labels[caseData?.status]
+    || (typeof caseData?.status_label === 'string' && caseData.status_label.trim() ? caseData.status_label : 'מצב הבקשה התקבל מהשרת');
+}
+
+function quoteCaseNextAction(caseData) {
+  if (typeof caseData?.next_action === 'string' && caseData.next_action.trim()) return caseData.next_action;
+  const labels = {
+    queued: 'אין צורך לעשות דבר כרגע. הבקשה ממתינה לצוות Tra-Vel.',
+    in_review: 'הצוות בודק את התוכנית. עדכון חדש יופיע כאן כשהמצב ישתנה.',
+    needs_information: 'פתחו את השיחה בוואטסאפ והשלימו את הפרט שביקש המומחה.',
+    ready_for_assistance: 'המשיכו לשיחה עם המומחה כדי לבדוק מחיר, זמינות ותנאים.',
+    closed_no_quote: 'אפשר לעדכן את התוכנית ולפתוח בקשת סיוע חדשה.',
+    cancelled: 'הבקשה אינה פעילה. התוכנית הפרטית נשארה זמינה לעדכון.',
+    expired: 'פתחו בקשת סיוע חדשה אם התוכנית עדיין רלוונטית.'
+  };
+  return labels[caseData?.status]
+    || (typeof caseData?.next_action?.label === 'string' && caseData.next_action.label.trim() ? caseData.next_action.label : 'המתינו לעדכון מאומת מהשרת.');
+}
+
+function quoteCaseSummaryText(caseData) {
+  if (typeof caseData?.summary === 'string' && caseData.summary.trim()) return caseData.summary;
+  if (!caseData?.summary || typeof caseData.summary !== 'object') return 'בקשת הסיוע קשורה לתוכנית המובנית שמופיעה למעלה.';
+  const title = typeof caseData.summary.title === 'string' ? caseData.summary.title.trim() : '';
+  const destinations = Array.isArray(caseData.summary.destinations) ? caseData.summary.destinations.filter(Boolean).join(', ') : '';
+  const origin = typeof caseData.summary.origin === 'string' ? caseData.summary.origin.trim() : '';
+  const route = [origin, destinations].filter(Boolean).join(' → ');
+  const date = typeof caseData.summary.date_text === 'string' ? caseData.summary.date_text.trim() : '';
+  return [title, route, date].filter(Boolean).join(' · ') || 'בקשת סיוע לתוכנית הנסיעה';
+}
+
+function formatQuoteCaseTime(value, includeDate = false) {
+  if (!value) return '';
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return '';
+  return parsed.toLocaleString('he-IL', includeDate
+    ? {day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'}
+    : {hour: '2-digit', minute: '2-digit'});
+}
+
+function setQuoteCaseError(root, message = '', source = '') {
+  const error = agentWorkbenchRoot(root).querySelector('[data-quote-case-error]');
+  if (!error) return;
+  error.textContent = message;
+  error.hidden = !message;
+  if (message && source) error.dataset.source = source;
+  else delete error.dataset.source;
+}
+
+function quoteCaseErrorMessage(error) {
+  if (error?.status === 409) return 'הבקשה השתנתה במקום אחר. המצב העדכני ייטען מחדש לפני פעולה נוספת.';
+  if (error?.status === 401 || error?.status === 403) return 'הגישה לבקשת הסיוע פגה. פתחו את התוכנית מחדש כדי להמשיך.';
+  if (error?.status === 404 || error?.code === 'agent_unavailable') return 'שירות בקשות הסיוע עדיין אינו זמין באתר.';
+  if (error?.status === 429) return 'נשלחו יותר מדי פעולות בזמן קצר. המתינו רגע ונסו שוב.';
+  return 'הפעולה לא אושרה בשרת. המצב הקודם נשאר ללא שינוי.';
+}
+
+function quoteCaseProgressState(status) {
+  if (status === 'queued') return {current: 1, completed: 1, mode: 'active'};
+  if (status === 'in_review') return {current: 2, completed: 2, mode: 'active'};
+  if (status === 'needs_information') return {current: 2, completed: 2, mode: 'blocked'};
+  if (status === 'ready_for_assistance') return {current: 3, completed: 3, mode: 'active'};
+  if (quoteCaseTerminalStatuses.has(status)) return {current: -1, completed: 0, mode: 'terminal'};
+  return {current: -1, completed: 0, mode: 'neutral'};
+}
+
+function quoteCaseStepState(progress, index) {
+  if (progress.mode === 'terminal') return 'terminal';
+  if (progress.mode === 'blocked' && index === progress.current) return 'blocked';
+  if (index < progress.completed) return 'completed';
+  if (progress.mode === 'active' && index === progress.current) return 'current';
+  return 'pending';
+}
+
+function isConfirmedQuoteCaseForward(previousCase, nextCase) {
+  if (!previousCase?.case_id || previousCase.case_id !== nextCase?.case_id) return false;
+  if (Number(nextCase.version) <= Number(previousCase.version)) return false;
+  const rank = {queued: 1, in_review: 2, needs_information: 2, ready_for_assistance: 3};
+  if (!quoteCaseActiveStatuses.has(nextCase.status) || nextCase.status === 'needs_information') return false;
+  return Number(rank[nextCase.status] || 0) > Number(rank[previousCase.status] || 0);
+}
+
+function renderQuoteCaseProgress(view, status) {
+  const progress = quoteCaseProgressState(status);
+  view.querySelectorAll('[data-quote-step]').forEach(step => {
+    const index = Number(step.dataset.quoteStep);
+    const state = quoteCaseStepState(progress, index);
+    step.dataset.state = state;
+    step.classList.toggle('is-completed', state === 'completed');
+    step.classList.toggle('is-current', state === 'current');
+    step.classList.toggle('is-blocked', state === 'blocked');
+    step.classList.toggle('is-terminal', state === 'terminal');
+    if (state === 'current') step.setAttribute('aria-current', 'step');
+    else step.removeAttribute('aria-current');
+  });
+}
+
+function quoteCaseActorLabel(event) {
+  return {system: 'מערכת', traveler: 'אתם', operator: 'צוות Tra-Vel'}[event?.actor_type] || 'עדכון';
+}
+
+function mergeAndRenderQuoteCaseEvents(root, events) {
+  if (!Array.isArray(events)) return 0;
+  const view = agentWorkbenchRoot(root);
+  const log = view.querySelector('[data-quote-case-events]');
+  const empty = view.querySelector('[data-quote-case-event-empty]');
+  if (!log) return 0;
+
+  let added = 0;
+
+  [...events].sort((a, b) => Number(a?.sequence || 0) - Number(b?.sequence || 0)).forEach(event => {
+    if (!event || event.visibility === 'internal' || !event.message) return;
+    const sequence = Number(event.sequence || 0);
+    if (sequence > 0 && sequence <= agentRuntime.quoteCaseDiscardedSequence) return;
+    const eventId = String(event.event_id || `quote-sequence-${sequence}`);
+    if (agentRuntime.quoteCaseEventIds.has(eventId)) return;
+    agentRuntime.quoteCaseEventIds.add(eventId);
+    agentRuntime.quoteCaseEvents.push(event);
+    added += 1;
+    if (sequence > agentRuntime.quoteCaseLastSequence) agentRuntime.quoteCaseLastSequence = sequence;
+
+    const item = document.createElement('li');
+    item.className = `agent-quote-event is-${String(event.to_status || 'queued').replace(/[^a-z_]/g, '')}`;
+    item.dataset.quoteEventId = eventId;
+    const meta = document.createElement('div');
+    const actor = document.createElement('span');
+    const time = document.createElement('time');
+    const message = document.createElement('p');
+    actor.textContent = quoteCaseActorLabel(event);
+    if (event.occurred_at) {
+      time.dateTime = event.occurred_at;
+      time.textContent = formatQuoteCaseTime(event.occurred_at);
+    }
+    message.textContent = event.message;
+    meta.append(actor, time);
+    item.append(meta, message);
+    log.append(item);
+
+    while (agentRuntime.quoteCaseEvents.length > quoteCaseEventDomLimit) {
+      const discarded = agentRuntime.quoteCaseEvents.shift();
+      const discardedId = String(discarded?.event_id || `quote-sequence-${Number(discarded?.sequence || 0)}`);
+      const discardedSequence = Number(discarded?.sequence || 0);
+      if (discardedSequence > agentRuntime.quoteCaseDiscardedSequence) agentRuntime.quoteCaseDiscardedSequence = discardedSequence;
+      agentRuntime.quoteCaseEventIds.delete(discardedId);
+      log.firstElementChild?.remove();
+    }
+  });
+  if (empty) empty.hidden = log.childElementCount > 0;
+  return added;
+}
+
+function renderAgentQuoteCaseAvailability(root) {
+  const view = agentWorkbenchRoot(root);
+  const panel = view.querySelector('[data-agent-quote-case]');
+  const create = view.querySelector('[data-quote-case-create]');
+  const active = view.querySelector('[data-quote-case-active]');
+  const status = view.querySelector('[data-quote-case-status]');
+  if (!panel || agentRuntime.quoteCase) return;
+  const available = agentRuntime.status === 'request_ready' && Boolean(agentRuntime.requestId) && agentRuntime.requestRevision > 0;
+  panel.hidden = !available;
+  if (create) create.hidden = !available;
+  if (active) active.hidden = true;
+  if (status) status.textContent = available ? 'מוכנה להעברה' : '';
+}
+
+function renderAgentQuoteCase(root, caseData) {
+  if (!caseData?.case_id) {
+    agentRuntime.quoteCase = null;
+    renderAgentQuoteCaseAvailability(root);
+    return false;
+  }
+  const currentCase = agentRuntime.quoteCase;
+  const currentVersion = Number(currentCase?.version);
+  const incomingVersion = Number(caseData.version);
+  if (currentCase?.case_id === caseData.case_id
+    && Number.isFinite(currentVersion)
+    && Number.isFinite(incomingVersion)
+    && incomingVersion < currentVersion) return false;
+  const view = agentWorkbenchRoot(root);
+  const panel = view.querySelector('[data-agent-quote-case]');
+  const create = view.querySelector('[data-quote-case-create]');
+  const active = view.querySelector('[data-quote-case-active]');
+  if (!panel || !active) return false;
+
+  const previousCaseId = agentRuntime.quoteCase?.case_id || '';
+  const previousCase = agentRuntime.quoteCase;
+  if (previousCaseId && previousCaseId !== caseData.case_id) {
+    agentRuntime.quoteCaseEvents = [];
+    agentRuntime.quoteCaseEventIds.clear();
+    agentRuntime.quoteCaseLastSequence = 0;
+    agentRuntime.quoteCaseDiscardedSequence = 0;
+    view.querySelector('[data-quote-case-events]')?.replaceChildren();
+  }
+  agentRuntime.quoteCase = caseData;
+  panel.hidden = false;
+  panel.dataset.status = String(caseData.status || 'queued');
+  if (create) create.hidden = true;
+  active.hidden = false;
+
+  const status = view.querySelector('[data-quote-case-status]');
+  const reference = view.querySelector('[data-quote-case-reference]');
+  const updated = view.querySelector('[data-quote-case-updated]');
+  const summary = view.querySelector('[data-quote-case-summary]');
+  const nextAction = view.querySelector('[data-quote-case-next-action]');
+  const handoff = view.querySelector('[data-quote-case-handoff]');
+  const cancel = view.querySelector('[data-quote-case-cancel]');
+  if (status) status.textContent = quoteCaseStatusLabel(caseData);
+  if (reference) reference.textContent = caseData.reference || caseData.case_id;
+  if (updated) {
+    updated.dateTime = caseData.updated_at || '';
+    updated.textContent = caseData.updated_at ? `עודכן ${formatQuoteCaseTime(caseData.updated_at, true)}` : '';
+  }
+  if (summary) summary.textContent = quoteCaseSummaryText(caseData);
+  if (nextAction) nextAction.textContent = quoteCaseNextAction(caseData);
+  renderQuoteCaseProgress(view, caseData.status);
+  mergeAndRenderQuoteCaseEvents(root, caseData.events || []);
+
+  const terminal = quoteCaseTerminalStatuses.has(caseData.status);
+  if (handoff) {
+    handoff.hidden = terminal;
+    handoff.disabled = handoff.dataset.state === 'loading';
+  }
+  if (cancel) {
+    cancel.hidden = terminal;
+    cancel.disabled = cancel.dataset.state === 'loading';
+  }
+  if (isConfirmedQuoteCaseForward(previousCase, caseData)) {
+    panel.classList.remove('is-advancing');
+    window.requestAnimationFrame(() => {
+      panel.classList.add('is-advancing');
+      window.setTimeout(() => panel.classList.remove('is-advancing'), 720);
+    });
+  }
+  setQuoteCaseError(root);
+  scheduleQuoteCasePoll(root);
+  return true;
+}
+
+async function fetchQuoteCase(caseId, options = {}) {
+  const payload = await agentApiRequest(`/quote-cases/${encodeURIComponent(caseId)}`, options);
+  return normalizeQuoteCasePayload(payload);
+}
+
+async function claimQuoteCaseForAccount(caseData) {
+  if (!window.traVelV2?.isLoggedIn || caseData?.ownership !== 'private_browser_owner' || !caseData?.case_id) return caseData;
+  const payload = await agentApiRequest(`/quote-cases/${encodeURIComponent(caseData.case_id)}/claim`, {
+    method: 'POST',
+    body: JSON.stringify({
+      expected_version: Number(caseData.version),
+      idempotency_key: `quote-claim-${caseData.case_id}-${Number(caseData.version)}`
+    })
+  });
+  return normalizeQuoteCasePayload(payload) || caseData;
+}
+
+async function loadQuoteCaseForRun(root) {
+  if (!agentRuntime.runId || agentRuntime.quoteCaseLoading) return agentRuntime.quoteCase;
+  const runId = agentRuntime.runId;
+  agentRuntime.quoteCaseLoading = true;
+  try {
+    const payload = await agentApiRequest('/quote-cases');
+    if (agentRuntime.runId !== runId) return null;
+    const cases = Array.isArray(payload?.cases) ? payload.cases : [];
+    const match = cases
+      .filter(item => item?.source?.run_id === runId)
+      .sort((a, b) => String(b.updated_at || '').localeCompare(String(a.updated_at || '')))[0];
+    if (!match) {
+      agentRuntime.quoteCase = null;
+      renderAgentQuoteCaseAvailability(root);
+      return null;
+    }
+    let caseData = match;
+    try {
+      caseData = await fetchQuoteCase(match.case_id) || match;
+    } catch (error) {
+      caseData = match;
+    }
+    if (window.traVelV2?.isLoggedIn && caseData?.ownership === 'private_browser_owner') {
+      try {
+        caseData = await claimQuoteCaseForAccount(caseData);
+      } catch (error) {
+        if (error?.status === 409) caseData = await fetchQuoteCase(match.case_id) || caseData;
+      }
+    }
+    if (agentRuntime.runId === runId) renderAgentQuoteCase(root, caseData);
+    return caseData;
+  } catch (error) {
+    if (![404, 401, 403].includes(error?.status)) setQuoteCaseError(root, quoteCaseErrorMessage(error));
+    renderAgentQuoteCaseAvailability(root);
+    return null;
+  } finally {
+    agentRuntime.quoteCaseLoading = false;
+  }
+}
+
+function safeQuoteCaseHandoffUrl(value) {
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' && url.hostname.toLowerCase() === 'api.whatsapp.com' ? url.href : '';
+  } catch (error) {
+    return '';
+  }
+}
+
+async function requestQuoteCaseHandoff(caseData, button) {
+  if (!caseData?.case_id || !Number.isInteger(Number(caseData.version))) throw new Error('Quote case version is unavailable.');
+  if (!button.dataset.idempotencyKey) button.dataset.idempotencyKey = createAgentClientRequestId();
+  return agentApiRequest(`/quote-cases/${encodeURIComponent(caseData.case_id)}/handoffs`, {
+    method: 'POST',
+    body: JSON.stringify({
+      channel: 'whatsapp',
+      expected_version: Number(caseData.version),
+      idempotency_key: button.dataset.idempotencyKey
+    })
+  });
+}
+
+async function createAgentQuoteCase(root) {
+  const view = agentWorkbenchRoot(root);
+  const button = view.querySelector('[data-quote-case-create-button]');
+  const consent = view.querySelector('[data-quote-case-consent]');
+  const status = view.querySelector('[data-quote-case-create-status]');
+  if (!button || !consent?.checked || button.dataset.state === 'loading') return;
+  if (agentRuntime.status !== 'request_ready' || !agentRuntime.runId || !agentRuntime.requestId || agentRuntime.requestRevision < 1) {
+    setQuoteCaseError(root, 'בקשת הנסיעה עדיין אינה מוכנה להעברה. השלימו את הפרטים החסרים בתוכנית.');
+    return;
+  }
+  if (!button.dataset.idempotencyKey) button.dataset.idempotencyKey = createAgentClientRequestId();
+  button.dataset.state = 'loading';
+  button.disabled = true;
+  if (status) status.textContent = 'פותחים בקשה מתועדת ושומרים את גרסת התוכנית המדויקת...';
+  setQuoteCaseError(root);
+  try {
+    const payload = await agentApiRequest(`/runs/${encodeURIComponent(agentRuntime.runId)}/quote-cases`, {
+      method: 'POST',
+      body: JSON.stringify({
+        expected_request_id: agentRuntime.requestId,
+        expected_revision: agentRuntime.requestRevision,
+        consent: true,
+        consent_version: '2026-07-17',
+        idempotency_key: button.dataset.idempotencyKey
+      })
+    });
+    const caseData = normalizeQuoteCasePayload(payload);
+    if (!caseData) throw new Error('The server did not return a quote case.');
+    delete button.dataset.idempotencyKey;
+    renderAgentQuoteCase(root, caseData);
+    view.querySelector('[data-quote-case-reference]')?.focus?.({preventScroll: true});
+  } catch (error) {
+    const message = quoteCaseErrorMessage(error);
+    setQuoteCaseError(root, message);
+    if (status) status.textContent = message;
+  } finally {
+    delete button.dataset.state;
+    button.disabled = !consent.checked;
+  }
+}
+
+async function handoffAgentQuoteCase(root) {
+  const view = agentWorkbenchRoot(root);
+  const button = view.querySelector('[data-quote-case-handoff]');
+  const status = view.querySelector('[data-quote-case-action-status]');
+  const caseData = agentRuntime.quoteCase;
+  if (!button || !caseData || button.dataset.state === 'loading') return;
+  const popup = window.open('about:blank', '_blank');
+  if (popup) popup.opener = null;
+  button.dataset.state = 'loading';
+  button.disabled = true;
+  if (status) status.dataset.state = 'running';
+  if (status) status.textContent = 'מכינים קישור מאובטח עם מספר הבקשה...';
+  try {
+    const payload = await requestQuoteCaseHandoff(caseData, button);
+    const updatedCase = normalizeQuoteCasePayload(payload);
+    if (payload?.event) mergeAndRenderQuoteCaseEvents(root, [payload.event]);
+    if (updatedCase) renderAgentQuoteCase(root, updatedCase);
+    const url = safeQuoteCaseHandoffUrl(payload?.handoff_url);
+    if (!url) throw new Error('The handoff URL is unavailable.');
+    delete button.dataset.idempotencyKey;
+    if (status) status.dataset.state = payload?.replayed ? 'reused' : 'success';
+    if (status) status.textContent = payload?.replayed
+      ? 'הקישור המאובטח הקיים נפתח מחדש ללא עדכון כפול.'
+      : 'הקישור הוכן ונרשם בהיסטוריית הבקשה.';
+    if (popup) popup.location.replace(url);
+    else window.location.assign(url);
+  } catch (error) {
+    if (popup) popup.close();
+    const message = quoteCaseErrorMessage(error);
+    setQuoteCaseError(root, message);
+    if (status) status.dataset.state = 'error';
+    if (status) status.textContent = message;
+    if (error?.status === 409 && caseData.case_id) {
+      try {
+        const refreshed = await fetchQuoteCase(caseData.case_id);
+        if (refreshed) renderAgentQuoteCase(root, refreshed);
+      } catch (refreshError) {
+        // Preserve the last confirmed case when a conflict refresh is unavailable.
+      }
+    }
+  } finally {
+    delete button.dataset.state;
+    button.disabled = false;
+  }
+}
+
+async function cancelAgentQuoteCase(root) {
+  const view = agentWorkbenchRoot(root);
+  const button = view.querySelector('[data-quote-case-cancel]');
+  const status = view.querySelector('[data-quote-case-action-status]');
+  const caseData = agentRuntime.quoteCase;
+  if (!button || !caseData || button.dataset.state === 'loading') return;
+  if (!window.confirm('לבטל את בקשת הסיוע? התוכנית הפרטית תישאר זמינה, אבל הצוות יפסיק לטפל בבקשה הזאת.')) return;
+  if (!button.dataset.idempotencyKey) button.dataset.idempotencyKey = createAgentClientRequestId();
+  button.dataset.state = 'loading';
+  button.disabled = true;
+  if (status) status.dataset.state = 'running';
+  if (status) status.textContent = 'שולחים בקשת ביטול לשרת...';
+  try {
+    const payload = await agentApiRequest(`/quote-cases/${encodeURIComponent(caseData.case_id)}/cancel`, {
+      method: 'POST',
+      body: JSON.stringify({
+        expected_version: Number(caseData.version),
+        idempotency_key: button.dataset.idempotencyKey
+      })
+    });
+    const updatedCase = normalizeQuoteCasePayload(payload);
+    if (!updatedCase) throw new Error('The server did not confirm cancellation.');
+    delete button.dataset.idempotencyKey;
+    renderAgentQuoteCase(root, updatedCase);
+    if (status) status.dataset.state = 'success';
+    if (status) status.textContent = 'הביטול אושר ונרשם בהיסטוריית הבקשה.';
+  } catch (error) {
+    const message = quoteCaseErrorMessage(error);
+    setQuoteCaseError(root, message);
+    if (status) status.dataset.state = 'error';
+    if (status) status.textContent = message;
+    if (error?.status === 409) {
+      try {
+        const refreshed = await fetchQuoteCase(caseData.case_id);
+        if (refreshed) renderAgentQuoteCase(root, refreshed);
+      } catch (refreshError) {
+        // Preserve the last confirmed case when a conflict refresh is unavailable.
+      }
+    }
+  } finally {
+    delete button.dataset.state;
+    button.disabled = false;
+  }
+}
+
+function scheduleQuoteCasePoll(root, delay = 12000) {
+  if (agentRuntime.quoteCasePollTimer) window.clearTimeout(agentRuntime.quoteCasePollTimer);
+  agentRuntime.quoteCasePollTimer = 0;
+  if (!agentRuntime.quoteCase?.case_id || !quoteCaseActiveStatuses.has(agentRuntime.quoteCase.status)) return;
+  const caseToken = agentRuntime.quoteCase.case_id;
+  const generation = agentRuntime.quoteCasePollGeneration;
+  const visibilityDelay = document.visibilityState === 'hidden' ? Math.max(delay, 30000) : delay;
+  agentRuntime.quoteCasePollTimer = window.setTimeout(() => {
+    if (agentRuntime.quoteCase?.case_id !== caseToken || agentRuntime.quoteCasePollGeneration !== generation) return;
+    agentRuntime.quoteCasePollTimer = 0;
+    pollAgentQuoteCase(root);
+  }, visibilityDelay);
+}
+
+async function pollAgentQuoteCase(root) {
+  const caseId = agentRuntime.quoteCase?.case_id;
+  let hasMore = false;
+  if (!caseId) return;
+  if (agentRuntime.quoteCasePollInFlight) return;
+  if (document.visibilityState === 'hidden') {
+    scheduleQuoteCasePoll(root, 30000);
+    return;
+  }
+  const controller = typeof AbortController === 'function' ? new AbortController() : null;
+  const generation = agentRuntime.quoteCasePollGeneration + 1;
+  agentRuntime.quoteCasePollGeneration = generation;
+  agentRuntime.quoteCasePollCaseToken = caseId;
+  agentRuntime.quoteCasePollController = controller;
+  agentRuntime.quoteCasePollInFlight = true;
+  const timeoutId = controller ? window.setTimeout(() => controller.abort(), 15000) : 0;
+  const requestOptions = controller ? {signal: controller.signal} : {};
+  try {
+    const events = await agentApiRequest(`/quote-cases/${encodeURIComponent(caseId)}/events?after=${agentRuntime.quoteCaseLastSequence}&limit=50`, requestOptions);
+    if (!isCurrentQuoteCasePoll(caseId, generation, controller)) return;
+    hasMore = events?.has_more === true;
+    const added = mergeAndRenderQuoteCaseEvents(root, events?.events || []);
+    if (Number(events?.last_sequence) > agentRuntime.quoteCaseLastSequence) agentRuntime.quoteCaseLastSequence = Number(events.last_sequence);
+    if (added > 0 && !hasMore) {
+      const caseData = await fetchQuoteCase(caseId, requestOptions);
+      if (!isCurrentQuoteCasePoll(caseId, generation, controller) || !caseData) return;
+      renderAgentQuoteCase(root, caseData);
+    }
+    if (!isCurrentQuoteCasePoll(caseId, generation, controller)) return;
+    const pollingError = agentWorkbenchRoot(root).querySelector('[data-quote-case-error][data-source="poll"]');
+    if (pollingError) setQuoteCaseError(root);
+    agentRuntime.quoteCasePollFailures = 0;
+    scheduleQuoteCasePoll(root, hasMore ? 250 : 12000);
+  } catch (error) {
+    if (!isCurrentQuoteCasePoll(caseId, generation, controller)) return;
+    agentRuntime.quoteCasePollFailures = Math.min(8, agentRuntime.quoteCasePollFailures + 1);
+    if (agentRuntime.quoteCasePollFailures >= 3) setQuoteCaseError(root, 'העדכון החי של בקשת הסיוע אינו זמין כרגע. המצב האחרון שאושר נשאר מוצג וננסה שוב אוטומטית.', 'poll');
+    const retryDelay = Math.min(120000, 12000 * (2 ** Math.min(agentRuntime.quoteCasePollFailures, 4)));
+    scheduleQuoteCasePoll(root, retryDelay);
+  } finally {
+    if (timeoutId) window.clearTimeout(timeoutId);
+    if (!isCurrentQuoteCasePoll(caseId, generation, controller)) return;
+    agentRuntime.quoteCasePollInFlight = false;
+    agentRuntime.quoteCasePollController = null;
+    agentRuntime.quoteCasePollCaseToken = '';
+  }
+}
+
 function renderAgentRun(root, run, focusWorkbench = false) {
   if (!run || typeof run !== 'object' || typeof run.run_id !== 'string') {
     throw new Error('השרת לא החזיר חוזה ריצה תקין.');
   }
   agentRuntime.runId = run.run_id;
   agentRuntime.status = String(run.status || 'created');
+  agentRuntime.requestId = String(run.trip_request?.request_id || '');
+  agentRuntime.requestRevision = Math.max(0, Number(run.trip_request?.revision) || 0);
   setAgentWorkbenchStatus(root, agentStatusLabel(agentRuntime.status), agentRuntime.status);
   renderAgentTripRequest(root, run.trip_request);
   mergeAndRenderAgentEvents(root, run.events || []);
   renderAgentSupplierState(root, run);
+  renderAgentQuoteCaseAvailability(root);
   const failedEvents = agentRuntime.events.filter(event => event?.visible !== false && event?.status === 'failed' && event?.message);
   if (['provider_error', 'failed'].includes(agentRuntime.status)) {
     const failedEvent = failedEvents[failedEvents.length - 1];
@@ -2767,32 +3746,80 @@ function shouldPollAgentRun(status) {
 }
 
 function scheduleAgentPoll(root, delay = 1800) {
-  if (!shouldPollAgentRun(agentRuntime.status) || !agentRuntime.runId) return;
   if (agentRuntime.pollTimer) window.clearTimeout(agentRuntime.pollTimer);
-  agentRuntime.pollTimer = window.setTimeout(() => pollAgentRun(root), delay);
+  agentRuntime.pollTimer = 0;
+  if (!shouldPollAgentRun(agentRuntime.status) || !agentRuntime.runId) return;
+  const runToken = agentRuntime.runId;
+  const generation = agentRuntime.pollGeneration;
+  const visibilityDelay = document.visibilityState === 'hidden' ? Math.max(delay, 30000) : delay;
+  agentRuntime.pollTimer = window.setTimeout(() => {
+    if (agentRuntime.runId !== runToken || agentRuntime.pollGeneration !== generation) return;
+    agentRuntime.pollTimer = 0;
+    pollAgentRun(root);
+  }, visibilityDelay);
+}
+
+function reconnectAgentPolling(root) {
+  if (!agentRuntime.runId || !shouldPollAgentRun(agentRuntime.status)) return;
+  invalidateAgentPoll();
+  agentRuntime.pollFailures = 0;
+  setAgentWorkbenchError(root);
+  setAgentWorkbenchStatus(root, 'מתחברים מחדש לעדכוני הריצה הפרטית...', 'connecting');
+  pollAgentRun(root);
 }
 
 async function pollAgentRun(root) {
-  agentRuntime.pollTimer = 0;
   const runId = agentRuntime.runId;
   if (!runId) {
     setAgentWorkbenchError(root, 'לא ניתן להמשיך לעדכן את הריצה כי מזהה הריצה אינו זמין בלשונית הזאת.');
     return;
   }
+  if (agentRuntime.pollInFlight) return;
+  if (document.visibilityState === 'hidden') {
+    scheduleAgentPoll(root, 30000);
+    return;
+  }
+  const controller = typeof AbortController === 'function' ? new AbortController() : null;
+  const generation = agentRuntime.pollGeneration + 1;
+  agentRuntime.pollGeneration = generation;
+  agentRuntime.pollRunToken = runId;
+  agentRuntime.pollController = controller;
+  agentRuntime.pollInFlight = true;
+  let hasMore = false;
+  const timeoutId = controller ? window.setTimeout(() => controller.abort(), 15000) : 0;
+  const requestOptions = controller ? {signal: controller.signal} : {};
   try {
-    const eventPayload = await agentApiRequest(`/runs/${encodeURIComponent(runId)}/events?after=${agentRuntime.lastSequence}`);
-    if (agentRuntime.runId !== runId) return;
+    const eventPayload = await agentApiRequest(`/runs/${encodeURIComponent(runId)}/events?after=${agentRuntime.lastSequence}&limit=50`, requestOptions);
+    if (!isCurrentAgentPoll(runId, generation, controller)) return;
+    hasMore = eventPayload?.has_more === true;
     mergeAndRenderAgentEvents(root, eventPayload.events || []);
     if (Number(eventPayload.last_sequence) > agentRuntime.lastSequence) agentRuntime.lastSequence = Number(eventPayload.last_sequence);
-    const run = await agentApiRequest(`/runs/${encodeURIComponent(runId)}`);
-    if (agentRuntime.runId !== runId) return;
+    const run = await agentApiRequest(`/runs/${encodeURIComponent(runId)}`, requestOptions);
+    if (!isCurrentAgentPoll(runId, generation, controller)) return;
+    if (!run || run.run_id !== runId) throw new Error('The AgentRun response did not match the active private run.');
     renderAgentRun(root, run);
+    if (!isCurrentAgentPoll(runId, generation, controller)) return;
     agentRuntime.pollFailures = 0;
-    scheduleAgentPoll(root);
+    scheduleAgentPoll(root, hasMore ? 250 : 1800);
   } catch (error) {
-    agentRuntime.pollFailures += 1;
-    setAgentWorkbenchError(root, 'העדכון החי נעצר זמנית. האירועים שכבר התקבלו נשארים מוצגים ללא שינוי.');
-    if (agentRuntime.pollFailures < 3) scheduleAgentPoll(root, 5000);
+    if (!isCurrentAgentPoll(runId, generation, controller)) return;
+    agentRuntime.pollFailures = Math.min(8, agentRuntime.pollFailures + 1);
+    const repeated = agentRuntime.pollFailures >= 3;
+    setAgentWorkbenchError(
+      root,
+      repeated
+        ? 'העדכון החי אינו זמין כרגע. האירועים שכבר אושרו נשארים מוצגים, וננסה להתחבר שוב אוטומטית.'
+        : 'העדכון החי נעצר זמנית. האירועים שכבר התקבלו נשארים מוצגים ללא שינוי.',
+      {reconnect: repeated}
+    );
+    const retryDelay = Math.min(120000, 5000 * (2 ** Math.min(agentRuntime.pollFailures - 1, 5)));
+    scheduleAgentPoll(root, retryDelay);
+  } finally {
+    if (timeoutId) window.clearTimeout(timeoutId);
+    if (!isCurrentAgentPoll(runId, generation, controller)) return;
+    agentRuntime.pollInFlight = false;
+    agentRuntime.pollController = null;
+    agentRuntime.pollRunToken = '';
   }
 }
 
@@ -2907,6 +3934,7 @@ async function reviseAgentRun(root, form) {
     });
     if (agentRuntime.runId !== runId) return;
     renderAgentRun(root, run);
+    if (agentRuntime.quoteCase) await loadQuoteCaseForRun(root);
     messageInput.value = '';
     if (status) {
       const revision = Math.max(1, Number(run.trip_request?.revision) || 1);
@@ -2946,6 +3974,7 @@ async function resumeAgentRun(root) {
     const run = await agentApiRequest(`/runs/${encodeURIComponent(runId)}`);
     if (agentRuntime.runId !== runId) return;
     renderAgentRun(root, run);
+    await loadQuoteCaseForRun(root);
     scheduleAgentPoll(root);
   } catch (error) {
     clearAgentRunSession();
@@ -2968,11 +3997,21 @@ function initAIConversationEntry() {
   if (submit) submit.disabled = false;
   const revisionForm = agentWorkbenchRoot(root).querySelector('[data-agent-revision-form]');
   const revisionMessage = revisionForm?.querySelector('[data-agent-revision-message]');
+  const quoteConsent = agentWorkbenchRoot(root).querySelector('[data-quote-case-consent]');
+  const quoteCreate = agentWorkbenchRoot(root).querySelector('[data-quote-case-create-button]');
+  const quoteHandoff = agentWorkbenchRoot(root).querySelector('[data-quote-case-handoff]');
+  const quoteCancel = agentWorkbenchRoot(root).querySelector('[data-quote-case-cancel]');
   revisionForm?.addEventListener('submit', event => {
     event.preventDefault();
     reviseAgentRun(root, revisionForm);
   });
   revisionMessage?.addEventListener('input', () => revisionMessage.setCustomValidity(''));
+  quoteConsent?.addEventListener('change', () => {
+    if (quoteCreate) quoteCreate.disabled = !quoteConsent.checked || quoteCreate.dataset.state === 'loading';
+  });
+  quoteCreate?.addEventListener('click', () => createAgentQuoteCase(root));
+  quoteHandoff?.addEventListener('click', () => handoffAgentQuoteCase(root));
+  quoteCancel?.addEventListener('click', () => cancelAgentQuoteCase(root));
   root.addEventListener('submit', event => {
     event.preventDefault();
     createAgentRun(root);
@@ -2989,6 +4028,16 @@ function initAIConversationEntry() {
     status.textContent = confirmed.checked
       ? 'התמלול אושר ויישלח עם סימון שמקורו בקול.'
       : 'בדקו את התמלול ואשרו אותו לפני השליחה.';
+  });
+
+  document.addEventListener('visibilitychange', () => {
+    const reconnectRun = Boolean(agentRuntime.runId && shouldPollAgentRun(agentRuntime.status));
+    const reconnectCase = Boolean(agentRuntime.quoteCase?.case_id && quoteCaseActiveStatuses.has(agentRuntime.quoteCase.status));
+    invalidateAgentPoll();
+    invalidateQuoteCasePoll();
+    if (document.visibilityState !== 'visible') return;
+    if (reconnectRun) scheduleAgentPoll(root, 250);
+    if (reconnectCase) scheduleQuoteCasePoll(root, 250);
   });
 
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -3087,6 +4136,32 @@ function initDirectory() {
   apply();
 }
 
+function initExperienceDecisionMap() {
+  const map = document.querySelector('[data-experience-decision-map]');
+  if (!map) return;
+  const column = map.closest('.experience-globe-column');
+  const title = column?.querySelector('[data-experience-selection-title]');
+  const copy = column?.querySelector('[data-experience-selection-copy]');
+  const link = column?.querySelector('[data-experience-selection-link]');
+  const buttons = [...map.querySelectorAll('[data-experience-destination]')];
+  const select = button => {
+    const destination = String(button.dataset.experienceDestination || '').replace(/[^a-z0-9-]/g, '').slice(0, 60);
+    if (!destination) return;
+    map.dataset.selectedDestination = destination;
+    buttons.forEach(item => {
+      const selected = item === button;
+      item.classList.toggle('is-active', selected);
+      item.setAttribute('aria-pressed', String(selected));
+    });
+    if (title) title.textContent = button.dataset.experienceTitle || button.textContent.trim();
+    if (copy) copy.textContent = button.dataset.experienceCopy || '';
+    if (link) link.href = destinationPlanUrl('/travel-map/', {destination});
+  };
+  buttons.forEach(button => button.addEventListener('click', () => select(button)));
+  const selected = buttons.find(button => button.dataset.experienceDestination === map.dataset.selectedDestination) || buttons[0];
+  if (selected) select(selected);
+}
+
 function initTraVelV2() {
   if (document.documentElement.dataset.traVelV2Ready === 'true') return;
   document.documentElement.dataset.traVelV2Ready = 'true';
@@ -3106,6 +4181,7 @@ function initTraVelV2() {
   initControls();
   initAIConversationEntry();
   initDirectory();
+  initExperienceDecisionMap();
   initFlightSearch();
   initHotelSearch();
   initInsuranceQuote();

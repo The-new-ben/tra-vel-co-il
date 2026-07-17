@@ -130,6 +130,10 @@ class Tra_Vel_Agent_Controller extends WP_REST_Controller {
 	}
 
 	public function create_run( WP_REST_Request $request ) {
+		$ready = $this->can_use_store();
+		if ( true !== $ready ) {
+			return $ready;
+		}
 		$rate = $this->consume_rate_limit();
 		if ( is_wp_error( $rate ) ) {
 			return $rate;
@@ -228,6 +232,10 @@ class Tra_Vel_Agent_Controller extends WP_REST_Controller {
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public function revise_run( WP_REST_Request $request ) {
+		$ready = $this->can_use_store();
+		if ( true !== $ready ) {
+			return $ready;
+		}
 		$rate = $this->consume_rate_limit();
 		if ( is_wp_error( $rate ) ) {
 			return $rate;
@@ -237,9 +245,17 @@ class Tra_Vel_Agent_Controller extends WP_REST_Controller {
 		if ( ! $run || empty( $run['trip_request'] ) || ! is_array( $run['trip_request'] ) ) {
 			return new WP_Error( 'tra_vel_agent_revision_unavailable', 'This private run has no request that can be revised.', array( 'status' => 409 ) );
 		}
+		if ( ! $this->store->can_access( $run, $this->run_cookie_token( $run['run_uuid'] ), get_current_user_id() ) ) {
+			return new WP_Error( 'tra_vel_agent_run_forbidden', 'This private agent run changed owner before the update began.', array( 'status' => 403 ) );
+		}
 		if ( ! in_array( $run['status'], array( 'needs_clarification', 'request_ready' ), true ) ) {
 			return new WP_Error( 'tra_vel_agent_revision_state', 'This private run cannot accept a revision in its current state.', array( 'status' => 409 ) );
 		}
+		$owner_guard = array(
+			'owner_user_id'    => (int) $run['owner_user_id'],
+			'owner_token_hash' => (string) ( $run['owner_token_hash'] ?? '' ),
+			'updated_at'       => (string) $run['updated_at'],
+		);
 
 		$max_revisions = min( 20, max( 2, (int) apply_filters( 'tra_vel_agent_max_request_revisions', 8 ) ) );
 		if ( (int) $run['trip_request']['revision'] >= $max_revisions ) {
@@ -300,6 +316,19 @@ class Tra_Vel_Agent_Controller extends WP_REST_Controller {
 			$interpreted = $this->provider->revise( $run['trip_request'], $message, $run['mode'], $locale );
 			if ( is_wp_error( $interpreted ) ) {
 				$error_data = $interpreted->get_error_data();
+				$guarded = $this->store->update_run_if_owner(
+					$run['id'],
+					array(
+						'provider_state' => array(
+							'error_code'    => $interpreted->get_error_code(),
+							'provider_code' => is_array( $error_data ) && isset( $error_data['provider_code'] ) ? $error_data['provider_code'] : null,
+						),
+					),
+					$owner_guard
+				);
+				if ( ! $guarded ) {
+					return new WP_Error( 'tra_vel_agent_revision_owner_changed', 'The private plan owner or version changed while this update was being prepared. Nothing was replaced.', array( 'status' => 409 ) );
+				}
 				$this->store->append_event(
 					$run['id'],
 					$this->event(
@@ -326,7 +355,10 @@ class Tra_Vel_Agent_Controller extends WP_REST_Controller {
 			);
 			$needs_clarification = 'needs_clarification' === $trip_request['readiness']['status'];
 			$status              = $needs_clarification ? 'needs_clarification' : 'request_ready';
-			$this->store->update_run( $run['id'], array( 'status' => $status, 'trip_request' => $trip_request, 'provider_state' => $interpreted['provider'] ) );
+			$persisted = $this->store->update_run_if_owner( $run['id'], array( 'status' => $status, 'trip_request' => $trip_request, 'provider_state' => $interpreted['provider'] ), $owner_guard );
+			if ( ! $persisted ) {
+				return new WP_Error( 'tra_vel_agent_revision_owner_changed', 'The private plan owner or version changed while this update was being prepared. Nothing was replaced.', array( 'status' => 409 ) );
+			}
 			$this->store->append_event( $run['id'], $this->event( 'request.revised', 'understanding', 'completed', 'model', 'התוכנית עודכנה לפי התשובה ונבדקה מחדש.', array( 'request_id' => $trip_request['request_id'], 'revision' => $trip_request['revision'], 'confidence' => $trip_request['confidence'] ) ) );
 
 			if ( $needs_clarification ) {
@@ -336,7 +368,13 @@ class Tra_Vel_Agent_Controller extends WP_REST_Controller {
 				$this->store->append_event( $run['id'], $this->event( 'supplier.search.not_started', 'supplier_search', 'waiting', 'system', 'חיפוש ספקים עדיין לא התחיל. יוצגו מחירים רק לאחר חיבור וביצוע חיפוש חי מתועד.', array( 'provider_connected' => false, 'provider_bookable' => false, 'data_mode' => 'not_connected' ) ) );
 			}
 
-			return $this->private_response( $this->public_run( $this->store->get_run_by_uuid( $run['run_uuid'] ) ) );
+			$updated_run = $this->store->get_run_by_uuid( $run['run_uuid'] );
+			/**
+			 * Notify durable workflows only after the replacement TripRequest and
+			 * its audit events have committed. Listeners must remain idempotent.
+			 */
+			do_action( 'tra_vel_agent_run_revised', $updated_run, $run );
+			return $this->private_response( $this->public_run( $updated_run ) );
 		} finally {
 			$this->store->release_lease( $provider_lease );
 			$this->store->release_lease( $run_lease );
@@ -348,7 +386,18 @@ class Tra_Vel_Agent_Controller extends WP_REST_Controller {
 	 *
 	 * @return true|WP_Error
 	 */
+	public function can_use_store() {
+		if ( ! ( $this->store instanceof Tra_Vel_Agent_Store ) || Tra_Vel_Agent_Store::is_ready() ) {
+			return true;
+		}
+		return new WP_Error( 'tra_vel_agent_store_unavailable', 'Private planner storage is temporarily unavailable.', array( 'status' => 503 ) );
+	}
+
 	public function can_create_run() {
+		$ready = $this->can_use_store();
+		if ( true !== $ready ) {
+			return $ready;
+		}
 		if ( ! is_ssl() && 'local' !== wp_get_environment_type() ) {
 			return new WP_Error( 'tra_vel_agent_https_required', 'Agent requests require HTTPS.', array( 'status' => 403 ) );
 		}
@@ -356,17 +405,35 @@ class Tra_Vel_Agent_Controller extends WP_REST_Controller {
 	}
 
 	public function get_run( WP_REST_Request $request ) {
+		$ready = $this->can_use_store();
+		if ( true !== $ready ) {
+			return $ready;
+		}
 		$run = $this->store->get_run_by_uuid( $request->get_param( 'run_id' ) );
+		if ( ! $run || ! $this->store->can_access( $run, $this->run_cookie_token( $run['run_uuid'] ), get_current_user_id() ) ) {
+			return new WP_Error( 'tra_vel_agent_run_forbidden', 'This private agent run is no longer available to the current visitor.', array( 'status' => 403 ) );
+		}
 		return $this->private_response( $this->public_run( $run ) );
 	}
 
 	public function get_events( WP_REST_Request $request ) {
+		$ready = $this->can_use_store();
+		if ( true !== $ready ) {
+			return $ready;
+		}
 		$run    = $this->store->get_run_by_uuid( $request->get_param( 'run_id' ) );
+		if ( ! $run || ! $this->store->can_access( $run, $this->run_cookie_token( $run['run_uuid'] ), get_current_user_id() ) ) {
+			return new WP_Error( 'tra_vel_agent_run_forbidden', 'This private agent run is no longer available to the current visitor.', array( 'status' => 403 ) );
+		}
 		$events = $this->store->get_events( $run['id'], (int) $request->get_param( 'after' ) );
 		return $this->private_response( array( 'run_id' => $run['run_uuid'], 'events' => $events, 'last_sequence' => $events ? end( $events )['sequence'] : (int) $request->get_param( 'after' ) ) );
 	}
 
 	public function can_access_run( WP_REST_Request $request ) {
+		$ready = $this->can_use_store();
+		if ( true !== $ready ) {
+			return $ready;
+		}
 		$run = $this->store->get_run_by_uuid( $request->get_param( 'run_id' ) );
 		if ( ! $run ) {
 			return new WP_Error( 'tra_vel_agent_run_missing', 'Agent run not found.', array( 'status' => 404 ) );
@@ -376,6 +443,10 @@ class Tra_Vel_Agent_Controller extends WP_REST_Controller {
 	}
 
 	public function can_decide_approval( WP_REST_Request $request ) {
+		$ready = $this->can_use_store();
+		if ( true !== $ready ) {
+			return $ready;
+		}
 		$user_id = get_current_user_id();
 		if ( $user_id < 1 || ! current_user_can( 'read' ) ) {
 			return new WP_Error( 'tra_vel_agent_login_required', 'Sign in before approving a consequential action.', array( 'status' => 401 ) );
@@ -391,6 +462,10 @@ class Tra_Vel_Agent_Controller extends WP_REST_Controller {
 	}
 
 	public function decide_approval( WP_REST_Request $request ) {
+		$ready = $this->can_use_store();
+		if ( true !== $ready ) {
+			return $ready;
+		}
 		$run      = $this->store->get_run_by_uuid( $request->get_param( 'run_id' ) );
 		$approval = $this->store->get_approval( $run['id'], $request->get_param( 'approval_id' ) );
 		if ( ! $approval ) {
@@ -420,6 +495,8 @@ class Tra_Vel_Agent_Controller extends WP_REST_Controller {
 				'capabilities'     => array(
 					'request_interpretation' => $this->provider->health()['configured'],
 					'request_revision'       => $this->provider->health()['configured'],
+					'assisted_quote_cases'   => class_exists( 'Tra_Vel_Quote_Case_Store' ),
+					'operator_queue'         => class_exists( 'Tra_Vel_Quote_Case_Controller' ),
 					'supplier_search'        => false,
 					'proposal_generation'    => false,
 					'booking_execution'      => false,
@@ -430,6 +507,30 @@ class Tra_Vel_Agent_Controller extends WP_REST_Controller {
 					'global_requests_per_utc_day'=> $daily_limit,
 					'provider_concurrency'        => $concurrency_limit,
 				),
+				'agent_store'      => class_exists( 'Tra_Vel_Agent_Store' )
+					? Tra_Vel_Agent_Store::schema_health()
+					: array(
+						'schema_version'           => null,
+						'installed_schema_version' => null,
+						'expected_tables'          => 4,
+						'ready_tables'             => 0,
+						'transactional_tables'     => 0,
+						'required_indexes'         => 9,
+						'ready_indexes'            => 0,
+						'required_indexes_ready'   => false,
+						'tables_ready'             => false,
+					),
+				'quote_case_store' => class_exists( 'Tra_Vel_Quote_Case_Store' )
+					? Tra_Vel_Quote_Case_Store::schema_health()
+					: array(
+						'schema_version'           => null,
+						'installed_schema_version' => null,
+						'expected_tables'          => 4,
+						'ready_tables'             => 0,
+						'tables_ready'             => false,
+						'active_days'              => 0,
+						'retention_days'           => 0,
+					),
 			)
 		);
 	}

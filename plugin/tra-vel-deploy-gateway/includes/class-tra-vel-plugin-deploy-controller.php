@@ -19,6 +19,7 @@ class Tra_Vel_Plugin_Deploy_Controller extends WP_REST_Controller {
 	const REMOVE_FRESH_PHRASE = 'REMOVE FAILED TRA-VEL AGENT CORE';
 	const MAX_PACKAGE_BYTES = 5242880;
 	const BACKUP_LIMIT      = 10;
+	const BACKUP_FINGERPRINT_FILE = '.tra-vel-backup-fingerprint.json';
 
 	public function __construct() {
 		$this->namespace = 'tra-vel-deploy/v1';
@@ -62,8 +63,22 @@ class Tra_Vel_Plugin_Deploy_Controller extends WP_REST_Controller {
 						'required'          => true,
 						'sanitize_callback' => 'sanitize_file_name',
 						'validate_callback' => static function ( $value ) {
-							return 'latest' === $value || 1 === preg_match( '/^tra-vel-agent-core-\d{8}T\d{6}Z-[A-Za-z0-9]+$/', $value );
+							return 1 === preg_match( '/^tra-vel-agent-core-\d{8}T\d{6}Z-[A-Za-z0-9]+$/', $value );
 						},
+					),
+					'expected_current_fingerprint' => array(
+						'type'              => 'string',
+						'required'          => true,
+						'pattern'           => '^[a-f0-9]{64}$',
+						'sanitize_callback' => 'sanitize_text_field',
+						'validate_callback' => 'rest_validate_request_arg',
+					),
+					'expected_restored_fingerprint' => array(
+						'type'              => 'string',
+						'required'          => true,
+						'pattern'           => '^[a-f0-9]{64}$',
+						'sanitize_callback' => 'sanitize_text_field',
+						'validate_callback' => 'rest_validate_request_arg',
 					),
 					'confirmation' => array(
 						'type'              => 'string',
@@ -102,12 +117,17 @@ class Tra_Vel_Plugin_Deploy_Controller extends WP_REST_Controller {
 		$path      = trailingslashit( WP_PLUGIN_DIR ) . self::PLUGIN_FILE;
 		$installed = is_file( $path );
 		$data      = $installed ? get_plugin_data( $path, false, false ) : array();
+		$fingerprint = $installed ? $this->directory_fingerprint( trailingslashit( WP_PLUGIN_DIR ) . self::PLUGIN_SLUG ) : null;
+		if ( is_wp_error( $fingerprint ) ) {
+			return $fingerprint;
+		}
 		return rest_ensure_response(
 			array(
 				'gateway_version'  => TRA_VEL_DEPLOY_VERSION,
 				'plugin'           => self::PLUGIN_SLUG,
 				'installed'        => $installed,
 				'installed_version'=> $installed && isset( $data['Version'] ) ? $data['Version'] : null,
+				'installed_fingerprint' => $fingerprint,
 				'active'           => $installed && is_plugin_active( self::PLUGIN_FILE ),
 				'last_deployment'  => get_option( self::OPTION_LAST, null ),
 				'backups'          => $this->list_backups(),
@@ -155,8 +175,11 @@ class Tra_Vel_Plugin_Deploy_Controller extends WP_REST_Controller {
 					return new WP_Error( 'tra_vel_agent_downgrade_blocked', 'Agent Core downgrades require the protected rollback route.', array( 'status' => 409, 'installed_version' => $current_version, 'package_version' => $package_data['version'] ) );
 				}
 				if ( $current_version && 0 === version_compare( $package_data['version'], $current_version ) ) {
-					$last = get_option( self::OPTION_LAST, array() );
-					if ( ! is_array( $last ) || empty( $last['sha256'] ) || ! hash_equals( (string) $last['sha256'], $actual_hash ) ) {
+					$live_fingerprint = $this->directory_fingerprint( trailingslashit( WP_PLUGIN_DIR ) . self::PLUGIN_SLUG );
+					if ( is_wp_error( $live_fingerprint ) ) {
+						return $live_fingerprint;
+					}
+					if ( empty( $package_data['content_sha256'] ) || ! hash_equals( (string) $package_data['content_sha256'], (string) $live_fingerprint ) ) {
 						return new WP_Error( 'tra_vel_agent_same_version_changed', 'A different Agent Core artifact cannot overwrite the same installed version. Increase the plugin version or use rollback.', array( 'status' => 409, 'installed_version' => $current_version ) );
 					}
 					if ( $activate && ! is_plugin_active( self::PLUGIN_FILE ) ) {
@@ -165,10 +188,14 @@ class Tra_Vel_Plugin_Deploy_Controller extends WP_REST_Controller {
 							return new WP_Error( 'tra_vel_agent_activation_failed', is_wp_error( $activated ) ? $activated->get_error_message() : 'Agent Core activation failed.', array( 'status' => 500 ) );
 						}
 					}
-					return rest_ensure_response( array( 'ok' => true, 'plugin' => self::PLUGIN_SLUG, 'version' => $current_version, 'sha256' => $actual_hash, 'backup' => null, 'active' => is_plugin_active( self::PLUGIN_FILE ), 'unchanged' => true ) );
+					return rest_ensure_response( array( 'ok' => true, 'plugin' => self::PLUGIN_SLUG, 'version' => $current_version, 'sha256' => $actual_hash, 'content_sha256' => $live_fingerprint, 'previous_content_sha256' => $live_fingerprint, 'backup' => null, 'active' => is_plugin_active( self::PLUGIN_FILE ), 'unchanged' => true ) );
 				}
 			}
 			$was_active = is_plugin_active( self::PLUGIN_FILE );
+			$previous_fingerprint = is_dir( trailingslashit( WP_PLUGIN_DIR ) . self::PLUGIN_SLUG ) ? $this->directory_fingerprint( trailingslashit( WP_PLUGIN_DIR ) . self::PLUGIN_SLUG ) : null;
+			if ( is_wp_error( $previous_fingerprint ) ) {
+				return $previous_fingerprint;
+			}
 			$backup = $this->backup_current_plugin();
 			if ( is_wp_error( $backup ) ) {
 				return $backup;
@@ -183,6 +210,11 @@ class Tra_Vel_Plugin_Deploy_Controller extends WP_REST_Controller {
 			if ( self::PLUGIN_NAME !== ( isset( $installed_data['Name'] ) ? $installed_data['Name'] : '' ) || $package_data['version'] !== ( isset( $installed_data['Version'] ) ? $installed_data['Version'] : '' ) ) {
 				return $this->recover_deployment_error( 'tra_vel_agent_installed_identity_mismatch', 'The installed Agent Core identity or version did not match the inspected package.', $backup, $was_active );
 			}
+			$installed_fingerprint = $this->directory_fingerprint( trailingslashit( WP_PLUGIN_DIR ) . self::PLUGIN_SLUG );
+			if ( is_wp_error( $installed_fingerprint ) || ! hash_equals( (string) $package_data['content_sha256'], (string) $installed_fingerprint ) ) {
+				$message = is_wp_error( $installed_fingerprint ) ? $installed_fingerprint->get_error_message() : 'The installed Agent Core files did not match the inspected package fingerprint.';
+				return $this->recover_deployment_error( 'tra_vel_agent_installed_fingerprint_mismatch', $message, $backup, $was_active );
+			}
 			if ( $activate ) {
 				$result = activate_plugin( self::PLUGIN_FILE );
 				if ( is_wp_error( $result ) || ! is_plugin_active( self::PLUGIN_FILE ) ) {
@@ -195,6 +227,8 @@ class Tra_Vel_Plugin_Deploy_Controller extends WP_REST_Controller {
 				'deployed_at' => gmdate( 'c' ),
 				'version'     => $package_data['version'],
 				'sha256'      => $actual_hash,
+				'content_sha256' => $installed_fingerprint,
+				'previous_content_sha256' => $previous_fingerprint,
 				'backup'      => $backup,
 				'activated'   => $activate,
 				'user_id'     => get_current_user_id(),
@@ -207,6 +241,8 @@ class Tra_Vel_Plugin_Deploy_Controller extends WP_REST_Controller {
 					'plugin'  => self::PLUGIN_SLUG,
 					'version' => $package_data['version'],
 					'sha256'  => $actual_hash,
+					'content_sha256' => $installed_fingerprint,
+					'previous_content_sha256' => $previous_fingerprint,
 					'backup'  => $backup,
 					'active'  => is_plugin_active( self::PLUGIN_FILE ),
 				),
@@ -226,21 +262,28 @@ class Tra_Vel_Plugin_Deploy_Controller extends WP_REST_Controller {
 			return $lease;
 		}
 		try {
+			$expected_current_fingerprint = strtolower( (string) $request->get_param( 'expected_current_fingerprint' ) );
+			$current_fingerprint = $this->directory_fingerprint( trailingslashit( WP_PLUGIN_DIR ) . self::PLUGIN_SLUG );
+			if ( is_wp_error( $current_fingerprint ) || 1 !== preg_match( '/^[a-f0-9]{64}$/', $expected_current_fingerprint ) || ! hash_equals( $expected_current_fingerprint, (string) $current_fingerprint ) ) {
+				return new WP_Error( 'tra_vel_agent_rollback_scope_changed', 'The installed Agent Core content changed before rollback; refusing to overwrite a later release.', array( 'status' => 409 ) );
+			}
 			$backup_name = (string) $request->get_param( 'backup' );
 			$backups     = $this->list_backups();
-			if ( 'latest' === $backup_name ) {
-				$backup_name = reset( $backups );
-			}
 			if ( ! $backup_name || ! in_array( $backup_name, $backups, true ) ) {
 				return new WP_Error( 'tra_vel_agent_backup_missing', 'The requested Agent Core backup was not found.', array( 'status' => 404 ) );
+			}
+			$expected_restored_fingerprint = strtolower( (string) $request->get_param( 'expected_restored_fingerprint' ) );
+			$backup_fingerprint = $this->read_backup_fingerprint( trailingslashit( $this->backup_root() ) . $backup_name );
+			if ( is_wp_error( $backup_fingerprint ) || 1 !== preg_match( '/^[a-f0-9]{64}$/', $expected_restored_fingerprint ) || ! hash_equals( $expected_restored_fingerprint, (string) $backup_fingerprint ) ) {
+				return new WP_Error( 'tra_vel_agent_rollback_target_changed', 'The selected Agent Core backup does not match the expected restored content.', array( 'status' => 409 ) );
 			}
 			$restored = $this->restore_backup( $backup_name );
 			if ( is_wp_error( $restored ) ) {
 				return $restored;
 			}
 			$status = $this->get_status()->get_data();
-			update_option( self::OPTION_LAST, array( 'rolled_back_at' => gmdate( 'c' ), 'backup' => $backup_name, 'version' => $status['installed_version'], 'user_id' => get_current_user_id() ), false );
-			return rest_ensure_response( array( 'ok' => true, 'restored' => $backup_name, 'version' => $status['installed_version'], 'active' => $status['active'] ) );
+			update_option( self::OPTION_LAST, array( 'rolled_back_at' => gmdate( 'c' ), 'backup' => $backup_name, 'version' => $status['installed_version'], 'content_sha256' => $status['installed_fingerprint'], 'user_id' => get_current_user_id() ), false );
+			return rest_ensure_response( array( 'ok' => true, 'restored' => $backup_name, 'version' => $status['installed_version'], 'content_sha256' => $status['installed_fingerprint'], 'active' => $status['active'] ) );
 		} finally {
 			$this->release_lock( $lease );
 		}
@@ -273,6 +316,11 @@ class Tra_Vel_Plugin_Deploy_Controller extends WP_REST_Controller {
 					return new WP_Error( 'tra_vel_agent_fresh_recovery_identity_changed', 'The installed plugin no longer matches the failed fresh deployment.', array( 'status' => 409 ) );
 				}
 			}
+			$installed_fingerprint = $this->directory_fingerprint( trailingslashit( WP_PLUGIN_DIR ) . self::PLUGIN_SLUG );
+			$expected_fingerprint  = isset( $last['content_sha256'] ) ? (string) $last['content_sha256'] : '';
+			if ( is_wp_error( $installed_fingerprint ) || 1 !== preg_match( '/^[a-f0-9]{64}$/', $expected_fingerprint ) || ! hash_equals( $expected_fingerprint, (string) $installed_fingerprint ) ) {
+				return new WP_Error( 'tra_vel_agent_fresh_recovery_fingerprint_changed', 'The installed plugin content no longer matches the failed fresh deployment.', array( 'status' => 409 ) );
+			}
 			if ( is_plugin_active( self::PLUGIN_FILE ) ) {
 				deactivate_plugins( self::PLUGIN_FILE, true );
 			}
@@ -280,8 +328,8 @@ class Tra_Vel_Plugin_Deploy_Controller extends WP_REST_Controller {
 			if ( is_wp_error( $deleted ) || is_dir( trailingslashit( WP_PLUGIN_DIR ) . self::PLUGIN_SLUG ) || is_file( $main ) ) {
 				return is_wp_error( $deleted ) ? $deleted : new WP_Error( 'tra_vel_agent_fresh_recovery_delete_failed', 'The failed fresh Agent Core installation could not be removed.', array( 'status' => 500 ) );
 			}
-			update_option( self::OPTION_LAST, array( 'recovered_at' => gmdate( 'c' ), 'recovery' => 'removed_failed_fresh_install', 'failed_version' => $version, 'failed_sha256' => $sha256, 'user_id' => get_current_user_id() ), false );
-			return rest_ensure_response( array( 'ok' => true, 'removed' => true, 'version' => $version, 'sha256' => $sha256 ) );
+			update_option( self::OPTION_LAST, array( 'recovered_at' => gmdate( 'c' ), 'recovery' => 'removed_failed_fresh_install', 'failed_version' => $version, 'failed_sha256' => $sha256, 'failed_content_sha256' => $installed_fingerprint, 'user_id' => get_current_user_id() ), false );
+			return rest_ensure_response( array( 'ok' => true, 'removed' => true, 'version' => $version, 'sha256' => $sha256, 'content_sha256' => $installed_fingerprint ) );
 		} finally {
 			$this->release_lock( $lease );
 		}
@@ -345,11 +393,20 @@ class Tra_Vel_Plugin_Deploy_Controller extends WP_REST_Controller {
 			$this->delete_directory( $inspect_dir );
 			return new WP_Error( 'tra_vel_agent_package_layout', 'The ZIP must contain only tra-vel-agent-core at its root.', array( 'status' => 400 ) );
 		}
+		if ( is_file( trailingslashit( $inspect_dir ) . self::PLUGIN_SLUG . '/' . self::BACKUP_FINGERPRINT_FILE ) ) {
+			$this->delete_directory( $inspect_dir );
+			return new WP_Error( 'tra_vel_agent_package_reserved_file', 'The Agent Core package contains a reserved deployment marker.', array( 'status' => 400 ) );
+		}
 		$data = get_file_data( $main, array( 'name' => 'Plugin Name', 'version' => 'Version' ) );
+		$fingerprint = $this->directory_fingerprint( trailingslashit( $inspect_dir ) . self::PLUGIN_SLUG );
 		$this->delete_directory( $inspect_dir );
+		if ( is_wp_error( $fingerprint ) ) {
+			return $fingerprint;
+		}
 		if ( self::PLUGIN_NAME !== $data['name'] || ! preg_match( '/^\d+\.\d+\.\d+(?:[-+][A-Za-z0-9.-]+)?$/', $data['version'] ) ) {
 			return new WP_Error( 'tra_vel_agent_plugin_headers', 'Agent Core plugin headers are invalid.', array( 'status' => 400 ) );
 		}
+		$data['content_sha256'] = $fingerprint;
 		return $data;
 	}
 
@@ -412,6 +469,10 @@ class Tra_Vel_Plugin_Deploy_Controller extends WP_REST_Controller {
 		if ( ! is_dir( $source ) ) {
 			return null;
 		}
+		$source_fingerprint = $this->directory_fingerprint( $source );
+		if ( is_wp_error( $source_fingerprint ) ) {
+			return $source_fingerprint;
+		}
 		$filesystem = $this->load_filesystem_api();
 		if ( is_wp_error( $filesystem ) ) {
 			return $filesystem;
@@ -421,8 +482,22 @@ class Tra_Vel_Plugin_Deploy_Controller extends WP_REST_Controller {
 			return new WP_Error( 'tra_vel_agent_backup_root', 'Could not create the Agent Core backup directory.', array( 'status' => 500 ) );
 		}
 		$name = self::PLUGIN_SLUG . '-' . gmdate( 'Ymd\THis\Z' ) . '-' . wp_generate_password( 8, false, false );
-		$result = copy_dir( $source, trailingslashit( $root ) . $name );
-		return is_wp_error( $result ) ? new WP_Error( 'tra_vel_agent_backup_failed', $result->get_error_message(), array( 'status' => 500 ) ) : $name;
+		$destination = trailingslashit( $root ) . $name;
+		$result = copy_dir( $source, $destination );
+		if ( is_wp_error( $result ) ) {
+			return new WP_Error( 'tra_vel_agent_backup_failed', $result->get_error_message(), array( 'status' => 500 ) );
+		}
+		$backup_fingerprint = $this->directory_fingerprint( $destination );
+		if ( is_wp_error( $backup_fingerprint ) || ! hash_equals( (string) $source_fingerprint, (string) $backup_fingerprint ) ) {
+			$this->delete_directory( $destination );
+			return new WP_Error( 'tra_vel_agent_backup_fingerprint_mismatch', 'The Agent Core backup did not match the live plugin content.', array( 'status' => 500 ) );
+		}
+		$written = $this->write_backup_fingerprint( $destination, $source_fingerprint );
+		if ( is_wp_error( $written ) ) {
+			$this->delete_directory( $destination );
+			return $written;
+		}
+		return $name;
 	}
 
 	private function restore_backup( $backup_name ) {
@@ -438,10 +513,32 @@ class Tra_Vel_Plugin_Deploy_Controller extends WP_REST_Controller {
 		if ( ! is_file( trailingslashit( $source ) . 'tra-vel-agent-core.php' ) ) {
 			return new WP_Error( 'tra_vel_agent_backup_invalid', 'The backup is not a valid Agent Core plugin.', array( 'status' => 400 ) );
 		}
+		$expected_fingerprint = $this->read_backup_fingerprint( $source );
+		if ( is_wp_error( $expected_fingerprint ) ) {
+			return $expected_fingerprint;
+		}
+		$source_fingerprint = $this->directory_fingerprint( $source );
+		if ( is_wp_error( $source_fingerprint ) || ! hash_equals( (string) $expected_fingerprint, (string) $source_fingerprint ) ) {
+			return new WP_Error( 'tra_vel_agent_backup_fingerprint_mismatch', 'The selected Agent Core backup failed its content fingerprint.', array( 'status' => 409 ) );
+		}
 		$this->delete_directory( $stage );
 		$copied = copy_dir( $source, $stage );
 		if ( is_wp_error( $copied ) ) {
 			return new WP_Error( 'tra_vel_agent_restore_stage', $copied->get_error_message(), array( 'status' => 500 ) );
+		}
+		$stage_fingerprint = $this->directory_fingerprint( $stage );
+		if ( is_wp_error( $stage_fingerprint ) || ! hash_equals( (string) $expected_fingerprint, (string) $stage_fingerprint ) ) {
+			$this->delete_directory( $stage );
+			return new WP_Error( 'tra_vel_agent_restore_stage_fingerprint', 'The staged Agent Core backup failed its content fingerprint.', array( 'status' => 500 ) );
+		}
+		if ( ! $wp_filesystem->delete( trailingslashit( $stage ) . self::BACKUP_FINGERPRINT_FILE, false ) ) {
+			$this->delete_directory( $stage );
+			return new WP_Error( 'tra_vel_agent_restore_marker_remove', 'The backup integrity marker could not be removed from the staged plugin.', array( 'status' => 500 ) );
+		}
+		$current_fingerprint = is_dir( $target ) ? $this->directory_fingerprint( $target ) : null;
+		if ( is_wp_error( $current_fingerprint ) ) {
+			$this->delete_directory( $stage );
+			return $current_fingerprint;
 		}
 		$current_backup = $this->backup_current_plugin();
 		if ( is_wp_error( $current_backup ) ) {
@@ -457,7 +554,9 @@ class Tra_Vel_Plugin_Deploy_Controller extends WP_REST_Controller {
 			$this->load_plugin_api();
 			$live_main = trailingslashit( $target ) . 'tra-vel-agent-core.php';
 			$live_data = $fallback_restored && is_file( $live_main ) ? get_plugin_data( $live_main, false, false ) : array();
-			if ( ! $fallback_restored || self::PLUGIN_NAME !== ( isset( $live_data['Name'] ) ? $live_data['Name'] : '' ) ) {
+			$fallback_fingerprint = $fallback_restored && is_dir( $target ) ? $this->directory_fingerprint( $target ) : null;
+			$fallback_integrity = null === $current_fingerprint || ( ! is_wp_error( $fallback_fingerprint ) && hash_equals( (string) $current_fingerprint, (string) $fallback_fingerprint ) );
+			if ( ! $fallback_restored || ! $fallback_integrity || self::PLUGIN_NAME !== ( isset( $live_data['Name'] ) ? $live_data['Name'] : '' ) ) {
 				return new WP_Error(
 					'tra_vel_agent_live_plugin_missing',
 					'Rollback failed and the prior live Agent Core plugin could not be restored. Recovery directories were preserved for an administrator.',
@@ -466,6 +565,18 @@ class Tra_Vel_Plugin_Deploy_Controller extends WP_REST_Controller {
 			}
 			$this->delete_directory( $stage );
 			return new WP_Error( 'tra_vel_agent_restore_failed', 'Could not restore the Agent Core backup.', array( 'status' => 500 ) );
+		}
+		$live_fingerprint = $this->directory_fingerprint( $target );
+		if ( is_wp_error( $live_fingerprint ) || ! hash_equals( (string) $expected_fingerprint, (string) $live_fingerprint ) ) {
+			$failed_restore = trailingslashit( $this->backup_root() ) . '.failed-restore-' . wp_generate_password( 8, false, false );
+			$preserved = $wp_filesystem->move( $target, $failed_restore, true );
+			$fallback_restored = is_dir( $quarantine ) && $wp_filesystem->move( $quarantine, $target, true );
+			$fallback_fingerprint = $fallback_restored ? $this->directory_fingerprint( $target ) : null;
+			$fallback_integrity = $fallback_restored && ! is_wp_error( $fallback_fingerprint ) && null !== $current_fingerprint && hash_equals( (string) $current_fingerprint, (string) $fallback_fingerprint );
+			if ( ! $fallback_integrity ) {
+				return new WP_Error( 'tra_vel_agent_live_plugin_missing', 'The restored Agent Core fingerprint failed and the previous live plugin could not be recovered.', array( 'status' => 500, 'recovery_state' => 'live_plugin_missing', 'failed_restore_preserved' => (bool) $preserved ) );
+			}
+			return new WP_Error( 'tra_vel_agent_restore_fingerprint_mismatch', 'The selected backup failed verification after restore; the previous live plugin was recovered.', array( 'status' => 500, 'recovered' => true ) );
 		}
 		$this->delete_directory( $quarantine );
 		return true;
@@ -478,7 +589,9 @@ class Tra_Vel_Plugin_Deploy_Controller extends WP_REST_Controller {
 		}
 		$backups = array();
 		foreach ( scandir( $root ) as $entry ) {
-			if ( 1 === preg_match( '/^tra-vel-agent-core-\d{8}T\d{6}Z-[A-Za-z0-9]+$/', $entry ) && is_file( trailingslashit( $root ) . $entry . '/tra-vel-agent-core.php' ) ) {
+			$backup_path = trailingslashit( $root ) . $entry;
+			$marker      = 1 === preg_match( '/^tra-vel-agent-core-\d{8}T\d{6}Z-[A-Za-z0-9]+$/', $entry ) ? $this->read_backup_fingerprint( $backup_path ) : null;
+			if ( ! is_wp_error( $marker ) && is_string( $marker ) && is_file( trailingslashit( $backup_path ) . 'tra-vel-agent-core.php' ) ) {
 				$backups[ $entry ] = filemtime( trailingslashit( $root ) . $entry );
 			}
 		}
@@ -490,6 +603,119 @@ class Tra_Vel_Plugin_Deploy_Controller extends WP_REST_Controller {
 		foreach ( array_slice( $this->list_backups(), self::BACKUP_LIMIT ) as $backup ) {
 			$this->delete_directory( trailingslashit( $this->backup_root() ) . $backup );
 		}
+	}
+
+	/**
+	 * Calculate an archive-independent fingerprint for a plugin directory.
+	 *
+	 * Paths, sizes, and bytes are framed before hashing so different directory
+	 * layouts cannot produce the same stream. Symlinks fail closed because they
+	 * could point outside the inspected release.
+	 *
+	 * @param string $root Plugin directory.
+	 * @return string|WP_Error
+	 */
+	private function directory_fingerprint( $root ) {
+		if ( ! is_dir( $root ) || ! is_readable( $root ) ) {
+			return new WP_Error( 'tra_vel_agent_fingerprint_root', 'The Agent Core directory cannot be inspected.', array( 'status' => 500 ) );
+		}
+
+		$normalized_root = rtrim( wp_normalize_path( $root ), '/' );
+		$files           = array();
+		try {
+			$iterator = new RecursiveIteratorIterator(
+				new RecursiveDirectoryIterator( $root, FilesystemIterator::SKIP_DOTS ),
+				RecursiveIteratorIterator::LEAVES_ONLY
+			);
+			foreach ( $iterator as $file ) {
+				if ( $file->isLink() ) {
+					return new WP_Error( 'tra_vel_agent_fingerprint_symlink', 'Agent Core releases cannot contain symbolic links.', array( 'status' => 400 ) );
+				}
+				if ( ! $file->isFile() || ! $file->isReadable() ) {
+					return new WP_Error( 'tra_vel_agent_fingerprint_file', 'An Agent Core release file cannot be inspected.', array( 'status' => 500 ) );
+				}
+				$native_path = $file->getPathname();
+				$path        = wp_normalize_path( $native_path );
+				$relative    = ltrim( substr( $path, strlen( $normalized_root ) ), '/' );
+				if ( '' === $relative || self::BACKUP_FINGERPRINT_FILE === $relative ) {
+					continue;
+				}
+				$files[ $relative ] = $native_path;
+			}
+		} catch ( UnexpectedValueException $exception ) {
+			return new WP_Error( 'tra_vel_agent_fingerprint_walk', 'The Agent Core directory could not be traversed.', array( 'status' => 500 ) );
+		}
+
+		if ( empty( $files ) ) {
+			return new WP_Error( 'tra_vel_agent_fingerprint_empty', 'The Agent Core release contains no files.', array( 'status' => 400 ) );
+		}
+		ksort( $files, SORT_STRING );
+		$context = hash_init( 'sha256' );
+		foreach ( $files as $relative => $native_path ) {
+			$size = filesize( $native_path );
+			if ( false === $size ) {
+				return new WP_Error( 'tra_vel_agent_fingerprint_size', 'An Agent Core release file size could not be read.', array( 'status' => 500 ) );
+			}
+			hash_update( $context, strlen( $relative ) . ':' . $relative . ':' . $size . ':' );
+			if ( ! hash_update_file( $context, $native_path ) ) {
+				return new WP_Error( 'tra_vel_agent_fingerprint_hash', 'An Agent Core release file could not be hashed.', array( 'status' => 500 ) );
+			}
+			hash_update( $context, "\n" );
+		}
+		return hash_final( $context );
+	}
+
+	/**
+	 * Persist the trusted fingerprint beside a release backup.
+	 *
+	 * @param string $backup_path Backup directory.
+	 * @param string $fingerprint Expected directory fingerprint.
+	 * @return true|WP_Error
+	 */
+	private function write_backup_fingerprint( $backup_path, $fingerprint ) {
+		$filesystem = $this->load_filesystem_api();
+		if ( is_wp_error( $filesystem ) ) {
+			return $filesystem;
+		}
+		if ( 1 !== preg_match( '/^[a-f0-9]{64}$/', (string) $fingerprint ) ) {
+			return new WP_Error( 'tra_vel_agent_backup_marker_invalid', 'The Agent Core backup fingerprint is invalid.', array( 'status' => 500 ) );
+		}
+		global $wp_filesystem;
+		$payload = wp_json_encode(
+			array(
+				'plugin'      => self::PLUGIN_SLUG,
+				'fingerprint' => $fingerprint,
+				'created_at'  => gmdate( 'c' ),
+			),
+			JSON_UNESCAPED_SLASHES
+		);
+		$mode = defined( 'FS_CHMOD_FILE' ) ? FS_CHMOD_FILE : 0644;
+		if ( ! is_string( $payload ) || ! $wp_filesystem->put_contents( trailingslashit( $backup_path ) . self::BACKUP_FINGERPRINT_FILE, $payload, $mode ) ) {
+			return new WP_Error( 'tra_vel_agent_backup_marker_write', 'The Agent Core backup integrity marker could not be written.', array( 'status' => 500 ) );
+		}
+		$stored = $this->read_backup_fingerprint( $backup_path );
+		if ( is_wp_error( $stored ) || ! hash_equals( (string) $fingerprint, (string) $stored ) ) {
+			return new WP_Error( 'tra_vel_agent_backup_marker_verify', 'The Agent Core backup integrity marker could not be verified.', array( 'status' => 500 ) );
+		}
+		return true;
+	}
+
+	/**
+	 * Read and validate a release backup fingerprint marker.
+	 *
+	 * @param string $backup_path Backup directory.
+	 * @return string|WP_Error
+	 */
+	private function read_backup_fingerprint( $backup_path ) {
+		$marker_path = trailingslashit( $backup_path ) . self::BACKUP_FINGERPRINT_FILE;
+		if ( ! is_file( $marker_path ) || ! is_readable( $marker_path ) ) {
+			return new WP_Error( 'tra_vel_agent_backup_marker_missing', 'The Agent Core backup has no readable integrity marker.', array( 'status' => 409 ) );
+		}
+		$decoded = json_decode( (string) file_get_contents( $marker_path ), true );
+		if ( ! is_array( $decoded ) || self::PLUGIN_SLUG !== ( isset( $decoded['plugin'] ) ? $decoded['plugin'] : '' ) || empty( $decoded['fingerprint'] ) || 1 !== preg_match( '/^[a-f0-9]{64}$/', (string) $decoded['fingerprint'] ) ) {
+			return new WP_Error( 'tra_vel_agent_backup_marker_invalid', 'The Agent Core backup integrity marker is invalid.', array( 'status' => 409 ) );
+		}
+		return (string) $decoded['fingerprint'];
 	}
 
 	private function load_plugin_api() {

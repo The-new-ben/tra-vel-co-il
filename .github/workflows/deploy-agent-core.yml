@@ -10,6 +10,8 @@ on:
       - "scripts/ci/build_agent_core.py"
       - "scripts/ci/validate-agent-*.mjs"
       - "scripts/ci/validate-agent-*.php"
+      - "scripts/ci/validate-quote-case-*.mjs"
+      - "scripts/ci/validate-quote-case-*.php"
       - "scripts/deploy/deploy-agent-core.sh"
       - "scripts/deploy/rollback-agent-core.sh"
       - "scripts/deploy/remove-failed-agent-core.sh"
@@ -58,9 +60,12 @@ jobs:
         run: |
           set -euo pipefail
           node scripts/ci/validate-agent-contract.mjs
+          node scripts/ci/validate-quote-case-contract.mjs
           node scripts/ci/validate-agent-deploy-contract.mjs
           php scripts/ci/validate-agent-policy-runtime.php
           php scripts/ci/validate-agent-controller-runtime.php
+          php scripts/ci/validate-quote-case-runtime.php
+          node --check plugin/tra-vel-agent-core/assets/admin/quote-cases.js
           while IFS= read -r -d '' file; do php -l "$file"; done < <(find plugin/tra-vel-agent-core plugin/tra-vel-deploy-gateway -type f -name '*.php' -print0)
           bash -n scripts/deploy/deploy-agent-core.sh
           bash -n scripts/deploy/rollback-agent-core.sh
@@ -149,18 +154,49 @@ jobs:
         run: |
           set -u
           verified=false
-          if curl --fail-with-body --silent --show-error --max-time 30 "${WP_SITE_URL%/}/wp-json/tra-vel-agent/v1/health" > health.json && python3 - <<'PY'
+          if curl --fail-with-body --silent --show-error --max-time 30 "${WP_SITE_URL%/}/wp-json/tra-vel-agent/v1/health" > health.json \
+            && curl --fail-with-body --silent --show-error --max-time 30 --user "${WP_USERNAME}:${WP_APP_PASSWORD}" "${WP_SITE_URL%/}/wp-json/tra-vel-agent/v1/operator/quote-cases?per_page=1" > quote-queue.json \
+            && python3 - <<'PY'
           import json
           data = json.load(open("health.json", encoding="utf-8"))
+          queue = json.load(open("quote-queue.json", encoding="utf-8"))
           manifest = json.load(open("dist/agent-core-manifest.json", encoding="utf-8"))
           deployed = json.load(open("agent-deploy-result.json", encoding="utf-8"))
           assert data["ok"] is True
           assert data["contract_version"] == "1.0.0"
+          assert data["capabilities"]["assisted_quote_cases"] is True
+          assert data["capabilities"]["operator_queue"] is True
+          assert data["capabilities"]["supplier_search"] is False
+          assert data["capabilities"]["proposal_generation"] is False
           assert data["capabilities"]["booking_execution"] is False
+          assert data["agent_store"]["schema_version"] == "1.2.0"
+          assert data["agent_store"]["installed_schema_version"] == "1.2.0"
+          assert data["agent_store"]["expected_tables"] == 4
+          assert data["agent_store"]["ready_tables"] == 4
+          assert data["agent_store"]["transactional_tables"] == 4
+          assert data["agent_store"]["required_indexes"] == 9
+          assert data["agent_store"]["ready_indexes"] == 9
+          assert data["agent_store"]["required_indexes_ready"] is True
+          assert data["agent_store"]["tables_ready"] is True
+          assert data["quote_case_store"]["schema_version"] == "1.0.1"
+          assert data["quote_case_store"]["installed_schema_version"] == "1.0.1"
+          assert data["quote_case_store"]["tables_ready"] is True
+          assert data["quote_case_store"]["expected_tables"] == 4
+          assert data["quote_case_store"]["ready_tables"] == 4
+          assert data["quote_case_store"]["transactional_tables"] == 4
+          assert data["quote_case_store"]["required_indexes"] == 7
+          assert data["quote_case_store"]["ready_indexes"] == 7
+          assert data["quote_case_store"]["required_indexes_ready"] is True
+          assert data["quote_case_store"]["required_supporting_indexes"] == 1
+          assert data["quote_case_store"]["ready_supporting_indexes"] == 1
+          assert data["quote_case_store"]["supporting_indexes_ready"] is True
+          assert isinstance(queue.get("cases"), list)
+          assert isinstance(queue.get("meta"), dict)
           assert deployed["version"] == manifest["version"]
           assert deployed["sha256"] == manifest["sha256"]
+          assert deployed["content_sha256"] == manifest["content_sha256"]
           assert data["plugin_version"] == manifest["version"]
-          print(f"Agent Core {data['plugin_version']} health passed; provider_configured={data['provider']['configured']}")
+          print(f"Agent Core {data['plugin_version']} health and operator queue passed; provider_configured={data['provider']['configured']}")
           PY
           then
             verified=true
@@ -178,11 +214,43 @@ jobs:
               raise SystemExit("Deployment returned an invalid rollback identifier.")
           print(backup)
           PY
-          )"
+            )"
             if [[ -n "$backup" ]]; then
+              expected_current_fingerprint="$(python3 - <<'PY'
+          import json
+          import re
+          data = json.load(open("agent-deploy-result.json", encoding="utf-8"))
+          value = str(data.get("content_sha256", ""))
+          if not re.fullmatch(r"[a-f0-9]{64}", value):
+              raise SystemExit("Deployment returned an invalid installed content fingerprint.")
+          print(value)
+          PY
+          )"
+              expected_restored_fingerprint="$(python3 - <<'PY'
+          import json
+          import re
+          data = json.load(open("agent-deploy-result.json", encoding="utf-8"))
+          value = str(data.get("previous_content_sha256", ""))
+          if not re.fullmatch(r"[a-f0-9]{64}", value):
+              raise SystemExit("Deployment returned an invalid previous content fingerprint.")
+          print(value)
+          PY
+          )"
               export ROLLBACK_CONFIRMATION="ROLLBACK TRA-VEL AGENT CORE"
+              export EXPECTED_CURRENT_FINGERPRINT="$expected_current_fingerprint"
+              export EXPECTED_RESTORED_FINGERPRINT="$expected_restored_fingerprint"
               bash scripts/deploy/rollback-agent-core.sh "$backup"
             else
+              unchanged="$(python3 - <<'PY'
+          import json
+          data = json.load(open("agent-deploy-result.json", encoding="utf-8"))
+          print("true" if data.get("unchanged") is True else "false")
+          PY
+          )"
+              if [[ "$unchanged" == "true" ]]; then
+                echo "Post-deploy verification failed after an idempotent Agent Core response; no files changed, so destructive recovery was skipped." >&2
+                exit 1
+              fi
               read -r failed_version failed_sha256 < <(python3 - <<'PY'
           import json
           data = json.load(open("agent-deploy-result.json", encoding="utf-8"))

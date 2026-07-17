@@ -6,6 +6,8 @@ BACKUP_NAME="${1:-}"
 : "${WP_USERNAME:?WP_USERNAME is required}"
 : "${WP_APP_PASSWORD:?WP_APP_PASSWORD is required}"
 : "${ROLLBACK_CONFIRMATION:?ROLLBACK_CONFIRMATION is required}"
+: "${EXPECTED_CURRENT_FINGERPRINT:?EXPECTED_CURRENT_FINGERPRINT is required}"
+: "${EXPECTED_RESTORED_FINGERPRINT:?EXPECTED_RESTORED_FINGERPRINT is required}"
 
 if [[ "$ROLLBACK_CONFIRMATION" != "ROLLBACK TRA-VEL AGENT CORE" ]]; then
   echo "Agent Core rollback confirmation did not match." >&2
@@ -13,6 +15,14 @@ if [[ "$ROLLBACK_CONFIRMATION" != "ROLLBACK TRA-VEL AGENT CORE" ]]; then
 fi
 if [[ ! "$BACKUP_NAME" =~ ^tra-vel-agent-core-[0-9]{8}T[0-9]{6}Z-[A-Za-z0-9]+$ ]]; then
   echo "Agent Core backup name is invalid." >&2
+  exit 1
+fi
+if [[ ! "$EXPECTED_CURRENT_FINGERPRINT" =~ ^[a-f0-9]{64}$ ]]; then
+  echo "Expected current Agent Core fingerprint is invalid." >&2
+  exit 1
+fi
+if [[ ! "$EXPECTED_RESTORED_FINGERPRINT" =~ ^[a-f0-9]{64}$ ]]; then
+  echo "Expected restored Agent Core fingerprint is invalid." >&2
   exit 1
 fi
 if [[ ! "$WP_SITE_URL" =~ ^https:// ]]; then
@@ -27,15 +37,18 @@ trap 'rm -f "$RESPONSE_FILE"' EXIT
 curl --fail-with-body --silent --show-error --max-time 180 \
   --user "${WP_USERNAME}:${WP_APP_PASSWORD}" \
   --data-urlencode "backup=${BACKUP_NAME}" \
+  --data-urlencode "expected_current_fingerprint=${EXPECTED_CURRENT_FINGERPRINT}" \
+  --data-urlencode "expected_restored_fingerprint=${EXPECTED_RESTORED_FINGERPRINT}" \
   --data-urlencode "confirmation=${ROLLBACK_CONFIRMATION}" \
   "$ROLLBACK_URL" > "$RESPONSE_FILE"
 
 python3 - "$RESPONSE_FILE" <<'PY'
 import json
+import re
 import sys
 
 data = json.load(open(sys.argv[1], encoding="utf-8"))
-if data.get("ok") is not True or data.get("restored") is None:
+if data.get("ok") is not True or data.get("restored") is None or not re.fullmatch(r"[a-f0-9]{64}", str(data.get("content_sha256", ""))):
     raise SystemExit("WordPress did not confirm Agent Core rollback.")
 print(f"Restored {data['restored']}; version={data.get('version')}; active={str(data.get('active')).lower()}")
 PY

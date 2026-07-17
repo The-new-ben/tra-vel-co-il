@@ -1,0 +1,145 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://tra-vel.co.il/wp-json/tra-vel-agent/v1/schema/quote-case-event#1.0.0",
+  "title": "Tra-Vel QuoteCaseEvent",
+  "description": "A traveler-safe, append-only event in an assisted quote case timeline.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "event_id",
+    "sequence",
+    "type",
+    "from_status",
+    "to_status",
+    "actor_type",
+    "source",
+    "visibility",
+    "message",
+    "data",
+    "occurred_at"
+  ],
+  "properties": {
+    "contract_version": {
+      "const": "1.0.0"
+    },
+    "event_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "sequence": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "type": {
+      "type": "string",
+      "pattern": "^[a-z]+(?:[._][a-z]+)+$"
+    },
+    "from_status": {
+      "anyOf": [
+        {
+          "enum": [
+            "queued",
+            "in_review",
+            "needs_information",
+            "ready_for_assistance",
+            "closed_no_quote",
+            "cancelled",
+            "expired"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "to_status": {
+      "enum": [
+        "queued",
+        "in_review",
+        "needs_information",
+        "ready_for_assistance",
+        "closed_no_quote",
+        "cancelled",
+        "expired"
+      ]
+    },
+    "actor_type": {
+      "enum": [
+        "system",
+        "traveler",
+        "operator"
+      ]
+    },
+    "source": {
+      "enum": [
+        "web",
+        "operator",
+        "account",
+        "agent",
+        "cron"
+      ]
+    },
+    "visibility": {
+      "enum": [
+        "public",
+        "internal"
+      ]
+    },
+    "message": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1000
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "maxProperties": 4,
+      "properties": {
+        "request_revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "service_mode": {
+          "const": "assisted_quote"
+        },
+        "owner_scope": {
+          "enum": [
+            "account",
+            "private_browser_owner"
+          ]
+        },
+        "previous_status": {
+          "enum": [
+            "queued",
+            "in_review",
+            "needs_information",
+            "ready_for_assistance",
+            "closed_no_quote",
+            "cancelled",
+            "expired"
+          ]
+        },
+        "channel": {
+          "const": "whatsapp"
+        },
+        "provider": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(?:[-_][a-z0-9]+)*$",
+          "maxLength": 64
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "dispatched": {
+          "const": false
+        }
+      }
+    },
+    "occurred_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

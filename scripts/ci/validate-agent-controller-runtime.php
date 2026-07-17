@@ -89,6 +89,7 @@ function wp_list_pluck( $list, $field ) {
 }
 function wp_salt( $scheme = 'auth' ) { return 'test-salt-' . $scheme; }
 function apply_filters( $hook, $value ) { return array_key_exists( $hook, $GLOBALS['tv_agent_filters'] ) ? $GLOBALS['tv_agent_filters'][ $hook ] : $value; }
+function do_action( $hook, ...$args ) { unset( $hook, $args ); }
 function get_transient( $key ) { return array_key_exists( $key, $GLOBALS['tv_agent_transients'] ) ? $GLOBALS['tv_agent_transients'][ $key ] : false; }
 function set_transient( $key, $value, $ttl ) { unset( $ttl ); $GLOBALS['tv_agent_transients'][ $key ] = $value; return true; }
 function is_ssl() { return true; }
@@ -98,6 +99,7 @@ function rest_ensure_response( $value ) { return $value instanceof WP_REST_Respo
 
 require TRA_VEL_AGENT_PATH . '/includes/class-tra-vel-agent-policy.php';
 require TRA_VEL_AGENT_PATH . '/includes/interface-tra-vel-agent-provider.php';
+require TRA_VEL_AGENT_PATH . '/includes/class-tra-vel-agent-store.php';
 require TRA_VEL_AGENT_PATH . '/includes/class-tra-vel-agent-controller.php';
 
 class Tra_Vel_Test_Agent_Provider implements Tra_Vel_Agent_Provider {
@@ -105,6 +107,7 @@ class Tra_Vel_Test_Agent_Provider implements Tra_Vel_Agent_Provider {
 	public $revision_result;
 	public $calls = 0;
 	public $revision_calls = 0;
+	public $on_revise = null;
 	public function __construct( $result, $revision_result = null ) {
 		$this->result          = $result;
 		$this->revision_result = $revision_result ? $revision_result : $result;
@@ -118,6 +121,9 @@ class Tra_Vel_Test_Agent_Provider implements Tra_Vel_Agent_Provider {
 		unset( $previous_request, $message, $mode, $locale );
 		$this->calls++;
 		$this->revision_calls++;
+		if ( is_callable( $this->on_revise ) ) {
+			call_user_func( $this->on_revise );
+		}
 		return $this->revision_result;
 	}
 	public function health() { return array( 'configured' => true, 'model' => 'deterministic-fixture', 'endpoint' => 'none', 'live_calls' => false ); }
@@ -165,6 +171,7 @@ class Tra_Vel_Test_Agent_Store {
 			'id'                  => $id,
 			'run_uuid'            => $run_uuid,
 			'owner_user_id'       => isset( $input['owner_user_id'] ) ? (int) $input['owner_user_id'] : 0,
+			'owner_token_hash'     => ! empty( $input['owner_user_id'] ) ? '' : hash( 'sha256', $token ),
 			'request_fingerprint' => (string) $input['request_fingerprint'],
 			'status'              => 'created',
 			'mode'                => (string) $input['mode'],
@@ -189,6 +196,14 @@ class Tra_Vel_Test_Agent_Store {
 		if ( ! isset( $this->runs[ $run_id ] ) ) return false;
 		$this->runs[ $run_id ] = array_merge( $this->runs[ $run_id ], $fields, array( 'updated_at' => '2030-04-01 10:01:00' ) );
 		return true;
+	}
+
+	public function update_run_if_owner( $run_id, $fields, $owner_guard ) {
+		if ( ! isset( $this->runs[ $run_id ] ) ) return false;
+		$current = $this->runs[ $run_id ];
+		if ( (int) $current['owner_user_id'] !== (int) $owner_guard['owner_user_id'] || (string) $current['updated_at'] !== (string) $owner_guard['updated_at'] ) return false;
+		if ( 0 === (int) $current['owner_user_id'] && ! hash_equals( (string) $current['owner_token_hash'], (string) $owner_guard['owner_token_hash'] ) ) return false;
+		return $this->update_run( $run_id, $fields );
 	}
 
 	public function append_event( $run_id, $event ) {
@@ -226,7 +241,7 @@ class Tra_Vel_Test_Agent_Store {
 	public function can_access( $run, $token, $user_id ) {
 		if ( ! is_array( $run ) ) return false;
 		if ( $user_id > 0 && (int) $run['owner_user_id'] === (int) $user_id ) return true;
-		return is_string( $token ) && isset( $this->tokens[ $run['run_uuid'] ] ) && hash_equals( $this->tokens[ $run['run_uuid'] ], $token );
+		return 0 === (int) $run['owner_user_id'] && is_string( $token ) && isset( $this->tokens[ $run['run_uuid'] ] ) && hash_equals( $this->tokens[ $run['run_uuid'] ], $token );
 	}
 
 	public function seed_approval( $run_id ) {
@@ -343,7 +358,19 @@ function tv_agent_assert_no_transaction_events( $events, $label ) {
 	}
 }
 
+function tv_agent_apply_run_cookie( $response ) {
+	$header = $response instanceof WP_REST_Response ? (string) ( $response->headers['Set-Cookie'] ?? '' ) : '';
+	if ( preg_match( '/__Host-tra_vel_agent_run=([^;]+)/', $header, $matches ) ) {
+		$_COOKIE['__Host-tra_vel_agent_run'] = (string) $matches[1];
+	}
+}
+
 // Ready request: interpretation succeeds, but suppliers and transactions stay off.
+$production_owner_store = new Tra_Vel_Agent_Store();
+$account_owned_run = array( 'owner_user_id' => 41, 'owner_token_hash' => hash( 'sha256', str_repeat( 't', 40 ) ), 'expires_at' => gmdate( 'Y-m-d H:i:s', time() + 3600 ) );
+tv_agent_controller_assert( true === $production_owner_store->can_access( $account_owned_run, '', 41 ), 'account owner lost access to its private run' );
+tv_agent_controller_assert( false === $production_owner_store->can_access( $account_owned_run, str_repeat( 't', 40 ), 42 ), 'stale bearer retained access after an AgentRun became account-owned' );
+
 tv_agent_controller_reset( '192.0.2.10' );
 $ready_store      = new Tra_Vel_Test_Agent_Store();
 $ready_provider   = new Tra_Vel_Test_Agent_Provider( tv_agent_controller_provider_result( tv_agent_controller_base_request() ) );
@@ -361,6 +388,7 @@ tv_agent_controller_assert( array() === $ready_response->data['approvals'], 'rea
 tv_agent_controller_assert( ! array_key_exists( 'run_token', $ready_response->data ), 'create response exposed the private owner token to JavaScript' );
 tv_agent_controller_assert( isset( $ready_response->headers['Set-Cookie'] ) && false !== strpos( $ready_response->headers['Set-Cookie'], '__Host-tra_vel_agent_run=' ) && false !== strpos( $ready_response->headers['Set-Cookie'], 'Secure; HttpOnly; SameSite=Lax' ), 'create response omitted the protected ownership cookie' );
 tv_agent_controller_assert( '' === $ready_store->runs[1]['input_text'], 'raw natural-language intake was persisted' );
+tv_agent_apply_run_cookie( $ready_response );
 
 $ready_events = $ready_response->data['events'];
 tv_agent_assert_event_order(
@@ -433,6 +461,64 @@ tv_agent_assert_no_transaction_events( $revision_response->data['events'], 'revi
 $duplicate_revision = $ready_controller->revise_run( $revision_request );
 tv_agent_controller_assert( is_wp_error( $duplicate_revision ) && 'tra_vel_agent_duplicate_revision' === $duplicate_revision->get_error_code(), 'duplicate revision idempotency key was accepted' );
 tv_agent_controller_assert( 1 === $ready_provider->revision_calls, 'duplicate revision called the provider again' );
+
+// Account claiming during a slow guest provider call invalidates the stale
+// bearer before it can replace the newly account-owned plan.
+tv_agent_controller_reset( '192.0.2.14' );
+$race_store      = new Tra_Vel_Test_Agent_Store();
+$race_provider   = new Tra_Vel_Test_Agent_Provider( tv_agent_controller_provider_result( tv_agent_controller_base_request() ) );
+$race_controller = new Tra_Vel_Agent_Controller( $race_store, $race_provider );
+$race_created    = $race_controller->create_run( tv_agent_controller_request( array( 'client_request_id' => 'client-request-owner-race-0001' ) ) );
+$race_run_id     = $race_store->runs[1]['run_uuid'];
+tv_agent_apply_run_cookie( $race_created );
+$race_provider->on_revise = static function () use ( $race_store ) {
+	$race_store->runs[1]['owner_user_id']   = 88;
+	$race_store->runs[1]['owner_token_hash'] = '';
+	$race_store->runs[1]['updated_at']      = '2030-04-01 10:02:00';
+};
+$race_revision = $race_controller->revise_run(
+	new WP_REST_Request(
+		array(
+			'run_id'               => $race_run_id,
+			'message'              => 'Change the destination while the account claim is racing',
+			'locale'               => 'en-US',
+			'input_kind'           => 'typed',
+			'transcript_confirmed' => true,
+			'client_request_id'    => 'client-revision-owner-race-0001',
+		)
+	)
+);
+tv_agent_controller_assert( is_wp_error( $race_revision ) && 'tra_vel_agent_revision_owner_changed' === $race_revision->get_error_code(), 'in-flight guest revision overwrote a newly account-owned run' );
+tv_agent_controller_assert( 88 === $race_store->runs[1]['owner_user_id'] && 1 === (int) $race_store->runs[1]['trip_request']['revision'], 'ownership-race rejection changed the claimed plan' );
+tv_agent_controller_assert( ! in_array( 'request.revised', array_column( $race_store->events[1], 'type' ), true ), 'ownership-race rejection emitted a completed revision' );
+tv_agent_controller_assert( array() === $race_store->leases, 'ownership-race rejection leaked a provider or run lease' );
+
+// Permission may pass before claim; callback must reauthorize the freshly
+// fetched row before spending provider budget or accepting a revision.
+tv_agent_controller_reset( '192.0.2.145' );
+$callback_race_store      = new Tra_Vel_Test_Agent_Store();
+$callback_race_provider   = new Tra_Vel_Test_Agent_Provider( tv_agent_controller_provider_result( tv_agent_controller_base_request() ) );
+$callback_race_controller = new Tra_Vel_Agent_Controller( $callback_race_store, $callback_race_provider );
+$callback_race_created    = $callback_race_controller->create_run( tv_agent_controller_request( array( 'client_request_id' => 'client-request-callback-race-01' ) ) );
+$callback_race_uuid       = $callback_race_store->runs[1]['run_uuid'];
+tv_agent_apply_run_cookie( $callback_race_created );
+$callback_race_request = new WP_REST_Request(
+	array(
+		'run_id'               => $callback_race_uuid,
+		'message'              => 'This stale browser must not revise the claimed account plan',
+		'locale'               => 'en-US',
+		'input_kind'           => 'typed',
+		'transcript_confirmed' => true,
+		'client_request_id'    => 'client-revision-callback-race-01',
+	)
+);
+tv_agent_controller_assert( true === $callback_race_controller->can_access_run( $callback_race_request ), 'guest permission fixture could not access its original run' );
+$callback_race_store->runs[1]['owner_user_id']    = 89;
+$callback_race_store->runs[1]['owner_token_hash'] = '';
+$callback_race_store->runs[1]['updated_at']       = '2030-04-01 10:03:00';
+$callback_race_result = $callback_race_controller->revise_run( $callback_race_request );
+tv_agent_controller_assert( is_wp_error( $callback_race_result ) && 'tra_vel_agent_run_forbidden' === $callback_race_result->get_error_code(), 'revision callback trusted stale permission after account claim' );
+tv_agent_controller_assert( 1 === $callback_race_provider->calls && 0 === $callback_race_provider->revision_calls, 'stale permission reached the revision provider after account claim' );
 
 // Global balance guard: distributed visitor IDs cannot exceed the configured UTC-day capacity.
 tv_agent_controller_reset( '192.0.2.15' );

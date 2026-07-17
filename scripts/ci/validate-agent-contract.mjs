@@ -112,6 +112,8 @@ for (const eventType of ['clarification.response.received', 'request.revision.st
 }
 if (!controllerPhp.includes("'input_sha256' => $message_hash") || controllerPhp.includes("'message' => $message")) fail('Revision input must be fingerprinted without persisting raw clarification text.');
 if (!controllerPhp.includes("'tra_vel_agent_max_request_revisions', 8") || !controllerPhp.includes("'tra_vel_agent_duplicate_revision'")) fail('Same-run revision must enforce bounded revisions and idempotency.');
+if (!storePhp.includes('update_run_if_owner') || !controllerPhp.includes("'tra_vel_agent_revision_owner_changed'") || !controllerPhp.includes("'owner_token_hash' => (string)")) fail('In-flight revisions must CAS against the owner and run version captured before the provider call.');
+if (!/public function revise_run[\s\S]{0,900}can_access\( \$run, \$this->run_cookie_token/.test(controllerPhp)) fail('Revision callbacks must reauthorize the freshly fetched run after REST permission checks.');
 if (!policyPhp.includes("$previous['request_id']") || !policyPhp.includes("(int) $previous['revision'] + 1")) fail('Deterministic policy must preserve request identity and increment the revision.');
 if (!/provider_connected'\s*=>\s*false/.test(controllerPhp) || !/provider_bookable'\s*=>\s*false/.test(controllerPhp)) fail('The not-started event must disclose disconnected and non-bookable provider state.');
 if (!/data_mode'\s*=>\s*'not_connected'/.test(controllerPhp)) fail('The not-started event must use the not_connected data mode.');
@@ -121,11 +123,25 @@ if (!controllerPhp.includes("'tra_vel_agent_daily_request_limit', 20") || !contr
 if (!controllerPhp.includes('__Host-tra_vel_agent_run=') || !controllerPhp.includes('Secure; HttpOnly; SameSite=Lax')) fail('Anonymous run ownership must use a Secure HttpOnly SameSite cookie.');
 if (controllerPhp.includes("$data['run_token']")) fail('The private run bearer token must not be exposed in a JSON response.');
 if (!storePhp.includes("'input_text'           => ''")) fail('Raw natural-language intake must not be persisted in the Agent Core database.');
+if (!/const\s+DB_VERSION\s*=\s*'1\.2\.0'/.test(storePhp) || (storePhp.match(/ENGINE=InnoDB/g) || []).length < 4 || !storePhp.includes('ensure_transactional_tables')) fail('AgentRun ownership binding requires all four Agent Core tables to migrate to InnoDB under schema 1.2.0.');
+for (const marker of ['inspect_schema', 'SHOW COLUMNS', 'SHOW TABLE STATUS', 'SHOW INDEX', 'required_indexes_ready', 'ready_tables']) {
+  if (!storePhp.includes(marker)) fail(`Agent store fail-closed schema inspection is missing ${marker}.`);
+}
+if ((storePhp.match(/UNIQUE\s+KEY/gi) || []).length < 5 || (storePhp.match(/PRIMARY\s+KEY/gi) || []).length < 4) fail('Agent store DDL lost a required ownership, sequence, approval, or quota uniqueness invariant.');
+if (!storePhp.includes("0 === (int) $run['owner_user_id']") || !storePhp.includes("'owner_token_hash'     => absint")) fail('Account-owned AgentRuns must invalidate anonymous bearer ownership.');
+if (!controllerPhp.includes("'agent_store'") || !controllerPhp.includes('Tra_Vel_Agent_Store::schema_health()')) fail('Agent health must expose transactional AgentRun store readiness.');
+if (!controllerPhp.includes('public function can_use_store') || !controllerPhp.includes('Tra_Vel_Agent_Store::is_ready()') || !controllerPhp.includes("'tra_vel_agent_store_unavailable'")) fail('Agent runtime routes must fail closed when the transactional AgentRun schema is unavailable.');
 if (!storePhp.includes('INSERT IGNORE INTO') || !storePhp.includes('counter_value < %d')) fail('Agent request limits must reserve capacity atomically in the database.');
+if (!/function\s+get_run_by_uuid\s*\([^)]*&\$read_error/.test(storePhp) || !/get_run_by_uuid[\s\S]{0,520}last_error/.test(storePhp)) fail('Authoritative AgentRun reads must expose transient SELECT errors separately from true absence.');
 if (!controllerPhp.includes("'tra_vel_agent_provider_concurrency_limit', 2") || !controllerPhp.includes("'tra_vel_agent_provider_busy'")) fail('Live provider work must enforce the default two-slot concurrency semaphore.');
 if (!storePhp.includes('acquire_lease') || !storePhp.includes('release_lease') || !storePhp.includes('AND option_value = %s')) fail('Provider concurrency leases must be atomic and owner-conditionally released.');
 if (!storePhp.includes("preg_replace( '/[^a-z0-9._-]/'") || storePhp.includes("str_replace( '_', '.', $row['event_type'] )")) fail('Run events must preserve canonical dot and underscore separators without lossy conversion.');
 if (!storePhp.includes("'supplier_search_not_started'    => 'supplier.search.not_started'")) fail('Agent Core must normalize event rows written by version 0.1.0.');
+for (const marker of ['delete_expired_run_aggregate', 'sweep_orphan_rows', 'START TRANSACTION', 'FOR UPDATE', 'ROLLBACK', 'CLEANUP_STATUS_OPTION']) {
+  if (!storePhp.includes(marker)) fail(`AgentRun privacy cleanup is missing ${marker}.`);
+}
+const cleanupPhp = storePhp.slice(storePhp.indexOf('public static function cleanup_expired'), storePhp.indexOf('public function consume_limit'));
+if (!/if \( ! self::is_ready\(\) \)/.test(cleanupPhp) || !/last_error/.test(cleanupPhp)) fail('AgentRun cleanup must fail closed on schema unreadiness and database read errors.');
 
 if (failures.length) {
   console.error('Tra-Vel agent contract validation failed:');

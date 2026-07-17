@@ -251,6 +251,11 @@ for (const marker of ['data-agent-revision-composer', 'data-agent-revision-form'
 }
 if (!appJs.includes('async function reviseAgentRun(') || !appJs.includes('/messages`, {') || !appJs.includes("form.setAttribute('aria-busy', 'true')")) failures.push('The AI planner does not submit same-run revisions with an accessible real activity state.');
 if (!appJs.includes('התוכנית הקודמת נשארה ללא שינוי') || !appJs.includes('renderAgentRun(root, currentRun)')) failures.push('A failed revision must retain and refresh the last confirmed plan.');
+for (const marker of ['pollController: null', 'pollGeneration: 0', "pollRunToken: ''", 'quoteCasePollController: null', 'quoteCasePollGeneration: 0', "quoteCasePollCaseToken: ''", 'invalidateAgentPoll()', 'invalidateQuoteCasePoll()', 'isCurrentAgentPoll(runId, generation, controller)', 'isCurrentQuoteCasePoll(caseId, generation, controller)']) {
+  if (!appJs.includes(marker)) failures.push(`Agent polling lifecycle is missing ${marker}.`);
+}
+if (!/currentCase\?\.case_id === caseData\.case_id[\s\S]{0,220}incomingVersion < currentVersion\) return false;/.test(appJs)) failures.push('A stale lower quote-case version can regress visible status or actions.');
+if (!/const reconnectRun = Boolean[\s\S]{0,420}invalidateAgentPoll\(\);[\s\S]{0,120}invalidateQuoteCasePoll\(\);[\s\S]{0,120}visibilityState !== 'visible'/.test(appJs)) failures.push('Visibility reconnect does not invalidate old Agent and quote-case requests before rescheduling.');
 if (!appCss.includes('@keyframes agent-progress-sweep') || !appCss.includes('@keyframes agent-positive-arrival') || !appCss.includes('.agent-revision-form[data-state="loading"]')) failures.push('Same-run revision progress and confirmed success lack truthful visual motion.');
 if (!appJs.includes('latestSequenceByPhase') || !appCss.includes('.agent-event.is-running.is-resolved::before')) failures.push('Completed agent phases can continue showing a false running animation.');
 
@@ -405,6 +410,14 @@ if (!experiencePage.includes('data-insurance-risk-map')) failures.push('The insu
 if (!experiencePage.includes('data-insurance-results')) failures.push('The insurance page is missing its dynamic plan results region.');
 if (!experiencePage.includes('data-package-search')) failures.push('The packages page is missing its functional composer form.');
 if (!experiencePage.includes('data-package-map')) failures.push('The packages page is missing its total-trip map.');
+for (const marker of ['hotel-map-column', 'package-map-column', 'insurance-map-column', 'experience-globe-column', 'data-experience-decision-map', 'data-experience-destination', 'data-experience-decision-detail']) {
+  if (!experiencePage.includes(marker)) failures.push(`Map decision details or interactive experience pins are missing ${marker}.`);
+}
+for (const marker of ['.hotel-area-detail { position: static', '.package-map-detail { position: static', '.insurance-risk-detail { position: static', '.experience-globe-detail { position: static', '.workspace-map-detail { position: static']) {
+  if (!appCss.includes(marker)) failures.push(`Decision detail cards must remain outside map paint surfaces: ${marker}.`);
+}
+if (!appJs.includes('initExperienceDecisionMap') || !appJs.includes('map.dataset.selectedDestination = destination')) failures.push('Experience-map buttons do not update a real selected-destination state.');
+if (!savedPage.includes('data-coordinate-mode="option-orbit"') || !savedPage.includes('data-workspace-orbit-label')) failures.push('Saved options without coordinates must be disclosed as an option orbit, not a geographic map.');
 if (!appCss.includes('.package-search-form,.package-route-row') || !appCss.includes('contain: inline-size paint') || !appCss.includes('direction: ltr') || !appCss.includes('direction: rtl')) failures.push('The mobile package composer is missing its RTL-safe inline overflow containment.');
 if (!appCss.includes('.experience-card-grid { display: flex; direction: ltr;') || !appCss.includes('.package-journey-map { position: relative; top: auto; min-height: 570px; contain: paint;')) failures.push('The supporting content and journey map are missing mobile paint containment.');
 if (!appCss.includes('.flight-results-grid { display: flex; direction: ltr;') || !appCss.includes('.hotel-results-grid { display: flex; direction: ltr;') || !appCss.includes('.insurance-plan-grid { display: flex; direction: ltr;')) failures.push('The mobile commerce result rails are missing RTL-safe paint containment.');

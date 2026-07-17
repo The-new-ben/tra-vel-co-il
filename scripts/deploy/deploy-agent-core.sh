@@ -31,7 +31,20 @@ echo "Checking the authenticated Agent Core deployment gateway."
 curl --fail-with-body --silent --show-error --max-time 30 \
   --user "${WP_USERNAME}:${WP_APP_PASSWORD}" \
   "$STATUS_URL" > "$RESPONSE_FILE"
-grep -q '"gateway_version"' "$RESPONSE_FILE" || { echo "The deployment gateway did not return Agent Core status." >&2; exit 1; }
+python3 - "$RESPONSE_FILE" <<'PY'
+import json
+import re
+import sys
+
+data = json.load(open(sys.argv[1], encoding="utf-8"))
+version = str(data.get("gateway_version", ""))
+match = re.fullmatch(r"(\d+)\.(\d+)\.(\d+)", version)
+if not match or tuple(map(int, match.groups())) < (0, 3, 0):
+    raise SystemExit("Agent Core deployment requires deploy gateway 0.3.0 or newer.")
+fingerprint = data.get("installed_fingerprint")
+if data.get("installed") is True and not re.fullmatch(r"[a-f0-9]{64}", str(fingerprint or "")):
+    raise SystemExit("The deployment gateway did not return a valid installed content fingerprint.")
+PY
 
 echo "Uploading the checksum-verified Agent Core package."
 curl --fail-with-body --silent --show-error --max-time 180 \
@@ -43,13 +56,17 @@ curl --fail-with-body --silent --show-error --max-time 180 \
   --form "activation_confirmation=${AGENT_ACTIVATION_CONFIRMATION:-}" \
   "$DEPLOY_URL" > "$RESPONSE_FILE"
 
-grep -q '"ok":true' "$RESPONSE_FILE" || { echo "WordPress did not confirm Agent Core deployment." >&2; exit 1; }
 if [[ -n "${AGENT_DEPLOY_RESULT_FILE:-}" ]]; then
   cp "$RESPONSE_FILE" "$AGENT_DEPLOY_RESULT_FILE"
 fi
 python3 - "$RESPONSE_FILE" <<'PY'
 import json
+import re
 import sys
 data = json.load(open(sys.argv[1], encoding="utf-8"))
+if data.get("ok") is not True or not re.fullmatch(r"[a-f0-9]{64}", str(data.get("content_sha256", ""))):
+    raise SystemExit("WordPress did not confirm the installed Agent Core content fingerprint.")
+if data.get("backup") and not re.fullmatch(r"[a-f0-9]{64}", str(data.get("previous_content_sha256", ""))):
+    raise SystemExit("WordPress did not confirm the previous Agent Core content fingerprint.")
 print(f"Deployed {data['plugin']} {data['version']}; active={str(data['active']).lower()}; backup={data.get('backup') or 'none'}")
 PY

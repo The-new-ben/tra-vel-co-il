@@ -1,0 +1,288 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://tra-vel.co.il/wp-json/tra-vel-agent/v1/schema/quote-case#1.0.0",
+  "title": "Tra-Vel QuoteCase",
+  "description": "The traveler-safe representation of a persistent assisted quote case.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "case_id",
+    "reference",
+    "status",
+    "status_label",
+    "ownership",
+    "version",
+    "source",
+    "summary",
+    "next_action",
+    "events",
+    "created_at",
+    "updated_at",
+    "retention_until"
+  ],
+  "properties": {
+    "contract_version": {
+      "const": "1.0.0"
+    },
+    "case_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "reference": {
+      "type": "string",
+      "pattern": "^TV-[A-Z0-9]{8}$"
+    },
+    "status": {
+      "enum": [
+        "queued",
+        "in_review",
+        "needs_information",
+        "ready_for_assistance",
+        "closed_no_quote",
+        "cancelled",
+        "expired"
+      ]
+    },
+    "status_label": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "ownership": {
+      "enum": [
+        "account",
+        "private_browser_owner"
+      ]
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "run_id",
+        "request_id",
+        "request_revision",
+        "request_digest"
+      ],
+      "properties": {
+        "run_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "request_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "request_revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "request_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "title",
+        "language",
+        "origin",
+        "destination_mode",
+        "destinations",
+        "date_text",
+        "date_flexibility",
+        "travelers",
+        "budget",
+        "scope"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "language": {
+          "enum": [
+            "he",
+            "en",
+            "mixed"
+          ]
+        },
+        "origin": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "destination_mode": {
+          "enum": [
+            "fixed",
+            "anywhere",
+            "flexible",
+            "unknown"
+          ]
+        },
+        "destinations": {
+          "type": "array",
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          }
+        },
+        "date_text": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "date_flexibility": {
+          "enum": [
+            "exact",
+            "flexible",
+            "unknown"
+          ]
+        },
+        "travelers": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "adults",
+            "children",
+            "child_ages",
+            "rooms"
+          ],
+          "properties": {
+            "adults": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 20
+            },
+            "children": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 20
+            },
+            "child_ages": {
+              "type": "array",
+              "maxItems": 20,
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 17
+              }
+            },
+            "rooms": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 20
+            }
+          }
+        },
+        "budget": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "amount",
+            "currency",
+            "flexibility"
+          ],
+          "properties": {
+            "amount": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0,
+              "maximum": 1000000000
+            },
+            "currency": {
+              "enum": [
+                "ILS",
+                "USD",
+                "EUR",
+                "UNKNOWN"
+              ]
+            },
+            "flexibility": {
+              "enum": [
+                "hard",
+                "soft",
+                "unknown"
+              ]
+            }
+          }
+        },
+        "scope": {
+          "type": "array",
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "flights",
+              "accommodation",
+              "transfers",
+              "activities",
+              "dining",
+              "insurance",
+              "connectivity",
+              "equipment"
+            ]
+          }
+        }
+      }
+    },
+    "next_action": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "actor",
+        "code",
+        "label"
+      ],
+      "properties": {
+        "actor": {
+          "enum": [
+            "tra-vel",
+            "traveler",
+            "none"
+          ]
+        },
+        "code": {
+          "type": "string",
+          "pattern": "^[a-z]+(?:_[a-z]+)*$"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        }
+      }
+    },
+    "events": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 20,
+      "items": {
+        "$ref": "https://tra-vel.co.il/wp-json/tra-vel-agent/v1/schema/quote-case-event#1.0.0"
+      }
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "retention_until": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}
