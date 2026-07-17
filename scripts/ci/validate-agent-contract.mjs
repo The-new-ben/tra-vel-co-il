@@ -21,6 +21,8 @@ const agentRun = readJson('agent-run.schema.json');
 const providerPhp = readPhp('class-tra-vel-agent-openai-provider.php');
 const controllerPhp = readPhp('class-tra-vel-agent-controller.php');
 const storePhp = readPhp('class-tra-vel-agent-store.php');
+const policyPhp = readPhp('class-tra-vel-agent-policy.php');
+const providerInterfacePhp = readPhp('interface-tra-vel-agent-provider.php');
 
 const assertClosedObject = (schema, label) => {
   if (schema?.type !== 'object') fail(`${label} must be an object schema.`);
@@ -88,6 +90,7 @@ if (runStatuses.some(status => /booked|purchased|reserved/.test(status))) fail('
 
 if (!/'store'\s*=>\s*false/.test(providerPhp)) fail('OpenAI Responses calls must disable provider-side response storage.');
 if (!providerPhp.includes('implements Tra_Vel_Agent_Provider')) fail('The OpenAI interpreter is not behind the replaceable provider boundary.');
+if (!providerInterfacePhp.includes('public function revise(') || !providerPhp.includes('public function revise(')) fail('The provider boundary must support strict in-place request revision.');
 if (!/'strict'\s*=>\s*true/.test(providerPhp)) fail('The OpenAI provider must request strict JSON Schema output.');
 if (!/const MAX_OUTPUT_TOKENS\s*=\s*1600/.test(providerPhp)) fail('OpenAI interpretation must keep its explicit 1,600-token output ceiling.');
 if (!/'additionalProperties'\s*=>\s*false/.test(providerPhp)) fail('The OpenAI provider schema must reject undeclared fields.');
@@ -102,6 +105,14 @@ if (!/supplier_search'\s*=>\s*false/.test(controllerPhp)) fail('Agent health mus
 if (!/proposal_generation'\s*=>\s*false/.test(controllerPhp)) fail('Agent health must report proposal generation as unavailable in the first slice.');
 if (!/booking_execution'\s*=>\s*false/.test(controllerPhp)) fail('Agent health must report booking execution as unavailable in the first slice.');
 if (!controllerPhp.includes("'supplier.search.not_started'")) fail('A ready request must emit an explicit supplier-search-not-started event.');
+if (!controllerPhp.includes('/messages') || !controllerPhp.includes('public function revise_run(')) fail('Agent Core must expose a same-run natural-language revision endpoint.');
+if (!/request_revision'\s*=>\s*\$this->provider->health\(\)\['configured'\]/.test(controllerPhp)) fail('Agent health must report request revision availability from the configured provider.');
+for (const eventType of ['clarification.response.received', 'request.revision.started', 'request.revised', 'request.revision.failed']) {
+  if (!controllerPhp.includes(`'${eventType}'`)) fail(`Same-run revision is missing truthful event ${eventType}.`);
+}
+if (!controllerPhp.includes("'input_sha256' => $message_hash") || controllerPhp.includes("'message' => $message")) fail('Revision input must be fingerprinted without persisting raw clarification text.');
+if (!controllerPhp.includes("'tra_vel_agent_max_request_revisions', 8") || !controllerPhp.includes("'tra_vel_agent_duplicate_revision'")) fail('Same-run revision must enforce bounded revisions and idempotency.');
+if (!policyPhp.includes("$previous['request_id']") || !policyPhp.includes("(int) $previous['revision'] + 1")) fail('Deterministic policy must preserve request identity and increment the revision.');
 if (!/provider_connected'\s*=>\s*false/.test(controllerPhp) || !/provider_bookable'\s*=>\s*false/.test(controllerPhp)) fail('The not-started event must disclose disconnected and non-bookable provider state.');
 if (!/data_mode'\s*=>\s*'not_connected'/.test(controllerPhp)) fail('The not-started event must use the not_connected data mode.');
 if (!/side_effect_executed'\s*=>\s*false/.test(controllerPhp)) fail('Approval decisions must not claim that a side effect ran in the foundation slice.');

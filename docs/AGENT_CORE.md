@@ -6,7 +6,7 @@ Plugin: `plugin/tra-vel-agent-core/` version `0.1.1`
 
 ## What this slice does
 
-The Agent Core accepts a typed or confirmed voice request through JSON POST, creates a private time-limited run, asks OpenAI to interpret the request into a strict `TripRequest`, applies deterministic clarification rules, and records append-only events that the interface can display.
+The Agent Core accepts a typed or confirmed voice request through JSON POST, creates a private time-limited run, asks OpenAI to interpret the request into a strict `TripRequest`, applies deterministic clarification rules, and records append-only events that the interface can display. When material information is missing or the traveler changes a planning constraint, `POST /runs/{run_id}/messages` revises that request in place without creating a second run.
 
 It is intentionally narrower than the complete travel agent. It does not claim that suppliers were searched, prices were quoted, inventory was held, or a booking was made. When no contracted supplier tool has executed, the run records `supplier.search.not_started` with `provider_connected: false` and `provider_bookable: false`.
 
@@ -21,6 +21,8 @@ flowchart LR
     E --> F{Material blockers?}
     F -->|Yes| G[Clarification required]
     F -->|No| H[Request ready]
+    G --> K[POST clarification to same private run]
+    K --> D
     H --> I[Supplier search explicitly not started]
     G --> J[Private run and event log]
     I --> J
@@ -39,6 +41,7 @@ Namespace: `/wp-json/tra-vel-agent/v1`
 | `POST` | `/runs` | Public HTTPS, rate limited | Create and interpret a private run |
 | `GET` | `/runs/{uuid}` | HttpOnly ownership cookie or logged-in owner | Read private run state |
 | `GET` | `/runs/{uuid}/events` | HttpOnly ownership cookie or logged-in owner | Read append-only events after a sequence |
+| `POST` | `/runs/{uuid}/messages` | HttpOnly ownership cookie or logged-in owner | Apply a typed or confirmed-voice clarification to the same private run |
 | `POST` | `/runs/{uuid}/approvals/{uuid}` | Logged-in owner only | Decide one frozen, versioned action |
 | `POST` | `/settings/credential` | Administrator | Store encrypted OpenAI fallback credential |
 | `DELETE` | `/settings/credential` | Administrator | Delete only the encrypted fallback credential |
@@ -53,9 +56,19 @@ Private responses use `Cache-Control: private, no-store, max-age=0` and `X-Robot
 - Anonymous runs expire after 24 hours and are deleted by a bounded daily cleanup job.
 - Guests cannot approve purchases, cancellations, amendments, personal-data submission, insurance binding, or supplier requests.
 
+## Clarification and request revisioning
+
+- A clarification is accepted only for the same owned private run while its status is `needs_clarification` or `request_ready`. It never creates a parallel conversation or a second run.
+- Every accepted update preserves the existing `TripRequest.request_id` and increments `TripRequest.revision` by exactly one. The provider must return a complete replacement request; the prior request remains authoritative if provider or deterministic policy validation fails.
+- The raw clarification is processed in memory and is never written to the run or event tables. The audit event stores only bounded metadata, including input kind, target revision and the clarification SHA-256 hash.
+- Tra-Vel sends the provider a sanitized structured view of the prior `TripRequest` together with the current clarification. Internal policy metadata is excluded, and the Responses API continues to use `store: false`, so revisioning does not depend on provider-retained conversation state.
+- Typed messages and confirmed voice transcripts share the same policy gates. An unconfirmed voice transcript cannot revise a request.
+- `client_request_id` provides per-run revision idempotency, and a run lease prevents concurrent updates from racing.
+- The default maximum request revision number is 8. `tra_vel_agent_max_request_revisions` may change it only within the enforced range of 2 through 20; after the limit, the traveler must start a new private plan.
+
 ## Provider truth rules
 
-- The OpenAI request uses `store: false` and a strict JSON Schema.
+- Initial interpretations and in-place revisions use `store: false` and a strict JSON Schema. A revision supplies structured prior context again instead of relying on provider-side conversation storage.
 - Each interpretation is capped at 1,600 output tokens, at five requests per visitor per ten minutes, and at 20 live requests per UTC day by default. At the official 2026-07-16 standard price for GPT-5.6 Terra, the worst-case output ceiling is about USD 0.024 per call before input, while the verified structured test used 382 output tokens. Atomic owner-token leases allow at most two concurrent provider calls, and both traffic counters reserve capacity with conditional database writes, so a parallel burst cannot occupy all PHP workers or step past the limits. These operational limits remain filterable without changing the public contract.
 - The system instruction forbids invented dates, ages, budgets, certification, accessibility requirements, prices, availability, savings, reservations, and bookings.
 - Provider errors are normalized and stored without the API key or raw supplier payloads.
@@ -83,7 +96,7 @@ The key is never returned by REST, written to Git, bundled into the ZIP, or prin
 
 ## Data tables
 
-- `{prefix}tra_vel_agent_runs`: ownership, request state, provider reference, expiry; the raw natural-language prompt is never stored
+- `{prefix}tra_vel_agent_runs`: ownership, request state, provider reference, expiry; neither the raw initial prompt nor raw clarification messages are stored
 - `{prefix}tra_vel_agent_events`: append-only ordered audit events
 - `{prefix}tra_vel_agent_approvals`: frozen action snapshot, digest, version, expiry, decision
 - `{prefix}tra_vel_agent_limits`: atomic visitor-window and UTC-day cost reservations
@@ -104,10 +117,9 @@ The OpenAI adapter is a boundary, not the product authority. A second OpenAI-com
 
 ## Next slices
 
-1. Add message and clarification resolution with request revisioning.
-2. Bridge read-only flight, hotel, package, weather, and destination tools through existing repositories.
-3. Generate three materially different proposals with strict cost ledgers and provenance.
-4. Add a dedicated idempotency table before any supplier-side action.
-5. Allow only the existing verified concierge handoff as the first protected commercial action.
-6. Move supplier repositories out of the theme so backend behavior survives a theme switch.
-7. Introduce a TypeScript or Python Agents SDK orchestration service when long-running pause/resume and supplier fan-out require it, while WordPress remains the ownership and approval authority.
+1. Bridge read-only flight, hotel, package, weather, and destination tools through existing repositories.
+2. Generate three materially different proposals with strict cost ledgers and provenance.
+3. Add a dedicated idempotency table before any supplier-side action.
+4. Allow only the existing verified concierge handoff as the first protected commercial action.
+5. Move supplier repositories out of the theme so backend behavior survives a theme switch.
+6. Introduce a TypeScript or Python Agents SDK orchestration service when long-running pause/resume and supplier fan-out require it, while WordPress remains the ownership and approval authority.
