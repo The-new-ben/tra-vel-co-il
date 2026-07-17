@@ -32,7 +32,8 @@ class Tra_Vel_V2_Discovery_Repository {
 		if ( ! $force ) {
 			$fresh = get_transient( $fresh_key );
 			if ( $this->is_cached_result( $fresh ) ) {
-				return $this->with_cache_state( $fresh, 'fresh' );
+				$cached_state = ! empty( $fresh['runtime']['degraded'] ) ? 'degraded_fallback' : 'fresh';
+				return $this->with_cache_state( $fresh, $cached_state );
 			}
 		}
 

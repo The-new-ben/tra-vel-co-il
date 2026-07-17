@@ -1,16 +1,25 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://tra-vel.co.il/schemas/discovery-v1.json",
+  "$id": "https://tra-vel.co.il/schemas/discovery-v1.1.json",
   "title": "Tra-Vel discovery contract",
   "type": "object",
   "required": ["contract_version", "data_mode", "currency", "origin", "provider_status", "destinations", "route_sets"],
   "properties": {
-    "contract_version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "contract_version": { "const": "1.1.0" },
     "data_mode": { "enum": ["demo", "live", "mixed"] },
     "currency": { "type": "string", "pattern": "^[A-Z]{3}$" },
     "origin": {
       "type": "object",
-      "required": ["code", "name", "city", "country", "latitude", "longitude"]
+      "required": ["code", "name", "city", "country", "latitude", "longitude"],
+      "properties": {
+        "code": { "type": "string", "pattern": "^[A-Z]{3}$" },
+        "name": { "type": "string", "minLength": 2 },
+        "city": { "type": "string", "minLength": 2 },
+        "country": { "type": "string", "minLength": 2 },
+        "latitude": { "type": "number", "minimum": -90, "maximum": 90 },
+        "longitude": { "type": "number", "minimum": -180, "maximum": 180 }
+      },
+      "additionalProperties": false
     },
     "provider_status": { "type": "object" },
     "destinations": {
@@ -18,26 +27,207 @@
       "minItems": 1,
       "items": {
         "type": "object",
-        "required": ["id", "city", "country", "geo", "position", "airport", "deal", "hotel", "weather", "tags", "image"],
+        "required": ["id", "city", "country", "geo", "position", "airport", "deal", "hotel", "weather", "planning", "tags", "image"],
         "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9-]{2,60}$" },
+          "city": { "type": "string", "minLength": 2 },
+          "country": { "type": "string", "minLength": 2 },
           "geo": {
             "type": "object",
             "required": ["latitude", "longitude"],
             "properties": {
               "latitude": { "type": "number", "minimum": -90, "maximum": 90 },
               "longitude": { "type": "number", "minimum": -180, "maximum": 180 }
-            }
-          }
-        }
+            },
+            "additionalProperties": false
+          },
+          "position": {
+            "type": "object",
+            "required": ["x", "y"],
+            "properties": {
+              "x": { "type": "number", "minimum": 0, "maximum": 100 },
+              "y": { "type": "number", "minimum": 0, "maximum": 100 }
+            },
+            "additionalProperties": false
+          },
+          "airport": { "$ref": "#/definitions/airport" },
+          "deal": { "$ref": "#/definitions/deal" },
+          "hotel": { "$ref": "#/definitions/hotel" },
+          "weather": { "$ref": "#/definitions/weather" },
+          "planning": { "$ref": "#/definitions/planningProfile" },
+          "tags": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string", "minLength": 2 }
+          },
+          "image": { "type": "string", "minLength": 3 }
+        },
+        "additionalProperties": false
       }
     },
     "route_sets": {
       "type": "object",
       "additionalProperties": {
         "type": "array",
+        "minItems": 1,
         "items": {
           "type": "object",
-          "required": ["id", "label", "badge", "duration_minutes", "stops", "ticket_mode", "risk", "emissions_kg", "score", "costs", "pros", "cons"]
+          "required": ["id", "currency", "label", "badge", "duration_minutes", "stops", "ticket_mode", "risk", "emissions_kg", "score", "costs", "pros", "cons"],
+          "properties": {
+            "id": { "type": "string", "minLength": 2 },
+            "currency": { "type": "string", "pattern": "^[A-Z]{3}$" },
+            "label": { "type": "string", "minLength": 2 },
+            "badge": { "type": "string", "minLength": 2 },
+            "duration_minutes": { "type": "integer", "minimum": 1 },
+            "stops": { "type": "integer", "minimum": 0 },
+            "via": { "type": ["string", "null"], "pattern": "^[A-Z]{3}$" },
+            "ticket_mode": { "enum": ["single", "separate"] },
+            "risk": { "enum": ["low", "medium", "high"] },
+            "emissions_kg": { "type": "number", "minimum": 0 },
+            "score": { "type": "number", "minimum": 0, "maximum": 100 },
+            "observed_at": { "type": "string", "format": "date-time", "pattern": "Z$" },
+            "costs": { "$ref": "#/definitions/routeCosts" },
+            "pros": {
+              "type": "array",
+              "minItems": 1,
+              "items": { "type": "string", "minLength": 2 }
+            },
+            "cons": {
+              "type": "array",
+              "minItems": 1,
+              "items": { "type": "string", "minLength": 2 }
+            }
+          },
+          "additionalProperties": false
+        }
+      }
+    }
+  },
+  "definitions": {
+    "airport": {
+      "type": "object",
+      "required": ["code", "name", "direct", "flight_minutes", "transfer_minutes"],
+      "properties": {
+        "code": { "type": "string", "pattern": "^[A-Z]{3}$" },
+        "name": { "type": "string", "minLength": 2, "maxLength": 160 },
+        "direct": { "type": "boolean" },
+        "flight_minutes": { "type": "integer", "minimum": 1 },
+        "transfer_minutes": { "type": "integer", "minimum": 0 },
+        "observed_at": { "type": "string", "format": "date-time", "pattern": "Z$" }
+      },
+      "additionalProperties": false
+    },
+    "deal": {
+      "type": "object",
+      "required": ["headline_price", "total_per_person", "currency", "trend_pct", "nights", "total_scope", "insight", "bookable"],
+      "properties": {
+        "headline_price": { "type": "number", "minimum": 0 },
+        "total_per_person": { "type": "number", "minimum": 0 },
+        "currency": { "type": "string", "const": "USD" },
+        "trend_pct": { "type": "number", "minimum": -100, "maximum": 100 },
+        "nights": { "type": "integer", "minimum": 1 },
+        "total_scope": { "enum": ["destination_deal", "package_inclusive"] },
+        "insight": { "type": "string", "minLength": 2 },
+        "bookable": { "type": "boolean" },
+        "observed_at": { "type": "string", "format": "date-time", "pattern": "Z$" }
+      },
+      "additionalProperties": false
+    },
+    "hotel": {
+      "type": "object",
+      "required": ["name", "area", "rating", "nightly", "nights", "room_total", "per_person_total", "currency", "tour_ready"],
+      "properties": {
+        "name": { "type": "string", "minLength": 2, "maxLength": 160 },
+        "area": { "type": "string", "minLength": 2, "maxLength": 160 },
+        "rating": { "type": "number", "minimum": 0, "maximum": 5 },
+        "nightly": { "type": "number", "minimum": 0 },
+        "nights": { "type": "integer", "minimum": 1 },
+        "room_total": { "type": "number", "minimum": 0 },
+        "per_person_total": { "type": "number", "minimum": 0 },
+        "currency": { "type": "string", "pattern": "^[A-Z]{3}$" },
+        "tour_ready": { "type": "boolean" },
+        "observed_at": { "type": "string", "format": "date-time", "pattern": "Z$" }
+      },
+      "additionalProperties": false
+    },
+    "weather": {
+      "type": "object",
+      "required": ["temperature_c", "condition", "season_fit"],
+      "properties": {
+        "temperature_c": { "type": "number", "minimum": -100, "maximum": 70 },
+        "apparent_temperature_c": { "type": ["number", "null"], "minimum": -100, "maximum": 80 },
+        "condition": { "type": "string", "minLength": 2 },
+        "season_fit": { "type": "string", "minLength": 1 },
+        "weather_code": { "type": "integer", "minimum": 0, "maximum": 99 },
+        "is_day": { "type": "boolean" },
+        "observed_at": { "type": "string", "format": "date-time", "pattern": "Z$" },
+        "live": { "type": "boolean" },
+        "source": { "type": "string", "minLength": 2 }
+      },
+      "additionalProperties": false
+    },
+    "routeCosts": {
+      "type": "object",
+      "required": ["flight", "baggage", "total"],
+      "properties": {
+        "flight": { "type": "number", "minimum": 0 },
+        "baggage": { "type": "number", "minimum": 0 },
+        "hotel": { "type": "number", "minimum": 0 },
+        "taxes": { "type": "number", "minimum": 0 },
+        "transfers": { "type": "number", "minimum": 0 },
+        "local_transport": { "type": "number", "minimum": 0 },
+        "activities": { "type": "number", "minimum": 0 },
+        "dining": { "type": "number", "minimum": 0 },
+        "insurance": { "type": "number", "minimum": 0 },
+        "connectivity": { "type": "number", "minimum": 0 },
+        "equipment": { "type": "number", "minimum": 0 },
+        "entry": { "type": "number", "minimum": 0 },
+        "overnight": { "type": "number", "minimum": 0 },
+        "total": { "type": "number", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "planningModule": {
+      "type": "object",
+      "required": ["state", "headline", "detail", "next_action"],
+      "properties": {
+        "state": { "enum": ["editorial", "needs_details", "unknown"] },
+        "headline": { "type": "string", "minLength": 2 },
+        "detail": { "type": "string", "minLength": 8 },
+        "next_action": { "type": "string", "minLength": 2 }
+      }
+    },
+    "planningProfile": {
+      "type": "object",
+      "required": ["reviewed_on", "source_label", "modules", "cost_scope"],
+      "properties": {
+        "reviewed_on": { "type": "string", "format": "date" },
+        "source_label": { "type": "string", "minLength": 2 },
+        "modules": {
+          "type": "object",
+          "required": ["mobility", "dining", "entry", "connectivity", "accessibility", "equipment"],
+          "properties": {
+            "mobility": { "$ref": "#/definitions/planningModule" },
+            "dining": { "$ref": "#/definitions/planningModule" },
+            "entry": { "$ref": "#/definitions/planningModule" },
+            "connectivity": { "$ref": "#/definitions/planningModule" },
+            "accessibility": { "$ref": "#/definitions/planningModule" },
+            "equipment": { "$ref": "#/definitions/planningModule" }
+          }
+        },
+        "cost_scope": {
+          "type": "object",
+          "required": ["state", "categories"],
+          "properties": {
+            "state": { "enum": ["partial", "mapped"] },
+            "categories": {
+              "type": "array",
+              "minItems": 12,
+              "maxItems": 12,
+              "uniqueItems": true,
+              "items": { "enum": ["flight", "baggage", "stay", "taxes", "transfers", "local_transport", "activities", "dining", "insurance", "connectivity", "equipment", "entry"] }
+            }
+          }
         }
       }
     }

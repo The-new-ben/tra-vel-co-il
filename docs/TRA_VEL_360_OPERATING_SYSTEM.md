@@ -2,7 +2,7 @@
 
 Status: active product specification  
 Owner: Tra-Vel  
-Last reviewed: 2026-07-16
+Last reviewed: 2026-07-17
 
 ## 1. Product promise
 
@@ -15,6 +15,12 @@ The product must answer five questions at every stage:
 3. Why is this option appropriate for me?
 4. What still needs a decision or purchase?
 5. What changed, and what should I do now?
+
+### Implemented visual-discovery kernel
+
+Theme 1.14.0 implements the first bounded Level 1 kernel for the six supported globe destinations. A tap anywhere inside the rendered Earth returns either a supported destination plan or an explicit unsupported-area continuation. Supported selections organize twelve decision areas and an end-to-end cost scope; unsupported selections retain coordinates without fabricating location, price, availability, or booking state.
+
+Progress motion represents interface state changes only. Editorial coverage has a visually distinct state from live supplier data. Cost amounts remain suppressed without destination-scoped component ownership and an explicit currency. Savings remain suppressed until a server-verified equivalence cohort identifies the comparator, dates, travelers, inclusions, taxes, currency, and retrieval time. This kernel is the contract boundary for future city drill-down and supplier integrations, not a claim that Level 2 or Level 3 execution is complete.
 
 ## 2. Product depth model
 

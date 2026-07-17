@@ -77,6 +77,7 @@ tv2_weather_assert( $adapter->is_configured(), 'commercial adapter did not detec
 tv2_weather_assert( ! is_wp_error( $payload ), 'adapter returned an error' );
 tv2_weather_assert( 'customer-api.open-meteo.com' === $parts['host'], 'request did not use the commercial endpoint' );
 tv2_weather_assert( TRA_VEL_OPEN_METEO_API_KEY === $query['apikey'], 'commercial key was not sent to the supplier' );
+tv2_weather_assert( 'GMT' === $query['timezone'], 'multi-location request did not pin observations to GMT' );
 tv2_weather_assert( 6 === count( explode( ',', $query['latitude'] ) ), 'multi-location request does not contain six coordinates' );
 tv2_weather_assert( 6 === count( $payload['destinations'] ), 'normalized response does not contain six destinations' );
 tv2_weather_assert( true === $payload['provider_status']['weather']['connected'], 'weather provider was not marked connected' );
@@ -85,7 +86,16 @@ tv2_weather_assert( 'גשם' === $payload['destinations'][0]['weather']['conditi
 tv2_weather_assert( 20 === $payload['destinations'][0]['weather']['temperature_c'], 'temperature was not normalized' );
 tv2_weather_assert( true === $payload['destinations'][0]['weather']['live'], 'current conditions lack a field-level live marker' );
 tv2_weather_assert( 'Open-Meteo' === $payload['destinations'][0]['weather']['source'], 'current conditions lost their source' );
+tv2_weather_assert( '2026-07-16T15:00:00Z' === $payload['destinations'][0]['weather']['observed_at'], 'destination weather time was not normalized to RFC3339 UTC' );
+tv2_weather_assert( '2026-07-16T15:00:00Z' === $payload['provider_status']['weather']['observed_at'], 'provider weather time was not normalized to RFC3339 UTC' );
+tv2_weather_assert( ! array_filter( $payload['destinations'], static function ( $destination ) { return '2026-07-16T15:00:00Z' !== $destination['weather']['observed_at']; } ), 'multi-destination weather observations do not share the unambiguous UTC timeline' );
 tv2_weather_assert( ! array_key_exists( 'season_fit', $payload['destinations'][0]['weather'] ), 'current conditions falsely supplied an editorial season fit' );
 tv2_weather_assert( false === strpos( json_encode( $payload ), TRA_VEL_OPEN_METEO_API_KEY ), 'API key leaked into normalized output' );
+
+$normalize_time = new ReflectionMethod( $adapter, 'normalize_utc_observed_at' );
+$normalize_time->setAccessible( true );
+foreach ( array( '2026-02-30T15:00', '2026-07-16T24:00', '2026-07-16 15:00', '2026-07-16T15:00Z' ) as $invalid_time ) {
+	tv2_weather_assert( null === $normalize_time->invoke( $adapter, $invalid_time ), "ambiguous or impossible supplier time was accepted: {$invalid_time}" );
+}
 
 echo "Tra-Vel Open-Meteo adapter validation passed (commercial endpoint, field provenance, multi-location normalization, no key leakage).\n";

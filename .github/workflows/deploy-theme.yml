@@ -74,6 +74,7 @@ jobs:
           php scripts/ci/validate-home-hero-queue-runtime.php
           php scripts/ci/validate-open-meteo-adapter.php
           node --check theme/tra-vel-v2/assets/js/app.js
+          node --check theme/tra-vel-v2/assets/js/globe-3d.js
           while IFS= read -r -d '' file; do php -l "$file"; done < <(find theme/tra-vel-v2 plugin/tra-vel-deploy-gateway -type f -name '*.php' -print0)
           for file in scripts/ci/*.sh scripts/deploy/*.sh; do bash -n "$file"; done
 

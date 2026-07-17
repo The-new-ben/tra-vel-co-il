@@ -1,6 +1,8 @@
 .playwright-cli/
 dist/
 .tmp/
+__pycache__/
+*.pyc
 .env.local
 *.log
 .DS_Store
