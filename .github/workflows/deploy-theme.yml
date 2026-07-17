@@ -47,7 +47,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Check out selected revision
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Validate source
         shell: bash
@@ -81,7 +81,7 @@ jobs:
         run: bash scripts/ci/build-theme.sh
 
       - name: Upload deployment artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: tra-vel-v2-deploy-${{ github.run_id }}
           path: dist/
@@ -111,10 +111,10 @@ jobs:
       REQUIRE_EXISTING_THEME: true
     steps:
       - name: Check out repository scripts
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Download deployment artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: tra-vel-v2-deploy-${{ github.run_id }}
           path: dist
@@ -480,7 +480,7 @@ jobs:
 
       - name: Preserve deployment receipt
         if: ${{ always() && !cancelled() && env.DRY_RUN != 'true' && hashFiles('theme-deploy-prestate.json') != '' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: tra-vel-v2-deploy-receipt-${{ github.run_id }}
           path: |

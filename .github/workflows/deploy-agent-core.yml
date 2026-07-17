@@ -53,7 +53,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Check out selected revision
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Validate Agent Core contracts and PHP
         shell: bash
@@ -86,7 +86,7 @@ jobs:
           [[ "$expected" == "$actual" ]]
 
       - name: Upload Agent Core artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: tra-vel-agent-core-${{ github.run_id }}
           path: |
@@ -115,10 +115,10 @@ jobs:
       AGENT_DEPLOY_RESULT_FILE: agent-deploy-result.json
     steps:
       - name: Check out repository scripts
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Download Agent Core artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: tra-vel-agent-core-${{ github.run_id }}
           path: dist

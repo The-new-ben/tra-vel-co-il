@@ -39,7 +39,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Validate theme structure and policy
         run: |
@@ -124,7 +124,7 @@ jobs:
           cat dist/agent-core-manifest.json
 
       - name: Upload versioned theme artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: tra-vel-v2-theme-${{ github.sha }}
           path: dist/
