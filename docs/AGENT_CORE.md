@@ -6,7 +6,7 @@ Plugin: `plugin/tra-vel-agent-core/` version `0.1.1`
 
 ## What this slice does
 
-The Agent Core accepts a typed or confirmed voice request through JSON POST, creates a private time-limited run, asks OpenAI to interpret the request into a strict `TripRequest`, applies deterministic clarification rules, and records append-only events that the interface can display. When material information is missing or the traveler changes a planning constraint, `POST /runs/{run_id}/messages` revises that request in place without creating a second run.
+The Agent Core accepts a typed or confirmed voice request through JSON POST, creates a private time-limited run, asks OpenAI to interpret the request into a strict `TripRequest`, applies deterministic clarification rules, and records append-only events that the interface can display. Every model clarification must identify a supported canonical `TripRequest` field, which lets policy collapse duplicate questions without weakening a blocking requirement. When material information is missing or the traveler changes a planning constraint, `POST /runs/{run_id}/messages` revises that request in place without creating a second run.
 
 It is intentionally narrower than the complete travel agent. It does not claim that suppliers were searched, prices were quoted, inventory was held, or a booking was made. When no contracted supplier tool has executed, the run records `supplier.search.not_started` with `provider_connected: false` and `provider_bookable: false`.
 

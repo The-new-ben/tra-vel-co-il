@@ -133,6 +133,11 @@ $provider_schema = Tra_Vel_Agent_OpenAI_Provider::trip_request_schema();
 tv_agent_assert_strict_schema( $provider_schema );
 tv_agent_assert( false === $provider_schema['additionalProperties'], 'provider root schema is not closed' );
 tv_agent_assert( in_array( 'anywhere', $provider_schema['properties']['destination_mode']['enum'], true ), 'provider schema cannot preserve anywhere intent' );
+$provider_question_schema = $provider_schema['properties']['material_questions']['items'];
+tv_agent_assert( in_array( 'field', $provider_question_schema['required'], true ), 'provider clarification does not require a canonical TripRequest field' );
+tv_agent_assert( in_array( 'origin_text', $provider_question_schema['properties']['field']['enum'], true ), 'provider clarification cannot identify the origin field canonically' );
+tv_agent_assert( in_array( 'destination_mode', $provider_question_schema['properties']['field']['enum'], true ), 'provider clarification cannot identify the destination decision canonically' );
+tv_agent_assert( in_array( 'travelers.child_ages', $provider_question_schema['properties']['field']['enum'], true ), 'provider clarification cannot identify nested traveler fields canonically' );
 foreach ( array( 'supplier', 'supplier_status', 'availability', 'offers', 'prices', 'proposals', 'booking', 'reservation', 'order_reference' ) as $commercial_key ) {
 	tv_agent_assert( ! array_key_exists( $commercial_key, $provider_schema['properties'] ), "provider interpretation schema permits commercial claim field {$commercial_key}" );
 }
@@ -144,9 +149,16 @@ unset( $missing['summary'] );
 $missing_result = Tra_Vel_Agent_OpenAI_Provider::validate_trip_request( $missing );
 tv_agent_assert( is_wp_error( $missing_result ) && 'tra_vel_agent_trip_request_incomplete' === $missing_result->get_error_code(), 'missing provider field did not fail closed' );
 $invalid_question = $base;
-$invalid_question['material_questions'][] = array( 'id' => 'dates', 'blocking' => true );
+$invalid_question['material_questions'][] = array( 'id' => 'dates', 'question' => 'Which dates?', 'reason' => 'Dates affect price.', 'blocking' => true );
 $question_result = Tra_Vel_Agent_OpenAI_Provider::validate_trip_request( $invalid_question );
-tv_agent_assert( is_wp_error( $question_result ) && 'tra_vel_agent_trip_question_invalid' === $question_result->get_error_code(), 'invalid provider clarification did not fail closed' );
+tv_agent_assert( is_wp_error( $question_result ) && 'tra_vel_agent_trip_question_invalid' === $question_result->get_error_code(), 'provider clarification without a canonical field did not fail closed' );
+$unknown_question = $base;
+$unknown_question['material_questions'][] = array( 'id' => 'passport', 'field' => 'passport.number', 'question' => 'What is your passport number?', 'reason' => 'Not required for interpretation.', 'blocking' => true );
+$unknown_question_result = Tra_Vel_Agent_OpenAI_Provider::validate_trip_request( $unknown_question );
+tv_agent_assert( is_wp_error( $unknown_question_result ) && 'tra_vel_agent_trip_question_invalid' === $unknown_question_result->get_error_code(), 'provider clarification with an unsupported or sensitive field did not fail closed' );
+$valid_question = $base;
+$valid_question['material_questions'][] = array( 'id' => 'dates', 'field' => 'date_text', 'question' => 'Which dates?', 'reason' => 'Dates affect price.', 'blocking' => true );
+tv_agent_assert( true === Tra_Vel_Agent_OpenAI_Provider::validate_trip_request( $valid_question ), 'provider clarification with a supported canonical field was rejected' );
 
 $ready = tv_agent_prepare( $base );
 tv_agent_assert( '1.0.0' === $ready['contract_version'], 'policy contract version changed' );
@@ -184,6 +196,42 @@ foreach ( array( null, '' ) as $missing_origin ) {
 	$origin_result = tv_agent_prepare( $origin_gap );
 	tv_agent_assert( in_array( 'origin', tv_agent_blockers( $origin_result ), true ), 'missing origin did not block flight and total-trip search' );
 }
+
+$provider_origin_gap = $base;
+$provider_origin_gap['origin_text'] = null;
+$provider_origin_gap['material_questions'] = array(
+	array(
+		'id'       => 'departure_airport',
+		'field'    => 'origin_text',
+		'question' => 'What city or airport will you be departing from?',
+		'reason'   => 'Flights need a departure point.',
+		'blocking' => true,
+	),
+);
+$provider_origin_result = tv_agent_prepare( $provider_origin_gap );
+$origin_field_questions = array_values(
+	array_filter(
+		$provider_origin_result['material_questions'],
+		static function ( $question ) {
+			return 'origin_text' === $question['field'];
+		}
+	)
+);
+tv_agent_assert( 1 === count( $origin_field_questions ), 'provider and deterministic origin questions were both shown' );
+tv_agent_assert( 'origin' === $origin_field_questions[0]['id'], 'deterministic origin policy did not replace provider wording for the same field' );
+tv_agent_assert( 'An origin is required before flight and total-trip searches can run.' === $origin_field_questions[0]['reason'], 'deterministic origin reason did not replace provider wording for the same field' );
+tv_agent_assert( array( 'origin' ) === tv_agent_blockers( $provider_origin_result ), 'deduplicated origin question did not preserve its blocker' );
+
+$blocking_merge_gap = $base;
+$blocking_merge_gap['material_questions'] = array(
+	array( 'id' => 'dates_required', 'field' => 'date_text', 'question' => 'Which dates?', 'reason' => 'Dates affect price.', 'blocking' => true ),
+	array( 'id' => 'dates_optional', 'field' => 'date_text', 'question' => 'Would you like to add dates?', 'reason' => 'Dates improve results.', 'blocking' => false ),
+);
+$blocking_merge_result = tv_agent_prepare( $blocking_merge_gap );
+tv_agent_assert( 1 === count( $blocking_merge_result['material_questions'] ), 'same-field provider questions were not deduplicated' );
+tv_agent_assert( true === $blocking_merge_result['material_questions'][0]['blocking'], 'same-field deduplication weakened a blocking requirement' );
+tv_agent_assert( 'dates_required' === $blocking_merge_result['material_questions'][0]['id'], 'a later optional duplicate replaced the blocking question identity' );
+tv_agent_assert( 'Which dates?' === $blocking_merge_result['material_questions'][0]['question'], 'a later optional duplicate replaced the blocking question wording' );
 
 $combined = $base;
 $combined['origin_text'] = null;

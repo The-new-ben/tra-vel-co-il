@@ -194,12 +194,39 @@ class Tra_Vel_Agent_OpenAI_Provider implements Tra_Vel_Agent_Provider {
 	}
 
 	/**
+	 * Canonical TripRequest paths that a provider clarification may resolve.
+	 *
+	 * @return array
+	 */
+	private static function question_fields() {
+		return array(
+			'origin_text',
+			'destination_mode',
+			'destinations',
+			'date_text',
+			'date_flexibility',
+			'travelers.adults',
+			'travelers.children',
+			'travelers.child_ages',
+			'travelers.rooms',
+			'budget.amount',
+			'budget.currency',
+			'budget.flexibility',
+			'vibes',
+			'hard_constraints',
+			'preferences',
+			'search_scope',
+		);
+	}
+
+	/**
 	 * Strict JSON Schema supplied to the Responses API.
 	 *
 	 * @return array
 	 */
 	public static function trip_request_schema() {
-		$string_array = array( 'type' => 'array', 'items' => array( 'type' => 'string' ) );
+		$string_array    = array( 'type' => 'array', 'items' => array( 'type' => 'string' ) );
+		$question_fields = self::question_fields();
 		return array(
 			'type'                 => 'object',
 			'additionalProperties' => false,
@@ -246,11 +273,12 @@ class Tra_Vel_Agent_OpenAI_Provider implements Tra_Vel_Agent_Provider {
 						'additionalProperties' => false,
 						'properties'           => array(
 							'id'       => array( 'type' => 'string' ),
+							'field'    => array( 'type' => 'string', 'enum' => $question_fields ),
 							'question' => array( 'type' => 'string' ),
 							'reason'   => array( 'type' => 'string' ),
 							'blocking' => array( 'type' => 'boolean' ),
 						),
-						'required'             => array( 'id', 'question', 'reason', 'blocking' ),
+						'required'             => array( 'id', 'field', 'question', 'reason', 'blocking' ),
 					),
 				),
 				'assumptions'        => $string_array,
@@ -277,7 +305,7 @@ class Tra_Vel_Agent_OpenAI_Provider implements Tra_Vel_Agent_Provider {
 			return new WP_Error( 'tra_vel_agent_trip_request_invalid', 'The interpreted request has invalid nested fields.', array( 'status' => 502 ) );
 		}
 		foreach ( $request['material_questions'] as $question ) {
-			if ( ! is_array( $question ) || empty( $question['id'] ) || empty( $question['question'] ) || ! array_key_exists( 'blocking', $question ) ) {
+			if ( ! is_array( $question ) || empty( $question['id'] ) || empty( $question['field'] ) || ! in_array( $question['field'], self::question_fields(), true ) || empty( $question['question'] ) || ! array_key_exists( 'blocking', $question ) ) {
 				return new WP_Error( 'tra_vel_agent_trip_question_invalid', 'A material clarification question is invalid.', array( 'status' => 502 ) );
 			}
 		}
@@ -291,6 +319,7 @@ class Tra_Vel_Agent_OpenAI_Provider implements Tra_Vel_Agent_Provider {
 			'Never invent dates, traveler ages, budgets, dietary certification, accessibility needs, supplier availability, prices, savings, reservations, or bookings.',
 			'Use null, unknown, an empty array, or a material clarification question when information is absent.',
 			'Ask a blocking question only when the answer changes feasibility, eligibility, safety, total price, or a major recommendation.',
+			'For every material question, set field to the exact TripRequest path it would resolve, such as origin_text, destination_mode, date_text, budget.amount, travelers.adults, or travelers.child_ages.',
 			'For surprise mode, use destination_mode anywhere when the traveler has delegated destination choice and no fixed destination exists.',
 			'Include only requested or clearly relevant search scopes. Interpretation is not supplier search.',
 			'Mode: ' . sanitize_key( $mode ) . '. Requested locale: ' . sanitize_text_field( $locale ) . '.',
