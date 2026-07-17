@@ -2491,6 +2491,9 @@ function resetAgentWorkbench(root) {
   const assumptions = view.querySelector('[data-agent-assumptions]');
   const assumptionList = view.querySelector('[data-agent-assumption-list]');
   const supplier = view.querySelector('[data-agent-supplier-state]');
+  const revisionComposer = view.querySelector('[data-agent-revision-composer]');
+  const revisionForm = view.querySelector('[data-agent-revision-form]');
+  const revisionStatus = view.querySelector('[data-agent-revision-status]');
   if (workbench) workbench.hidden = false;
   log?.replaceChildren();
   facts?.replaceChildren();
@@ -2503,6 +2506,16 @@ function resetAgentWorkbench(root) {
   if (tripRequest) tripRequest.hidden = true;
   if (clarifications) clarifications.hidden = true;
   if (assumptions) assumptions.hidden = true;
+  if (revisionComposer) revisionComposer.hidden = true;
+  if (revisionForm) {
+    revisionForm.reset();
+    revisionForm.dataset.state = 'idle';
+    revisionForm.setAttribute('aria-busy', 'false');
+  }
+  if (revisionStatus) {
+    revisionStatus.textContent = 'העדכון נשאר בריצה הפרטית הזאת. הטקסט החופשי אינו נשמר.';
+    revisionStatus.dataset.state = 'idle';
+  }
   if (supplier) {
     supplier.hidden = true;
     supplier.textContent = '';
@@ -2553,10 +2566,14 @@ function renderAgentTripRequest(root, request) {
   const assumptionList = view.querySelector('[data-agent-assumption-list]');
   const clarifications = view.querySelector('[data-agent-clarifications]');
   const questionList = view.querySelector('[data-agent-question-list]');
+  const revisionComposer = view.querySelector('[data-agent-revision-composer]');
+  const revisionHelp = view.querySelector('[data-agent-revision-help]');
+  const revisionBadge = view.querySelector('[data-agent-revision-badge]');
   if (!card || !summary || !facts || !request || typeof request !== 'object') {
     if (card) card.hidden = true;
     if (assumptions) assumptions.hidden = true;
     if (clarifications) clarifications.hidden = true;
+    if (revisionComposer) revisionComposer.hidden = true;
     return;
   }
 
@@ -2613,6 +2630,13 @@ function renderAgentTripRequest(root, request) {
     return item;
   }));
   if (clarifications) clarifications.hidden = questions.length === 0;
+  if (revisionHelp) {
+    revisionHelp.textContent = questions.length > 0
+      ? 'ענו על השאלות הפתוחות במשפט אחד. הסוכן ישמור את שאר הפרטים ויבדוק מחדש מה חסר.'
+      : 'אפשר לשנות יעד, תקציב, תאריכים, נוסעים או העדפות בלי לפתוח תוכנית חדשה.';
+  }
+  if (revisionBadge) revisionBadge.textContent = `גרסה ${Math.max(1, Number(request.revision) || 1)}`;
+  if (revisionComposer) revisionComposer.hidden = false;
 }
 
 function agentEventPhaseLabel(phase) {
@@ -2663,6 +2687,18 @@ function mergeAndRenderAgentEvents(root, events) {
     message.textContent = event.message;
     item.append(meta, message);
     log.append(item);
+  });
+  const latestSequenceByPhase = new Map();
+  agentRuntime.events.forEach(event => {
+    if (event?.visible === false || !event?.message || !event?.phase) return;
+    latestSequenceByPhase.set(event.phase, Math.max(latestSequenceByPhase.get(event.phase) || 0, Number(event.sequence || 0)));
+  });
+  agentRuntime.events.forEach(event => {
+    if (event?.status !== 'running' || !event?.event_id) return;
+    const item = log.querySelector(`[data-event-id="${CSS.escape(String(event.event_id))}"]`);
+    if (!item) return;
+    const resolved = (latestSequenceByPhase.get(event.phase) || 0) > Number(event.sequence || 0);
+    item.classList.toggle('is-resolved', resolved);
   });
   if (empty) empty.hidden = log.childElementCount > 0;
 }
@@ -2716,6 +2752,14 @@ function agentErrorMessage(error) {
   if (error?.status === 409) return 'השרת כבר קיבל את הבקשה הזאת. המתינו לפני שליחה נוספת.';
   if (error?.status === 401 || error?.status === 403) return 'הגישה לריצה הפרטית פגה. פתחו ריצה חדשה מהבקשה שמופיעה למעלה.';
   return 'לא התקבל אישור תקין לפתיחת ריצה פרטית. לא נציג חיפוש, מחיר או הצעה בלי אירוע שרת מאומת.';
+}
+
+function agentRevisionErrorMessage(error) {
+  if (error?.code === 'tra_vel_agent_revision_limit') return 'התוכנית הגיעה למספר העדכונים המרבי. פתחו תוכנית פרטית חדשה כדי להמשיך.';
+  if (error?.code === 'tra_vel_agent_revision_busy' || error?.code === 'tra_vel_agent_duplicate_revision') return 'העדכון כבר מתקדם בריצה הזאת. המתינו רגע לפני שליחה נוספת.';
+  if (error?.status === 429) return 'המתכנן מטפל כרגע בבקשות נוספות. התוכנית הקודמת נשמרה ואפשר לנסות שוב בעוד רגע.';
+  if (error?.status === 401 || error?.status === 403 || error?.status === 404) return 'הגישה לריצה הפרטית פגה. התוכנית לא שונתה ואפשר לפתוח ריצה חדשה.';
+  return 'העדכון לא הושלם. התוכנית הקודמת נשארה ללא שינוי ואפשר לנסות שוב.';
 }
 
 function shouldPollAgentRun(status) {
@@ -2815,6 +2859,83 @@ async function createAgentRun(root) {
   }
 }
 
+async function reviseAgentRun(root, form) {
+  const view = agentWorkbenchRoot(root);
+  const messageInput = form.querySelector('[data-agent-revision-message]');
+  const submit = form.querySelector('[data-agent-revision-submit]');
+  const status = form.querySelector('[data-agent-revision-status]');
+  if (!messageInput || !submit || form.dataset.state === 'loading') return;
+
+  const message = messageInput.value.trim();
+  if (message.length < 2) {
+    messageInput.setCustomValidity('כתבו תשובה או שינוי קצר כדי לעדכן את התוכנית.');
+    messageInput.reportValidity();
+    return;
+  }
+  messageInput.setCustomValidity('');
+  if (!agentRuntime.runId) {
+    if (status) {
+      status.textContent = 'לא נמצא מזהה לריצה הזאת. פתחו תוכנית פרטית חדשה.';
+      status.dataset.state = 'error';
+    }
+    return;
+  }
+
+  if (agentRuntime.pollTimer) window.clearTimeout(agentRuntime.pollTimer);
+  agentRuntime.pollTimer = 0;
+  form.dataset.state = 'loading';
+  form.setAttribute('aria-busy', 'true');
+  submit.disabled = true;
+  if (status) {
+    status.textContent = 'משלבים את התשובה, בודקים אילוצים ומעדכנים את אותה תוכנית...';
+    status.dataset.state = 'running';
+  }
+  setAgentWorkbenchError(root);
+  setAgentWorkbenchStatus(root, 'מעדכנים את התוכנית לפי התשובה', 'revising');
+
+  const runId = agentRuntime.runId;
+  try {
+    const run = await agentApiRequest(`/runs/${encodeURIComponent(runId)}/messages`, {
+      method: 'POST',
+      body: JSON.stringify({
+        message,
+        locale: detectAgentLocale(message),
+        input_kind: 'typed',
+        transcript_confirmed: true,
+        client_request_id: createAgentClientRequestId()
+      })
+    });
+    if (agentRuntime.runId !== runId) return;
+    renderAgentRun(root, run);
+    messageInput.value = '';
+    if (status) {
+      const revision = Math.max(1, Number(run.trip_request?.revision) || 1);
+      status.textContent = run.status === 'needs_clarification'
+        ? `גרסה ${revision} נשמרה. נשאר פרט נוסף שצריך להשלים לפני חיפוש.`
+        : `גרסה ${revision} נשמרה. התוכנית התקדמה והיא מוכנה לשלב החיפוש.`;
+      status.dataset.state = 'success';
+    }
+    scheduleAgentPoll(root);
+  } catch (error) {
+    try {
+      const currentRun = await agentApiRequest(`/runs/${encodeURIComponent(runId)}`);
+      if (agentRuntime.runId === runId) renderAgentRun(root, currentRun);
+    } catch (refreshError) {
+      // Keep the last confirmed plan visible when the status refresh is unavailable.
+    }
+    const messageText = agentRevisionErrorMessage(error);
+    setAgentWorkbenchError(root, messageText);
+    if (status) {
+      status.textContent = messageText;
+      status.dataset.state = 'error';
+    }
+  } finally {
+    submit.disabled = false;
+    form.dataset.state = 'idle';
+    form.setAttribute('aria-busy', 'false');
+  }
+}
+
 async function resumeAgentRun(root) {
   const runId = readAgentSessionValue(agentActiveRunStorageKey);
   if (!runId) return;
@@ -2845,6 +2966,13 @@ function initAIConversationEntry() {
   root.dataset.agentInputKind = 'typed';
   const submit = root.querySelector('[data-agent-submit]');
   if (submit) submit.disabled = false;
+  const revisionForm = agentWorkbenchRoot(root).querySelector('[data-agent-revision-form]');
+  const revisionMessage = revisionForm?.querySelector('[data-agent-revision-message]');
+  revisionForm?.addEventListener('submit', event => {
+    event.preventDefault();
+    reviseAgentRun(root, revisionForm);
+  });
+  revisionMessage?.addEventListener('input', () => revisionMessage.setCustomValidity(''));
   root.addEventListener('submit', event => {
     event.preventDefault();
     createAgentRun(root);

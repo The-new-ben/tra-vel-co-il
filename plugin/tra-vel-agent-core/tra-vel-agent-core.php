@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tra-Vel Agent Core
  * Description: Private AI travel-request, run-event, proposal, and approval foundation for Tra-Vel.
- * Version: 0.1.1
+ * Version: 0.2.0
  * Requires at least: 6.5
  * Requires PHP: 7.4
  * Author: Tra-Vel
@@ -11,7 +11,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'TRA_VEL_AGENT_VERSION', '0.1.1' );
+define( 'TRA_VEL_AGENT_VERSION', '0.2.0' );
 define( 'TRA_VEL_AGENT_FILE', __FILE__ );
 define( 'TRA_VEL_AGENT_PATH', __DIR__ );
 

@@ -75,6 +75,23 @@ class Tra_Vel_Agent_Controller extends WP_REST_Controller {
 		);
 		register_rest_route(
 			$this->namespace,
+			'/' . $this->rest_base . '/(?P<run_id>[0-9a-fA-F-]{36})/messages',
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'revise_run' ),
+				'permission_callback' => array( $this, 'can_access_run' ),
+				'args'                => array(
+					'run_id'               => $this->uuid_arg(),
+					'message'              => array( 'type' => 'string', 'required' => true, 'minLength' => 2, 'maxLength' => 4000, 'sanitize_callback' => array( $this, 'sanitize_prompt' ), 'validate_callback' => 'rest_validate_request_arg' ),
+					'locale'               => array( 'type' => 'string', 'default' => 'he-IL', 'enum' => array( 'he-IL', 'en-US', 'mixed' ), 'sanitize_callback' => 'sanitize_text_field', 'validate_callback' => 'rest_validate_request_arg' ),
+					'input_kind'           => array( 'type' => 'string', 'default' => 'typed', 'enum' => array( 'typed', 'voice' ), 'sanitize_callback' => 'sanitize_key', 'validate_callback' => 'rest_validate_request_arg' ),
+					'transcript_confirmed' => array( 'type' => 'boolean', 'default' => false, 'sanitize_callback' => 'rest_sanitize_boolean' ),
+					'client_request_id'    => array( 'type' => 'string', 'required' => true, 'minLength' => 16, 'maxLength' => 80, 'sanitize_callback' => 'sanitize_text_field', 'validate_callback' => 'rest_validate_request_arg' ),
+				),
+			)
+		);
+		register_rest_route(
+			$this->namespace,
 			'/' . $this->rest_base . '/(?P<run_id>[0-9a-fA-F-]{36})/approvals/(?P<approval_id>[0-9a-fA-F-]{36})',
 			array(
 				'methods'             => WP_REST_Server::CREATABLE,
@@ -201,6 +218,132 @@ class Tra_Vel_Agent_Controller extends WP_REST_Controller {
 	}
 
 	/**
+	 * Revise one private run from a natural-language clarification.
+	 *
+	 * Raw clarification text is processed in memory and is never stored. The
+	 * existing request remains authoritative until a complete strict replacement
+	 * has passed provider and deterministic policy validation.
+	 *
+	 * @param WP_REST_Request $request REST request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function revise_run( WP_REST_Request $request ) {
+		$rate = $this->consume_rate_limit();
+		if ( is_wp_error( $rate ) ) {
+			return $rate;
+		}
+
+		$run = $this->store->get_run_by_uuid( $request->get_param( 'run_id' ) );
+		if ( ! $run || empty( $run['trip_request'] ) || ! is_array( $run['trip_request'] ) ) {
+			return new WP_Error( 'tra_vel_agent_revision_unavailable', 'This private run has no request that can be revised.', array( 'status' => 409 ) );
+		}
+		if ( ! in_array( $run['status'], array( 'needs_clarification', 'request_ready' ), true ) ) {
+			return new WP_Error( 'tra_vel_agent_revision_state', 'This private run cannot accept a revision in its current state.', array( 'status' => 409 ) );
+		}
+
+		$max_revisions = min( 20, max( 2, (int) apply_filters( 'tra_vel_agent_max_request_revisions', 8 ) ) );
+		if ( (int) $run['trip_request']['revision'] >= $max_revisions ) {
+			return new WP_Error( 'tra_vel_agent_revision_limit', 'This private run reached its revision limit. Start a new plan to continue.', array( 'status' => 409 ) );
+		}
+
+		$message     = $this->sanitize_prompt( $request->get_param( 'message' ) );
+		$locale      = sanitize_text_field( (string) $request->get_param( 'locale' ) );
+		$input_kind  = sanitize_key( (string) $request->get_param( 'input_kind' ) );
+		$confirmed   = 'voice' !== $input_kind || rest_sanitize_boolean( $request->get_param( 'transcript_confirmed' ) );
+		$client_id   = sanitize_text_field( (string) $request->get_param( 'client_request_id' ) );
+		if ( strlen( $message ) < 2 ) {
+			return new WP_Error( 'tra_vel_agent_revision_empty', 'Write a short clarification before updating the plan.', array( 'status' => 400 ) );
+		}
+		if ( 'voice' === $input_kind && ! $confirmed ) {
+			return new WP_Error( 'tra_vel_agent_revision_transcript', 'Confirm the voice transcript before it changes the private plan.', array( 'status' => 400 ) );
+		}
+
+		$run_lease = $this->store->acquire_lease( 'run' . substr( hash( 'sha256', $run['run_uuid'] ), 0, 24 ), 1, 120 );
+		if ( ! $run_lease ) {
+			return new WP_Error( 'tra_vel_agent_revision_busy', 'This private plan is already being updated. Please wait for that update to finish.', array( 'status' => 409, 'retry_after' => 5 ) );
+		}
+
+		$concurrency   = min( 5, max( 1, (int) apply_filters( 'tra_vel_agent_provider_concurrency_limit', 2 ) ) );
+		$provider_lease = $this->store->acquire_lease( 'provider', $concurrency, 120 );
+		if ( ! $provider_lease ) {
+			$this->store->release_lease( $run_lease );
+			return new WP_Error( 'tra_vel_agent_provider_busy', 'The private planner is handling other live requests. Please try again shortly.', array( 'status' => 429, 'retry_after' => 5 ) );
+		}
+
+		try {
+			$idempotency_key = 'revision:' . (int) $run['id'] . ':' . substr( hash( 'sha256', $client_id ), 0, 40 );
+			$expires_at      = max( time() + MINUTE_IN_SECONDS, strtotime( $run['expires_at'] . ' UTC' ) );
+			if ( ! $this->store->consume_limit( $idempotency_key, 1, $expires_at ) ) {
+				return new WP_Error( 'tra_vel_agent_duplicate_revision', 'This plan update was already accepted.', array( 'status' => 409 ) );
+			}
+
+			$budget = $this->consume_daily_budget();
+			if ( is_wp_error( $budget ) ) {
+				return $budget;
+			}
+
+			$next_revision = (int) $run['trip_request']['revision'] + 1;
+			$message_hash  = hash( 'sha256', $message );
+			$this->store->append_event(
+				$run['id'],
+				$this->event(
+					'clarification.response.received',
+					'clarification',
+					'completed',
+					'human',
+					'התשובה התקבלה באופן פרטי. משלבים אותה בתוכנית בלי לשמור את הטקסט החופשי.',
+					array( 'revision' => $next_revision, 'input_kind' => $input_kind, 'input_sha256' => $message_hash )
+				)
+			);
+			$this->store->append_event( $run['id'], $this->event( 'request.revision.started', 'understanding', 'running', 'system', 'בודקים אילו פרטים השתנו ומה עדיין חסר לפני חיפוש.', array( 'revision' => $next_revision ) ) );
+
+			$interpreted = $this->provider->revise( $run['trip_request'], $message, $run['mode'], $locale );
+			if ( is_wp_error( $interpreted ) ) {
+				$error_data = $interpreted->get_error_data();
+				$this->store->append_event(
+					$run['id'],
+					$this->event(
+						'request.revision.failed',
+						'understanding',
+						'failed',
+						'tool',
+						'לא הצלחנו לשלב את העדכון כעת. התוכנית הקודמת נשארה ללא שינוי.',
+						array( 'revision' => $next_revision, 'error_code' => $interpreted->get_error_code(), 'provider_code' => is_array( $error_data ) && isset( $error_data['provider_code'] ) ? $error_data['provider_code'] : null )
+					)
+				);
+				return $interpreted;
+			}
+
+			$previous_hash = isset( $run['trip_request']['source']['input_sha256'] ) ? (string) $run['trip_request']['source']['input_sha256'] : str_repeat( '0', 64 );
+			$trip_request  = Tra_Vel_Agent_Policy::prepare_trip_request(
+				$interpreted['trip_request'],
+				array(
+					'input_kind'           => $input_kind,
+					'input_sha256'         => hash( 'sha256', $previous_hash . '|' . $message_hash ),
+					'transcript_confirmed' => $confirmed,
+				),
+				$run['trip_request']
+			);
+			$needs_clarification = 'needs_clarification' === $trip_request['readiness']['status'];
+			$status              = $needs_clarification ? 'needs_clarification' : 'request_ready';
+			$this->store->update_run( $run['id'], array( 'status' => $status, 'trip_request' => $trip_request, 'provider_state' => $interpreted['provider'] ) );
+			$this->store->append_event( $run['id'], $this->event( 'request.revised', 'understanding', 'completed', 'model', 'התוכנית עודכנה לפי התשובה ונבדקה מחדש.', array( 'request_id' => $trip_request['request_id'], 'revision' => $trip_request['revision'], 'confidence' => $trip_request['confidence'] ) ) );
+
+			if ( $needs_clarification ) {
+				$this->store->append_event( $run['id'], $this->event( 'clarification.required', 'clarification', 'waiting', 'system', 'עדיין חסר פרט שמשפיע על החיפוש. אפשר לענות במשפט חופשי נוסף.', array( 'revision' => $trip_request['revision'], 'question_ids' => $trip_request['readiness']['blockers'] ) ) );
+			} else {
+				$this->store->append_event( $run['id'], $this->event( 'request.ready', 'clarification', 'completed', 'system', 'הבקשה המעודכנת מוכנה לחיפוש ספקים.', array( 'request_id' => $trip_request['request_id'], 'revision' => $trip_request['revision'] ) ) );
+				$this->store->append_event( $run['id'], $this->event( 'supplier.search.not_started', 'supplier_search', 'waiting', 'system', 'חיפוש ספקים עדיין לא התחיל. יוצגו מחירים רק לאחר חיבור וביצוע חיפוש חי מתועד.', array( 'provider_connected' => false, 'provider_bookable' => false, 'data_mode' => 'not_connected' ) ) );
+			}
+
+			return $this->private_response( $this->public_run( $this->store->get_run_by_uuid( $run['run_uuid'] ) ) );
+		} finally {
+			$this->store->release_lease( $provider_lease );
+			$this->store->release_lease( $run_lease );
+		}
+	}
+
+	/**
 	 * Public intake is restricted to HTTPS and rate-limited in the callback.
 	 *
 	 * @return true|WP_Error
@@ -276,6 +419,7 @@ class Tra_Vel_Agent_Controller extends WP_REST_Controller {
 				'provider'         => $this->provider->health(),
 				'capabilities'     => array(
 					'request_interpretation' => $this->provider->health()['configured'],
+					'request_revision'       => $this->provider->health()['configured'],
 					'supplier_search'        => false,
 					'proposal_generation'    => false,
 					'booking_execution'      => false,

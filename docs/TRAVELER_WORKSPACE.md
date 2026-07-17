@@ -18,6 +18,8 @@ Price-watch delivery is intentionally disabled. A target can be saved, but `deli
 
 ## Supplier handoff boundary
 
-`POST /wp-json/tra-vel/v2/handoffs/prepare` fails closed until another server-side integration registers a live, sponsored provider through `tra_vel_v2_handoff_providers`. A provider must declare supported verticals, disclosure text, an HTTPS host allowlist and a callable URL builder. The controller rejects userinfo, non-HTTPS URLs, unlisted hosts, missing disclosures and unverified providers.
+`POST /wp-json/tra-vel/v2/handoffs/prepare` resolves only providers registered through `tra_vel_v2_handoff_providers`. Every provider must declare supported verticals, its owned or affiliate relationship, disclosure text, an HTTPS host allowlist and a callable URL builder. The controller rejects unsupported provider/vertical pairs, userinfo, non-HTTPS URLs, unlisted hosts, missing disclosures and unverified providers.
 
-Successful responses always require a final supplier price check, state that booking happens with the partner, use `rel="sponsored noopener noreferrer"`, and are private and non-cacheable. The demo theme registers no handoff provider and therefore cannot create a booking link.
+The theme currently registers `tra-vel-concierge`, an owned assisted-sales provider that opens the public Tra-Vel WhatsApp channel on the allowlisted `api.whatsapp.com` host. It can carry bounded trip-planning context for flights, hotels, packages, insurance, cars, transfers, activities and eSIM, but deliberately excludes sample prices, passport details, payment data and medical answers. Its response is labeled `assisted_quote`, uses `rel="noopener noreferrer"`, sets `booking_on_partner: false`, and still requires a final price and availability check. It is not a supplier booking confirmation.
+
+Any future affiliate provider must additionally be explicitly sponsored; successful affiliate responses use `rel="sponsored noopener noreferrer"` and state that booking happens with the partner. All successful handoff responses are private and non-cacheable, and any unregistered or invalid handoff continues to fail closed.

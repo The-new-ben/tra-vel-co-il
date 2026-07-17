@@ -69,6 +69,7 @@ function sanitize_text_field( $value ) { return trim( strip_tags( (string) $valu
 function absint( $value ) { return abs( (int) $value ); }
 function rest_sanitize_boolean( $value ) { return filter_var( $value, FILTER_VALIDATE_BOOLEAN ); }
 function wp_strip_all_tags( $value ) { return strip_tags( (string) $value ); }
+function wp_json_encode( $value, $flags = 0 ) { return json_encode( $value, $flags ); }
 function get_current_user_id() { return (int) $GLOBALS['tv_agent_current_user']; }
 function current_user_can( $capability ) {
 	if ( 'read' === $capability ) return get_current_user_id() > 0;
@@ -101,12 +102,23 @@ require TRA_VEL_AGENT_PATH . '/includes/class-tra-vel-agent-controller.php';
 
 class Tra_Vel_Test_Agent_Provider implements Tra_Vel_Agent_Provider {
 	public $result;
+	public $revision_result;
 	public $calls = 0;
-	public function __construct( $result ) { $this->result = $result; }
+	public $revision_calls = 0;
+	public function __construct( $result, $revision_result = null ) {
+		$this->result          = $result;
+		$this->revision_result = $revision_result ? $revision_result : $result;
+	}
 	public function interpret( $prompt, $mode, $locale ) {
 		unset( $prompt, $mode, $locale );
 		$this->calls++;
 		return $this->result;
+	}
+	public function revise( $previous_request, $message, $mode, $locale ) {
+		unset( $previous_request, $message, $mode, $locale );
+		$this->calls++;
+		$this->revision_calls++;
+		return $this->revision_result;
 	}
 	public function health() { return array( 'configured' => true, 'model' => 'deterministic-fixture', 'endpoint' => 'none', 'live_calls' => false ); }
 }
@@ -381,6 +393,46 @@ tv_agent_controller_assert( ! array_key_exists( 'run_token', $private_get->data 
 $duplicate = $ready_controller->create_run( tv_agent_controller_request() );
 tv_agent_controller_assert( is_wp_error( $duplicate ) && 'tra_vel_agent_duplicate_request' === $duplicate->get_error_code(), 'duplicate request fingerprint was accepted' );
 tv_agent_controller_assert( 1 === $ready_provider->calls && 1 === count( $ready_store->runs ), 'duplicate request created work or called the provider' );
+
+// Natural-language revision: the same private run is updated in place, keeps
+// its request identity, increments revision and never persists the raw answer.
+$initial_request_id = $ready_response->data['trip_request']['request_id'];
+$revised_fixture = tv_agent_controller_base_request();
+$revised_fixture['destinations']     = array( 'Budapest' );
+$revised_fixture['destination_mode'] = 'fixed';
+$revised_fixture['budget']['amount'] = 1200;
+$revised_fixture['summary']          = 'Budapest for two adults with a 1,200 USD budget';
+$ready_provider->revision_result     = tv_agent_controller_provider_result( $revised_fixture );
+$revision_request = new WP_REST_Request(
+	array(
+		'run_id'               => $run_id,
+		'message'              => 'Choose Budapest and increase the total budget to 1,200 USD',
+		'locale'               => 'en-US',
+		'input_kind'           => 'typed',
+		'transcript_confirmed' => true,
+		'client_request_id'    => 'client-revision-ready-0001',
+	)
+);
+$revision_response = $ready_controller->revise_run( $revision_request );
+tv_agent_assert_private_response( $revision_response, 'request revision' );
+tv_agent_controller_assert( 200 === $revision_response->status, 'request revision status changed' );
+tv_agent_controller_assert( 'request_ready' === $revision_response->data['status'], 'complete revision did not return to request_ready' );
+tv_agent_controller_assert( 2 === $revision_response->data['trip_request']['revision'], 'request revision was not incremented' );
+tv_agent_controller_assert( $initial_request_id === $revision_response->data['trip_request']['request_id'], 'request revision changed the private request identity' );
+tv_agent_controller_assert( array( 'Budapest' ) === $revision_response->data['trip_request']['destinations'], 'revision did not replace the destination' );
+tv_agent_controller_assert( 1200 === $revision_response->data['trip_request']['budget']['amount'], 'revision did not update the budget' );
+tv_agent_controller_assert( 1 === $ready_provider->revision_calls && 2 === $ready_provider->calls, 'revision did not call the provider exactly once' );
+tv_agent_controller_assert( array() === $ready_store->leases, 'revision did not release both concurrency leases' );
+tv_agent_controller_assert( false === strpos( wp_json_encode( array( $ready_store->runs, $ready_store->events ) ), 'increase the total budget' ), 'raw clarification text was persisted' );
+tv_agent_assert_event_order(
+	$revision_response->data['events'],
+	array( 'run.created', 'request.interpretation.started', 'request.interpreted', 'request.ready', 'supplier.search.not_started', 'clarification.response.received', 'request.revision.started', 'request.revised', 'request.ready', 'supplier.search.not_started' ),
+	'revised ready run'
+);
+tv_agent_assert_no_transaction_events( $revision_response->data['events'], 'revised ready run' );
+$duplicate_revision = $ready_controller->revise_run( $revision_request );
+tv_agent_controller_assert( is_wp_error( $duplicate_revision ) && 'tra_vel_agent_duplicate_revision' === $duplicate_revision->get_error_code(), 'duplicate revision idempotency key was accepted' );
+tv_agent_controller_assert( 1 === $ready_provider->revision_calls, 'duplicate revision called the provider again' );
 
 // Global balance guard: distributed visitor IDs cannot exceed the configured UTC-day capacity.
 tv_agent_controller_reset( '192.0.2.15' );

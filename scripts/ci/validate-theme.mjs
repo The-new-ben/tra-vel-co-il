@@ -246,6 +246,13 @@ if (/החיבור בבנייה/u.test(commercialExperiencePage) || /ספק חל�
 if (!commercialExperiencePage.includes('commercial-assurance')) failures.push('Commercial experience pages are missing the assisted-sales trust boundary.');
 if (!commercialExperiencePage.includes("'easy'      => 'comfort'") || !commercialExperiencePage.includes("'adventure' => 'adventure'") || !commercialExperiencePage.includes('checked( $flight_direct )') || !commercialExperiencePage.includes('$package_budget_total')) failures.push('Package planning does not preserve map intent, directness, and budget context.');
 if (!commercialExperiencePage.includes('$allow_overnight') || !appJs.includes('allow_overnight: discoveryQuery.allow_overnight ? 1')) failures.push('The 360-degree AI and package handoffs drop the overnight preference.');
+for (const marker of ['data-agent-revision-composer', 'data-agent-revision-form', 'data-agent-revision-message', 'data-agent-revision-status']) {
+  if (!commercialExperiencePage.includes(marker)) failures.push(`The AI planner same-run clarification UI is missing ${marker}.`);
+}
+if (!appJs.includes('async function reviseAgentRun(') || !appJs.includes('/messages`, {') || !appJs.includes("form.setAttribute('aria-busy', 'true')")) failures.push('The AI planner does not submit same-run revisions with an accessible real activity state.');
+if (!appJs.includes('התוכנית הקודמת נשארה ללא שינוי') || !appJs.includes('renderAgentRun(root, currentRun)')) failures.push('A failed revision must retain and refresh the last confirmed plan.');
+if (!appCss.includes('@keyframes agent-progress-sweep') || !appCss.includes('@keyframes agent-positive-arrival') || !appCss.includes('.agent-revision-form[data-state="loading"]')) failures.push('Same-run revision progress and confirmed success lack truthful visual motion.');
+if (!appJs.includes('latestSequenceByPhase') || !appCss.includes('.agent-event.is-running.is-resolved::before')) failures.push('Completed agent phases can continue showing a false running animation.');
 
 const directoryPage = readFileSync(join(themeRoot, 'page-directory.php'), 'utf8');
 for (const marker of ['data-directory-root', 'data-directory-filter', 'data-directory-grid', 'directory-map-pin', 'editorial-directory.json']) {

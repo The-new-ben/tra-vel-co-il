@@ -299,7 +299,21 @@ get_header();
 					<section class="agent-clarifications" data-agent-clarifications hidden aria-labelledby="agent-clarification-title">
 						<h3 id="agent-clarification-title"><?php esc_html_e( 'שאלות שחייבות תשובה', 'tra-vel-v2' ); ?></h3>
 						<div class="agent-question-list" data-agent-question-list></div>
-						<p><?php esc_html_e( 'עד לקבלת תשובה לא מתחיל חיפוש ספקים. בשלב הראשון אפשר לערוך את הבקשה למעלה ולפתוח ריצה פרטית חדשה.', 'tra-vel-v2' ); ?></p>
+						<p><?php esc_html_e( 'עד לקבלת תשובה לא מתחיל חיפוש ספקים. אפשר לענות על כל השאלות במשפט חופשי אחד.', 'tra-vel-v2' ); ?></p>
+					</section>
+					<section class="agent-revision-composer" data-agent-revision-composer hidden aria-labelledby="agent-revision-title">
+						<div class="agent-revision-heading">
+							<div><span><?php esc_html_e( 'אותה תוכנית, שיחה מתקדמת', 'tra-vel-v2' ); ?></span><h3 id="agent-revision-title"><?php esc_html_e( 'ענו או שנו פרט במילים שלכם', 'tra-vel-v2' ); ?></h3></div>
+							<span class="agent-revision-badge" data-agent-revision-badge></span>
+						</div>
+						<p data-agent-revision-help><?php esc_html_e( 'אפשר לעדכן יעד, תקציב, תאריכים, נוסעים או העדפות בלי לפתוח תוכנית חדשה.', 'tra-vel-v2' ); ?></p>
+						<form class="agent-revision-form" data-agent-revision-form>
+							<label><span><?php esc_html_e( 'מה להוסיף או לשנות?', 'tra-vel-v2' ); ?></span><textarea rows="3" minlength="2" maxlength="4000" autocomplete="off" data-agent-revision-message placeholder="<?php esc_attr_e( 'לדוגמה: יוצאים מתל אביב, התאריכים גמישים והתקציב הוא 1,000 דולר', 'tra-vel-v2' ); ?>" required></textarea></label>
+							<div class="agent-revision-actions">
+								<button type="submit" data-agent-revision-submit><span><?php esc_html_e( 'עדכנו את התוכנית', 'tra-vel-v2' ); ?></span><i data-lucide="wand-sparkles"></i></button>
+								<p data-agent-revision-status role="status" aria-live="polite"><?php esc_html_e( 'העדכון נשאר בריצה הפרטית הזאת. הטקסט החופשי אינו נשמר.', 'tra-vel-v2' ); ?></p>
+							</div>
+						</form>
 					</section>
 					<section class="agent-event-panel" aria-labelledby="agent-event-title">
 						<div class="agent-panel-heading"><h3 id="agent-event-title"><?php esc_html_e( 'יומן פעולות אמיתי', 'tra-vel-v2' ); ?></h3><small><?php esc_html_e( 'מוצגים רק אירועים שהשרת החזיר', 'tra-vel-v2' ); ?></small></div>

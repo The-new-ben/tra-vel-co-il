@@ -13,12 +13,14 @@ class Tra_Vel_Agent_Policy {
 	 *
 	 * @param array $request Provider request.
 	 * @param array $source  Input provenance.
+	 * @param array $previous Existing prepared request for a revision.
 	 * @return array
 	 */
-	public static function prepare_trip_request( $request, $source ) {
+	public static function prepare_trip_request( $request, $source, $previous = array() ) {
+		$previous = is_array( $previous ) ? $previous : array();
 		$request['contract_version'] = '1.0.0';
-		$request['request_id']       = wp_generate_uuid4();
-		$request['revision']         = 1;
+		$request['request_id']       = ! empty( $previous['request_id'] ) ? (string) $previous['request_id'] : wp_generate_uuid4();
+		$request['revision']         = ! empty( $previous['revision'] ) ? (int) $previous['revision'] + 1 : 1;
 		$request['source']           = array(
 			'channel'              => 'web',
 			'input_kind'           => isset( $source['input_kind'] ) && 'voice' === $source['input_kind'] ? 'voice' : 'typed',
@@ -90,4 +92,3 @@ class Tra_Vel_Agent_Policy {
 		return array_values( $unique );
 	}
 }
-
