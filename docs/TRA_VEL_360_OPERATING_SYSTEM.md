@@ -18,9 +18,9 @@ The product must answer five questions at every stage:
 
 ### Implemented visual-discovery kernel
 
-Theme 1.14.0 implements the first bounded Level 1 kernel for the six supported globe destinations. A tap anywhere inside the rendered Earth returns either a supported destination plan or an explicit unsupported-area continuation. Supported selections organize twelve decision areas and an end-to-end cost scope; unsupported selections retain coordinates without fabricating location, price, availability, or booking state.
+Theme 1.15.0 extends the Level 1 kernel beyond the six reviewed globe destinations. Every valid Earth tap now receives a stable selection identity and opens all twelve decision and cost areas. Supported destinations hydrate reviewed content and source-gated commercial data; arbitrary points retain exact validated coordinates and continue into the private AI planner without fabricating a location, price, availability, or booking state.
 
-Progress motion represents interface state changes only. Editorial coverage has a visually distinct state from live supplier data. Cost amounts remain suppressed without destination-scoped component ownership and an explicit currency. Savings remain suppressed until a server-verified equivalence cohort identifies the comparator, dates, travelers, inclusions, taxes, currency, and retrieval time. This kernel is the contract boundary for future city drill-down and supplier integrations, not a claim that Level 2 or Level 3 execution is complete.
+Progress motion represents actual interface and server state changes only. A seven-stage journey makes intake, understanding, search readiness, supplier search, proposal, approval, and execution visible. Neutral motion may show current work; positive motion requires a verified increase in completed stages. Editorial coverage has a visually distinct state from live supplier data. Cost amounts remain suppressed without destination-scoped component ownership and an explicit currency. Savings remain suppressed until a server-verified equivalence cohort identifies the comparator, dates, travelers, inclusions, taxes, currency, and retrieval time. This kernel is the contract boundary for future city drill-down and supplier integrations, not a claim that Level 2 or Level 3 execution is complete.
 
 ## 2. Product depth model
 

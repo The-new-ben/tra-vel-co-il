@@ -68,6 +68,50 @@ function sanitize_key( $value ) { return preg_replace( '/[^a-z0-9_\-]/', '', str
 function sanitize_text_field( $value ) { return trim( strip_tags( (string) $value ) ); }
 function absint( $value ) { return abs( (int) $value ); }
 function rest_sanitize_boolean( $value ) { return filter_var( $value, FILTER_VALIDATE_BOOLEAN ); }
+function rest_validate_value_from_schema( $value, $schema, $param = '' ) {
+	$types = isset( $schema['type'] ) ? (array) $schema['type'] : array();
+	if ( $types ) {
+		$type_valid = false;
+		foreach ( $types as $type ) {
+			if ( ( 'null' === $type && null === $value )
+				|| ( 'object' === $type && is_array( $value ) )
+				|| ( 'array' === $type && is_array( $value ) )
+				|| ( 'string' === $type && is_string( $value ) )
+				|| ( 'number' === $type && is_numeric( $value ) )
+				|| ( 'integer' === $type && is_int( $value ) )
+				|| ( 'boolean' === $type && is_bool( $value ) ) ) {
+				$type_valid = true;
+				break;
+			}
+		}
+		if ( ! $type_valid ) return new WP_Error( 'rest_invalid_param', 'Invalid schema type.', array( 'param' => $param ) );
+	}
+	if ( isset( $schema['enum'] ) && ! in_array( $value, $schema['enum'], true ) ) return new WP_Error( 'rest_invalid_param', 'Value is outside enum.', array( 'param' => $param ) );
+	if ( is_numeric( $value ) && isset( $schema['minimum'] ) && (float) $value < (float) $schema['minimum'] ) return new WP_Error( 'rest_invalid_param', 'Value is below minimum.', array( 'param' => $param ) );
+	if ( is_numeric( $value ) && isset( $schema['maximum'] ) && (float) $value > (float) $schema['maximum'] ) return new WP_Error( 'rest_invalid_param', 'Value is above maximum.', array( 'param' => $param ) );
+	if ( is_string( $value ) && isset( $schema['pattern'] ) && ! preg_match( '/' . str_replace( '/', '\\/', $schema['pattern'] ) . '/', $value ) ) return new WP_Error( 'rest_invalid_param', 'Value does not match pattern.', array( 'param' => $param ) );
+	if ( in_array( 'object', $types, true ) && is_array( $value ) ) {
+		$properties = isset( $schema['properties'] ) && is_array( $schema['properties'] ) ? $schema['properties'] : array();
+		if ( isset( $schema['additionalProperties'] ) && false === $schema['additionalProperties'] && array_diff( array_keys( $value ), array_keys( $properties ) ) ) return new WP_Error( 'rest_invalid_param', 'Object contains an undeclared property.', array( 'param' => $param ) );
+		foreach ( $value as $key => $item ) {
+			if ( ! isset( $properties[ $key ] ) ) continue;
+			$valid = rest_validate_value_from_schema( $item, $properties[ $key ], $param . '.' . $key );
+			if ( is_wp_error( $valid ) ) return $valid;
+		}
+	}
+	if ( in_array( 'array', $types, true ) && is_array( $value ) ) {
+		if ( isset( $schema['maxItems'] ) && count( $value ) > (int) $schema['maxItems'] ) return new WP_Error( 'rest_invalid_param', 'Array exceeds maxItems.', array( 'param' => $param ) );
+		if ( ! empty( $schema['uniqueItems'] ) && count( array_unique( array_map( 'serialize', $value ) ) ) !== count( $value ) ) return new WP_Error( 'rest_invalid_param', 'Array items are not unique.', array( 'param' => $param ) );
+		if ( isset( $schema['items'] ) ) {
+			foreach ( $value as $index => $item ) {
+				$valid = rest_validate_value_from_schema( $item, $schema['items'], $param . '.' . $index );
+				if ( is_wp_error( $valid ) ) return $valid;
+			}
+		}
+	}
+	return true;
+}
+function rest_sanitize_value_from_schema( $value, $schema, $param = '' ) { unset( $schema, $param ); return $value; }
 function wp_strip_all_tags( $value ) { return strip_tags( (string) $value ); }
 function wp_json_encode( $value, $flags = 0 ) { return json_encode( $value, $flags ); }
 function get_current_user_id() { return (int) $GLOBALS['tv_agent_current_user']; }
@@ -375,6 +419,26 @@ tv_agent_controller_reset( '192.0.2.10' );
 $ready_store      = new Tra_Vel_Test_Agent_Store();
 $ready_provider   = new Tra_Vel_Test_Agent_Provider( tv_agent_controller_provider_result( tv_agent_controller_base_request() ) );
 $ready_controller = new Tra_Vel_Agent_Controller( $ready_store, $ready_provider );
+$valid_route_context = array(
+	'kind'         => 'map_point',
+	'selection_id' => 'map_20300401_abcdefghijklmno',
+	'latitude'     => 13.7563,
+	'longitude'    => 100.5018,
+	'destination'  => null,
+	'intent'       => 'family',
+	'scope'        => array( 'flights', 'accommodation' ),
+);
+tv_agent_controller_assert( true === $ready_controller->validate_planning_context( $valid_route_context, new WP_REST_Request(), 'planning_context' ), 'valid map planning context was rejected by REST validation' );
+$missing_coordinate_context = $valid_route_context;
+$missing_coordinate_context['longitude'] = null;
+$missing_coordinate_error = $ready_controller->validate_planning_context( $missing_coordinate_context, new WP_REST_Request(), 'planning_context' );
+tv_agent_controller_assert( is_wp_error( $missing_coordinate_error ) && 'tra_vel_agent_map_coordinates_required' === $missing_coordinate_error->get_error_code(), 'map context with a partial coordinate pair did not fail closed' );
+$out_of_range_context = $valid_route_context;
+$out_of_range_context['latitude'] = 120;
+tv_agent_controller_assert( is_wp_error( $ready_controller->validate_planning_context( $out_of_range_context, new WP_REST_Request(), 'planning_context' ) ), 'out-of-range map latitude passed REST validation' );
+$extra_property_context = $valid_route_context;
+$extra_property_context['raw_prompt'] = 'must not pass';
+tv_agent_controller_assert( is_wp_error( $ready_controller->validate_planning_context( $extra_property_context, new WP_REST_Request(), 'planning_context' ) ), 'undeclared planning-context property passed REST validation' );
 $ready_request    = tv_agent_controller_request();
 $ready_response   = $ready_controller->create_run( $ready_request );
 tv_agent_assert_private_response( $ready_response, 'ready create' );
@@ -421,6 +485,37 @@ tv_agent_controller_assert( ! array_key_exists( 'run_token', $private_get->data 
 $duplicate = $ready_controller->create_run( tv_agent_controller_request() );
 tv_agent_controller_assert( is_wp_error( $duplicate ) && 'tra_vel_agent_duplicate_request' === $duplicate->get_error_code(), 'duplicate request fingerprint was accepted' );
 tv_agent_controller_assert( 1 === $ready_provider->calls && 1 === count( $ready_store->runs ), 'duplicate request created work or called the provider' );
+
+// Structured Earth context: the exact selection reaches the deterministic
+// TripRequest while the event log retains only the non-sensitive identity.
+tv_agent_controller_reset( '192.0.2.11' );
+$map_context = array(
+	'kind'         => 'map_point',
+	'selection_id' => 'map_20300401_abcdefghijklmno',
+	'latitude'     => 13.7563,
+	'longitude'    => 100.5018,
+	'destination'  => null,
+	'intent'       => 'family',
+	'scope'        => array( 'flights', 'accommodation', 'transfers', 'activities', 'dining', 'insurance', 'connectivity', 'equipment' ),
+);
+$map_store      = new Tra_Vel_Test_Agent_Store();
+$map_provider   = new Tra_Vel_Test_Agent_Provider( tv_agent_controller_provider_result( tv_agent_controller_base_request() ) );
+$map_controller = new Tra_Vel_Agent_Controller( $map_store, $map_provider );
+$map_response   = $map_controller->create_run(
+	tv_agent_controller_request(
+		array(
+			'planning_context'  => $map_context,
+			'client_request_id' => 'client-request-map-context-0001',
+		)
+	)
+);
+tv_agent_controller_assert( $map_response instanceof WP_REST_Response && 201 === $map_response->status, 'structured map request was not accepted' );
+tv_agent_controller_assert( $map_context === $map_response->data['trip_request']['planning_context'], 'exact Earth context was not preserved in the public TripRequest' );
+$map_created_event = $map_response->data['events'][0];
+tv_agent_controller_assert( 'map_point' === $map_created_event['data']['planning_context_kind'] && $map_context['selection_id'] === $map_created_event['data']['selection_id'], 'run creation event lost the stable Earth selection identity' );
+tv_agent_controller_assert( ! array_key_exists( 'latitude', $map_created_event['data'] ) && ! array_key_exists( 'longitude', $map_created_event['data'] ), 'run creation event persisted precise coordinates unnecessarily' );
+$GLOBALS['tv_agent_current_user'] = 0;
+$_COOKIE['__Host-tra_vel_agent_run'] = $run_id . '.' . $ready_store->tokens[ $run_id ];
 
 // Natural-language revision: the same private run is updated in place, keeps
 // its request identity, increments revision and never persists the raw answer.

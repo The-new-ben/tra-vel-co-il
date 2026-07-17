@@ -1,14 +1,19 @@
 # Tra-Vel Agent Core
 
 Status: production-safe interpretation, revision, and durable assisted-request slice
-Contract version: `1.0.0`  
-Plugin: `plugin/tra-vel-agent-core/` version `0.3.0`
+TripRequest contract version: `1.1.0`
+AgentRun and RunEvent envelope contract version: `1.0.0`
+Plugin: `plugin/tra-vel-agent-core/` version `0.4.0`
 
 ## What this slice does
 
 The Agent Core accepts a typed or confirmed voice request through JSON POST, creates a private time-limited run, asks OpenAI to interpret the request into a strict `TripRequest`, applies deterministic clarification rules, and records append-only events that the interface can display. Every model clarification must identify a supported canonical `TripRequest` field, which lets policy collapse duplicate questions without weakening a blocking requirement. When material information is missing or the traveler changes a planning constraint, `POST /runs/{run_id}/messages` revises that request in place without creating a second run.
 
-Version 0.3.0 adds a separate durable `QuoteCase` aggregate for travelers who explicitly consent to human assistance. A quote case freezes minimized, immutable request revisions, provides an exact-owner traveler history, and powers a capability-protected operator queue. AI working state and commercial-assistance state remain separate: an `AgentRun` expires after 24 hours, while an active quote case has a 30-day service window and a normal 90-day deletion boundary.
+Version 0.4.0 publishes TripRequest 1.1.0 and adds a closed planning context to the private run. A destination or arbitrary Earth click receives a stable `selection_id`; map points require validated latitude and longitude, while destination coordinates are either a complete validated pair or both null. Intent and the canonical eight-domain scope travel with the structured request and remain unchanged during natural-language revisions unless a future authorized action explicitly replaces the selection. Public creation events record the context kind and stable selection identity, not exact coordinates.
+
+The seven-stage traveler display is a projection of current run status and append-only events. Requested domains come first from `planning_context.scope`, then from interpreted `search_scope` only when no explicit scope was carried. A domain can show running or completed only when a matching supplier-search event identifies that domain. Network failure freezes the last confirmed state and stops progress motion; it does not create a completed or failed supplier event by itself.
+
+The durable `QuoteCase` aggregate introduced in 0.3.0 remains separate from the short-lived AI run. A quote case freezes minimized, immutable request revisions, provides an exact-owner traveler history, and powers a capability-protected operator queue. AI working state and commercial-assistance state remain separate: an `AgentRun` expires after 24 hours, while an active quote case has a 30-day service window and a normal 90-day deletion boundary.
 
 It is intentionally narrower than the complete travel agent. Creating or updating a quote case does not claim that suppliers were searched, prices were quoted, inventory was held, a message was delivered, or a booking was made. When no contracted supplier tool has executed, the run records `supplier.search.not_started` with `provider_connected: false` and `provider_bookable: false`. Quote-case statuses are limited to truthful assistance states such as `queued`, `in_review`, `needs_information`, and `ready_for_assistance`.
 

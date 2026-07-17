@@ -176,6 +176,15 @@ if (!appJs.includes('התנאים הנוכחיים עודכנו. התאמת הע
 if (!appJs.includes("trip_destination: data.id")) failures.push('Map insurance actions do not preserve the selected destination context.');
 if (!appJs.includes("activeLayer = layer && discoveryLayers.has(layer) ? layer : 'deals'") || !appJs.includes("activePlanIntent = intent && destinationPlanIntents[intent] ? intent : 'smart'") || !appJs.includes('intentConstraints')) failures.push('Map history and intent-only deep links cannot restore deterministic discovery defaults.');
 if (!appJs.includes('destinationDirectoryUrl(destinationId, planningContext)') || !appJs.includes("destinationPlanUrl('/guides/', params)")) failures.push('Globe destinations without directory coverage can still open an empty filtered guide directory.');
+if (!appJs.includes('agentPlanningContextFromLocation') || !appJs.includes('planning_context: agentPlanningContextFromLocation()')) failures.push('Earth selections are not carried into Agent Core as structured planning context.');
+if (!appJs.includes("const inferredKind = destination ? 'destination' : (hasCoordinates ? 'map_point' : 'free_text')") || !appJs.includes("params.get('selection_kind')")) failures.push('Reviewed destinations are collapsed into arbitrary map-point context when coordinates are present.');
+if (!appJs.includes('planningSelectionHistoryState') || !appJs.includes('restorePlanningSelectionFromHistory') || !appJs.includes('planningSelection: planningSelectionHistoryState()')) failures.push('Map Back and Forward history can retain the previous selection identity or coordinates.');
+if (!appJs.includes('activePlanningSelection.destination !== key') || !appJs.includes("kind: 'destination'")) failures.push('A restored destination does not rebuild mismatched planning-selection context.');
+if (!appJs.includes('renderAgentJourney') || !appJs.includes('completed > previousCompleted')) failures.push('Agent progress motion is not derived from actual journey advancement.');
+if (!appJs.includes("!['provider_error', 'failed', 'cancelled'].includes(status)")) failures.push('Agent failure or cancellation can still trigger positive progress motion.');
+if (!appJs.includes('failAgentJourneyConnection(root)') || !appJs.includes('pauseAgentJourneyTransport(root') || !appCss.includes('.agent-journey[data-transport="stale"] .agent-scope-board li.is-running > i') || !appCss.includes('.agent-journey[data-transport="stale"] ~ .agent-event-panel .agent-event.is-running::before')) failures.push('Agent transport failures can leave a false working animation active.');
+if (!appJs.includes('request?.planning_context?.scope') || !appJs.includes('latestAgentScopeEvent')) failures.push('The Agent scope board can diverge from exact requested scope or claim domain progress without events.');
+if (!appJs.includes('setTextContentIfChanged(next, agentJourneyNextAction(run))') || !appJs.includes('setTextContentIfChanged(status, message)') || !appJs.includes('setTextContentIfChanged(supplier, latest.message)')) failures.push('Unchanged Agent polling can repeatedly announce live-region content.');
 
 const mapPage = readFileSync(join(themeRoot, 'page-map.php'), 'utf8');
 for (const marker of ['map-view-layout', 'map-support-section', 'map-destination-panel', 'map-depth-section', 'destination-plan-360', 'data-destination-plan', 'data-plan-intent', 'data-plan-flight', 'data-plan-stay', 'data-plan-cover', 'data-plan-total', 'data-mobile-filter-host', 'data-budget-coverage', 'data-globe-3d', 'data-globe-canvas', 'data-globe-route', 'data-supported-radius-km', 'data-globe-selection', 'destination-decision-cockpit', 'data-plan-meter', 'data-plan-modules', 'data-plan-ledger', 'data-plan-save']) {
@@ -190,13 +199,18 @@ if (!appCss.includes('.whatsapp-button { right: 20px !important; bottom: 20px !i
 if (!appCss.includes('.whatsapp-button { display: none !important; }')) failures.push('The legacy WhatsApp action can still cover mobile content and inline actions.');
 if (!appCss.includes('.theme-map-shell .globe-webgl .price-pin:not(.is-active) { width: 44px; height: 44px; min-width: 44px;')) failures.push('Mobile globe destination targets must retain a 44px hit area.');
 if (!appCss.includes('transform: scale(var(--globe-depth,1));')) failures.push('Globe depth must scale the visual marker without shrinking its mobile hit area.');
-if (!/function bindDestinationPin[\s\S]{0,420}addEventListener\('click'[\s\S]{0,220}setActiveDestination\([\s\S]{0,220}hydrateDiscovery\(/.test(appJs)) failures.push('Globe marker clicks must synchronize the destination support panel before refreshing discovery data.');
+if (!/function bindDestinationPin[\s\S]{0,520}addEventListener\('click'[\s\S]{0,520}setActiveDestination\([\s\S]{0,320}hydrateDiscovery\(/.test(appJs)) failures.push('Globe marker clicks must synchronize the destination support panel before refreshing discovery data.');
 for (const marker of ['reconcileDestinationPins', 'data-discovery-globe', 'discoveryRequestGeneration', 'AbortController', 'setRouteListBusy(true)', 'renderDiscoveryEmptyState', 'initDestinationPlan', 'updateDestinationPlan', 'mapDestinationWorkspaceItem', 'max_stops', 'max_duration', 'allow_overnight']) {
   if (!appJs.includes(marker)) failures.push(`Map discovery state is missing ${marker}.`);
 }
 for (const marker of ['discoverySelectedPlan', 'initGlobePointSelection', 'renderUnsupportedGlobeSelection', 'renderDestinationDecisionCockpit', 'activePlanCostLedger', 'selectedPlanForDestination', 'לא נמציא יעד']) {
   if (!appJs.includes(marker)) failures.push(`The every-click 360-degree planning kernel is missing ${marker}.`);
 }
+if (!appJs.includes('createPlanningSelectionId') || !appJs.includes('setActivePlanningSelection') || !appJs.includes('activePlanningSelectionQuery')) failures.push('Earth clicks do not retain a stable planning-selection identity.');
+if (!appJs.includes("const pointContext = { selection_id: selectionId") || !appJs.includes('latitude: latitude.toFixed(4)') || !appJs.includes('longitude: longitude.toFixed(4)')) failures.push('Arbitrary Earth points can lose their exact coordinates during the AI handoff.');
+if (!appJs.includes("selection_kind: 'map_point'")) failures.push('Arbitrary Earth handoffs do not preserve an explicit planning-context kind.');
+if (!appJs.includes("meter.setAttribute('aria-valuenow', '12')") || !appJs.includes('fullTripCostScope.map')) failures.push('Unsupported Earth points do not expose the complete twelve-category planning ledger.');
+if (!appJs.includes("if (animate && responseState === 'current')")) failures.push('Destination progress can celebrate an unverified or stale response.');
 const fallbackDestinationSource = appJs.match(/const fallbackDestinations = \{([\s\S]*?)\n\};/)?.[1] || '';
 const fallbackDestinationCount = (fallbackDestinationSource.match(/\bid:\s*'/g) || []).length;
 if (!fallbackDestinationCount || (fallbackDestinationSource.match(/\blatitude:/g) || []).length < fallbackDestinationCount || (fallbackDestinationSource.match(/\blongitude:/g) || []).length < fallbackDestinationCount) failures.push('Fallback destinations can lose their Earth coordinates after an empty or filtered response.');
@@ -226,7 +240,7 @@ if (!/data-plan-ledger-state[\s\S]{0,120}'12 /.test(mapPage)) failures.push('The
 if (!appJs.includes('discoveryBudgetCoverage') || !appJs.includes('budgetCoverageLabel()') || !appJs.includes('budget_filter_active') || !appCss.includes('.budget-coverage-note')) failures.push('Partial or absent live-price budget coverage is not disclosed beside the budget control and result status.');
 if (!appJs.includes('activeRouteSelectionLocked') || !appJs.includes("button.setAttribute('aria-pressed'") || !appJs.includes('payload.recommended?.id')) failures.push('Route recommendations and explicit user route choices are not statefully distinguished.');
 if (appJs.includes('Math.max(...discoveryRoutes') || appJs.includes('savings: saved > 0')) failures.push('Client code can still invent verified savings from non-comparable route totals.');
-if (!appJs.includes("{ traVelMap: true, focus: activeDestination || '' }") || !appJs.includes('event.state?.focus') || !appJs.includes('{ focus: historyFocus }')) failures.push('Map Back and Forward history cannot restore an unlocked focused destination.');
+if (!appJs.includes("{ traVelMap: true, focus: activeDestination || ''") || !appJs.includes('event.state?.focus') || !appJs.includes('{ focus: historyFocus }')) failures.push('Map Back and Forward history cannot restore an unlocked focused destination.');
 if (!appJs.includes('}, 12000)') || !appJs.includes('timedOut')) failures.push('A stalled discovery request can leave animated progress and controls busy indefinitely.');
 if (!appCss.includes('.home-globe-stack .globe { position: relative; inset: auto;') || !appCss.includes('touch-action: pan-y; cursor: default;') || !appCss.includes('.home-globe-stack .globe-tools { position: static;')) failures.push('The homepage globe can trap mobile scrolling or place controls over the Earth.');
 
@@ -242,6 +256,9 @@ if (!/pointerup[\s\S]{0,260}!pointer\.moved[\s\S]{0,220}selectScreenPoint/.test(
 if (!globeJs.includes('zPitch > 1 / state.distance') || !globeJs.includes("addEventListener('lostpointercapture'")) failures.push('Globe visibility culling or pointer cleanup is not hardened for the perspective camera.');
 if (!globeJs.includes("options.pulse === true") || !appJs.includes('pulseRoute: responseSupportsConfirmedMotion') || !appJs.includes('globeAnimate: false')) failures.push('Stale or fallback discovery outcomes can still receive confirmed route motion.');
 if (!globeJs.includes("root.classList.contains('globe-3d-unavailable')") || !globeJs.includes('return handled;') || !appJs.includes('const handled = window.traVelGlobe3D.zoom')) failures.push('The static Earth zoom fallback is unreachable when WebGL is unavailable.');
+const pointerDownSource = globeJs.match(/addEventListener\('pointerdown'[\s\S]*?addEventListener\('pointermove'/)?.[0] || '';
+if (!globeJs.includes("mode: 'pending'") || !globeJs.includes('verticalTouchGesture') || !globeJs.includes("state.pointer.mode !== 'drag'")) failures.push('The mobile globe is missing horizontal gesture locking and vertical-scroll escape.');
+if (pointerDownSource.includes('setPointerCapture')) failures.push('The globe captures touch before the user has committed to a horizontal drag.');
 if (!appCss.includes('.theme-map-shell .world-canvas .globe { width: min(640px,100%);') || !appCss.includes('@media (max-width: 1000px)') || !appCss.includes('.theme-map-shell .map-view-layout { grid-template-columns: 1fr;') || !appCss.includes('.theme-map-shell .map-layer-buttons { order: 1;') || !appCss.includes('.theme-map-shell .world-canvas { order: 2;')) failures.push('Tablet map sizing or visual order can clip the Earth or diverge from DOM focus order.');
 if (!appCss.includes('.map-selection-rail.is-updating .map-selection-signal,.map-selection-rail.is-updating .map-selection-copy') || !appCss.includes('.theme-map-shell .globe-webgl.is-routing .globe-route-layer path { animation: none !important; }')) failures.push('New globe progress motion is missing its reduced-motion path.');
 const globeTextureSize = statSync(join(themeRoot, 'assets/images/earth-blue-marble-2048.jpg')).size;
@@ -277,11 +294,22 @@ const publicDirectoryPage = readFileSync(join(themeRoot, 'page-directory.php'), 
 if (/מפת העריכה|במחקר|בדיקת מערכת|מדריך דגל|מחירים מומצאים/u.test(publicDirectoryPage)) failures.push('Destination directories expose internal project language.');
 if (/[—–]/u.test(destinationPage) || /[—–]/u.test(publicDirectoryPage)) failures.push('Public destination templates must not use em dash or en dash punctuation.');
 const commercialExperiencePage = readFileSync(join(themeRoot, 'page-experience.php'), 'utf8');
+if (!commercialExperiencePage.includes('נקודת המפה שנבחרה')) failures.push('Supported destination handoffs drop their exact Earth point from the model prompt.');
 if (/הגרסה הבאה|המבנה והמסע מוכנים|יחוברו ספקים/u.test(commercialExperiencePage)) failures.push('Commercial experience pages expose internal roadmap language.');
 if (/החיבור בבנייה/u.test(commercialExperiencePage) || /ספק חלקי/u.test(appJs)) failures.push('Consumer comparison status exposes internal build or supplier language.');
 if (!commercialExperiencePage.includes('commercial-assurance')) failures.push('Commercial experience pages are missing the assisted-sales trust boundary.');
 if (!commercialExperiencePage.includes("'easy'      => 'comfort'") || !commercialExperiencePage.includes("'adventure' => 'adventure'") || !commercialExperiencePage.includes('checked( $flight_direct )') || !commercialExperiencePage.includes('$package_budget_total')) failures.push('Package planning does not preserve map intent, directness, and budget context.');
 if (!commercialExperiencePage.includes('$allow_overnight') || !appJs.includes('allow_overnight: discoveryQuery.allow_overnight ? 1')) failures.push('The 360-degree AI and package handoffs drop the overnight preference.');
+for (const marker of ['data-agent-journey', 'data-agent-journey-meter', 'data-agent-journey-next', 'data-agent-journey-scopes']) {
+  if (!commercialExperiencePage.includes(marker)) failures.push(`The Agent workbench is missing semantic journey marker ${marker}.`);
+}
+if ((commercialExperiencePage.match(/data-agent-journey-step=/g) || []).length !== 7) failures.push('The Agent journey must expose exactly seven truthful orchestration stages.');
+if ((commercialExperiencePage.match(/data-agent-scope=/g) || []).length !== 8) failures.push('The Agent journey must expose all eight 360-degree planning domains.');
+for (const marker of ['.agent-journey', '.agent-journey-steps .is-waiting', '.agent-journey-steps .is-failed', '@keyframes agent-journey-confirm']) {
+  if (!appCss.includes(marker)) failures.push(`The Agent journey motion system is missing ${marker}.`);
+}
+if (!appCss.includes('.agent-journey.is-advancing .agent-journey-steps .is-complete') || !appCss.includes('.agent-journey[data-state="connecting"] .agent-journey-steps .is-current')) failures.push('Agent journey motion does not distinguish real advancement from current work.');
+if (!appCss.includes('.agent-scope-board li small { color: inherit; font-size: 10.5px') || !appCss.includes('@media (max-width: 420px)') || !appCss.includes('.agent-journey-steps,.agent-scope-board ul { grid-template-columns: 1fr; }')) failures.push('The new Agent progress interface is not readable on narrow mobile screens.');
 for (const marker of ['data-agent-revision-composer', 'data-agent-revision-form', 'data-agent-revision-message', 'data-agent-revision-status']) {
   if (!commercialExperiencePage.includes(marker)) failures.push(`The AI planner same-run clarification UI is missing ${marker}.`);
 }

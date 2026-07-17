@@ -18,7 +18,7 @@ class Tra_Vel_Agent_Policy {
 	 */
 	public static function prepare_trip_request( $request, $source, $previous = array() ) {
 		$previous = is_array( $previous ) ? $previous : array();
-		$request['contract_version'] = '1.0.0';
+		$request['contract_version'] = '1.1.0';
 		$request['request_id']       = ! empty( $previous['request_id'] ) ? (string) $previous['request_id'] : wp_generate_uuid4();
 		$request['revision']         = ! empty( $previous['revision'] ) ? (int) $previous['revision'] + 1 : 1;
 		$request['source']           = array(
@@ -27,6 +27,10 @@ class Tra_Vel_Agent_Policy {
 			'input_sha256'         => isset( $source['input_sha256'] ) ? (string) $source['input_sha256'] : '',
 			'transcript_confirmed' => ! empty( $source['transcript_confirmed'] ),
 		);
+		$planning_context = isset( $source['planning_context'] ) && is_array( $source['planning_context'] )
+			? $source['planning_context']
+			: ( isset( $previous['planning_context'] ) && is_array( $previous['planning_context'] ) ? $previous['planning_context'] : array() );
+		$request['planning_context'] = self::normalize_planning_context( $planning_context );
 
 		$questions = is_array( $request['material_questions'] ) ? $request['material_questions'] : array();
 		if ( 'voice' === $request['source']['input_kind'] && ! $request['source']['transcript_confirmed'] ) {
@@ -60,6 +64,41 @@ class Tra_Vel_Agent_Policy {
 			'blockers' => array_values( wp_list_pluck( $blockers, 'id' ) ),
 		);
 		return $request;
+	}
+
+	/**
+	 * Preserve only validated, non-sensitive map context in the TripRequest.
+	 *
+	 * @param array $context Planning context.
+	 * @return array
+	 */
+	private static function normalize_planning_context( $context ) {
+		$context         = is_array( $context ) ? $context : array();
+		$allowed_kinds   = array( 'free_text', 'destination', 'map_point' );
+		$allowed_intents = array( 'smart', 'value', 'easy', 'romantic', 'family', 'adventure', 'surprise' );
+		$allowed_scope   = array( 'flights', 'accommodation', 'transfers', 'activities', 'dining', 'insurance', 'connectivity', 'equipment' );
+		$kind            = isset( $context['kind'] ) && in_array( $context['kind'], $allowed_kinds, true ) ? $context['kind'] : 'free_text';
+		$selection_id    = isset( $context['selection_id'] ) && preg_match( '/^[A-Za-z0-9_-]{8,80}$/', (string) $context['selection_id'] ) ? (string) $context['selection_id'] : null;
+		$latitude        = isset( $context['latitude'] ) && is_numeric( $context['latitude'] ) && (float) $context['latitude'] >= -90 && (float) $context['latitude'] <= 90 ? (float) $context['latitude'] : null;
+		$longitude       = isset( $context['longitude'] ) && is_numeric( $context['longitude'] ) && (float) $context['longitude'] >= -180 && (float) $context['longitude'] <= 180 ? (float) $context['longitude'] : null;
+		$destination     = isset( $context['destination'] ) ? substr( preg_replace( '/[^a-z0-9-]/', '', strtolower( (string) $context['destination'] ) ), 0, 60 ) : '';
+		$scope           = isset( $context['scope'] ) && is_array( $context['scope'] ) ? array_values( array_unique( array_intersect( $allowed_scope, $context['scope'] ) ) ) : array();
+		$has_coordinates = null !== $latitude && null !== $longitude;
+		if ( 'map_point' === $kind && ( ! $has_coordinates || ! $selection_id ) ) {
+			$kind = 'free_text';
+		}
+		if ( 'destination' === $kind && ( ! $destination || ! $selection_id ) ) {
+			$kind = 'free_text';
+		}
+		return array(
+			'kind'         => $kind,
+			'selection_id' => 'free_text' === $kind ? null : $selection_id,
+			'latitude'     => in_array( $kind, array( 'map_point', 'destination' ), true ) && $has_coordinates ? $latitude : null,
+			'longitude'    => in_array( $kind, array( 'map_point', 'destination' ), true ) && $has_coordinates ? $longitude : null,
+			'destination'  => in_array( $kind, array( 'map_point', 'destination' ), true ) && $destination ? $destination : null,
+			'intent'       => isset( $context['intent'] ) && in_array( $context['intent'], $allowed_intents, true ) ? $context['intent'] : 'smart',
+			'scope'        => array_slice( $scope, 0, 8 ),
+		);
 	}
 
 	private static function question( $id, $field, $question, $reason, $blocking ) {

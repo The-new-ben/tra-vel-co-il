@@ -118,6 +118,41 @@ $is_insurance = 'travel-insurance' === $slug;
 $is_ai_planner = 'ai-planner' === $slug;
 $is_surprise = $is_ai_planner && isset( $_GET['mode'] ) && 'surprise' === sanitize_key( wp_unslash( $_GET['mode'] ) );
 $agent_destination = $is_ai_planner && isset( $_GET['destination'] ) ? sanitize_key( wp_unslash( $_GET['destination'] ) ) : '';
+$agent_scope_labels = array(
+	'flights'       => __( 'טיסות', 'tra-vel-v2' ),
+	'accommodation' => __( 'לינה', 'tra-vel-v2' ),
+	'transfers'     => __( 'העברות ותחבורה', 'tra-vel-v2' ),
+	'activities'    => __( 'פעילויות וסיורים', 'tra-vel-v2' ),
+	'dining'        => __( 'אוכל והעדפות', 'tra-vel-v2' ),
+	'insurance'     => __( 'ביטוח והגנה', 'tra-vel-v2' ),
+	'connectivity'  => __( 'תקשורת וחיבור', 'tra-vel-v2' ),
+	'equipment'     => __( 'ציוד מתאים', 'tra-vel-v2' ),
+);
+$agent_scope = array();
+if ( $is_ai_planner && isset( $_GET['scope'] ) ) {
+	$requested_scope = substr( sanitize_text_field( wp_unslash( $_GET['scope'] ) ), 0, 240 );
+	foreach ( explode( ',', $requested_scope ) as $scope_key ) {
+		$scope_key = sanitize_key( $scope_key );
+		if ( isset( $agent_scope_labels[ $scope_key ] ) ) {
+			$agent_scope[] = $scope_key;
+		}
+	}
+	$agent_scope = array_slice( array_values( array_unique( $agent_scope ) ), 0, count( $agent_scope_labels ) );
+}
+$agent_map_latitude  = null;
+$agent_map_longitude = null;
+if ( $is_ai_planner && isset( $_GET['latitude'], $_GET['longitude'] ) ) {
+	$latitude_value  = sanitize_text_field( wp_unslash( $_GET['latitude'] ) );
+	$longitude_value = sanitize_text_field( wp_unslash( $_GET['longitude'] ) );
+	if ( is_numeric( $latitude_value ) && is_numeric( $longitude_value ) ) {
+		$latitude_value  = (float) $latitude_value;
+		$longitude_value = (float) $longitude_value;
+		if ( $latitude_value >= -90 && $latitude_value <= 90 && $longitude_value >= -180 && $longitude_value <= 180 ) {
+			$agent_map_latitude  = $latitude_value;
+			$agent_map_longitude = $longitude_value;
+		}
+	}
+}
 $planning_intent   = isset( $_GET['intent'] ) ? sanitize_key( wp_unslash( $_GET['intent'] ) ) : 'smart';
 $agent_intent      = $planning_intent;
 $agent_intents     = array(
@@ -213,12 +248,37 @@ if ( $is_ai_planner && $agent_destination && ! $is_surprise ) {
 	if ( $allow_overnight ) {
 		$agent_context_parts[] = __( 'אפשרות לעצירת לילה', 'tra-vel-v2' );
 	}
+	if ( null !== $agent_map_latitude && null !== $agent_map_longitude ) {
+		$agent_context_parts[] = sprintf(
+			/* translators: 1: latitude, 2: longitude. */
+			__( 'נקודת המפה שנבחרה %1$.4f, %2$.4f', 'tra-vel-v2' ),
+			$agent_map_latitude,
+			$agent_map_longitude
+		);
+	}
+	if ( $agent_scope ) {
+		$agent_context_parts[] = sprintf(
+			/* translators: %s: comma-separated trip planning domains. */
+			__( 'לכלול בתוכנית %s', 'tra-vel-v2' ),
+			implode( ', ', array_map( static fn( $scope_key ) => $agent_scope_labels[ $scope_key ], $agent_scope ) )
+		);
+	}
 	$agent_prompt = sprintf(
 		/* translators: 1: planning intent, 2: destination name, 3: selected planning context. */
 		__( 'בנו לי חופשה %1$s ב%2$s, %3$s. שאלו רק מה שחסר, ובדקו מחירים וזמינות עדכניים לפני שמציעים לי לאשר.', 'tra-vel-v2' ),
 		$agent_intents[ $agent_intent ],
 		$agent_destination_label,
 		implode( ', ', $agent_context_parts )
+	);
+} elseif ( $is_ai_planner && null !== $agent_map_latitude && null !== $agent_map_longitude && ! $is_surprise ) {
+	$map_scope = $agent_scope ? $agent_scope : array_keys( $agent_scope_labels );
+	$agent_prompt = sprintf(
+		/* translators: 1: latitude, 2: longitude, 3: planning intent, 4: comma-separated planning domains. */
+		__( 'התחילו מנקודת המפה %1$.4f, %2$.4f. זהו איתי את האזור בלי להמציא עיר, ואז בנו חופשה %3$s שכוללת %4$s. שאלו רק מה שחסר, ואל תציגו מחיר, זמינות או הזמנה לפני בדיקה חיה מתועדת.', 'tra-vel-v2' ),
+		$agent_map_latitude,
+		$agent_map_longitude,
+		$agent_intents[ $agent_intent ],
+		implode( ', ', array_map( static fn( $scope_key ) => $agent_scope_labels[ $scope_key ], $map_scope ) )
 	);
 }
 $today      = current_time( 'timestamp' );
@@ -289,6 +349,36 @@ get_header();
 						<div><span class="eyebrow"><?php esc_html_e( 'סביבת תכנון פרטית', 'tra-vel-v2' ); ?></span><h2 id="agent-run-title" tabindex="-1"><?php esc_html_e( 'מה הסוכן עשה בפועל', 'tra-vel-v2' ); ?></h2></div>
 						<p class="agent-run-state" data-agent-run-state role="status" aria-live="polite"></p>
 					</header>
+					<section class="agent-journey" data-agent-journey data-state="idle" aria-labelledby="agent-journey-title">
+						<header class="agent-journey-head">
+							<div><span>Tra-Vel 360°</span><h3 id="agent-journey-title"><?php esc_html_e( 'כך החופשה מתקדמת', 'tra-vel-v2' ); ?></h3></div>
+							<div class="agent-journey-meter" data-agent-journey-meter role="progressbar" aria-label="<?php esc_attr_e( 'שלבים שהושלמו בפועל', 'tra-vel-v2' ); ?>" aria-valuemin="0" aria-valuemax="7" aria-valuenow="0" aria-valuetext="<?php esc_attr_e( 'עדיין לא הושלם שלב', 'tra-vel-v2' ); ?>"><strong data-agent-journey-count>0/7</strong><span><i data-agent-journey-fill style="--agent-journey-progress:0%"></i></span></div>
+						</header>
+						<p class="agent-journey-truth"><?php esc_html_e( 'כל שלב משתנה רק אחרי פעולה שהתקבלה בפועל. חיפוש, מחיר והזמנה נשארים נעולים עד שהם באמת קורים.', 'tra-vel-v2' ); ?></p>
+						<ol class="agent-journey-steps" aria-label="<?php esc_attr_e( 'מסלול התכנון וההזמנה', 'tra-vel-v2' ); ?>">
+							<li class="is-pending" data-agent-journey-step="intake"><i data-lucide="message-circle-more"></i><span><strong><?php esc_html_e( 'הבקשה נקלטה', 'tra-vel-v2' ); ?></strong><small data-agent-journey-step-state><?php esc_html_e( 'ממתין לשליחה', 'tra-vel-v2' ); ?></small></span></li>
+							<li class="is-pending" data-agent-journey-step="understanding"><i data-lucide="brain-circuit"></i><span><strong><?php esc_html_e( 'הפרטים הובנו', 'tra-vel-v2' ); ?></strong><small data-agent-journey-step-state><?php esc_html_e( 'טרם נבדק', 'tra-vel-v2' ); ?></small></span></li>
+							<li class="is-pending" data-agent-journey-step="readiness"><i data-lucide="list-checks"></i><span><strong><?php esc_html_e( 'מוכנים לחיפוש', 'tra-vel-v2' ); ?></strong><small data-agent-journey-step-state><?php esc_html_e( 'ממתין לפרטים', 'tra-vel-v2' ); ?></small></span></li>
+							<li class="is-pending" data-agent-journey-step="supplier_search"><i data-lucide="search-check"></i><span><strong><?php esc_html_e( 'בודקים ספקים', 'tra-vel-v2' ); ?></strong><small data-agent-journey-step-state><?php esc_html_e( 'לא התחיל', 'tra-vel-v2' ); ?></small></span></li>
+							<li class="is-pending" data-agent-journey-step="proposal"><i data-lucide="route"></i><span><strong><?php esc_html_e( 'בונים הצעה', 'tra-vel-v2' ); ?></strong><small data-agent-journey-step-state><?php esc_html_e( 'ממתין לתוצאות', 'tra-vel-v2' ); ?></small></span></li>
+							<li class="is-pending" data-agent-journey-step="approval"><i data-lucide="badge-check"></i><span><strong><?php esc_html_e( 'אתם מאשרים', 'tra-vel-v2' ); ?></strong><small data-agent-journey-step-state><?php esc_html_e( 'עדיין לא נדרש', 'tra-vel-v2' ); ?></small></span></li>
+							<li class="is-pending" data-agent-journey-step="execution"><i data-lucide="plane-takeoff"></i><span><strong><?php esc_html_e( 'סוגרים ומלווים', 'tra-vel-v2' ); ?></strong><small data-agent-journey-step-state><?php esc_html_e( 'לא אושר ביצוע', 'tra-vel-v2' ); ?></small></span></li>
+						</ol>
+						<div class="agent-journey-next"><i data-lucide="move-left"></i><span><small><?php esc_html_e( 'הצעד הבא', 'tra-vel-v2' ); ?></small><strong data-agent-journey-next role="status" aria-live="polite"><?php esc_html_e( 'שלחו בקשה במילים שלכם כדי להתחיל.', 'tra-vel-v2' ); ?></strong></span></div>
+						<section class="agent-scope-board" data-agent-journey-scopes aria-labelledby="agent-scope-title">
+							<header><div><span><?php esc_html_e( 'כיסוי 360°', 'tra-vel-v2' ); ?></span><h4 id="agent-scope-title"><?php esc_html_e( 'מה נכנס לתוכנית', 'tra-vel-v2' ); ?></h4></div><small data-agent-scope-count><?php esc_html_e( 'ממתין לפירוש הבקשה', 'tra-vel-v2' ); ?></small></header>
+							<ul>
+								<li data-agent-scope="flights"><i data-lucide="plane"></i><span><strong><?php esc_html_e( 'טיסות', 'tra-vel-v2' ); ?></strong><small data-agent-scope-state><?php esc_html_e( 'טרם נבחר', 'tra-vel-v2' ); ?></small></span></li>
+								<li data-agent-scope="accommodation"><i data-lucide="hotel"></i><span><strong><?php esc_html_e( 'לינה', 'tra-vel-v2' ); ?></strong><small data-agent-scope-state><?php esc_html_e( 'טרם נבחר', 'tra-vel-v2' ); ?></small></span></li>
+								<li data-agent-scope="transfers"><i data-lucide="car-front"></i><span><strong><?php esc_html_e( 'העברות', 'tra-vel-v2' ); ?></strong><small data-agent-scope-state><?php esc_html_e( 'טרם נבחר', 'tra-vel-v2' ); ?></small></span></li>
+								<li data-agent-scope="activities"><i data-lucide="ticket-check"></i><span><strong><?php esc_html_e( 'פעילויות', 'tra-vel-v2' ); ?></strong><small data-agent-scope-state><?php esc_html_e( 'טרם נבחר', 'tra-vel-v2' ); ?></small></span></li>
+								<li data-agent-scope="dining"><i data-lucide="utensils"></i><span><strong><?php esc_html_e( 'אוכל', 'tra-vel-v2' ); ?></strong><small data-agent-scope-state><?php esc_html_e( 'טרם נבחר', 'tra-vel-v2' ); ?></small></span></li>
+								<li data-agent-scope="insurance"><i data-lucide="shield-check"></i><span><strong><?php esc_html_e( 'ביטוח', 'tra-vel-v2' ); ?></strong><small data-agent-scope-state><?php esc_html_e( 'טרם נבחר', 'tra-vel-v2' ); ?></small></span></li>
+								<li data-agent-scope="connectivity"><i data-lucide="wifi"></i><span><strong><?php esc_html_e( 'תקשורת', 'tra-vel-v2' ); ?></strong><small data-agent-scope-state><?php esc_html_e( 'טרם נבחר', 'tra-vel-v2' ); ?></small></span></li>
+								<li data-agent-scope="equipment"><i data-lucide="luggage"></i><span><strong><?php esc_html_e( 'ציוד', 'tra-vel-v2' ); ?></strong><small data-agent-scope-state><?php esc_html_e( 'טרם נבחר', 'tra-vel-v2' ); ?></small></span></li>
+							</ul>
+						</section>
+					</section>
 					<p class="agent-run-error" data-agent-error role="alert" hidden></p>
 					<section class="agent-request-card" data-agent-trip-request hidden>
 						<span><?php esc_html_e( 'הבקשה שהובנה', 'tra-vel-v2' ); ?></span>

@@ -54,6 +54,7 @@ jobs:
         run: |
           set -euo pipefail
           node scripts/ci/validate-theme.mjs
+          node scripts/ci/validate-theme-runtime.mjs
           node scripts/ci/validate-discovery-contract.mjs
           node scripts/ci/validate-flight-search-contract.mjs
           node scripts/ci/validate-hotel-search-contract.mjs

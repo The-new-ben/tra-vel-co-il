@@ -627,24 +627,39 @@
     root.addEventListener('pointerdown', event => {
       if (!event.isPrimary || event.button !== 0 || event.target.closest('.price-pin')) return;
       state.visible = document.visibilityState !== 'hidden';
-      state.animation = null;
       state.pointer = {
         id: event.pointerId,
+        type: event.pointerType || 'mouse',
         x: event.clientX,
         y: event.clientY,
         startX: event.clientX,
         startY: event.clientY,
+        mode: 'pending',
         moved: false,
         startedAt: performance.now()
       };
-      root.classList.add('is-dragging');
-      root.setPointerCapture(event.pointerId);
     });
     root.addEventListener('pointermove', event => {
       if (!state.pointer || state.pointer.id !== event.pointerId) return;
+      const totalX = event.clientX - state.pointer.startX;
+      const totalY = event.clientY - state.pointer.startY;
+      const distance = Math.hypot(totalX, totalY);
+      if (state.pointer.mode === 'pending' && distance <= 8) return;
+      if (state.pointer.mode === 'pending') {
+        state.pointer.moved = true;
+        const verticalTouchGesture = state.pointer.type === 'touch' && Math.abs(totalY) > Math.abs(totalX) * 1.15;
+        if (verticalTouchGesture) {
+          state.pointer.mode = 'scroll';
+          return;
+        }
+        state.pointer.mode = 'drag';
+        state.animation = null;
+        root.classList.add('is-dragging');
+        root.setPointerCapture(event.pointerId);
+      }
+      if (state.pointer.mode !== 'drag') return;
       const deltaX = event.clientX - state.pointer.x;
       const deltaY = event.clientY - state.pointer.y;
-      if (Math.hypot(event.clientX - state.pointer.startX, event.clientY - state.pointer.startY) > 8) state.pointer.moved = true;
       state.pointer.x = event.clientX;
       state.pointer.y = event.clientY;
       state.yaw = normalizeAngle(state.yaw + deltaX * 0.0062);

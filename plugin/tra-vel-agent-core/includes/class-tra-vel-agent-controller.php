@@ -145,7 +145,8 @@ class Tra_Vel_Agent_Controller extends WP_REST_Controller {
 		$input_kind   = sanitize_key( (string) $request->get_param( 'input_kind' ) );
 		$confirmed    = 'voice' !== $input_kind || rest_sanitize_boolean( $request->get_param( 'transcript_confirmed' ) );
 		$client_id    = sanitize_text_field( (string) $request->get_param( 'client_request_id' ) );
-		$fingerprint  = hash( 'sha256', implode( '|', array( get_current_user_id(), $client_id, $mode, hash( 'sha256', $prompt ) ) ) );
+		$planning_context = $this->normalize_planning_context( $request->get_param( 'planning_context' ) );
+		$fingerprint  = hash( 'sha256', implode( '|', array( get_current_user_id(), $client_id, $mode, hash( 'sha256', $prompt ), hash( 'sha256', wp_json_encode( $planning_context ) ) ) ) );
 		if ( $this->store->find_recent_fingerprint( $fingerprint ) ) {
 			return new WP_Error( 'tra_vel_agent_duplicate_request', 'This agent request was already accepted.', array( 'status' => 409 ) );
 		}
@@ -174,7 +175,7 @@ class Tra_Vel_Agent_Controller extends WP_REST_Controller {
 				return $created;
 			}
 
-			$this->store->append_event( $created['id'], $this->event( 'run.created', 'intake', 'completed', 'system', 'הבקשה התקבלה ונפתחה סביבת תכנון פרטית.', array( 'mode' => $mode ) ) );
+			$this->store->append_event( $created['id'], $this->event( 'run.created', 'intake', 'completed', 'system', 'הבקשה התקבלה ונפתחה סביבת תכנון פרטית.', array( 'mode' => $mode, 'planning_context_kind' => $planning_context['kind'], 'selection_id' => $planning_context['selection_id'] ) ) );
 			$this->store->append_event( $created['id'], $this->event( 'request.interpretation.started', 'understanding', 'running', 'system', 'מפרשים את הבקשה ומאתרים פרטים שחסרים להחלטה.', array() ) );
 
 			$interpreted = $this->provider->interpret( $prompt, $mode, $locale );
@@ -199,6 +200,7 @@ class Tra_Vel_Agent_Controller extends WP_REST_Controller {
 					'input_kind'           => $input_kind,
 					'input_sha256'         => hash( 'sha256', $prompt ),
 					'transcript_confirmed' => $confirmed,
+					'planning_context'     => $planning_context,
 				)
 			);
 			$needs_clarification = 'needs_clarification' === $trip_request['readiness']['status'];
@@ -641,6 +643,23 @@ class Tra_Vel_Agent_Controller extends WP_REST_Controller {
 			'locale'               => array( 'type' => 'string', 'default' => 'he-IL', 'enum' => array( 'he-IL', 'en-US', 'mixed' ), 'sanitize_callback' => 'sanitize_text_field', 'validate_callback' => 'rest_validate_request_arg' ),
 			'input_kind'           => array( 'type' => 'string', 'default' => 'typed', 'enum' => array( 'typed', 'voice' ), 'sanitize_callback' => 'sanitize_key', 'validate_callback' => 'rest_validate_request_arg' ),
 			'transcript_confirmed' => array( 'type' => 'boolean', 'default' => false, 'sanitize_callback' => 'rest_sanitize_boolean' ),
+			'planning_context'     => array(
+				'type'                 => 'object',
+				'required'             => false,
+				'default'              => array(
+					'kind'         => 'free_text',
+					'selection_id' => null,
+					'latitude'     => null,
+					'longitude'    => null,
+					'destination'  => null,
+					'intent'       => 'smart',
+					'scope'        => array(),
+				),
+				'properties'           => $this->planning_context_schema()['properties'],
+				'additionalProperties' => false,
+				'validate_callback'    => array( $this, 'validate_planning_context' ),
+				'sanitize_callback'    => array( $this, 'sanitize_planning_context' ),
+			),
 			'client_request_id'    => array( 'type' => 'string', 'required' => true, 'minLength' => 16, 'maxLength' => 80, 'sanitize_callback' => 'sanitize_text_field', 'validate_callback' => 'rest_validate_request_arg' ),
 		);
 	}
@@ -648,6 +667,109 @@ class Tra_Vel_Agent_Controller extends WP_REST_Controller {
 	public function sanitize_prompt( $value ) {
 		$value = trim( preg_replace( '/\s+/u', ' ', wp_strip_all_tags( (string) $value ) ) );
 		return function_exists( 'mb_substr' ) ? mb_substr( $value, 0, 4000 ) : substr( $value, 0, 4000 );
+	}
+
+	/**
+	 * Validate structured map and destination context before it reaches policy.
+	 *
+	 * @param mixed           $value   Raw value.
+	 * @param WP_REST_Request $request Request object.
+	 * @param string          $param   Parameter name.
+	 * @return true|WP_Error
+	 */
+	public function validate_planning_context( $value, $request, $param ) {
+		$valid = rest_validate_value_from_schema( $value, $this->planning_context_schema(), $param );
+		if ( is_wp_error( $valid ) ) {
+			return $valid;
+		}
+		$value = is_array( $value ) ? $value : array();
+		$kind  = isset( $value['kind'] ) ? (string) $value['kind'] : 'free_text';
+		$id    = isset( $value['selection_id'] ) ? (string) $value['selection_id'] : '';
+		if ( in_array( $kind, array( 'map_point', 'destination' ), true ) && ! preg_match( '/^[A-Za-z0-9_-]{8,80}$/', $id ) ) {
+			return new WP_Error( 'tra_vel_agent_selection_id_required', 'Map and destination planning contexts require a valid selection_id.', array( 'status' => 400 ) );
+		}
+		if ( 'map_point' === $kind && ( ! isset( $value['latitude'], $value['longitude'] ) || ! is_numeric( $value['latitude'] ) || ! is_numeric( $value['longitude'] ) ) ) {
+			return new WP_Error( 'tra_vel_agent_map_coordinates_required', 'Map-point planning context requires a complete coordinate pair.', array( 'status' => 400 ) );
+		}
+		$has_latitude  = isset( $value['latitude'] ) && null !== $value['latitude'];
+		$has_longitude = isset( $value['longitude'] ) && null !== $value['longitude'];
+		if ( $has_latitude !== $has_longitude ) {
+			return new WP_Error( 'tra_vel_agent_coordinate_pair_required', 'Planning coordinates must contain both latitude and longitude.', array( 'status' => 400 ) );
+		}
+		if ( 'destination' === $kind && empty( $value['destination'] ) ) {
+			return new WP_Error( 'tra_vel_agent_destination_required', 'Destination planning context requires a destination identifier.', array( 'status' => 400 ) );
+		}
+		return true;
+	}
+
+	/**
+	 * Sanitize a validated planning context with the same JSON schema used by OPTIONS.
+	 *
+	 * @param mixed           $value   Raw value.
+	 * @param WP_REST_Request $request Request object.
+	 * @param string          $param   Parameter name.
+	 * @return array|WP_Error
+	 */
+	public function sanitize_planning_context( $value, $request, $param ) {
+		$sanitized = rest_sanitize_value_from_schema( $value, $this->planning_context_schema(), $param );
+		return is_wp_error( $sanitized ) ? $sanitized : $this->normalize_planning_context( $sanitized );
+	}
+
+	/**
+	 * Planning context schema shared by route validation and TripRequest policy.
+	 *
+	 * @return array
+	 */
+	private function planning_context_schema() {
+		$scope_values = array( 'flights', 'accommodation', 'transfers', 'activities', 'dining', 'insurance', 'connectivity', 'equipment' );
+		return array(
+			'type'                 => 'object',
+			'additionalProperties' => false,
+			'properties'           => array(
+				'kind'         => array( 'type' => 'string', 'enum' => array( 'free_text', 'destination', 'map_point' ), 'default' => 'free_text' ),
+				'selection_id' => array( 'type' => array( 'string', 'null' ), 'pattern' => '^[A-Za-z0-9_-]{8,80}$' ),
+				'latitude'     => array( 'type' => array( 'number', 'null' ), 'minimum' => -90, 'maximum' => 90 ),
+				'longitude'    => array( 'type' => array( 'number', 'null' ), 'minimum' => -180, 'maximum' => 180 ),
+				'destination'  => array( 'type' => array( 'string', 'null' ), 'pattern' => '^[a-z0-9-]{1,60}$' ),
+				'intent'       => array( 'type' => 'string', 'enum' => array( 'smart', 'value', 'easy', 'romantic', 'family', 'adventure', 'surprise' ), 'default' => 'smart' ),
+				'scope'        => array( 'type' => 'array', 'maxItems' => 8, 'uniqueItems' => true, 'items' => array( 'type' => 'string', 'enum' => $scope_values ) ),
+			),
+		);
+	}
+
+	/**
+	 * Normalize planning context defensively after REST schema sanitation.
+	 *
+	 * @param mixed $value Sanitized context.
+	 * @return array
+	 */
+	private function normalize_planning_context( $value ) {
+		$value          = is_array( $value ) ? $value : array();
+		$allowed_kinds  = array( 'free_text', 'destination', 'map_point' );
+		$allowed_intents = array( 'smart', 'value', 'easy', 'romantic', 'family', 'adventure', 'surprise' );
+		$allowed_scope  = array( 'flights', 'accommodation', 'transfers', 'activities', 'dining', 'insurance', 'connectivity', 'equipment' );
+		$kind           = isset( $value['kind'] ) && in_array( $value['kind'], $allowed_kinds, true ) ? $value['kind'] : 'free_text';
+		$selection_id   = isset( $value['selection_id'] ) && preg_match( '/^[A-Za-z0-9_-]{8,80}$/', (string) $value['selection_id'] ) ? (string) $value['selection_id'] : null;
+		$latitude       = isset( $value['latitude'] ) && is_numeric( $value['latitude'] ) && (float) $value['latitude'] >= -90 && (float) $value['latitude'] <= 90 ? (float) $value['latitude'] : null;
+		$longitude      = isset( $value['longitude'] ) && is_numeric( $value['longitude'] ) && (float) $value['longitude'] >= -180 && (float) $value['longitude'] <= 180 ? (float) $value['longitude'] : null;
+		$destination    = isset( $value['destination'] ) ? substr( preg_replace( '/[^a-z0-9-]/', '', strtolower( (string) $value['destination'] ) ), 0, 60 ) : '';
+		$scope          = isset( $value['scope'] ) && is_array( $value['scope'] ) ? array_values( array_unique( array_intersect( $allowed_scope, $value['scope'] ) ) ) : array();
+		$has_coordinates = null !== $latitude && null !== $longitude;
+		if ( 'map_point' === $kind && ( ! $has_coordinates || ! $selection_id ) ) {
+			$kind = 'free_text';
+		}
+		if ( 'destination' === $kind && ( ! $destination || ! $selection_id ) ) {
+			$kind = 'free_text';
+		}
+		return array(
+			'kind'         => $kind,
+			'selection_id' => 'free_text' === $kind ? null : $selection_id,
+			'latitude'     => in_array( $kind, array( 'map_point', 'destination' ), true ) && $has_coordinates ? $latitude : null,
+			'longitude'    => in_array( $kind, array( 'map_point', 'destination' ), true ) && $has_coordinates ? $longitude : null,
+			'destination'  => in_array( $kind, array( 'map_point', 'destination' ), true ) && $destination ? $destination : null,
+			'intent'       => isset( $value['intent'] ) && in_array( $value['intent'], $allowed_intents, true ) ? $value['intent'] : 'smart',
+			'scope'        => array_slice( $scope, 0, 8 ),
+		);
 	}
 
 	private function uuid_arg() {

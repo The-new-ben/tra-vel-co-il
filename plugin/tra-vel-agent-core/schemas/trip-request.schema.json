@@ -1,12 +1,12 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://tra-vel.co.il/schemas/agent/trip-request-1.0.0.json",
+  "$id": "https://tra-vel.co.il/schemas/agent/trip-request-1.1.0.json",
   "title": "Tra-Vel TripRequest",
   "type": "object",
   "additionalProperties": false,
-  "required": ["contract_version", "request_id", "revision", "summary", "language", "origin_text", "destination_mode", "destinations", "date_text", "date_flexibility", "travelers", "budget", "vibes", "hard_constraints", "preferences", "search_scope", "material_questions", "assumptions", "confidence", "source", "readiness"],
+  "required": ["contract_version", "request_id", "revision", "summary", "language", "origin_text", "destination_mode", "destinations", "date_text", "date_flexibility", "travelers", "budget", "vibes", "hard_constraints", "preferences", "search_scope", "material_questions", "assumptions", "confidence", "source", "planning_context", "readiness"],
   "properties": {
-    "contract_version": { "const": "1.0.0" },
+    "contract_version": { "const": "1.1.0" },
     "request_id": { "type": "string", "format": "uuid" },
     "revision": { "type": "integer", "minimum": 1 },
     "summary": { "type": "string", "minLength": 1, "maxLength": 500 },
@@ -69,6 +69,40 @@
         "input_sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
         "transcript_confirmed": { "type": "boolean" }
       }
+    },
+    "planning_context": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "selection_id", "latitude", "longitude", "destination", "intent", "scope"],
+      "properties": {
+        "kind": { "enum": ["free_text", "destination", "map_point"] },
+        "selection_id": { "type": ["string", "null"], "pattern": "^[A-Za-z0-9_-]{8,80}$" },
+        "latitude": { "type": ["number", "null"], "minimum": -90, "maximum": 90 },
+        "longitude": { "type": ["number", "null"], "minimum": -180, "maximum": 180 },
+        "destination": { "type": ["string", "null"], "pattern": "^[a-z0-9-]{1,60}$" },
+        "intent": { "enum": ["smart", "value", "easy", "romantic", "family", "adventure", "surprise"] },
+        "scope": { "type": "array", "maxItems": 8, "uniqueItems": true, "items": { "enum": ["flights", "accommodation", "transfers", "activities", "dining", "insurance", "connectivity", "equipment"] } }
+      },
+      "allOf": [
+        {
+          "if": { "required": ["kind"], "properties": { "kind": { "const": "free_text" } } },
+          "then": { "properties": { "selection_id": { "type": "null" }, "latitude": { "type": "null" }, "longitude": { "type": "null" }, "destination": { "type": "null" } } }
+        },
+        {
+          "if": { "required": ["kind"], "properties": { "kind": { "const": "map_point" } } },
+          "then": { "properties": { "selection_id": { "type": "string", "pattern": "^[A-Za-z0-9_-]{8,80}$" }, "latitude": { "type": "number", "minimum": -90, "maximum": 90 }, "longitude": { "type": "number", "minimum": -180, "maximum": 180 } } }
+        },
+        {
+          "if": { "required": ["kind"], "properties": { "kind": { "const": "destination" } } },
+          "then": { "properties": { "selection_id": { "type": "string", "pattern": "^[A-Za-z0-9_-]{8,80}$" }, "destination": { "type": "string", "pattern": "^[a-z0-9-]{1,60}$" } } }
+        },
+        {
+          "oneOf": [
+            { "properties": { "latitude": { "type": "null" }, "longitude": { "type": "null" } } },
+            { "properties": { "latitude": { "type": "number", "minimum": -90, "maximum": 90 }, "longitude": { "type": "number", "minimum": -180, "maximum": 180 } } }
+          ]
+        }
+      ]
     },
     "readiness": {
       "type": "object",
