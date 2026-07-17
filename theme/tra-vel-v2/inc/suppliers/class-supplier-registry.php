@@ -67,10 +67,10 @@ class Tra_Vel_V2_Supplier_Registry {
 	 * Resolve every configured adapter, keeping the demo adapter as fallback.
 	 */
 	public function resolve( $context ) {
-		$contract = null;
-		$reports  = array();
-		$live_ok  = 0;
-		$live_failed = array();
+		$contract         = null;
+		$reports          = array();
+		$live_failed      = array();
+		$field_provenance = $this->empty_field_provenance();
 
 		foreach ( $this->adapters as $id => $adapter ) {
 			$report = array(
@@ -113,23 +113,124 @@ class Tra_Vel_V2_Supplier_Registry {
 
 			$report['healthy'] = true;
 			$reports[ $id ]    = $report;
-			$contract          = null === $contract ? $result : $this->merge_contract( $contract, $result );
 			if ( 'live' === $adapter->get_mode() ) {
-				++$live_ok;
+				$field_provenance = $this->merge_field_provenance(
+					$field_provenance,
+					$this->detect_field_provenance( $id, $adapter, $result )
+				);
 			}
+			$contract          = null === $contract ? $result : $this->merge_contract( $contract, $result );
 		}
 
 		if ( ! is_array( $contract ) ) {
 			return new WP_Error( 'tra_vel_suppliers_unavailable', 'No discovery supplier is currently available.', array( 'status' => 503 ) );
 		}
 
-		$contract['data_mode'] = $this->derive_data_mode( $contract, $live_ok );
+		$contract['field_provenance'] = $field_provenance;
+		$contract['data_mode']        = $this->derive_data_mode( $field_provenance );
 		return array(
 			'data'            => $contract,
 			'reports'         => $reports,
 			'degraded'        => ! empty( $live_failed ),
 			'failed_adapters' => $live_failed,
 		);
+	}
+
+	/**
+	 * Fail-closed field ownership for values merged with the editorial fallback.
+	 */
+	private function empty_field_provenance() {
+		$empty = array(
+			'live'        => false,
+			'source'      => null,
+			'observed_at' => null,
+		);
+		return array(
+			'deals'           => $empty,
+			'hotels'          => $empty,
+			'airports'        => $empty,
+			'routes'          => $empty,
+			'weather_current' => $empty,
+			'weather_season'  => $empty,
+		);
+	}
+
+	/**
+	 * Mark only fields physically supplied by a successful live adapter.
+	 * A connected provider flag alone never certifies inherited fallback data.
+	 */
+	private function detect_field_provenance( $id, $adapter, $fragment ) {
+		$provenance = $this->empty_field_provenance();
+		$verticals  = array_values( array_map( 'sanitize_key', (array) $adapter->get_verticals() ) );
+		$live_value = array(
+			'live'        => true,
+			'source'      => sanitize_key( $id ),
+			'observed_at' => $this->fragment_observed_at( $fragment ),
+		);
+		$destinations = isset( $fragment['destinations'] ) && is_array( $fragment['destinations'] ) ? $fragment['destinations'] : array();
+
+		foreach ( $destinations as $destination ) {
+			if ( array_intersect( array( 'deals', 'packages' ), $verticals ) && isset( $destination['deal'] ) && is_array( $destination['deal'] ) && $destination['deal'] ) {
+				$provenance['deals'] = $live_value;
+			}
+			if ( in_array( 'hotels', $verticals, true ) && isset( $destination['hotel'] ) && is_array( $destination['hotel'] ) && $destination['hotel'] ) {
+				$provenance['hotels'] = $live_value;
+			}
+			if ( in_array( 'flights', $verticals, true ) && isset( $destination['airport'] ) && is_array( $destination['airport'] ) && $destination['airport'] ) {
+				$provenance['airports'] = $live_value;
+			}
+			if ( in_array( 'weather', $verticals, true ) && isset( $destination['weather'] ) && is_array( $destination['weather'] ) ) {
+				$weather = $destination['weather'];
+				if ( array_key_exists( 'temperature_c', $weather ) || array_key_exists( 'condition', $weather ) ) {
+					$provenance['weather_current'] = $live_value;
+				}
+				if ( array_key_exists( 'season_fit', $weather ) ) {
+					$provenance['weather_season'] = $live_value;
+				}
+			}
+		}
+
+		if ( in_array( 'flights', $verticals, true ) && ! empty( $fragment['route_sets'] ) && is_array( $fragment['route_sets'] ) ) {
+			foreach ( $fragment['route_sets'] as $routes ) {
+				if ( is_array( $routes ) && $routes ) {
+					$provenance['routes'] = $live_value;
+					break;
+				}
+			}
+		}
+
+		return $provenance;
+	}
+
+	/**
+	 * Preserve explicit supplier observation time when the fragment provides it.
+	 */
+	private function fragment_observed_at( $fragment ) {
+		foreach ( isset( $fragment['provider_status'] ) ? (array) $fragment['provider_status'] : array() as $status ) {
+			if ( is_array( $status ) && ! empty( $status['observed_at'] ) ) {
+				return sanitize_text_field( $status['observed_at'] );
+			}
+		}
+		foreach ( isset( $fragment['destinations'] ) ? (array) $fragment['destinations'] : array() as $destination ) {
+			foreach ( array( 'deal', 'hotel', 'airport', 'weather' ) as $field ) {
+				if ( ! empty( $destination[ $field ]['observed_at'] ) ) {
+					return sanitize_text_field( $destination[ $field ]['observed_at'] );
+				}
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * Merge successful live coverage without allowing an empty fragment to erase it.
+	 */
+	private function merge_field_provenance( $base, $overlay ) {
+		foreach ( array_keys( $base ) as $field ) {
+			if ( ! empty( $overlay[ $field ]['live'] ) ) {
+				$base[ $field ] = $overlay[ $field ];
+			}
+		}
+		return $base;
 	}
 
 	private function is_contract_fragment( $fragment ) {
@@ -182,19 +283,16 @@ class Tra_Vel_V2_Supplier_Registry {
 		return array_values( array_intersect_key( $indexed, array_flip( $order ) ) );
 	}
 
-	private function derive_data_mode( $contract, $live_ok ) {
-		if ( 0 === $live_ok ) {
-			return 'demo';
-		}
-
-		$statuses  = isset( $contract['provider_status'] ) ? $contract['provider_status'] : array();
-		$connected = array_filter(
-			$statuses,
-			static function ( $status ) {
-				return ! empty( $status['connected'] );
+	private function derive_data_mode( $field_provenance ) {
+		$live_fields = array_filter(
+			$field_provenance,
+			static function ( $field ) {
+				return ! empty( $field['live'] );
 			}
 		);
-
-		return $statuses && count( $connected ) === count( $statuses ) ? 'live' : 'mixed';
+		if ( ! $live_fields ) {
+			return 'demo';
+		}
+		return count( $live_fields ) === count( $field_provenance ) ? 'live' : 'mixed';
 	}
 }

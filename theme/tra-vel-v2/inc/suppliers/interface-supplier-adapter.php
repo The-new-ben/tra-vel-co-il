@@ -14,7 +14,7 @@ interface Tra_Vel_V2_Supplier_Adapter {
 	public function get_id();
 
 	/**
-	 * Supported verticals: flights, hotels, insurance, or weather.
+	 * Supported verticals: deals, packages, flights, hotels, insurance, or weather.
 	 */
 	public function get_verticals();
 

@@ -83,6 +83,9 @@ tv2_weather_assert( true === $payload['provider_status']['weather']['connected']
 tv2_weather_assert( 'live' === $payload['provider_status']['weather']['readiness'], 'weather provider was not marked live' );
 tv2_weather_assert( 'גשם' === $payload['destinations'][0]['weather']['condition'], 'WMO weather code was not normalized' );
 tv2_weather_assert( 20 === $payload['destinations'][0]['weather']['temperature_c'], 'temperature was not normalized' );
+tv2_weather_assert( true === $payload['destinations'][0]['weather']['live'], 'current conditions lack a field-level live marker' );
+tv2_weather_assert( 'Open-Meteo' === $payload['destinations'][0]['weather']['source'], 'current conditions lost their source' );
+tv2_weather_assert( ! array_key_exists( 'season_fit', $payload['destinations'][0]['weather'] ), 'current conditions falsely supplied an editorial season fit' );
 tv2_weather_assert( false === strpos( json_encode( $payload ), TRA_VEL_OPEN_METEO_API_KEY ), 'API key leaked into normalized output' );
 
-echo "Tra-Vel Open-Meteo adapter validation passed (commercial endpoint, multi-location normalization, no key leakage).\n";
+echo "Tra-Vel Open-Meteo adapter validation passed (commercial endpoint, field provenance, multi-location normalization, no key leakage).\n";

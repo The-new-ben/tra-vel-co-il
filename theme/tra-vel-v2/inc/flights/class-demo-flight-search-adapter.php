@@ -25,6 +25,9 @@ class Tra_Vel_V2_Demo_Flight_Search_Adapter implements Tra_Vel_V2_Flight_Search_
 	}
 
 	public function search( $query ) {
+		if ( 'TLV' !== strtoupper( (string) $query['origin'] ) || 'BKK' !== strtoupper( (string) $query['destination'] ) ) {
+			return new WP_Error( 'tra_vel_demo_flight_route_unsupported', 'The demo flight adapter supports TLV to Bangkok only.', array( 'status' => 422 ) );
+		}
 		$path = TRA_VEL_V2_PATH . '/assets/data/flight-search-demo.json';
 		if ( ! is_readable( $path ) ) {
 			return new WP_Error( 'tra_vel_demo_flights_missing', 'Demo flight offers are unavailable.', array( 'status' => 503 ) );

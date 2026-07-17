@@ -97,23 +97,31 @@ class Tra_Vel_V2_Discovery_Repository {
 
 	private function normalize_context( $context ) {
 		$defaults = array(
-			'budget'      => 5000,
-			'destination' => '',
-			'direct'      => false,
-			'q'           => '',
-			'sort'        => 'smart',
-			'limit'       => 24,
-			'layer'       => 'deals',
+			'budget'          => 5000,
+			'destination'     => '',
+			'direct'          => false,
+			'q'               => '',
+			'sort'            => 'smart',
+			'trip'            => 'all',
+			'max_stops'       => 3,
+			'max_duration'    => 3000,
+			'allow_overnight' => false,
+			'limit'           => 24,
+			'layer'           => 'deals',
 		);
 		$context  = wp_parse_args( is_array( $context ) ? $context : array(), $defaults );
 		return array(
-			'budget'      => absint( $context['budget'] ),
-			'destination' => sanitize_key( $context['destination'] ),
-			'direct'      => (bool) $context['direct'],
-			'q'           => sanitize_text_field( $context['q'] ),
-			'sort'        => in_array( $context['sort'], array( 'smart', 'price', 'time' ), true ) ? $context['sort'] : 'smart',
-			'limit'       => min( 50, max( 1, absint( $context['limit'] ) ) ),
-			'layer'       => in_array( $context['layer'], array( 'deals', 'hotels', 'airports', 'weather' ), true ) ? $context['layer'] : 'deals',
+			'budget'          => absint( $context['budget'] ),
+			'destination'     => sanitize_key( $context['destination'] ),
+			'direct'          => (bool) $context['direct'],
+			'q'               => sanitize_text_field( $context['q'] ),
+			'sort'            => in_array( $context['sort'], array( 'smart', 'price', 'time', 'comfort' ), true ) ? $context['sort'] : 'smart',
+			'trip'            => in_array( $context['trip'], array( 'all', 'short', 'long' ), true ) ? $context['trip'] : 'all',
+			'max_stops'       => min( 3, max( 0, absint( $context['max_stops'] ) ) ),
+			'max_duration'    => min( 6000, max( 60, absint( $context['max_duration'] ) ) ),
+			'allow_overnight' => (bool) $context['allow_overnight'],
+			'limit'           => min( 50, max( 1, absint( $context['limit'] ) ) ),
+			'layer'           => in_array( $context['layer'], array( 'deals', 'hotels', 'airports', 'weather' ), true ) ? $context['layer'] : 'deals',
 		);
 	}
 

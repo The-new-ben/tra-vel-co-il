@@ -267,6 +267,7 @@
       pitch: 12 * DEG,
       distance: 3.15,
       selected: root.querySelector('.price-pin.is-active')?.dataset.destination || '',
+      available: new Set(Array.from(root.querySelectorAll('.price-pin[data-destination]'), marker => marker.dataset.destination)),
       visible: true,
       animation: null,
       frame: 0,
@@ -323,6 +324,10 @@
       const projected = new Map();
       const candidates = [];
       markers().forEach(marker => {
+        if (!state.available.has(marker.dataset.destination)) {
+          marker.hidden = true;
+          return;
+        }
         const latitude = Number(marker.dataset.latitude);
         const longitude = Number(marker.dataset.longitude);
         if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
@@ -336,8 +341,8 @@
           return;
         }
         const active = marker.dataset.destination === state.selected;
-        const markerWidth = mobile && !active ? 24 : Math.min(112, Math.max(48, marker.textContent.trim().length * 9 + 22));
-        const markerHeight = mobile && !active ? 24 : 34;
+        const markerWidth = mobile && !active ? 44 : Math.min(112, Math.max(48, marker.textContent.trim().length * 9 + 22));
+        const markerHeight = mobile ? 44 : 34;
         candidates.push({ marker, point, active, width: markerWidth, height: markerHeight });
       });
 
@@ -465,12 +470,30 @@
     }
 
     function setDestinations(data) {
+      state.available = new Set(Object.keys(data || {}));
       markers().forEach(marker => {
         const item = data?.[marker.dataset.destination];
-        if (!item) return;
+        marker.hidden = !item;
+        if (!item) {
+          marker.removeAttribute('data-latitude');
+          marker.removeAttribute('data-longitude');
+          return;
+        }
         if (Number.isFinite(Number(item.latitude))) marker.dataset.latitude = String(item.latitude);
         if (Number.isFinite(Number(item.longitude))) marker.dataset.longitude = String(item.longitude);
       });
+      if (state.selected && !state.available.has(state.selected)) clearSelection();
+      requestRender();
+    }
+
+    function clearSelection() {
+      state.selected = '';
+      state.animation = null;
+      markers().forEach(marker => {
+        marker.classList.remove('is-active');
+        marker.setAttribute('aria-pressed', 'false');
+      });
+      if (routePath) routePath.setAttribute('d', '');
       requestRender();
     }
 
@@ -522,6 +545,7 @@
     root.addEventListener('pointerup', endPointer);
     root.addEventListener('pointercancel', endPointer);
     root.addEventListener('keydown', event => {
+      if (event.target.closest('.price-pin')) return;
       state.visible = document.visibilityState !== 'hidden';
       const step = event.shiftKey ? 18 * DEG : 8 * DEG;
       if (event.key === 'ArrowLeft') state.yaw = normalizeAngle(state.yaw - step);
@@ -534,10 +558,6 @@
       else return;
       event.preventDefault();
       requestRender();
-    });
-
-    markers().forEach(marker => {
-      marker.addEventListener('focus', () => focusDestination(marker.dataset.destination, true));
     });
 
     canvas.addEventListener('webglcontextlost', event => {
@@ -561,7 +581,7 @@
     });
 
     requestRender();
-    return { focusDestination, zoom, setDestinations, requestRender };
+    return { focusDestination, zoom, setDestinations, clearSelection, requestRender };
   }
 
   function initialize() {
@@ -577,6 +597,9 @@
     },
     setDestinations(data) {
       controllers.forEach(controller => controller.setDestinations(data));
+    },
+    clearSelection() {
+      controllers.forEach(controller => controller.clearSelection());
     },
     zoom(direction) {
       controllers.forEach(controller => controller.zoom(direction));

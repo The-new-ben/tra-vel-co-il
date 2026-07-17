@@ -20,6 +20,7 @@ class Tra_Vel_V2_Flight_Search_Repository {
 	}
 
 	public function search( $query, $force = false ) {
+		$query     = $this->normalize_query( $query );
 		$key       = $this->cache_key( $query );
 		$fresh_key = $key . '_fresh';
 		$stale_key = $key . '_stale';
@@ -88,6 +89,23 @@ class Tra_Vel_V2_Flight_Search_Repository {
 	private function cache_key( $query ) {
 		$generation = (int) get_option( 'tra_vel_v2_flight_cache_generation', 1 );
 		return 'tv2_flights_' . md5( wp_json_encode( array( $generation, $this->registry->get_cache_signature(), $query ) ) );
+	}
+
+	/**
+	 * Keep duration constraints safe and cache-stable for every adapter caller.
+	 *
+	 * @param array $query Search context.
+	 * @return array
+	 */
+	private function normalize_query( $query ) {
+		$query              = is_array( $query ) ? $query : array();
+		$query['max_stops'] = isset( $query['max_stops'] )
+			? min( 3, max( 0, absint( $query['max_stops'] ) ) )
+			: 1;
+		$query['max_duration'] = isset( $query['max_duration'] )
+			? min( 3000, max( 60, absint( $query['max_duration'] ) ) )
+			: 3000;
+		return $query;
 	}
 
 	private function is_result( $result ) {

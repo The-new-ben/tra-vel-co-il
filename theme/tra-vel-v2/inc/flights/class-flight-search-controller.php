@@ -78,6 +78,7 @@ class Tra_Vel_V2_Flight_Search_Controller extends WP_REST_Controller {
 			'cabin'          => $request->get_param( 'cabin' ),
 			'direct'         => (bool) $request->get_param( 'direct' ),
 			'max_stops'      => (int) $request->get_param( 'max_stops' ),
+			'max_duration'   => (int) $request->get_param( 'max_duration' ),
 			'sort'           => $request->get_param( 'sort' ),
 			'limit'          => (int) $request->get_param( 'limit' ),
 			'currency'       => 'USD',
@@ -99,7 +100,10 @@ class Tra_Vel_V2_Flight_Search_Controller extends WP_REST_Controller {
 				$data['offers'],
 				static function ( $offer ) use ( $query ) {
 					$maximum = $query['direct'] ? 0 : $query['max_stops'];
-					return (int) $offer['outbound']['stops'] <= $maximum && (int) $offer['inbound']['stops'] <= $maximum;
+					return (int) $offer['outbound']['stops'] <= $maximum
+						&& (int) $offer['inbound']['stops'] <= $maximum
+						&& (int) $offer['outbound']['duration_minutes'] <= $query['max_duration']
+						&& (int) $offer['inbound']['duration_minutes'] <= $query['max_duration'];
 				}
 			)
 		);
@@ -204,7 +208,8 @@ class Tra_Vel_V2_Flight_Search_Controller extends WP_REST_Controller {
 			'infants'        => array( 'type' => 'integer', 'default' => 0, 'minimum' => 0, 'maximum' => 4, 'sanitize_callback' => 'absint', 'validate_callback' => 'rest_validate_request_arg' ),
 			'cabin'          => array( 'type' => 'string', 'default' => 'economy', 'enum' => array( 'economy', 'premium_economy', 'business', 'first' ), 'sanitize_callback' => 'sanitize_key', 'validate_callback' => 'rest_validate_request_arg' ),
 			'direct'         => array( 'type' => 'boolean', 'default' => false, 'sanitize_callback' => 'rest_sanitize_boolean' ),
-			'max_stops'      => array( 'type' => 'integer', 'default' => 1, 'minimum' => 0, 'maximum' => 2, 'sanitize_callback' => 'absint', 'validate_callback' => 'rest_validate_request_arg' ),
+			'max_stops'      => array( 'type' => 'integer', 'default' => 1, 'minimum' => 0, 'maximum' => 3, 'sanitize_callback' => 'absint', 'validate_callback' => 'rest_validate_request_arg' ),
+			'max_duration'   => array( 'type' => 'integer', 'default' => 3000, 'minimum' => 60, 'maximum' => 3000, 'sanitize_callback' => 'absint', 'validate_callback' => 'rest_validate_request_arg' ),
 			'sort'           => array( 'type' => 'string', 'default' => 'smart', 'enum' => array( 'smart', 'price', 'duration' ), 'sanitize_callback' => 'sanitize_key', 'validate_callback' => 'rest_validate_request_arg' ),
 			'limit'          => array( 'type' => 'integer', 'default' => 12, 'minimum' => 1, 'maximum' => 30, 'sanitize_callback' => 'absint', 'validate_callback' => 'rest_validate_request_arg' ),
 		);
@@ -289,6 +294,7 @@ class Tra_Vel_V2_Flight_Search_Controller extends WP_REST_Controller {
 			'cabin'          => 'economy',
 			'direct'         => false,
 			'max_stops'      => 1,
+			'max_duration'   => 3000,
 			'sort'           => 'smart',
 			'limit'          => 12,
 			'currency'       => 'USD',

@@ -77,6 +77,9 @@ class Tra_Vel_V2_Demo_Trip_Package_Adapter implements Tra_Vel_V2_Trip_Package_Ad
 				$score += 'budapest-value-demo' === $package['id'] ? 18 : 0;
 			} elseif ( 'romantic' === $query['trip_style'] ) {
 				$score += in_array( $package['stay']['area_id'], array( 'district-v', 'buda-castle' ), true ) ? 4 : -1;
+			} elseif ( 'adventure' === $query['trip_style'] ) {
+				$score += (int) round( ( (int) $package['traits']['flexibility'] - 75 ) / 4 );
+				$score += ! empty( $query['transfers'] ) ? 3 : 0;
 			}
 			if ( $query['free_cancellation'] && empty( $package['stay']['free_cancellation'] ) ) {
 				$score -= 20;
