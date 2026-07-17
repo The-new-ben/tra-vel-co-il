@@ -79,15 +79,27 @@ class Tra_Vel_Agent_Policy {
 			if ( ! is_array( $question ) || empty( $question['id'] ) || empty( $question['question'] ) ) {
 				continue;
 			}
-			$id = sanitize_key( (string) $question['id'] );
-			$unique[ $id ] = array(
-				'id'       => $id,
+			$candidate = array(
+				'id'       => sanitize_key( (string) $question['id'] ),
 				'field'    => isset( $question['field'] ) ? sanitize_text_field( (string) $question['field'] ) : '',
 				'question' => sanitize_text_field( (string) $question['question'] ),
 				'reason'   => sanitize_text_field( isset( $question['reason'] ) ? (string) $question['reason'] : '' ),
 				'blocking' => ! empty( $question['blocking'] ),
 				'status'   => 'open',
 			);
+			foreach ( $unique as $index => $existing ) {
+				$same_id    = $candidate['id'] === $existing['id'];
+				$same_field = $candidate['field'] && $candidate['field'] === $existing['field'];
+				if ( $same_id || $same_field ) {
+					if ( ! empty( $existing['blocking'] ) && empty( $candidate['blocking'] ) ) {
+						$candidate = $existing;
+					} else {
+						$candidate['blocking'] = ! empty( $candidate['blocking'] ) || ! empty( $existing['blocking'] );
+					}
+					unset( $unique[ $index ] );
+				}
+			}
+			$unique[] = $candidate;
 		}
 		return array_values( $unique );
 	}
