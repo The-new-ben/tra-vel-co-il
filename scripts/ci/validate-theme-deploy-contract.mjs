@@ -8,6 +8,7 @@ const read = (...parts) => readFileSync(join(root, ...parts), 'utf8');
 
 const controller = read('plugin', 'tra-vel-deploy-gateway', 'includes', 'class-tra-vel-deploy-controller.php');
 const deployScript = read('scripts', 'deploy', 'deploy-theme.sh');
+const statusScript = read('scripts', 'deploy', 'get-theme-status.sh');
 const rollbackScript = read('scripts', 'deploy', 'rollback-theme.sh');
 const powershell = read('scripts', 'wp', 'deploy-theme-rest.ps1');
 const deployWorkflow = read('.github', 'workflows', 'deploy-theme.yml');
@@ -92,7 +93,21 @@ for (const [needle, message] of [
   ['receipt = {', 'Direct theme deployment does not reduce the persisted receipt to an explicit safe field set.'],
   ['"backup_content_sha256": backup_content_sha256', 'Direct theme deployment does not persist captured backup content identity.'],
   ['os.open(result_target, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)', 'Direct theme deployment does not persist its receipt with private permissions.'],
+  ['get-theme-status.sh" "$RESPONSE_FILE"', 'Direct theme deployment bypasses the bounded authenticated status helper.'],
 ]) requireText(deployScript, needle, message);
+
+for (const [needle, message] of [
+  ['THEME_STATUS_ATTEMPTS:-6', 'Theme status checks do not have a bounded attempt count.'],
+  ['ATTEMPTS > 12', 'Theme status attempt configuration is not capped.'],
+  ['--connect-timeout 8 --max-time 15', 'Each theme status attempt is not time bounded.'],
+  ['sleep 2', 'Theme status retries do not use a short fixed delay.'],
+  ['data.get("theme") != "tra-vel-v2"', 'Theme status retries accept an unexpected theme identity.'],
+  ['data.get("gateway_version")', 'Theme status retries do not require gateway identity.'],
+  ['chmod 600 "$OUTPUT_FILE"', 'Theme status evidence is not persisted with private permissions.'],
+]) requireText(statusScript, needle, message);
+if (statusScript.includes('--retry ') || statusScript.includes('Retry-After')) {
+  failures.push('Theme status polling must use its bounded loop instead of server-directed curl retry delays.');
+}
 
 for (const [needle, message] of [
   ['ROLLBACK TRA-VEL V2', 'Theme rollback script lacks the exact rollback phrase.'],
@@ -146,6 +161,10 @@ for (const [needle, message] of [
   ['idempotent no-change response', 'Theme workflow does not distinguish a safe no-change verification failure.'],
   ['Captured rollback backup:', 'Theme deployment summary does not report the captured backup identity.'],
 ]) requireText(deployWorkflow, needle, message);
+
+if ((deployWorkflow.match(/bash scripts\/deploy\/get-theme-status\.sh/g) || []).length < 4) {
+  failures.push('Theme verification and rollback guards do not consistently use bounded JSON status polling.');
+}
 
 if (deployWorkflow.includes('bash scripts/deploy/rollback-theme.sh "latest"')) {
   failures.push('Theme workflow must never substitute latest for the captured deployment backup.');
