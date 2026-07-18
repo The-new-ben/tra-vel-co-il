@@ -1,0 +1,266 @@
+{
+  "schemaVersion": 1,
+  "id": "prague-2026",
+  "locale": "he-IL",
+  "title": "פראג",
+  "excerpt": "מדריך פראג מקיף לישראלים: טיסות, מעבר משדה התעופה, אזורי לינה, תחבורה, מסלולים, תקציב, פראג היהודית, משפחות, נגישות, ביטחון וביטוח, עם מקורות רשמיים ותאריך בדיקה.",
+  "author": "מערכת Tra-Vel",
+  "primaryTopic": "Prague travel guide for Israelis",
+  "canonicalPath": "/destinations/prague/",
+  "status": "publish-ready",
+  "wordTargetMin": 5000,
+  "contentPath": "content/guides/prague-2026.he.html",
+  "checkedAt": "2026-07-18",
+  "mapState": "prague",
+  "reviewer": "מערכת Tra-Vel",
+  "reviewMethod": "Prioritize city, airport, public transport, border, consular, museum, accessibility and central-bank sources. Recheck every fare, timetable, opening rule, entry requirement, warning and commercial claim immediately before publication.",
+  "flightTime": "בדקו מסלול חי",
+  "dailyBudget": "נבנה לפי ההרכב",
+  "bestSeason": "אביב וסתיו להליכה",
+  "bestFor": "3 עד 5 ימים בעיר",
+  "sections": [
+    "Decision summary",
+    "Who Prague suits",
+    "How many days to stay",
+    "When to travel",
+    "Flight and route trade-offs from Israel",
+    "Airport to city total-cost comparison",
+    "Where to stay by neighborhood",
+    "Three, four and five-day routes",
+    "Public transport and ticket validation",
+    "Daily budget by travel style",
+    "Prague Castle and city-pass decision",
+    "Jewish Prague and respectful planning",
+    "Food, markets and evening planning",
+    "Families and accessibility",
+    "Safety, entry and current Israeli guidance",
+    "Insurance, connectivity and equipment",
+    "Booking checklist, FAQs and source log"
+  ],
+  "sources": [
+    {
+      "id": "prague-city-portal",
+      "title": "International Portal of Prague",
+      "publisher": "City of Prague",
+      "url": "https://praha.eu/web/eng/home",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["official city context", "major visitor areas", "city services"]
+    },
+    {
+      "id": "prague-visitor-pass",
+      "title": "Prague Visitor Pass",
+      "publisher": "Prague City Tourism",
+      "url": "https://prague.eu/en/prague-visitor-pass/",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["official city-card durations", "included public transport", "included and discounted experiences"]
+    },
+    {
+      "id": "accessible-prague",
+      "title": "Accessible Prague",
+      "publisher": "Prague City Tourism",
+      "url": "https://prague.eu/en/accessible-prague-2/",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["mobility limitations", "official accessibility map", "accessible visit planning"]
+    },
+    {
+      "id": "prague-airport-public-buses",
+      "title": "Public Transport Buses",
+      "publisher": "Václav Havel Airport Prague",
+      "url": "https://www.prg.aero/en/public-transport-buses",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["airport bus lines", "terminal stops", "ticket purchase points"]
+    },
+    {
+      "id": "prague-airport-express",
+      "title": "Airport Express",
+      "publisher": "Václav Havel Airport Prague",
+      "url": "https://www.prg.aero/en/airport-express",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["railway-station connection", "baggage context", "separate Airport Express ticket rule"]
+    },
+    {
+      "id": "pid-airport-and-validation",
+      "title": "How do I get from the airport and validate tickets",
+      "publisher": "Prague Integrated Transport",
+      "url": "https://pid.cz/en/travel-information/how-do-i-get-from/",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["airport routes and fares", "ticket activation", "inspection rules"]
+    },
+    {
+      "id": "pid-tariff-zones",
+      "title": "Tariff zones",
+      "publisher": "Prague Integrated Transport",
+      "url": "https://pid.cz/en/tickets-and-fare/tariff-zones/",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["Prague tariff area", "transfer rules", "regional-zone distinction"]
+    },
+    {
+      "id": "czech-arrival-third-country",
+      "title": "Arrival of Third Country Nationals in the Czech Republic",
+      "publisher": "Czech Ministry of the Interior Information Portal for Foreigners",
+      "url": "https://ipc.gov.cz/en/obligations-for-foreigners/arrival-in-the-czech-republic/",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["passport validity", "entry conditions", "third-country traveler obligations"]
+    },
+    {
+      "id": "eu-non-eu-travel-documents",
+      "title": "Travel documents for non-EU nationals",
+      "publisher": "European Union / Your Europe",
+      "url": "https://europa.eu/youreurope/citizens/travel/entry-exit/non-eu-nationals/index_en.htm",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["passport validity", "Schengen stay framework", "supporting documents"]
+    },
+    {
+      "id": "israel-travel-warnings",
+      "title": "Travel warnings",
+      "publisher": "Israel National Security Council",
+      "url": "https://www.gov.il/en/departments/dynamiccollectors/travel-warnings-nsc?skip=0",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["current Israeli security guidance", "warning definitions", "pre-travel recheck"]
+    },
+    {
+      "id": "israel-embassy-czechia",
+      "title": "Embassy of Israel in the Czech Republic",
+      "publisher": "Israel Ministry of Foreign Affairs",
+      "url": "https://embassies.gov.il/czechrepublic/en",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["consular announcements", "official assistance for Israelis", "mission contact source"]
+    },
+    {
+      "id": "cnb-exchange-rules",
+      "title": "Ten Golden Rules for Bureau-de-Change Clients",
+      "publisher": "Czech National Bank",
+      "url": "https://www.cnb.cz/en/supervision-financial-market/consumer-protection-and-financial-literacy/consumer-protection/ten_golden_rules_currency_exchange/",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["currency-exchange consumer rules", "rate-board interpretation", "exchange receipt and cancellation rights"]
+    },
+    {
+      "id": "jewish-museum-opening",
+      "title": "Opening hours",
+      "publisher": "Jewish Museum in Prague",
+      "url": "https://www.jewishmuseum.cz/en/info/visit/opening-hours/",
+      "type": "primary",
+      "checkedAt": "2026-07-18",
+      "supports": ["weekly closure", "Jewish-holiday closures", "seasonal opening framework"]
+    },
+    {
+      "id": "jewish-museum-getting-here",
+      "title": "How to find us",
+      "publisher": "Jewish Museum in Prague",
+      "url": "https://www.jewishmuseum.cz/en/info/visit/getting-here/",
+      "type": "primary",
+      "checkedAt": "2026-07-18",
+      "supports": ["Jewish Town site geography", "public transport access", "visitor-centre location"]
+    }
+  ],
+  "facts": [
+    {
+      "id": "visitor-pass-durations",
+      "claim": "The official Prague Visitor Pass is offered in 48, 72 and 120-hour versions.",
+      "sourceIds": ["prague-visitor-pass"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "visitor-pass-transport",
+      "claim": "The official Prague Visitor Pass currently includes unlimited Prague public transport and airport transport under its stated terms.",
+      "sourceIds": ["prague-visitor-pass", "pid-tariff-zones"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "airport-line-59",
+      "claim": "The airport identifies trolleybus 59 to Veleslavín with a transfer to Metro A as its fastest regular public-transport route toward the centre.",
+      "sourceIds": ["prague-airport-public-buses", "pid-airport-and-validation"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "airport-express-ticket",
+      "claim": "Regular Prague public-transport tickets are not valid on the Airport Express service to the main railway station.",
+      "sourceIds": ["prague-airport-express", "pid-airport-and-validation"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "paper-ticket-validation",
+      "claim": "A Prague paper ticket that requires validation is validated once at the beginning of its validity period.",
+      "sourceIds": ["pid-airport-and-validation"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "mobile-ticket-activation",
+      "claim": "The PID Lítačka instructions require activation before boarding or before entering the metro paid area and describe a protective activation period.",
+      "sourceIds": ["pid-airport-and-validation"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "prague-tariff-area",
+      "claim": "Travel entirely within Prague can generally be treated as one Prague tariff area, while regional journeys require attention to consecutive zones.",
+      "sourceIds": ["pid-tariff-zones"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "passport-validity",
+      "claim": "The official Czech and EU guidance states that qualifying third-country passports must remain valid for at least three months after intended Schengen departure and have been issued within the previous ten years.",
+      "sourceIds": ["czech-arrival-third-country", "eu-non-eu-travel-documents"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "accessible-map",
+      "claim": "Prague City Tourism provides an accessibility-planning resource and a digital map focused on mobility restrictions in buildings and public space.",
+      "sourceIds": ["accessible-prague"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "jewish-museum-closures",
+      "claim": "The Jewish Museum in Prague states that its venues close on Saturdays and listed Jewish holidays, with seasonal hours that require date-specific checking.",
+      "sourceIds": ["jewish-museum-opening"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "jewish-town-walkability",
+      "claim": "The Jewish Museum describes its sites in the preserved former Jewish Town as being within walking distance of one another.",
+      "sourceIds": ["jewish-museum-getting-here"],
+      "volatile": false
+    },
+    {
+      "id": "exchange-consumer-rules",
+      "claim": "The Czech National Bank advises travelers to use designated exchange offices, distinguish buy and sell rates, review the transaction information and keep the receipt.",
+      "sourceIds": ["cnb-exchange-rules"],
+      "volatile": false
+    },
+    {
+      "id": "israel-warning-source",
+      "claim": "Israeli travelers should verify Czechia in the National Security Council dynamic warning system immediately before travel.",
+      "sourceIds": ["israel-travel-warnings"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "consular-source",
+      "claim": "The Embassy of Israel in the Czech Republic is the primary official source in this packet for local consular announcements and assistance.",
+      "sourceIds": ["israel-embassy-czechia"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    }
+  ]
+}
