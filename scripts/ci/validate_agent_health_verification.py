@@ -21,14 +21,14 @@ def check(condition: bool, message: str) -> None:
 
 
 MANIFEST = {
-    "version": "0.3.0",
+    "version": "0.4.0",
     "sha256": "a" * 64,
     "content_sha256": "b" * 64,
 }
 DEPLOYED = dict(MANIFEST)
 HEALTH = {
     "ok": True,
-    "plugin_version": "0.3.0",
+    "plugin_version": "0.4.0",
     "contract_version": "1.0.0",
     "provider": {"configured": True},
     "capabilities": {

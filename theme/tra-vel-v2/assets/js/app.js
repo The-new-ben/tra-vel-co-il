@@ -34,6 +34,7 @@ let insuranceSearchController = null;
 let insuranceSearchGeneration = 0;
 let activePlanIntent = 'smart';
 let discoveryDestinationLocked = false;
+let activePlanningSelection = null;
 const discoveryLayers = new Set(['deals', 'hotels', 'airports', 'weather']);
 const discoverySorts = new Set(['smart', 'price', 'time', 'comfort']);
 const discoveryTrips = new Set(['all', 'short', 'long']);
@@ -57,6 +58,8 @@ const destinationPlanIntents = {
   adventure: { label: 'ההרפתקנית', summary: 'משלבים טבע, פעילות וציוד בלי לוותר על בטיחות ולוגיסטיקה.' },
   surprise: { label: 'המפתיעה', summary: 'נותנים לסוכן להציע חלופה יצירתית במסגרת הכוונה והתקציב.' }
 };
+const fullTripPlanningScope = 'flights,accommodation,transfers,activities,dining,insurance,connectivity,equipment';
+const fullTripCostScope = ['flight', 'baggage', 'stay', 'taxes', 'transfers', 'local_transport', 'activities', 'dining', 'insurance', 'connectivity', 'equipment', 'entry'];
 const destinationPlanIntentConstraints = {
   smart: { sort: 'smart', trip: 'all', max_stops: 1, max_duration: 960, allow_overnight: false },
   value: { sort: 'price', trip: 'all', max_stops: 1, max_duration: 960, allow_overnight: false },
@@ -79,6 +82,82 @@ function prefersReducedMotion() {
 
 function preferredScrollBehavior() {
 	return prefersReducedMotion() ? 'auto' : 'smooth';
+}
+
+function setTextContentIfChanged(element, value) {
+  if (element && element.textContent !== value) element.textContent = value;
+}
+
+function createPlanningSelectionId(prefix = 'map') {
+  if (window.crypto?.randomUUID) return window.crypto.randomUUID();
+  const random = Math.random().toString(36).slice(2, 14);
+  return `${prefix}-${Date.now().toString(36)}-${random}`.slice(0, 80);
+}
+
+function setActivePlanningSelection({selectionId = '', latitude = null, longitude = null, destination = '', kind = 'map_point'} = {}) {
+  const numericLatitude = Number(latitude);
+  const numericLongitude = Number(longitude);
+  const hasCoordinateValues = latitude !== null && latitude !== '' && longitude !== null && longitude !== '';
+  const hasCoordinates = hasCoordinateValues && Number.isFinite(numericLatitude) && numericLatitude >= -90 && numericLatitude <= 90
+    && Number.isFinite(numericLongitude) && numericLongitude >= -180 && numericLongitude <= 180;
+  const normalizedDestination = String(destination || '').replace(/[^a-z0-9-]/g, '').slice(0, 60);
+  const resolvedKind = kind === 'destination' && normalizedDestination
+    ? 'destination'
+    : (hasCoordinates ? 'map_point' : (normalizedDestination ? 'destination' : 'free_text'));
+  activePlanningSelection = {
+    selection_id: resolvedKind === 'free_text'
+      ? null
+      : (/^[A-Za-z0-9_-]{8,80}$/.test(selectionId) ? selectionId : createPlanningSelectionId(resolvedKind === 'destination' ? 'destination' : 'map')),
+    kind: resolvedKind,
+    latitude: hasCoordinates ? numericLatitude : null,
+    longitude: hasCoordinates ? numericLongitude : null,
+    destination: resolvedKind === 'free_text' ? '' : normalizedDestination
+  };
+  return activePlanningSelection;
+}
+
+function activePlanningSelectionQuery(destination = '') {
+  if (!activePlanningSelection) return destination ? {destination} : {};
+  return {
+    selection_id: activePlanningSelection.selection_id,
+    selection_kind: activePlanningSelection.kind,
+    latitude: Number.isFinite(activePlanningSelection.latitude) ? activePlanningSelection.latitude.toFixed(4) : '',
+    longitude: Number.isFinite(activePlanningSelection.longitude) ? activePlanningSelection.longitude.toFixed(4) : '',
+    destination: activePlanningSelection.destination || destination
+  };
+}
+
+function planningSelectionHistoryState() {
+  if (!activePlanningSelection) return null;
+  return {
+    selection_id: activePlanningSelection.selection_id,
+    kind: activePlanningSelection.kind,
+    latitude: activePlanningSelection.latitude,
+    longitude: activePlanningSelection.longitude,
+    destination: activePlanningSelection.destination
+  };
+}
+
+function restorePlanningSelectionFromHistory(value) {
+  if (!value || typeof value !== 'object') {
+    activePlanningSelection = null;
+    return false;
+  }
+  const kind = ['destination', 'map_point'].includes(value.kind) ? value.kind : 'free_text';
+  const destination = String(value.destination || '').replace(/[^a-z0-9-]/g, '').slice(0, 60);
+  const selectionId = String(value.selection_id || '');
+  const latitude = value.latitude === null ? null : Number(value.latitude);
+  const longitude = value.longitude === null ? null : Number(value.longitude);
+  const hasCoordinates = Number.isFinite(latitude) && latitude >= -90 && latitude <= 90
+    && Number.isFinite(longitude) && longitude >= -180 && longitude <= 180;
+  const valid = /^[A-Za-z0-9_-]{8,80}$/.test(selectionId)
+    && ((kind === 'map_point' && hasCoordinates) || (kind === 'destination' && Boolean(destination)));
+  if (!valid) {
+    activePlanningSelection = null;
+    return false;
+  }
+  setActivePlanningSelection({selectionId, latitude: hasCoordinates ? latitude : null, longitude: hasCoordinates ? longitude : null, destination, kind});
+  return true;
 }
 
 function discoverySnapshotIsCurrent() {
@@ -309,7 +388,7 @@ function syncDiscoveryUrl(mode = 'push') {
   if (discoveryQuery.max_duration !== discoveryDefaults.max_duration) url.searchParams.set('max_duration', String(discoveryQuery.max_duration));
   if (discoveryQuery.allow_overnight) url.searchParams.set('allow_overnight', '1');
   const method = mode === 'replace' ? 'replaceState' : 'pushState';
-  window.history[method]({ traVelMap: true, focus: activeDestination || '' }, '', `${url.pathname}${url.search}${url.hash}`);
+  window.history[method]({ traVelMap: true, focus: activeDestination || '', planningSelection: planningSelectionHistoryState() }, '', `${url.pathname}${url.search}${url.hash}`);
 }
 
 function replaceChildrenWithSpans(element, values) {
@@ -370,6 +449,7 @@ function bindDestinationPin(pin) {
   pin.dataset.selectionBound = 'true';
   pin.addEventListener('click', event => {
     event.stopPropagation();
+    setActivePlanningSelection({ latitude: pin.dataset.latitude, longitude: pin.dataset.longitude, destination: pin.dataset.destination, kind: 'destination' });
     discoveryDestinationLocked = true;
     discoverySelectedPlan = null;
     activeRouteId = '';
@@ -419,6 +499,13 @@ function updatePins() {
 function setActiveDestination(key, pin, motion = true) {
   const data = destinationData[key];
   if (!data) return;
+  const destinationSelectionMissing = !activePlanningSelection || activePlanningSelection.destination !== key;
+  const destinationCoordinatesMissing = activePlanningSelection?.kind === 'destination'
+    && activePlanningSelection.destination === key
+    && (!Number.isFinite(activePlanningSelection.latitude) || !Number.isFinite(activePlanningSelection.longitude));
+  if (destinationSelectionMissing || destinationCoordinatesMissing) {
+    setActivePlanningSelection({ selectionId: destinationCoordinatesMissing ? activePlanningSelection.selection_id : '', latitude: data.latitude, longitude: data.longitude, destination: key, kind: 'destination' });
+  }
   const animatePlan = typeof motion === 'object' ? motion.animate !== false : Boolean(motion);
   const responseConfirmed = typeof motion === 'object' ? motion.responseConfirmed === true : Boolean(motion);
   const responseState = typeof motion === 'object' && ['pending', 'current', 'stale', 'fallback'].includes(motion.responseState)
@@ -1080,13 +1167,15 @@ function updateGlobeSelectionRail(data, options = {}) {
   const detail = rail.querySelector('[data-globe-selection-detail]');
   const action = rail.querySelector('[data-globe-selection-action]');
   if (mode === 'unsupported') {
-    const latitude = Number(options.latitude).toFixed(2);
-    const longitude = Number(options.longitude).toFixed(2);
+    const latitudeValue = Number(options.latitude);
+    const longitudeValue = Number(options.longitude);
+    const latitude = latitudeValue.toFixed(2);
+    const longitude = longitudeValue.toFixed(2);
     if (kicker) kicker.textContent = 'הנקודה התקבלה';
     if (title) title.textContent = `נבחר אזור ב-${latitude}°, ${longitude}°`;
     if (detail) detail.textContent = 'לא נמציא יעד. הכיסוי המובנה עדיין חסר, והסוכן יכול להתחיל מהנקודה ולבקש רק את הפרטים הנחוצים.';
     if (action) {
-      action.href = destinationPlanUrl('/ai-planner/', { latitude, longitude, mode: 'map_point', intent: activePlanIntent });
+      action.href = destinationPlanUrl('/ai-planner/', { selection_id: options.selectionId || '', selection_kind: 'map_point', latitude: latitudeValue.toFixed(4), longitude: longitudeValue.toFixed(4), mode: 'map_point', intent: activePlanIntent, scope: fullTripPlanningScope });
       action.firstChild.textContent = 'המשיכו עם הסוכן';
     }
     return;
@@ -1120,6 +1209,9 @@ function renderUnsupportedGlobeSelection(detail = {}) {
   const latitude = Number(detail.latitude);
   const longitude = Number(detail.longitude);
   if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
+  const selectionId = /^[A-Za-z0-9_-]{8,80}$/.test(detail.selectionId || '')
+    ? detail.selectionId
+    : setActivePlanningSelection({ latitude, longitude, kind: 'map_point' }).selection_id;
   discoveryRequestController?.abort();
   discoveryRequestController = null;
   discoveryRequestGeneration += 1;
@@ -1178,8 +1270,8 @@ function renderUnsupportedGlobeSelection(detail = {}) {
     plan.setAttribute('aria-busy', 'false');
     const fields = {
       '[data-plan-title]': 'תוכנית 360° מתחילה מהנקודה שבחרתם',
-      '[data-plan-state]': 'הנקודה התקבלה · הכיסוי המובנה עדיין לא זמין',
-      '[data-plan-summary]': 'הסוכן יזהה את האזור יחד אתכם ולא ימציא עיר, מחיר או זמינות.',
+      '[data-plan-state]': 'הנקודה התקבלה · 12 תחומי החלטה נפתחו לבדיקה',
+      '[data-plan-summary]': 'הסוכן יזהה את האזור יחד אתכם, ימלא כל תחום בהדרגה ולא ימציא עיר, מחיר או זמינות.',
       '[data-plan-truth]': 'הנקודה היא קלט תכנוני בלבד. אין עדיין יעד, מחיר, זמינות או הזמנה.'
     };
     Object.entries(fields).forEach(([selector, value]) => {
@@ -1191,18 +1283,24 @@ function renderUnsupportedGlobeSelection(detail = {}) {
       link.removeAttribute('href');
     });
     const ai = plan.querySelector('[data-plan-ai]');
-    if (ai) ai.href = destinationPlanUrl('/ai-planner/', { latitude: latitude.toFixed(4), longitude: longitude.toFixed(4), mode: 'map_point', intent: activePlanIntent });
+    const pointContext = { selection_id: selectionId, selection_kind: 'map_point', latitude: latitude.toFixed(4), longitude: longitude.toFixed(4), mode: 'map_point', intent: activePlanIntent };
+    if (ai) ai.href = destinationPlanUrl('/ai-planner/', { ...pointContext, scope: fullTripPlanningScope });
     const meter = plan.querySelector('[data-plan-meter]');
     if (meter) {
-      meter.setAttribute('aria-valuenow', '0');
-      meter.setAttribute('aria-valuetext', 'הנקודה התקבלה; 0 תחומים מופו; אין הזמנה מאושרת');
+      meter.setAttribute('aria-valuemax', '12');
+      meter.setAttribute('aria-valuenow', '12');
+      meter.setAttribute('aria-valuetext', '12 תחומי החלטה נפתחו; 0 אומתו בחיפוש חי; אין הזמנה מאושרת');
       const count = meter.querySelector('[data-plan-meter-count]');
       const fill = meter.querySelector('[data-plan-meter-fill]');
-      if (count) count.textContent = '0/12';
-      if (fill) fill.style.setProperty('--plan-coverage', '0%');
+      if (count) count.textContent = '12/12';
+      if (fill) fill.style.setProperty('--plan-coverage', '100%');
     }
     const coverage = plan.querySelector('[data-plan-coverage-copy]');
-    if (coverage) coverage.textContent = 'הנקודה נקלטה. 12 תחומי ההחלטה ייפתחו לאחר זיהוי היעד.';
+    if (coverage) coverage.textContent = 'כל 12 תחומי ההחלטה נפתחו מהנקודה. כולם ממתינים לזיהוי יעד, פרטים וחיפוש חי.';
+    const pointScopeByModule = {
+      route: 'flights', stay: 'accommodation', mobility: 'transfers', activities: 'activities', dining: 'dining',
+      connectivity: 'connectivity', insurance: 'insurance', equipment: 'equipment', accessibility: 'accommodation,transfers'
+    };
     plan.querySelectorAll('[data-plan-module]').forEach(module => {
       module.dataset.state = 'unknown';
       const state = module.querySelector('[data-plan-module-state]');
@@ -1210,23 +1308,24 @@ function renderUnsupportedGlobeSelection(detail = {}) {
       const action = module.querySelector('[data-plan-module-action]');
       if (state) state.textContent = 'ממתין לזיהוי יעד';
       if (moduleDetail) moduleDetail.textContent = 'הנקודה התקבלה. הסוכן יזהה את האזור ויבקש רק את הפרטים שנדרשים לתחום הזה.';
-      if (action) action.href = ai?.href || destinationPlanUrl('/ai-planner/');
+      if (action) action.href = destinationPlanUrl('/ai-planner/', { ...pointContext, scope: pointScopeByModule[module.dataset.planModule] || fullTripPlanningScope });
     });
     const ledgerTotal = plan.querySelector('[data-plan-ledger-total]');
     const ledgerState = plan.querySelector('[data-plan-ledger-state]');
     const ledgerList = plan.querySelector('[data-plan-ledger-list]');
     const ledgerTruth = plan.querySelector('[data-plan-ledger-truth]');
     if (ledgerTotal) ledgerTotal.textContent = 'עדיין אין יעד';
-    if (ledgerState) ledgerState.textContent = 'ספר העלויות ייפתח אחרי זיהוי';
-    if (ledgerList) {
+    if (ledgerState) ledgerState.textContent = '12 רכיבי עלות ממתינים לזיהוי ולחיפוש חי';
+    if (ledgerList) ledgerList.replaceChildren(...fullTripCostScope.map(itemId => {
       const row = document.createElement('span');
-      appendTextElement(row, 'b', 'הנקודה התקבלה');
-      appendTextElement(row, 'em', 'ממתין ליעד, תאריכים והרכב');
-      ledgerList.replaceChildren(row);
-    }
+      row.dataset.state = 'needs_search';
+      appendTextElement(row, 'b', selectedPlanCostLabels[itemId] || itemId.replaceAll('_', ' '));
+      appendTextElement(row, 'em', 'ממתין לזיהוי יעד ולחיפוש חי');
+      return row;
+    }));
     if (ledgerTruth) ledgerTruth.textContent = 'לא מוצגים מחיר או חיסכון לפני זיהוי יעד וחיפוש בר-השוואה.';
   }
-  updateGlobeSelectionRail(null, { mode: 'unsupported', latitude, longitude });
+  updateGlobeSelectionRail(null, { mode: 'unsupported', latitude, longitude, selectionId });
   setDiscoveryStatus('demo', 'הנקודה התקבלה · הכיסוי המובנה באזור עדיין לא זמין');
   syncDiscoveryUrl('replace');
   revealGlobeSelection(detail.inputType || 'pointer');
@@ -1237,6 +1336,13 @@ function initGlobePointSelection() {
     if (!event.target.closest('[data-globe-3d][data-discovery-globe]')) return;
     const detail = event.detail || {};
     const destinationId = typeof detail.nearestDestination === 'string' ? detail.nearestDestination : '';
+    const selection = setActivePlanningSelection({
+      latitude: detail.latitude,
+      longitude: detail.longitude,
+      destination: detail.supported ? destinationId : '',
+      kind: 'map_point'
+    });
+    detail.selectionId = selection.selection_id;
     if (!detail.supported || !destinationData[destinationId]) {
       renderUnsupportedGlobeSelection(detail);
       return;
@@ -1395,8 +1501,8 @@ function updateDestinationPlan(data, animate = true, responseState = animate ? '
     '[data-plan-total]': destinationPlanUrl('/packages/', { destination: airportCode, ...planningContext }),
     '[data-plan-guide]': data.url || destinationPlanUrl('/destinations/', { destination: destinationId }),
     '[data-plan-ai]': destinationPlanUrl('/ai-planner/', {
-      destination: destinationId,
-      scope: 'flights,accommodation,transfers,activities,dining,insurance,connectivity,equipment',
+      ...activePlanningSelectionQuery(destinationId),
+      scope: fullTripPlanningScope,
       ...planningContext
     })
   };
@@ -1420,7 +1526,7 @@ function updateDestinationPlan(data, animate = true, responseState = animate ? '
   updateDestinationPlanStages(plan, responseState);
   renderDestinationDecisionCockpit(plan, data, responseState);
 
-  if (animate) {
+  if (animate && responseState === 'current') {
     runConfirmedPlanAnimation(plan, '.destination-cost-ledger');
   } else plan.classList.remove('is-updating');
 }
@@ -1436,12 +1542,12 @@ function updateHomeDestinationPlan(data, animate = true) {
   }
   const summary = document.querySelector('[data-home-plan-summary]');
   if (summary) summary.textContent = `${data.city} נבחרה. עכשיו מחברים דרך, לינה, חוויות והגנה לתוכנית אחת.`;
-  const context = { destination: destinationId, intent: activePlanIntent };
+  const context = { ...activePlanningSelectionQuery(destinationId), intent: activePlanIntent };
   const links = {
     '[data-home-plan-flight]': destinationPlanUrl('/flights/', { destination: airportCode, intent: activePlanIntent }),
     '[data-home-plan-stay]': destinationPlanUrl('/hotels/', { destination: airportCode, area: data.hotelArea || '', intent: activePlanIntent }),
     '[data-home-plan-guide]': data.url || destinationPlanUrl('/destinations/', { destination: destinationId }),
-    '[data-home-plan-ai]': destinationPlanUrl('/ai-planner/', context),
+    '[data-home-plan-ai]': destinationPlanUrl('/ai-planner/', { ...context, scope: fullTripPlanningScope }),
     '[data-home-plan-full]': destinationPlanUrl('/travel-map/', context)
   };
   Object.entries(links).forEach(([selector, href]) => {
@@ -3578,6 +3684,7 @@ function initMap() {
   if (isMapWorkspacePage()) {
     window.addEventListener('popstate', event => {
       activeRouteSelectionLocked = false;
+      restorePlanningSelectionFromHistory(event.state?.planningSelection);
       readDiscoveryStateFromUrl();
       const historyFocus = String(event.state?.focus || '').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 60);
       if (!discoveryDestinationLocked && historyFocus && destinationData[historyFocus]) activeDestination = historyFocus;
@@ -3780,6 +3887,40 @@ function detectAgentLocale(prompt) {
   return 'he-IL';
 }
 
+function agentPlanningContextFromLocation() {
+  const params = new URLSearchParams(window.location.search);
+  const hasCoordinateParams = params.has('latitude') && params.has('longitude');
+  const rawLatitude = Number(params.get('latitude'));
+  const rawLongitude = Number(params.get('longitude'));
+  const hasCoordinates = hasCoordinateParams && Number.isFinite(rawLatitude) && rawLatitude >= -90 && rawLatitude <= 90
+    && Number.isFinite(rawLongitude) && rawLongitude >= -180 && rawLongitude <= 180;
+  const destination = String(params.get('destination') || '').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 60);
+  const selectionCandidate = String(params.get('selection_id') || '');
+  const requestedKind = String(params.get('selection_kind') || '');
+  const inferredKind = destination ? 'destination' : (hasCoordinates ? 'map_point' : 'free_text');
+  const kind = requestedKind === 'destination' && destination
+    ? 'destination'
+    : (requestedKind === 'map_point' && hasCoordinates ? 'map_point' : inferredKind);
+  const selectionId = /^[A-Za-z0-9_-]{8,80}$/.test(selectionCandidate)
+    ? selectionCandidate
+    : (kind === 'free_text' ? null : createPlanningSelectionId(kind));
+  const intentCandidate = String(params.get('intent') || 'smart');
+  const intent = destinationPlanIntents[intentCandidate] ? intentCandidate : 'smart';
+  const scope = String(params.get('scope') || '')
+    .split(',')
+    .map(value => value.trim())
+    .filter((value, index, values) => agentJourneyScopeKeys.has(value) && values.indexOf(value) === index);
+  return {
+    kind,
+    selection_id: selectionId,
+    latitude: hasCoordinates ? rawLatitude : null,
+    longitude: hasCoordinates ? rawLongitude : null,
+    destination: destination || null,
+    intent,
+    scope
+  };
+}
+
 function agentStatusLabel(status) {
   const labels = {
     created: 'הריצה הפרטית נפתחה',
@@ -3803,8 +3944,8 @@ function agentWorkbenchRoot(root) {
 function setAgentWorkbenchStatus(root, message, state = '') {
   const status = agentWorkbenchRoot(root).querySelector('[data-agent-run-state]');
   if (!status) return;
-  status.textContent = message;
-  status.dataset.state = state;
+  setTextContentIfChanged(status, message);
+  if (status.dataset.state !== state) status.dataset.state = state;
 }
 
 function setAgentWorkbenchError(root, message = '', options = {}) {
@@ -3894,6 +4035,7 @@ function resetAgentWorkbench(root) {
     delete quoteCaseCreateButton.dataset.idempotencyKey;
   }
   if (quoteCaseCreateStatus) quoteCaseCreateStatus.textContent = 'לא יבוצעו חיפוש ספקים, חיוב או הזמנה בשלב הזה.';
+  resetAgentJourney(root);
   setAgentWorkbenchError(root);
 }
 
@@ -3969,6 +4111,13 @@ function renderAgentTripRequest(root, request) {
       ? `קול · ${request.source.transcript_confirmed ? 'התמלול אושר' : 'התמלול לא אושר'}`
       : 'הקלדה'
   );
+  if (request.planning_context?.kind === 'map_point'
+    && Number.isFinite(Number(request.planning_context.latitude))
+    && Number.isFinite(Number(request.planning_context.longitude))) {
+    appendAgentFact(facts, 'נקודת המפה', `${Number(request.planning_context.latitude).toFixed(4)}°, ${Number(request.planning_context.longitude).toFixed(4)}°`);
+  } else if (request.planning_context?.destination) {
+    appendAgentFact(facts, 'בחירה מהמפה', request.planning_context.destination);
+  }
   card.hidden = false;
 
   const assumptionValues = Array.isArray(request.assumptions) ? request.assumptions.filter(Boolean) : [];
@@ -4024,6 +4173,309 @@ function agentEventPhaseLabel(phase) {
     recovery: 'התאוששות'
   };
   return labels[phase] || 'עדכון שרת';
+}
+
+const agentJourneyStepOrder = ['intake', 'understanding', 'readiness', 'supplier_search', 'proposal', 'approval', 'execution'];
+const agentJourneyStepClasses = ['is-pending', 'is-current', 'is-complete', 'is-waiting', 'is-failed', 'is-cancelled'];
+const agentJourneyScopeKeys = new Set(['flights', 'accommodation', 'transfers', 'activities', 'dining', 'insurance', 'connectivity', 'equipment']);
+
+function latestAgentEventForPhase(phase) {
+  const events = agentRuntime.events
+    .filter(event => event?.visible !== false && event?.phase === phase)
+    .sort((a, b) => Number(a?.sequence || 0) - Number(b?.sequence || 0));
+  return events.length ? events[events.length - 1] : null;
+}
+
+function agentJourneyEventState(event) {
+  const states = {running: 'current', completed: 'complete', waiting: 'waiting', failed: 'failed', cancelled: 'cancelled'};
+  return states[event?.status] || 'pending';
+}
+
+function agentJourneyStateLabel(step, state) {
+  const labels = {
+    intake: {pending: 'ממתין לשליחה', current: 'ממתין לאישור קבלה', complete: 'התקבלה בפועל', waiting: 'ממתין', failed: 'לא התקבלה', cancelled: 'בוטלה'},
+    understanding: {pending: 'טרם נבדק', current: 'מפרשים עכשיו', complete: 'נוצרה בקשה מובנית', waiting: 'ממתין לפרט', failed: 'הפירוש נכשל', cancelled: 'בוטל'},
+    readiness: {pending: 'ממתין לפרטים', current: 'בודקים אילוצים', complete: 'הפרטים מספיקים לחיפוש', waiting: 'נדרשת תשובה קצרה', failed: 'הבדיקה נכשלה', cancelled: 'בוטל'},
+    supplier_search: {pending: 'לא התחיל', current: 'חיפוש חי מתקדם', complete: 'החיפוש הסתיים', waiting: 'עדיין לא התחיל', failed: 'החיפוש נכשל', cancelled: 'בוטל'},
+    proposal: {pending: 'ממתין לתוצאות', current: 'מרכיבים חלופות', complete: 'הצעה התקבלה', waiting: 'ממתין לתוצאות', failed: 'לא נוצרה הצעה', cancelled: 'בוטל'},
+    approval: {pending: 'עדיין לא נדרש', current: 'ממתין לאישור שלכם', complete: 'האישור התקבל', waiting: 'ממתין לאישור שלכם', failed: 'האישור לא הושלם', cancelled: 'בוטל'},
+    execution: {pending: 'לא אושר ביצוע', current: 'הפעולה מתבצעת', complete: 'הביצוע הושלם', waiting: 'ממתין', failed: 'הביצוע נכשל', cancelled: 'בוטל'}
+  };
+  return labels[step]?.[state] || 'טרם התחיל';
+}
+
+function computeAgentJourney(run) {
+  const status = String(run?.status || 'created');
+  const request = run?.trip_request && typeof run.trip_request === 'object' ? run.trip_request : null;
+  const steps = Object.fromEntries(agentJourneyStepOrder.map(step => [step, 'pending']));
+  if (run?.run_id) steps.intake = 'complete';
+  if (request && Object.keys(request).length) steps.understanding = 'complete';
+  else if (status === 'created') steps.understanding = 'current';
+
+  if (status === 'provider_error') steps.understanding = 'failed';
+  if (status === 'needs_clarification') steps.readiness = 'waiting';
+  if (['request_ready', 'searching', 'proposal_ready', 'approval_required', 'completed'].includes(status)) steps.readiness = 'complete';
+  if (status === 'searching') steps.supplier_search = 'current';
+  if (['proposal_ready', 'approval_required', 'completed'].includes(status)) steps.supplier_search = 'complete';
+  if (status === 'proposal_ready') steps.proposal = 'complete';
+  if (['approval_required', 'completed'].includes(status)) steps.proposal = 'complete';
+  if (status === 'approval_required') steps.approval = 'current';
+  if (status === 'completed') {
+    steps.approval = 'complete';
+    steps.execution = 'complete';
+  }
+
+  const phaseToStep = {
+    intake: 'intake',
+    understanding: 'understanding',
+    clarification: 'readiness',
+    supplier_search: 'supplier_search',
+    proposal: 'proposal',
+    approval: 'approval',
+    execution: 'execution'
+  };
+  Object.entries(phaseToStep).forEach(([phase, step]) => {
+    const event = latestAgentEventForPhase(phase);
+    if (!event) return;
+    const eventState = agentJourneyEventState(event);
+    if (eventState === 'complete') steps[step] = 'complete';
+    else if (!['complete'].includes(steps[step]) || ['failed', 'cancelled'].includes(eventState)) steps[step] = eventState;
+  });
+
+  const failedEvents = [...agentRuntime.events]
+    .filter(event => event?.visible !== false && event?.status === 'failed')
+    .sort((a, b) => Number(a?.sequence || 0) - Number(b?.sequence || 0));
+  const failedEvent = failedEvents.length ? failedEvents[failedEvents.length - 1] : null;
+  if (failedEvent && phaseToStep[failedEvent.phase]) steps[phaseToStep[failedEvent.phase]] = 'failed';
+  if (status === 'failed' && !failedEvent) {
+    const currentStep = agentJourneyStepOrder.find(step => steps[step] === 'current') || 'execution';
+    steps[currentStep] = 'failed';
+  }
+  if (status === 'cancelled') {
+    const currentStep = agentJourneyStepOrder.find(step => ['current', 'waiting'].includes(steps[step]));
+    const nextStep = agentJourneyStepOrder.find(step => steps[step] === 'pending');
+    const cancelledStep = currentStep || nextStep;
+    if (cancelledStep) steps[cancelledStep] = 'cancelled';
+  }
+  return steps;
+}
+
+function agentJourneyNextAction(run) {
+  const labels = {
+    created: 'הבקשה התקבלה וממתינה לפירוש מאומת.',
+    provider_error: 'הפירוש לא הושלם. אפשר לנסות שוב בלי להציג חיפוש או מחיר.',
+    needs_clarification: 'ענו במשפט אחד על השאלות הפתוחות כדי לפתוח את שלב החיפוש.',
+    request_ready: 'הבקשה מוכנה. השלב הבא הוא חיפוש ספקים מחובר או העברה לבדיקה אנושית.',
+    searching: 'החיפוש החי מתקדם. תוצאות יופיעו רק כשהמקור יחזיר אותן.',
+    proposal_ready: 'עברו על החלופות, המחיר, התנאים והפערים לפני אישור.',
+    approval_required: 'בדקו את סיכום הפעולה ואשרו במפורש רק אם הכול מתאים.',
+    completed: 'הפעולה הסתיימה לפי המצב המאומת. בדקו אסמכתאות ותנאים באזור הנסיעה.',
+    failed: 'הפעולה לא הושלמה. המצב האחרון שאושר נשאר מוצג.',
+    cancelled: 'הריצה בוטלה. אפשר לעדכן את הבקשה או להתחיל תוכנית חדשה.'
+  };
+  return labels[String(run?.status || '')] || 'ממתינים לעדכון מאומת לפני שמתקדמים.';
+}
+
+function latestAgentScopeEvent(scopeKey) {
+  const matches = agentRuntime.events.filter(event => {
+    if (event?.visible === false || event?.phase !== 'supplier_search') return false;
+    const data = event?.data && typeof event.data === 'object' ? event.data : {};
+    const eventScopes = Array.isArray(data.scopes) ? data.scopes : [];
+    return data.scope === scopeKey || data.domain === scopeKey || eventScopes.includes(scopeKey);
+  }).sort((a, b) => Number(a?.sequence || 0) - Number(b?.sequence || 0));
+  return matches.length ? matches[matches.length - 1] : null;
+}
+
+function renderAgentJourneyScopes(root, request, run = null) {
+  const view = agentWorkbenchRoot(root);
+  const requestedContextScope = Array.isArray(request?.planning_context?.scope)
+    ? request.planning_context.scope.filter(key => agentJourneyScopeKeys.has(key))
+    : [];
+  const interpretedScope = Array.isArray(request?.search_scope)
+    ? request.search_scope.filter(key => agentJourneyScopeKeys.has(key))
+    : [];
+  const scope = new Set(requestedContextScope.length ? requestedContextScope : interpretedScope);
+  const runStatus = String(run?.status || '');
+  const items = [...view.querySelectorAll('[data-agent-scope]')];
+  items.forEach(item => {
+    const scopeKey = item.dataset.agentScope;
+    const requested = scope.has(scopeKey);
+    item.classList.toggle('is-requested', requested);
+    item.classList.toggle('is-not-requested', !requested);
+    item.classList.remove('is-running', 'is-complete', 'is-waiting', 'is-failed', 'is-cancelled');
+    const state = item.querySelector('[data-agent-scope-state]');
+    if (!requested) {
+      setTextContentIfChanged(state, 'לא נבחר בבקשה');
+      return;
+    }
+    const event = latestAgentScopeEvent(scopeKey);
+    const eventState = event ? agentJourneyEventState(event) : '';
+    const eventLabels = {
+      current: 'חיפוש מתועד פעיל',
+      complete: 'המקור החזיר תוצאה',
+      waiting: 'ממתין למקור או לפרט',
+      failed: 'הבדיקה לא הושלמה',
+      cancelled: 'הבדיקה הופסקה'
+    };
+    if (eventState && eventState !== 'pending') {
+      item.classList.add(`is-${eventState === 'current' ? 'running' : eventState}`);
+      setTextContentIfChanged(state, eventLabels[eventState]);
+    } else if (runStatus === 'searching') {
+      item.classList.add('is-waiting');
+      setTextContentIfChanged(state, 'כלול בבקשה · ממתין לאירוע מקור');
+    } else {
+      setTextContentIfChanged(state, 'כלול בבקשה · חיפוש חי טרם אומת');
+    }
+  });
+  const count = view.querySelector('[data-agent-scope-count]');
+  setTextContentIfChanged(count, request
+    ? `${scope.size} מתוך ${items.length} תחומים נכללו בבקשה`
+    : 'ממתין לפירוש הבקשה');
+}
+
+function resetAgentJourney(root) {
+  const view = agentWorkbenchRoot(root);
+  const board = view.querySelector('[data-agent-journey]');
+  if (!board) return;
+  if (board.traVelJourneyTimer) window.clearTimeout(board.traVelJourneyTimer);
+  board.traVelJourneyTimer = 0;
+  board.traVelJourneySignature = '';
+  board.traVelJourneyCompleted = 0;
+  board.classList.remove('is-advancing');
+  board.dataset.state = 'idle';
+  board.querySelectorAll('[data-agent-journey-step]').forEach(step => {
+    step.classList.remove(...agentJourneyStepClasses);
+    step.classList.add('is-pending');
+    step.removeAttribute('aria-current');
+    const state = step.querySelector('[data-agent-journey-step-state]');
+    if (state) state.textContent = agentJourneyStateLabel(step.dataset.agentJourneyStep, 'pending');
+  });
+  const meter = board.querySelector('[data-agent-journey-meter]');
+  meter?.setAttribute('aria-valuenow', '0');
+  meter?.setAttribute('aria-valuetext', 'עדיין לא הושלם שלב');
+  const count = board.querySelector('[data-agent-journey-count]');
+  const fill = board.querySelector('[data-agent-journey-fill]');
+  const next = board.querySelector('[data-agent-journey-next]');
+  if (count) count.textContent = `0/${agentJourneyStepOrder.length}`;
+  if (fill) fill.style.setProperty('--agent-journey-progress', '0%');
+  if (next) next.textContent = 'שלחו בקשה במילים שלכם כדי להתחיל.';
+  renderAgentJourneyScopes(root, null);
+}
+
+function setAgentJourneyConnecting(root) {
+  const board = agentWorkbenchRoot(root).querySelector('[data-agent-journey]');
+  if (!board) return;
+  board.removeAttribute('data-transport');
+  board.dataset.state = 'connecting';
+  const intake = board.querySelector('[data-agent-journey-step="intake"]');
+  if (intake) {
+    intake.classList.remove(...agentJourneyStepClasses);
+    intake.classList.add('is-current');
+    intake.setAttribute('aria-current', 'step');
+    const state = intake.querySelector('[data-agent-journey-step-state]');
+    if (state) state.textContent = 'שולחים באופן פרטי';
+  }
+  const next = board.querySelector('[data-agent-journey-next]');
+  setTextContentIfChanged(next, 'ממתינים לאישור שהבקשה נקלטה. עדיין לא הושלם שלב.');
+}
+
+function stopAgentJourneyMotion(board) {
+  if (!board) return;
+  if (board.traVelJourneyTimer) window.clearTimeout(board.traVelJourneyTimer);
+  board.traVelJourneyTimer = 0;
+  board.traVelJourneyGeneration = (Number(board.traVelJourneyGeneration) || 0) + 1;
+  board.classList.remove('is-advancing');
+}
+
+function failAgentJourneyConnection(root) {
+  const board = agentWorkbenchRoot(root).querySelector('[data-agent-journey]');
+  if (!board) return;
+  stopAgentJourneyMotion(board);
+  board.dataset.state = 'transport_error';
+  board.dataset.transport = 'failed';
+  const intake = board.querySelector('[data-agent-journey-step="intake"]');
+  if (intake) {
+    intake.classList.remove(...agentJourneyStepClasses);
+    intake.classList.add('is-failed');
+    intake.removeAttribute('aria-current');
+    const state = intake.querySelector('[data-agent-journey-step-state]');
+    setTextContentIfChanged(state, 'לא התקבל אישור קבלה');
+  }
+  const next = board.querySelector('[data-agent-journey-next]');
+  setTextContentIfChanged(next, 'החיבור לא אושר. לא נסמן התקדמות עד שתתקבל ריצה תקינה.');
+}
+
+function pauseAgentJourneyTransport(root, message) {
+  const board = agentWorkbenchRoot(root).querySelector('[data-agent-journey]');
+  if (!board) return;
+  stopAgentJourneyMotion(board);
+  board.dataset.transport = 'stale';
+  if (board.dataset.state === 'connecting') {
+    board.dataset.state = 'transport_stale';
+    board.querySelectorAll('[data-agent-journey-step].is-current').forEach(step => {
+      step.classList.remove('is-current');
+      step.classList.add('is-pending');
+      step.removeAttribute('aria-current');
+      const state = step.querySelector('[data-agent-journey-step-state]');
+      setTextContentIfChanged(state, agentJourneyStateLabel(step.dataset.agentJourneyStep, 'pending'));
+    });
+  }
+  const next = board.querySelector('[data-agent-journey-next]');
+  setTextContentIfChanged(next, message || 'העדכון החי נעצר. המצב האחרון שאושר נשאר מוצג ללא התקדמות חדשה.');
+}
+
+function renderAgentJourney(root, run) {
+  const board = agentWorkbenchRoot(root).querySelector('[data-agent-journey]');
+  if (!board) return;
+  const steps = computeAgentJourney(run);
+  const completed = Object.values(steps).filter(state => state === 'complete').length;
+  const status = String(run?.status || 'created');
+  const signature = `${status}:${run?.trip_request?.revision || 0}:${agentJourneyStepOrder.map(step => steps[step]).join(',')}`;
+  const previousCompleted = Number(board.traVelJourneyCompleted) || 0;
+  const previousSignature = board.traVelJourneySignature || '';
+  board.removeAttribute('data-transport');
+  board.dataset.state = status;
+  board.querySelectorAll('[data-agent-journey-step]').forEach(step => {
+    const stepName = step.dataset.agentJourneyStep;
+    const stateName = steps[stepName] || 'pending';
+    step.classList.remove(...agentJourneyStepClasses);
+    step.classList.add(`is-${stateName}`);
+    step.dataset.state = stateName;
+    if (['current', 'waiting'].includes(stateName)) step.setAttribute('aria-current', 'step');
+    else step.removeAttribute('aria-current');
+    const state = step.querySelector('[data-agent-journey-step-state]');
+    if (state) state.textContent = agentJourneyStateLabel(stepName, stateName);
+  });
+  const meter = board.querySelector('[data-agent-journey-meter]');
+  const count = board.querySelector('[data-agent-journey-count]');
+  const fill = board.querySelector('[data-agent-journey-fill]');
+  const next = board.querySelector('[data-agent-journey-next]');
+  const progress = Math.round((completed / agentJourneyStepOrder.length) * 100);
+  meter?.setAttribute('aria-valuenow', String(completed));
+  meter?.setAttribute('aria-valuetext', `${completed} מתוך ${agentJourneyStepOrder.length} שלבים הושלמו בפועל`);
+  if (count) count.textContent = `${completed}/${agentJourneyStepOrder.length}`;
+  if (fill) fill.style.setProperty('--agent-journey-progress', `${progress}%`);
+  setTextContentIfChanged(next, agentJourneyNextAction(run));
+  renderAgentJourneyScopes(root, run?.trip_request, run);
+
+  if (board.traVelJourneyTimer) window.clearTimeout(board.traVelJourneyTimer);
+  board.classList.remove('is-advancing');
+  const confirmedForward = signature !== previousSignature
+    && completed > previousCompleted
+    && !['provider_error', 'failed', 'cancelled'].includes(status);
+  if (confirmedForward && !prefersReducedMotion()) {
+    void board.offsetWidth;
+    board.classList.add('is-advancing');
+    const generation = (Number(board.traVelJourneyGeneration) || 0) + 1;
+    board.traVelJourneyGeneration = generation;
+    board.traVelJourneyTimer = window.setTimeout(() => {
+      if (board.traVelJourneyGeneration !== generation) return;
+      board.classList.remove('is-advancing');
+      board.traVelJourneyTimer = 0;
+    }, 1200);
+  }
+  board.traVelJourneySignature = signature;
+  board.traVelJourneyCompleted = completed;
 }
 
 function mergeAndRenderAgentEvents(root, events) {
@@ -4084,17 +4536,17 @@ function renderAgentSupplierState(root, run) {
   if (latest) {
     supplier.hidden = false;
     supplier.dataset.state = latest.status === 'waiting' ? 'not-started' : String(latest.status || 'reported');
-    supplier.textContent = latest.message;
+    setTextContentIfChanged(supplier, latest.message);
     return;
   }
   if (run?.status === 'needs_clarification') {
     supplier.hidden = false;
     supplier.dataset.state = 'not-started';
-    supplier.textContent = 'חיפוש ספקים לא התחיל. השרת ממתין לתשובה על שאלות החובה.';
+    setTextContentIfChanged(supplier, 'חיפוש ספקים לא התחיל. השרת ממתין לתשובה על שאלות החובה.');
     return;
   }
   supplier.hidden = true;
-  supplier.textContent = '';
+  setTextContentIfChanged(supplier, '');
 }
 
 const quoteCaseActiveStatuses = new Set(['queued', 'in_review', 'needs_information', 'ready_for_assistance']);
@@ -4637,6 +5089,7 @@ function renderAgentRun(root, run, focusWorkbench = false) {
   setAgentWorkbenchStatus(root, agentStatusLabel(agentRuntime.status), agentRuntime.status);
   renderAgentTripRequest(root, run.trip_request);
   mergeAndRenderAgentEvents(root, run.events || []);
+  renderAgentJourney(root, run);
   renderAgentSupplierState(root, run);
   renderAgentQuoteCaseAvailability(root);
   const failedEvents = agentRuntime.events.filter(event => event?.visible !== false && event?.status === 'failed' && event?.message);
@@ -4698,6 +5151,7 @@ async function pollAgentRun(root) {
   const runId = agentRuntime.runId;
   if (!runId) {
     setAgentWorkbenchError(root, 'לא ניתן להמשיך לעדכן את הריצה כי מזהה הריצה אינו זמין בלשונית הזאת.');
+    pauseAgentJourneyTransport(root, 'אין מזהה ריצה לעדכון. לא נסמן התקדמות חדשה.');
     return;
   }
   if (agentRuntime.pollInFlight) return;
@@ -4738,6 +5192,12 @@ async function pollAgentRun(root) {
         : 'העדכון החי נעצר זמנית. האירועים שכבר התקבלו נשארים מוצגים ללא שינוי.',
       {reconnect: repeated}
     );
+    pauseAgentJourneyTransport(
+      root,
+      repeated
+        ? 'החיבור לעדכונים נעצר. המצב האחרון שאושר נשאר מוצג, ללא התקדמות חדשה.'
+        : 'ממתינים לחידוש העדכון החי. עדיין לא התקבל שלב חדש.'
+    );
     const retryDelay = Math.min(120000, 5000 * (2 ** Math.min(agentRuntime.pollFailures - 1, 5)));
     scheduleAgentPoll(root, retryDelay);
   } finally {
@@ -4775,6 +5235,7 @@ async function createAgentRun(root) {
   resetAgentRuntime();
   resetAgentWorkbench(root);
   setAgentWorkbenchStatus(root, 'שולחים בקשה פרטית לשרת. עדיין לא התקבל אירוע ריצה.', 'connecting');
+  setAgentJourneyConnecting(root);
   submit.disabled = true;
   root.dataset.state = 'loading';
   try {
@@ -4786,6 +5247,7 @@ async function createAgentRun(root) {
         locale: detectAgentLocale(message),
         input_kind: inputKind,
         transcript_confirmed: inputKind === 'typed' || Boolean(transcriptConfirmed?.checked),
+        planning_context: agentPlanningContextFromLocation(),
         client_request_id: createAgentClientRequestId()
       })
     });
@@ -4796,12 +5258,14 @@ async function createAgentRun(root) {
     renderAgentRun(root, run, true);
     if (!stored) {
       setAgentWorkbenchError(root, 'הריצה נפתחה, אבל הדפדפן חסם שמירת מזהה הריצה בלשונית. האירועים הראשונים מוצגים, אך לא יתבצע עדכון נוסף.');
+      pauseAgentJourneyTransport(root, 'הריצה נפתחה, אך עדכון ההמשך נעצר בדפדפן. המצב המאושר נשאר מוצג.');
       return;
     }
     scheduleAgentPoll(root);
   } catch (error) {
     setAgentWorkbenchStatus(root, 'לא התקבל אישור לפתיחת ריצה', 'error');
     setAgentWorkbenchError(root, agentErrorMessage(error));
+    failAgentJourneyConnection(root);
     const view = agentWorkbenchRoot(root);
     const empty = view.querySelector('[data-agent-event-empty]');
     if (empty) empty.textContent = 'לא התקבלו אירועי ריצה מהשרת.';
@@ -4896,6 +5360,7 @@ async function resumeAgentRun(root) {
   resetAgentRuntime(runId);
   resetAgentWorkbench(root);
   setAgentWorkbenchStatus(root, 'טוענים את הריצה הפרטית מהלשונית הזאת.', 'connecting');
+  setAgentJourneyConnecting(root);
   try {
     const run = await agentApiRequest(`/runs/${encodeURIComponent(runId)}`);
     if (agentRuntime.runId !== runId) return;
@@ -4906,6 +5371,7 @@ async function resumeAgentRun(root) {
     clearAgentRunSession();
     setAgentWorkbenchStatus(root, 'לא ניתן לחדש את הריצה הפרטית', 'error');
     setAgentWorkbenchError(root, agentErrorMessage(error));
+    pauseAgentJourneyTransport(root, 'לא ניתן לטעון את מצב הריצה. לא נסמן התקדמות שלא התקבלה מהשרת.');
   }
 }
 

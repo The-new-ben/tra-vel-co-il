@@ -153,7 +153,7 @@ Activate only after validation:
 
 1. Install deploy gateway 0.3.0 with `scripts/wp/bootstrap-deploy-gateway.ps1`; confirm the temporary snippet is inactive and neutralized or deleted.
 2. Confirm both authenticated theme and Agent Core status endpoints.
-3. Deploy and activate Agent Core 0.3.0 with the protected Agent Core workflow. Use `scripts/wp/bootstrap-agent-core.ps1` and `INSTALL TRA-VEL AGENT CORE` only when no Agent Core installation exists yet.
+3. Deploy and activate Agent Core 0.4.0 with the protected Agent Core workflow. Use `scripts/wp/bootstrap-agent-core.ps1` and `INSTALL TRA-VEL AGENT CORE` only when no Agent Core installation exists yet.
 4. Store the OpenAI key through `scripts/wp/configure-agent-key.ps1`; confirm encrypted storage without printing the secret.
 5. Create a real private run and verify the structured request, HttpOnly ownership cookie, event log, no supplier claims, and exact provider usage.
 6. Upload Tra-Vel V2 1.13.0 with the protected theme workflow. If V2 is already active, it stays active; otherwise activation requires a separately controlled operation after validation.

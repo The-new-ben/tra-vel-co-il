@@ -2,7 +2,7 @@
 Contributors: tra-vel
 Requires at least: 6.5
 Requires PHP: 7.4
-Stable tag: 0.3.0
+Stable tag: 0.4.0
 License: Proprietary
 
 Private AI travel planning, durable assisted-quote cases, operator progress, and protected approval foundations for Tra-Vel.
@@ -13,13 +13,20 @@ This plugin is the server-side control plane for Tra-Vel agent runs. It stores p
 
 Raw natural-language prompts are processed in memory and are not persisted. Anonymous ownership secrets are held in Secure, HttpOnly, SameSite cookies and are not returned to JavaScript. Atomic database counters cap live provider requests per visitor and per UTC day, while owner-token leases limit concurrent provider work to two requests by default.
 
-Version 0.3.0 separates short-lived AI working state from durable, consented assisted-quote cases. A ready private plan can enter a 30-day human review queue with an immutable minimized request revision, optimistic state version, append-only event history, separate guest owner cookie, authenticated claim path, restricted operator role, and 90-day retention boundary. State-driven progress never claims supplier search, a live price, message delivery, or booking execution without corresponding evidence. Those transaction capabilities remain disabled in health.
+Version 0.4.0 publishes TripRequest 1.1.0 and binds destination and arbitrary Earth selections to its validated planning context. Exact coordinates, intent, and the eight-domain planning scope survive natural-language revisions, while public events retain only the stable selection identity. The traveler interface derives its seven-stage progress display from real run and event states. It never treats waiting, failure, cancellation, supplier search, price, or booking as completed without corresponding evidence.
 
 == Security ==
 
 Use a hosting environment variable or wp-config.php constant for the OpenAI key when possible. The administrator-only encrypted-option fallback requires sodium. Keys are never returned by REST.
 
 == Changelog ==
+
+= 0.4.0 =
+* Added a closed, range-bounded planning context for destination and arbitrary Earth selections.
+* Versioned the expanded public request schema as TripRequest 1.1.0 with kind-specific invariants.
+* Preserved stable selection identity, coordinates, intent, and eight-domain scope across request revisions.
+* Limited the append-only creation event to safe selection identity instead of storing exact coordinates.
+* Added runtime and contract checks for map-context continuity and truthful progress semantics.
 
 = 0.3.0 =
 * Added durable assisted-quote cases with separate revisions, events, idempotency, retention, and guest ownership.

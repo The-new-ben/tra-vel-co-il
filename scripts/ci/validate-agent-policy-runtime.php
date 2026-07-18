@@ -88,13 +88,14 @@ function tv_agent_hydrate_event_type( $stored_type ) {
 	return $event['type'];
 }
 
-function tv_agent_prepare( $request, $input_kind = 'typed', $confirmed = true ) {
+function tv_agent_prepare( $request, $input_kind = 'typed', $confirmed = true, $planning_context = array() ) {
 	return Tra_Vel_Agent_Policy::prepare_trip_request(
 		$request,
 		array(
 			'input_kind'           => $input_kind,
 			'input_sha256'         => str_repeat( 'a', 64 ),
 			'transcript_confirmed' => $confirmed,
+			'planning_context'     => $planning_context,
 		)
 	);
 }
@@ -161,11 +162,49 @@ $valid_question['material_questions'][] = array( 'id' => 'dates', 'field' => 'da
 tv_agent_assert( true === Tra_Vel_Agent_OpenAI_Provider::validate_trip_request( $valid_question ), 'provider clarification with a supported canonical field was rejected' );
 
 $ready = tv_agent_prepare( $base );
-tv_agent_assert( '1.0.0' === $ready['contract_version'], 'policy contract version changed' );
+tv_agent_assert( '1.1.0' === $ready['contract_version'], 'TripRequest planning-context contract version changed' );
 tv_agent_assert( '11111111-2222-4333-8444-555555555555' === $ready['request_id'], 'policy did not create a stable request id' );
 tv_agent_assert( 1 === $ready['revision'], 'initial request revision must be one' );
 tv_agent_assert( 'ready_for_search' === $ready['readiness']['status'] && array() === tv_agent_blockers( $ready ), 'complete typed request was not ready for search' );
 tv_agent_assert( 'typed' === $ready['source']['input_kind'] && true === $ready['source']['transcript_confirmed'], 'typed input provenance changed' );
+tv_agent_assert( 'free_text' === $ready['planning_context']['kind'] && null === $ready['planning_context']['selection_id'], 'free-text planning context did not default safely' );
+
+$map_context = array(
+	'kind'         => 'map_point',
+	'selection_id' => '11111111-2222-4333-8444-555555555555',
+	'latitude'     => 13.7563,
+	'longitude'    => 100.5018,
+	'destination'  => 'bangkok',
+	'intent'       => 'family',
+	'scope'        => array( 'flights', 'accommodation', 'transfers', 'activities', 'dining', 'insurance', 'connectivity', 'equipment' ),
+);
+$map_ready = tv_agent_prepare( $base, 'typed', true, $map_context );
+tv_agent_assert( $map_context === $map_ready['planning_context'], 'exact map selection context was not preserved in TripRequest' );
+$map_revision = Tra_Vel_Agent_Policy::prepare_trip_request(
+	$base,
+	array( 'input_kind' => 'typed', 'input_sha256' => str_repeat( 'b', 64 ), 'transcript_confirmed' => true ),
+	$map_ready
+);
+tv_agent_assert( $map_context === $map_revision['planning_context'], 'map selection context was lost during natural-language revision' );
+$destination_context = array(
+	'kind'         => 'destination',
+	'selection_id' => 'destination_20300401_abcdefgh',
+	'latitude'     => 37.9838,
+	'longitude'    => 23.7275,
+	'destination'  => 'athens',
+	'intent'       => 'romantic',
+	'scope'        => array( 'flights', 'accommodation', 'activities', 'dining', 'insurance' ),
+);
+$destination_ready = tv_agent_prepare( $base, 'typed', true, $destination_context );
+tv_agent_assert( $destination_context === $destination_ready['planning_context'], 'supported destination identity and coordinates were not preserved together' );
+$invalid_map_context = $map_context;
+$invalid_map_context['latitude'] = 120;
+$invalid_map_ready = tv_agent_prepare( $base, 'typed', true, $invalid_map_context );
+tv_agent_assert( 'free_text' === $invalid_map_ready['planning_context']['kind'] && null === $invalid_map_ready['planning_context']['selection_id'] && null === $invalid_map_ready['planning_context']['latitude'], 'out-of-range map context did not fail closed to free text' );
+$invalid_destination_context = $destination_context;
+$invalid_destination_context['destination'] = null;
+$invalid_destination_ready = tv_agent_prepare( $base, 'typed', true, $invalid_destination_context );
+tv_agent_assert( 'free_text' === $invalid_destination_ready['planning_context']['kind'] && null === $invalid_destination_ready['planning_context']['destination'], 'destination context without an identifier did not fail closed to free text' );
 
 $voice_unconfirmed = tv_agent_prepare( $base, 'voice', false );
 tv_agent_assert( 'needs_clarification' === $voice_unconfirmed['readiness']['status'], 'unconfirmed voice request was allowed to search' );
@@ -254,7 +293,7 @@ tv_agent_assert( $base['vibes'] === $anywhere['vibes'], 'policy changed the trav
 tv_agent_assert( $base['hard_constraints'] === $anywhere['hard_constraints'], 'policy changed hard constraints' );
 tv_agent_assert( $base['search_scope'] === $anywhere['search_scope'], 'policy expanded supplier scope without evidence' );
 
-$allowed_top_level = array_merge( array_keys( $base ), array( 'contract_version', 'request_id', 'revision', 'source', 'readiness' ) );
+$allowed_top_level = array_merge( array_keys( $base ), array( 'contract_version', 'request_id', 'revision', 'source', 'planning_context', 'readiness' ) );
 $unexpected = array_values( array_diff( array_keys( $anywhere ), $allowed_top_level ) );
 tv_agent_assert( array() === $unexpected, 'policy added supplier, price, proposal, or booking claims' );
 foreach ( array( 'supplier', 'availability', 'offers', 'prices', 'proposals', 'booking', 'reservations', 'orders', 'order_reference' ) as $forbidden_claim ) {

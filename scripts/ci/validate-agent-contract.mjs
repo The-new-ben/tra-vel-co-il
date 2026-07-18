@@ -52,25 +52,34 @@ assertRequired(tripRequest, [
   'destination_mode', 'destinations', 'travelers', 'budget', 'search_scope',
   'material_questions', 'source', 'readiness',
 ], 'TripRequest');
-if (tripRequest.properties?.contract_version?.const !== '1.0.0') fail('TripRequest contract version must remain 1.0.0.');
+if (tripRequest.properties?.contract_version?.const !== '1.1.0' || !String(tripRequest.$id || '').endsWith('trip-request-1.1.0.json')) fail('TripRequest planning-context contract must be versioned as 1.1.0.');
+if (!(tripRequest.required || []).includes('planning_context')) fail('TripRequest 1.1.0 must require its deterministic planning context.');
 if (!(tripRequest.properties?.destination_mode?.enum || []).includes('anywhere')) fail('TripRequest must preserve an explicit anywhere destination mode.');
 
 const travelers = tripRequest.properties?.travelers;
 const budget = tripRequest.properties?.budget;
 const source = tripRequest.properties?.source;
+const planningContext = tripRequest.properties?.planning_context;
 const readiness = tripRequest.properties?.readiness;
 const question = tripRequest.properties?.material_questions?.items;
 assertClosedObject(travelers, 'TripRequest.travelers');
 assertClosedObject(budget, 'TripRequest.budget');
 assertClosedObject(source, 'TripRequest.source');
+assertClosedObject(planningContext, 'TripRequest.planning_context');
 assertClosedObject(readiness, 'TripRequest.readiness');
 assertClosedObject(question, 'TripRequest.material_questions item');
 assertRequired(travelers, ['adults', 'children', 'child_ages', 'rooms'], 'TripRequest.travelers');
 assertRequired(source, ['channel', 'input_kind', 'input_sha256', 'transcript_confirmed'], 'TripRequest.source');
+assertRequired(planningContext, ['kind', 'selection_id', 'latitude', 'longitude', 'destination', 'intent', 'scope'], 'TripRequest.planning_context');
 assertRequired(readiness, ['status', 'blockers'], 'TripRequest.readiness');
 assertRequired(question, ['id', 'field', 'question', 'reason', 'blocking', 'status'], 'TripRequest.material_questions item');
 if (!sameMembers(source.properties?.input_kind?.enum || [], ['typed', 'voice'])) fail('TripRequest input kind must distinguish typed and voice requests.');
 if (source.properties?.input_sha256?.pattern !== '^[a-f0-9]{64}$') fail('TripRequest must carry a non-secret SHA-256 input fingerprint.');
+if (!sameMembers(planningContext.properties?.kind?.enum || [], ['free_text', 'destination', 'map_point'])) fail('TripRequest planning context kinds changed.');
+if (planningContext.properties?.selection_id?.pattern !== '^[A-Za-z0-9_-]{8,80}$') fail('TripRequest planning context must bind a stable selection identity.');
+if (planningContext.properties?.latitude?.minimum !== -90 || planningContext.properties?.latitude?.maximum !== 90 || planningContext.properties?.longitude?.minimum !== -180 || planningContext.properties?.longitude?.maximum !== 180) fail('TripRequest planning coordinates are not range bounded.');
+if (!sameMembers(planningContext.properties?.scope?.items?.enum || [], ['flights', 'accommodation', 'transfers', 'activities', 'dining', 'insurance', 'connectivity', 'equipment'])) fail('TripRequest planning scope is not the canonical eight-domain set.');
+if (!Array.isArray(planningContext.allOf) || planningContext.allOf.length < 4 || !JSON.stringify(planningContext.allOf).includes('map_point') || !JSON.stringify(planningContext.allOf).includes('destination')) fail('TripRequest planning context does not publish its kind-specific invariants.');
 if (!sameMembers(readiness.properties?.status?.enum || [], ['needs_clarification', 'ready_for_search', 'unsupported'])) fail('TripRequest readiness states changed.');
 
 assertRequired(runEvent, ['contract_version', 'event_id', 'sequence', 'occurred_at', 'type', 'phase', 'status', 'source', 'visible', 'message', 'data'], 'RunEvent');
@@ -105,6 +114,9 @@ if (!/supplier_search'\s*=>\s*false/.test(controllerPhp)) fail('Agent health mus
 if (!/proposal_generation'\s*=>\s*false/.test(controllerPhp)) fail('Agent health must report proposal generation as unavailable in the first slice.');
 if (!/booking_execution'\s*=>\s*false/.test(controllerPhp)) fail('Agent health must report booking execution as unavailable in the first slice.');
 if (!controllerPhp.includes("'supplier.search.not_started'")) fail('A ready request must emit an explicit supplier-search-not-started event.');
+for (const marker of ['planning_context_schema', 'validate_planning_context', 'sanitize_planning_context', 'rest_validate_value_from_schema', 'rest_sanitize_value_from_schema', 'tra_vel_agent_coordinate_pair_required', "'selection_id' => $planning_context['selection_id']"]) {
+  if (!controllerPhp.includes(marker)) fail(`Structured map handoff is missing ${marker}.`);
+}
 if (!controllerPhp.includes('/messages') || !controllerPhp.includes('public function revise_run(')) fail('Agent Core must expose a same-run natural-language revision endpoint.');
 if (!/request_revision'\s*=>\s*\$this->provider->health\(\)\['configured'\]/.test(controllerPhp)) fail('Agent health must report request revision availability from the configured provider.');
 for (const eventType of ['clarification.response.received', 'request.revision.started', 'request.revised', 'request.revision.failed']) {
@@ -115,6 +127,7 @@ if (!controllerPhp.includes("'tra_vel_agent_max_request_revisions', 8") || !cont
 if (!storePhp.includes('update_run_if_owner') || !controllerPhp.includes("'tra_vel_agent_revision_owner_changed'") || !controllerPhp.includes("'owner_token_hash' => (string)")) fail('In-flight revisions must CAS against the owner and run version captured before the provider call.');
 if (!/public function revise_run[\s\S]{0,900}can_access\( \$run, \$this->run_cookie_token/.test(controllerPhp)) fail('Revision callbacks must reauthorize the freshly fetched run after REST permission checks.');
 if (!policyPhp.includes("$previous['request_id']") || !policyPhp.includes("(int) $previous['revision'] + 1")) fail('Deterministic policy must preserve request identity and increment the revision.');
+if (!policyPhp.includes("$previous['planning_context']") || !policyPhp.includes("$request['planning_context']")) fail('Natural-language revisions can lose their exact map selection context.');
 if (!/provider_connected'\s*=>\s*false/.test(controllerPhp) || !/provider_bookable'\s*=>\s*false/.test(controllerPhp)) fail('The not-started event must disclose disconnected and non-bookable provider state.');
 if (!/data_mode'\s*=>\s*'not_connected'/.test(controllerPhp)) fail('The not-started event must use the not_connected data mode.');
 if (!/side_effect_executed'\s*=>\s*false/.test(controllerPhp)) fail('Approval decisions must not claim that a side effect ran in the foundation slice.');
