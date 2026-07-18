@@ -20,6 +20,8 @@ The production globe is a progressively enhanced travel-discovery surface. It us
 - A short pointer tap inside the visible sphere is ray-cast back to latitude and longitude. It resolves to a reviewed city only inside a strict 100 km point radius. Every other coordinate remains an explicit free map point and opens an honest agent handoff instead of silently changing the user's place.
 - A point outside supported coverage still produces a truthful result: exact coordinates receive a stable selection identity, all twelve decision and cost areas open in a provisional state, and the AI continuation receives the validated point without inventing a city, price, availability, or booking.
 - Destination and point handoffs carry an explicit context kind. Browser history stores the bounded selection identity and coordinates beside the visible destination, so Back and Forward cannot pair one destination with another selection's AI link.
+- An open-ended homepage request uses `destination_mode=anywhere`. The globe starts with no selected destination and never promotes the first API result into a traveler choice. Destination pins remain available for direct selection, and the AI action can propose a direction using the accepted trip criteria.
+- Product, origin, valid dates, bounded party size, and rooms form a separate trip-context contract. The context appears in a normal-flow summary below the globe and is translated into the correct parameter names for flight, hotel, package, insurance, and AI continuations.
 - Destination buttons remain real DOM controls above the canvas.
 - Selecting or focusing a destination rotates it to the center and updates the information section below the map.
 - Plus and minus controls provide a simple-pointer zoom alternative.
@@ -36,6 +38,8 @@ Every Earth selection opens a normal-flow decision cockpit below the globe. The 
 The coverage meter describes mapped decision areas, not booking completion. The cost ledger always lists the complete in-scope category set and exposes an amount only when destination-scoped, component-level supplier provenance owns that value and currency. Route totals remain hidden unless the supplier explicitly owns the total scope. Savings remain hidden until a server contract proves an equivalent comparison cohort, comparator identity, dates, travelers, inclusions, taxes, currency, and retrieval time. Route selection updates the shared cockpit, save context, AI context, and cost ledger.
 
 Selection acknowledgement, route, module, ledger, and meter transitions animate confirmed interface changes. Pending work uses neutral motion. Positive confirmation runs only for a current response or a real increase in completed Agent stages; stale, fallback, failed, and cancelled states never receive celebratory motion. Reduced-motion users receive the same states with no motion. No new result, action, or progress surface is positioned over the Earth.
+
+Homepage routing follows the same rule. Product and valid criteria receive one positive acknowledgement. The handoff animation receives a painted frame before navigation, but it only says that the destination page is opening. It never represents a supplier search, price, hold, or booking.
 
 Transport state is separate from product state. A failed intake marks the request as unconfirmed. A lost polling connection freezes the last server-confirmed state, stops working motion, and resumes animation only after a current server response arrives. Repeated polls do not re-announce unchanged status text.
 

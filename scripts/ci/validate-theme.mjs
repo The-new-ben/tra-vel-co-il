@@ -146,6 +146,58 @@ if (!appCss.includes("../images/earth-blue-marble.jpg")) failures.push('The prod
 
 const appJs = readFileSync(join(themeRoot, 'assets/js/app.js'), 'utf8');
 const frontPage = readFileSync(join(themeRoot, 'front-page.php'), 'utf8');
+const homeSearchMarkerIndex = frontPage.indexOf('data-home-search data-product-kind');
+const homeSearchStartIndex = homeSearchMarkerIndex >= 0 ? frontPage.lastIndexOf('<form', homeSearchMarkerIndex) : -1;
+const homeSearchEndIndex = homeSearchMarkerIndex >= 0 ? frontPage.indexOf('</form>', homeSearchMarkerIndex) : -1;
+const homeSearchMarkup = homeSearchStartIndex >= 0 && homeSearchEndIndex > homeSearchStartIndex
+  ? frontPage.slice(homeSearchStartIndex, homeSearchEndIndex + '</form>'.length)
+  : '';
+const homeSearchTabs = [...frontPage.matchAll(/<button\b[^>]*role="tab"[^>]*>/g)].map(match => match[0]);
+const homeDiscoverySource = appJs.match(/const homeSearchProductContracts[\s\S]*?\nfunction initControls\(\)/)?.[0] || '';
+if (!homeSearchMarkup) failures.push('The homepage is missing its canonical discovery form.');
+const noScriptDiscovery = frontPage.match(/<noscript>[\s\S]*?<\/noscript>/)?.[0] || '';
+if (!noScriptDiscovery.includes('product-links-noscript')) failures.push('The homepage needs an explicit no-JavaScript discovery fallback.');
+for (const route of ['/packages/', '/flights/', '/hotels/', '/travel-insurance/']) {
+  if (!noScriptDiscovery.includes(route)) failures.push(`The no-JavaScript discovery fallback is missing ${route}.`);
+}
+if (!noScriptDiscovery.includes('$map_url')) failures.push('The no-JavaScript discovery fallback must preserve access to the destination map.');
+if (!frontPage.includes('class="product-tabs" role="tablist"') || homeSearchTabs.length !== 5) failures.push('Homepage products must remain one five-option accessible tablist.');
+if (homeSearchTabs.filter(tab => tab.includes('aria-selected="true"') && tab.includes('tabindex="0"')).length !== 1) failures.push('Exactly one homepage product tab must be selected and keyboard reachable on first render.');
+if (homeSearchTabs.some(tab => !tab.includes('aria-controls="home-search-panel"'))) failures.push('Every homepage product tab must control the shared search panel.');
+for (const kind of ['package', 'flights', 'hotels', 'packages', 'insurance']) {
+  if (!homeSearchTabs.some(tab => tab.includes(`data-product-kind="${kind}"`))) failures.push(`The homepage tablist is missing the ${kind} product contract.`);
+}
+for (const attribute of ['id="home-search-panel"', 'role="tabpanel"', 'aria-labelledby="home-search-tab-package"', 'aria-describedby="home-search-status"', 'aria-busy="false"', 'data-map-action']) {
+  if (!homeSearchMarkup.includes(attribute)) failures.push(`The homepage discovery panel is missing ${attribute}.`);
+}
+for (const name of ['origin', 'destination', 'departure_date', 'return_date', 'adults', 'children', 'rooms']) {
+  if (!homeSearchMarkup.includes(`name="${name}"`)) failures.push(`The homepage discovery form is missing the canonical ${name} control.`);
+}
+for (const marker of ['data-home-origin-wrap', 'data-home-destination', 'data-home-departure', 'data-home-return', 'data-home-adults', 'data-home-children', 'data-home-rooms-wrap', 'data-home-rooms', 'data-home-search-submit']) {
+  if (!homeSearchMarkup.includes(marker)) failures.push(`The homepage discovery form is missing ${marker}.`);
+}
+if (homeSearchMarkup.includes('class="sr-only"') || /name="(?:route|dates|travelers)"/.test(homeSearchMarkup)) failures.push('The homepage discovery form cannot regress to invisible fixed-value route, date, or traveler inputs.');
+if (/type="hidden"[^>]*name="rooms"/.test(homeSearchMarkup) || !homeSearchMarkup.includes('data-uses-rooms="true"') || !homeDiscoverySource.includes('form.dataset.usesRooms = String(contract.usesRooms)') || !appCss.includes('.search-dock[data-uses-rooms="false"] [data-home-rooms-wrap] { display: none; }')) failures.push('Rooms must remain a visible, product-aware, price-affecting homepage criterion instead of a hidden carried value.');
+if (!homeSearchMarkup.includes('data-code="anywhere" data-slug="anywhere"') || !homeSearchMarkup.includes('data-code="HND" data-slug="tokyo"')) failures.push('Homepage destinations must preserve both comparison codes and insurance slugs, including the open-ended map choice.');
+for (const step of ['product', 'criteria', 'handoff']) {
+  if (!frontPage.includes(`data-home-search-step="${step}"`)) failures.push(`Homepage routing progress is missing the ${step} checkpoint.`);
+}
+if (!frontPage.includes('id="home-search-status" data-home-search-status role="status" aria-live="polite" aria-atomic="true"')) failures.push('Homepage discovery progress must use one atomic polite status region described by the form.');
+if (!homeDiscoverySource || !homeDiscoverySource.includes('function homeSearchProductContract(kind)')) failures.push('The homepage does not expose a deterministic product-query contract.');
+if (!appJs.includes('initHomeDiscoverySearch();')) failures.push('The production app does not initialize the homepage discovery search.');
+if (!homeDiscoverySource.includes("selectedOption.dataset.code === 'anywhere'") || !homeDiscoverySource.includes("form.dataset.mapAction || '/travel-map/'") || !homeDiscoverySource.includes("url.searchParams.set('destination_mode', 'anywhere')") || !homeDiscoverySource.includes("url.searchParams.set('product', form.dataset.productKind || 'package')") || !homeDiscoverySource.includes('scheduleHomeSearchNavigation(homeSearchNavigationUrl(form, anywhere))')) failures.push('The open-ended homepage choice must hand off its trip context to an unselected travel map without inventing a destination.');
+if (!homeDiscoverySource.includes("window.addEventListener('pageshow'") || !homeDiscoverySource.includes("form.setAttribute('aria-busy', 'false')") || !homeDiscoverySource.includes('submit.disabled = false') || !homeDiscoverySource.includes("setHomeSearchStep(progress, 'handoff', 'waiting'")) failures.push('Back/Forward restoration must clear homepage busy, disabled-submit, and handoff progress state.');
+if (!homeDiscoverySource.includes('function setHomeSearchRoutingState(form, message)') || !homeDiscoverySource.includes("form.dataset.state = 'navigating'") || !homeDiscoverySource.includes("setHomeSearchStep(progress, 'handoff', 'running'") || !homeDiscoverySource.includes('function scheduleHomeSearchNavigation(url)') || !/window\.requestAnimationFrame\(\(\) => window\.requestAnimationFrame\(\(\) => window\.setTimeout\(navigate,\s*\d+\)\)\)/.test(homeDiscoverySource)) failures.push('Homepage progress must represent a double-paint navigation handoff, not an invented supplier or booking milestone.');
+if (/הספק (?:אישר|אישרה)|ההזמנה הושלמה|המחיר (?:אושר|ננעל)|נשמר אצל הספק/u.test(`${homeSearchMarkup}\n${homeDiscoverySource}`)) failures.push('Homepage routing progress cannot claim supplier confirmation, completed booking, or a locked price.');
+if (!/\.product-tabs button\s*\{[^}]*min-height:\s*44px;/.test(appCss) || !/\.search-field input,\.search-field select\s*\{[^}]*min-height:\s*44px;/.test(appCss)) failures.push('Homepage tabs and visible discovery controls must retain 44px touch targets.');
+if (!appCss.includes('.product-tabs button:focus-visible') || !appCss.includes('.search-field:focus-within') || !appCss.includes('.search-field input:focus-visible,.search-field select:focus-visible')) failures.push('Homepage product tabs and each discovery control need visible keyboard focus treatment.');
+if (!appCss.includes('.search-dock[data-uses-origin="false"] .search-route-field .search-field-controls { grid-template-columns: minmax(0,1fr);') || !appCss.includes('.search-dock[data-uses-origin="false"] .search-route-field .search-field-controls > :is(i,svg) { display: none;')) failures.push('Hotel and insurance discovery must collapse the disabled origin and route arrow without leaving an empty column.');
+if (!/@media \(max-width: 1000px\)[\s\S]*?\.search-dock \{ grid-template-columns: repeat\(2,minmax\(0,1fr\)\);/.test(appCss)) failures.push('Homepage discovery is missing its two-column tablet layout.');
+if (!/@media \(max-width: 760px\)[\s\S]*?\.search-dock \{ grid-template-columns: 1fr;/.test(appCss)) failures.push('Homepage discovery is missing its single-column mobile layout.');
+if (!/@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.search-dock\[data-state="navigating"\] \.search-submit,\.home-search-progress li,\.home-search-progress li > :is\(i,svg\) \{ animation: none !important; \}/.test(appCss)) failures.push('Homepage routing progress is missing its SVG-compatible reduced-motion path.');
+const homeSearchProgressRule = appCss.match(/\.home-search-progress\s*\{([^}]*)\}/)?.[1] || '';
+if (!homeSearchProgressRule || /position:\s*(?:absolute|fixed|sticky)/.test(homeSearchProgressRule)) failures.push('Homepage progress must remain in document flow instead of covering the search or globe.');
+if (!appCss.includes('.home-search-progress li[data-state="running"] > :is(i,svg)') || !appCss.includes('.map-progress-checkpoints li[data-state="running"] > :is(i,svg)')) failures.push('Lucide progress animation must continue after icons are replaced with inline SVG elements.');
 if (!appJs.includes('window.traVelV2')) failures.push('The app script is not connected to localized WordPress configuration.');
 if (!appJs.includes('agentRestUrl') || !appJs.includes("agentApiRequest('/runs'")) failures.push('The AI planner is not connected to the private Agent Core POST contract.');
 if (!appJs.includes('window.sessionStorage') || !appJs.includes("credentials: 'same-origin'")) failures.push('The private agent run ID is not retained per tab or requests do not include the protected same-origin cookie.');
@@ -168,28 +220,36 @@ if (!appJs.includes('initDirectory')) failures.push('The destination directory d
 if (!appJs.includes('discoveryDataMode')) failures.push('Map prices are not gated by the live supplier data mode.');
 if (!appJs.includes('hasLiveRouteData = discoverySnapshotIsCurrent() && hasRouteSnapshot') || !appJs.includes('צילום ספק קודם · נדרש רענון')) failures.push('Route cards can expose non-current prices without an explicit stale-snapshot label.');
 if (!appJs.includes('discoveryCacheFreshness') || !appJs.includes('discoverySourceFreshness') || !appJs.includes('discoveryFreshnessLabel()')) failures.push('The client collapses cache refresh failures and stale supplier observations into one misleading freshness state.');
-if (!appJs.includes("const modeLabel = discoveryFreshness !== 'current'") || !appJs.includes('הסכומים מסומנים כתצפית קודמת: ${discoveryFreshnessLabel()}')) failures.push('Fallback or source-stale supplier data can still be described as a current update or a failed cache refresh.');
+if (!appJs.includes('function settledDiscoveryResponseState()') || !appJs.includes('function discoveryFreshnessLabel()') || !appJs.includes('const verificationLabels =') || !appJs.includes('discoveryLiveLayers[activeLayer]') || !appJs.includes('setDiscoveryStatus(confirmedState')) failures.push('Fallback, stale, and unverified map results must resolve through explicit truth-state and layer-verification contracts.');
 if (!appJs.includes('מחיר ותנאים יאומתו בחיפוש חי')) failures.push('Non-live route tradeoffs can expose unsupported savings or conditions.');
 if (!appJs.includes('resolveDiscoveryLiveLayers') || !appJs.includes('discoveryLiveLayers.deals') || !appJs.includes('discoveryLiveLayers.weather')) failures.push('Mixed supplier mode is not separated into truthful layer-level provenance.');
 if (!appJs.includes('payload.field_provenance') || !appJs.includes('weather_season') || /function resolveDiscoveryLiveLayers\(providerStatus/.test(appJs)) failures.push('The map can still infer live fields from provider connection instead of server-owned field provenance.');
 if (!appJs.includes('התנאים הנוכחיים עודכנו. התאמת העונה תיבדק לפי תאריך הנסיעה')) failures.push('Live current weather can still certify an editorial season recommendation.');
 if (!appJs.includes("trip_destination: data.id")) failures.push('Map insurance actions do not preserve the selected destination context.');
 if (!appJs.includes("activeLayer = layer && discoveryLayers.has(layer) ? layer : 'deals'") || !appJs.includes("activePlanIntent = intent && destinationPlanIntents[intent] ? intent : 'smart'") || !appJs.includes('intentConstraints')) failures.push('Map history and intent-only deep links cannot restore deterministic discovery defaults.');
-if (!appJs.includes('destinationDirectoryUrl(destinationId, planningContext)') || !appJs.includes("destinationPlanUrl('/guides/', params)")) failures.push('Globe destinations without directory coverage can still open an empty filtered guide directory.');
+if (!appJs.includes('function destinationDirectoryUrl(destinationId, params = {})') || !appJs.includes('directoryDestinationIds.has(directoryId)') || !appJs.includes("destinationPlanUrl('/guides/', params)")) failures.push('Globe destinations without directory coverage can still open an empty filtered guide directory.');
+for (const target of ['flights', 'hotels', 'insurance', 'packages', 'ai']) {
+  if (!appJs.includes(`discoveryTripContextQuery('${target}')`)) failures.push(`Map decisions do not preserve the sanitized trip context for ${target}.`);
+}
 if (!appJs.includes('agentPlanningContextFromLocation') || !appJs.includes('planning_context: agentPlanningContextFromLocation()')) failures.push('Earth selections are not carried into Agent Core as structured planning context.');
 if (!appJs.includes("const inferredKind = destination ? 'destination' : (hasCoordinates ? 'map_point' : 'free_text')") || !appJs.includes("params.get('selection_kind')")) failures.push('Reviewed destinations are collapsed into arbitrary map-point context when coordinates are present.');
 if (!appJs.includes('planningSelectionHistoryState') || !appJs.includes('restorePlanningSelectionFromHistory') || !appJs.includes('planningSelection: planningSelectionHistoryState()')) failures.push('Map Back and Forward history can retain the previous selection identity or coordinates.');
+if (!appJs.includes('restorePlanningSelectionFromUrl') || !appJs.includes("'selection_destination'") || !appJs.includes('if (!restoredFreePoint) hydrateDiscovery(discoveryRequestParams())')) failures.push('An exact free-Earth point must survive reload/share and must not be replaced by initial destination hydration.');
 if (!appJs.includes('activePlanningSelection.destination !== key') || !appJs.includes("kind: 'destination'")) failures.push('A restored destination does not rebuild mismatched planning-selection context.');
 if (!appJs.includes('renderAgentJourney') || !appJs.includes('completed > previousCompleted')) failures.push('Agent progress motion is not derived from actual journey advancement.');
 if (!appJs.includes("!['provider_error', 'failed', 'cancelled'].includes(status)")) failures.push('Agent failure or cancellation can still trigger positive progress motion.');
-if (!appJs.includes('failAgentJourneyConnection(root)') || !appJs.includes('pauseAgentJourneyTransport(root') || !appCss.includes('.agent-journey[data-transport="stale"] .agent-scope-board li.is-running > i') || !appCss.includes('.agent-journey[data-transport="stale"] ~ .agent-event-panel .agent-event.is-running::before')) failures.push('Agent transport failures can leave a false working animation active.');
+if (!appJs.includes('failAgentJourneyConnection(root)') || !appJs.includes('pauseAgentJourneyTransport(root') || !appCss.includes('.agent-journey[data-transport="stale"] .agent-scope-board li.is-running > :is(i,svg)') || !appCss.includes('.agent-journey[data-transport="stale"] ~ .agent-event-panel .agent-event.is-running::before')) failures.push('Agent transport failures can leave a false or Lucide-incompatible working animation active.');
 if (!appJs.includes('request?.planning_context?.scope') || !appJs.includes('latestAgentScopeEvent')) failures.push('The Agent scope board can diverge from exact requested scope or claim domain progress without events.');
 if (!appJs.includes('setTextContentIfChanged(next, agentJourneyNextAction(run))') || !appJs.includes('setTextContentIfChanged(status, message)') || !appJs.includes('setTextContentIfChanged(supplier, latest.message)')) failures.push('Unchanged Agent polling can repeatedly announce live-region content.');
 
 const mapPage = readFileSync(join(themeRoot, 'page-map.php'), 'utf8');
-for (const marker of ['map-view-layout', 'map-support-section', 'map-destination-panel', 'map-depth-section', 'destination-plan-360', 'data-destination-plan', 'data-plan-intent', 'data-plan-flight', 'data-plan-stay', 'data-plan-cover', 'data-plan-total', 'data-mobile-filter-host', 'data-budget-coverage', 'data-globe-3d', 'data-globe-canvas', 'data-globe-route', 'data-globe-selection-point', 'data-supported-radius-km', 'data-globe-selection', 'data-map-progress-checkpoints', 'data-map-progress-live', 'destination-decision-cockpit', 'data-plan-meter', 'data-plan-modules', 'data-plan-ledger', 'data-plan-save']) {
+for (const marker of ['map-view-layout', 'map-support-section', 'map-destination-panel', 'map-depth-section', 'destination-plan-360', 'data-destination-plan', 'data-plan-intent', 'data-plan-flight', 'data-plan-stay', 'data-plan-cover', 'data-plan-total', 'data-mobile-filter-host', 'data-budget-coverage', 'data-globe-3d', 'data-globe-canvas', 'data-globe-route', 'data-globe-selection-point', 'data-supported-radius-km', 'data-globe-selection', 'data-map-trip-context', 'data-map-trip-context-summary', 'data-map-progress-checkpoints', 'data-map-progress-live', 'destination-decision-cockpit', 'data-plan-meter', 'data-plan-modules', 'data-plan-ledger', 'data-plan-save']) {
   if (!mapPage.includes(marker)) failures.push(`The unobstructed map architecture is missing ${marker}.`);
 }
+const mapTripContextRule = appCss.match(/\.map-trip-context\s*\{([^}]*)\}/)?.[1] || '';
+if (!mapTripContextRule || /position:\s*(?:absolute|fixed|sticky)/.test(mapTripContextRule)) failures.push('Carried trip context must remain in document flow instead of covering the Earth.');
+const mapTripContextIndex = mapPage.indexOf('data-map-trip-context');
+if (mapTripContextIndex < mapPage.indexOf('class="map-status-row"') || mapTripContextIndex > mapPage.indexOf('data-globe-selection data-state')) failures.push('Carried trip context must render beneath the globe status and before the decision rail.');
 if (mapPage.includes('map-search-floating')) failures.push('The map search must not float over the globe.');
 if (mapPage.includes('style="left:') || mapPage.includes('style="right:')) failures.push('Map information must not use inline overlay positioning.');
 if (!(mapPage.indexOf('class="map-layer-buttons"') < mapPage.indexOf('class="world-canvas"'))) failures.push('Mobile map control DOM order does not match the controls-first visual order.');
@@ -229,14 +289,15 @@ for (const marker of ['.destination-decision-cockpit', '.destination-decision-gr
 }
 if (!appCss.includes('@keyframes destinationPlanReveal') || !appCss.includes('@media (prefers-reduced-motion: reduce)')) failures.push('The 360-degree destination plan needs truthful progressive motion and a reduced-motion path.');
 if (!appJs.includes('updateDestinationPlanStages') || !appCss.includes('@keyframes destinationStageConfirm')) failures.push('The 360-degree progress display is not connected to real layer and response state.');
-if (!frontPage.includes('data-home-plan aria-busy="false"') || !appJs.includes("homePlan.setAttribute('aria-busy', String(mode === 'loading'))") || !appCss.includes('@keyframes homePlanConfirm')) failures.push('The homepage 360-degree plan must expose and animate confirmed request progress.');
+if (!frontPage.includes('data-home-plan aria-busy="false"') || !appJs.includes("homePlan.setAttribute('aria-busy', String(planWork && mode === 'loading'))") || !appCss.includes('@keyframes homePlanConfirm')) failures.push('The homepage 360-degree plan must expose and animate confirmed request progress.');
 if (!appCss.includes('.home-plan-360[aria-busy="true"] [data-home-plan-summary],.home-plan-360.is-updating [data-home-plan-summary]')) failures.push('The homepage progress motion does not provide a reduced-motion path.');
 if (!appJs.includes('runConfirmedPlanAnimation') || !appCss.includes('.is-updating:not([aria-busy="true"])') || !appJs.includes("plan.classList.remove('is-updating')")) failures.push('Confirmed progress animation can leak into a later loading request.');
 if (!appJs.includes('traVelMotionGeneration') || !appJs.includes('responseConfirmed: false')) failures.push('Progress motion is not generation-safe or still treats pre-request selection as a confirmed response.');
 if (!appJs.includes("settledDiscoveryResponseState") || !appJs.includes("responseState: 'fallback'") || !appJs.includes('אפשרויות מצילום קודם') || !appJs.includes('מוכן לחיפוש מחדש')) failures.push('Settled stale and fallback discovery responses can remain presented as actively updating.');
 if (!appJs.includes('מעדכנים את השוואת המסלולים ליעד ולבחירות החדשות') || !/function setRouteListBusy[\s\S]{0,360}list\.replaceChildren\(\)/.test(appJs)) failures.push('A destination refresh can leave the previous destination route cards visible under the new title.');
 if (!appJs.includes('discoveryRequestPending') || !appJs.includes('!discoveryRequestPending && discoverySnapshotIsCurrent()') || !/mode === 'loading'[\s\S]{0,500}save\.disabled = true/.test(appJs) || !/data-map-result[\s\S]{0,140}button\.disabled = true/.test(appJs)) failures.push('Map and plan saves can retain or persist a previous live snapshot while discovery is loading.');
-if (!appJs.includes('const current = !discoveryRequestPending && discoverySnapshotIsCurrent()') || !/mode === 'loading'[\s\S]{0,520}updatePins\(\)[\s\S]{0,520}responseState: 'pending'/.test(appJs) || !appJs.includes('selectedPlanForResponse')) failures.push('A new discovery request can leave previous-result prices or supplier modules visible as the incoming result.');
+if (!appJs.includes('const current = !discoveryRequestPending && discoverySnapshotIsCurrent()') || !/updatePins\(\)[\s\S]{0,220}mode === 'loading' && planWork[\s\S]{0,520}responseState: 'pending'/.test(appJs) || !appJs.includes('selectedPlanForResponse')) failures.push('A selected-destination request can leave previous-result prices or supplier modules visible as the incoming result.');
+if (!appJs.includes('function setDiscoveryStatus(mode, message, { planWork = true } = {})') || !appJs.includes("setDiscoveryStatus('loading', 'מעדכנים את היעדים הזמינים על המפה. בדיקת מחיר ותוכנית תתחיל רק לאחר בחירה.', { planWork: false })") || !appJs.includes("plan.dataset.requestState = planWork ? mode : 'waiting-for-destination'")) failures.push('Open-ended map loading must refresh only the destination catalog without claiming selected-plan or supplier progress.');
 if (!appJs.includes("['complete_live', 'partial_live', 'stale_complete', 'stale_partial']")) failures.push('The client can discard truthful complete or stale-complete cost-ledger states.');
 if ((appJs.match(/\['stale_complete', 'stale_partial'\]\.includes\(ledger\.state\)/g) || []).length < 2) failures.push('A stale complete cost ledger can lose its previous-snapshot warning.');
 if (!/data-plan-ledger-state[\s\S]{0,120}'12 /.test(mapPage)) failures.push('The initial decision cockpit does not match the canonical twelve-row cost ledger.');
@@ -472,6 +533,51 @@ if (!handoffController.includes('allowed_hosts')) failures.push('Supplier handof
 
 const experiencePage = readFileSync(join(themeRoot, 'page-experience.php'), 'utf8');
 if (!experiencePage.includes('$agent_destination') || !experiencePage.includes('$agent_intents') || !experiencePage.includes('esc_textarea( $agent_prompt )')) failures.push('Destination-to-agent handoff cannot safely prefill the private AI request.');
+for (const marker of ['$requested_origin_code', '$requested_adults', '$requested_children', '$requested_rooms', '$requested_date']) {
+  if (!experiencePage.includes(marker)) failures.push(`Homepage discovery choices cannot prefill comparison pages without ${marker}.`);
+}
+for (const key of ['departure_date', 'return_date', 'checkin', 'checkout', 'start_date', 'end_date']) {
+  if (!experiencePage.includes(`$requested_date( '${key}'`)) failures.push(`Comparison pages do not preserve and validate the homepage ${key} query value.`);
+}
+if (!experiencePage.includes("preg_match( '/^[A-Z]{3}$/'") || !experiencePage.includes("min( 6, max( 1, absint( wp_unslash( $_GET['adults'] ) ) ) )") || !experiencePage.includes("min( 4, max( 0, absint( wp_unslash( $_GET['children'] ) ) ) )") || !experiencePage.includes("min( 3, max( 1, absint( wp_unslash( $_GET['rooms'] ) ) ) )")) failures.push('Homepage comparison prefills must validate airport codes and bound party sizes.');
+if (!experiencePage.includes('selected( $requested_adults') || !experiencePage.includes('selected( $requested_children') || !experiencePage.includes('selected( $requested_rooms')) failures.push('Validated homepage party choices are not rendered back into comparison controls.');
+if (!experiencePage.includes('checkdate( (int) $parts[2], (int) $parts[3], (int) $parts[1] )') || !experiencePage.includes('$value < $minimum')) failures.push('Comparison date prefills must reject impossible and past dates server-side.');
+for (const minimumContract of [
+  "$return_default    = $requested_date( 'return_date', $date_after( $departure_default, 14 ), $return_minimum );",
+  "$checkout_default  = $requested_date( 'checkout', $date_after( $checkin_default, 4 ), $date_after( $checkin_default, 1 ) );",
+  "$package_return    = $requested_date( 'return_date', $date_after( $package_departure, 4 ), $date_after( $package_departure, 1 ) );",
+  "$insurance_end     = $requested_date( 'end_date', $date_after( $insurance_start, 6 ), $insurance_start );"
+]) {
+  if (!experiencePage.includes(minimumContract)) failures.push(`Comparison date ordering contract is missing: ${minimumContract.split('=')[0].trim()}.`);
+}
+if (!experiencePage.includes("$return_minimum    = $is_ai_planner && 'insurance' === $requested_product ? $departure_default : $date_after( $departure_default, 1 );")) failures.push('Map-to-agent insurance context must preserve a valid same-day coverage range instead of replacing it with a fourteen-day fallback.');
+for (const inputMinimum of [
+  'min="<?php echo esc_attr( $date_after( $departure_default, 1 ) ); ?>"',
+  'min="<?php echo esc_attr( $date_after( $checkin_default, 1 ) ); ?>"',
+  'min="<?php echo esc_attr( $date_after( $package_departure, 1 ) ); ?>"',
+  'min="<?php echo esc_attr( $insurance_start ); ?>"'
+]) {
+  if (!experiencePage.includes(inputMinimum)) failures.push(`Rendered comparison dates are missing their strict minimum: ${inputMinimum}.`);
+}
+for (const state of ['$flight_initial_search', '$hotel_initial_search', '$package_initial_search', '$insurance_context_ready']) {
+  if (!experiencePage.includes(`${state} `)) failures.push(`Comparison pages must keep a separate truthful auto-search state for ${state}.`);
+}
+for (const marker of [
+  "data-auto-search=\"<?php echo esc_attr( $flight_initial_search ? 'true' : 'false' ); ?>\"",
+  "data-auto-search=\"<?php echo esc_attr( $hotel_initial_search ? 'true' : 'false' ); ?>\"",
+  "data-auto-search=\"<?php echo esc_attr( $package_initial_search ? 'true' : 'false' ); ?>\"",
+  "data-context-supported=\"<?php echo esc_attr( $insurance_context_ready ? 'true' : 'false' ); ?>\""
+]) {
+  if (!experiencePage.includes(marker)) failures.push(`Comparison auto-search truth is not rendered through ${marker}.`);
+}
+if ((appJs.match(/form\.dataset\.autoSearch === 'false'/g) || []).length < 3 || !appJs.includes("form.dataset.contextSupported === 'false'")) failures.push('Flights, hotels, packages, and insurance must fail closed through separate client auto-search gates.');
+for (const strictDateSync of [
+  'syncStrictTravelEndDate(departure, returning, 7);',
+  'syncStrictTravelEndDate(checkin, checkout, 4);',
+  'syncStrictTravelEndDate(departure, returnDate, 4);'
+]) {
+  if (!appJs.includes(strictDateSync)) failures.push(`Internal comparison date edits must enforce a next-day end-date minimum through ${strictDateSync}`);
+}
 if (!experiencePage.includes('data-flight-search')) failures.push('The flights page is missing its functional search form.');
 if (!experiencePage.includes('data-flight-results')) failures.push('The flights page is missing its dynamic results region.');
 if (!experiencePage.includes('data-hotel-search')) failures.push('The hotels page is missing its functional search form.');
