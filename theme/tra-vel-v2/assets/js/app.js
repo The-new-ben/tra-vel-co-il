@@ -164,6 +164,15 @@ function discoverySnapshotIsCurrent() {
   return discoveryFreshness === 'current' && ['fresh', 'miss'].includes(discoveryCacheState);
 }
 
+function discoveryCommercialDataIsCurrent() {
+  return discoverySnapshotIsCurrent() && Boolean(
+    discoveryLiveLayers.deals
+    || discoveryLiveLayers.hotels
+    || discoveryLiveLayers.routePrices
+    || discoveryLiveLayers.routeTotal
+  );
+}
+
 function discoverySnapshotIsStale() {
   return ['refreshing', 'stale'].includes(discoveryFreshness);
 }
@@ -849,6 +858,14 @@ function renderDiscoveryEmptyState() {
       action.firstChild.textContent = 'תפתיעו אותי';
     }
   }
+  setMapProgressState({
+    point: 'waiting',
+    destination: 'waiting',
+    scopes: 'waiting',
+    live: 'waiting',
+    destinationDetail: 'אין יעד שתואם לבחירות',
+    liveDetail: 'שנו את הסינון כדי להתחיל מחדש'
+  });
 }
 
 function destinationPlanUrl(path, params = {}) {
@@ -1020,7 +1037,15 @@ function selectedPlanForDestination(data) {
 
 function selectedPlanForResponse(data, responseState) {
   const selectedPlan = selectedPlanForDestination(data);
-  if (['current', 'stale'].includes(responseState)) return selectedPlan;
+  if (responseState === 'current') return selectedPlan;
+  if (responseState === 'stale') {
+    return {
+      ...selectedPlan,
+      state: 'stale',
+      freshness: 'stale',
+      modules: selectedPlan.modules.map(module => module.state === 'live' ? { ...module, state: 'stale' } : module)
+    };
+  }
   return {
     ...selectedPlan,
     state: 'editorial',
@@ -1080,16 +1105,19 @@ function renderDestinationDecisionCockpit(plan, data, responseState = 'pending')
   const meter = plan.querySelector('[data-plan-meter]');
   const moduleCount = Math.max(1, selectedPlan.coverage.module_count || selectedPlan.modules.length || 12);
   const mappedCount = Math.min(moduleCount, Math.max(0, selectedPlan.coverage.mapped_count || 0));
+  const verifiedCount = Math.min(moduleCount, selectedPlan.modules.filter(module => module.state === 'live').length);
   const needsInputCount = selectedPlan.modules.filter(module => ['stale', 'needs_details', 'needs_search', 'unknown', 'unavailable'].includes(module.state)).length;
-  const coverage = Math.round((mappedCount / moduleCount) * 100);
+  const coverage = Math.round((verifiedCount / moduleCount) * 100);
   if (meter) {
     meter.setAttribute('aria-valuemax', String(moduleCount));
-    meter.setAttribute('aria-valuenow', String(mappedCount));
-    meter.setAttribute('aria-valuetext', `${mappedCount} תחומים מופו; ${needsInputCount} דורשים פרטים או חיפוש; אין הזמנה מאושרת`);
+    meter.setAttribute('aria-valuenow', String(verifiedCount));
+    meter.setAttribute('aria-valuetext', `${mappedCount} תחומים מופו; ${verifiedCount} אומתו במידע עדכני; ${needsInputCount} דורשים פרטים או חיפוש; אין הזמנה מאושרת`);
     const count = meter.querySelector('[data-plan-meter-count]');
     const fill = meter.querySelector('[data-plan-meter-fill]');
-    if (count) count.textContent = `${mappedCount}/${moduleCount}`;
+    const label = meter.querySelector('[data-plan-meter-label]');
+    if (count) count.textContent = `${verifiedCount}/${moduleCount}`;
     if (fill) fill.style.setProperty('--plan-coverage', `${coverage}%`);
+    if (label) label.textContent = 'תחומים אומתו';
   }
   const coverageCopy = plan.querySelector('[data-plan-coverage-copy]');
   if (coverageCopy) coverageCopy.textContent = selectedPlan.state === 'stale'
@@ -1150,6 +1178,46 @@ function renderDestinationDecisionCockpit(plan, data, responseState = 'pending')
   return selectedPlan;
 }
 
+const mapProgressStates = new Set(['confirmed', 'running', 'waiting', 'stale', 'failed']);
+const mapProgressLabels = { point: 'נקודה', destination: 'יעד', scopes: 'תחומי תכנון', live: 'מחיר וזמינות' };
+
+function announceMapProgress(message) {
+  const liveRegion = document.querySelector('[data-map-progress-live]');
+  if (!liveRegion || !message || liveRegion.textContent === message) return;
+  liveRegion.textContent = message;
+}
+
+function setMapProgressCheckpoint(name, state, detail = '', { announce = true } = {}) {
+  const checkpoint = document.querySelector(`[data-map-checkpoint="${name}"]`);
+  if (!checkpoint) return;
+  const normalizedState = mapProgressStates.has(state) ? state : 'waiting';
+  const previousState = checkpoint.dataset.state || '';
+  const detailElement = checkpoint.querySelector('[data-map-checkpoint-detail]');
+  const previousDetail = detailElement?.textContent || '';
+  const changed = previousState !== normalizedState || (detail && detail !== previousDetail);
+  checkpoint.dataset.state = normalizedState;
+  if (detail && detailElement) detailElement.textContent = detail;
+  checkpoint.classList.remove('is-new');
+  if (normalizedState === 'confirmed' && previousState !== 'confirmed' && !prefersReducedMotion()) {
+    void checkpoint.offsetWidth;
+    checkpoint.classList.add('is-new');
+    window.clearTimeout(checkpoint.traVelMotionTimer);
+    checkpoint.traVelMotionTimer = window.setTimeout(() => checkpoint.classList.remove('is-new'), 760);
+  }
+  if (announce && changed) announceMapProgress(`${mapProgressLabels[name] || name}: ${detail || previousDetail}`);
+}
+
+function setMapProgressState({ point = 'confirmed', destination = 'confirmed', scopes = 'confirmed', live = 'waiting', destinationDetail = '', liveDetail = '' } = {}) {
+  const states = { point, destination, scopes, live };
+  setMapProgressCheckpoint('point', point, point === 'confirmed' ? 'נבחרה על הגלובוס' : 'ממתין לבחירה', { announce: false });
+  setMapProgressCheckpoint('destination', destination, destinationDetail || (destination === 'confirmed' ? 'היעד זוהה' : 'ממתין לזיהוי'), { announce: false });
+  setMapProgressCheckpoint('scopes', scopes, scopes === 'confirmed' ? 'מוכנים לבדיקה' : 'ממתינים ליעד', { announce: false });
+  setMapProgressCheckpoint('live', live, liveDetail || (live === 'confirmed' ? 'מידע עדכני התקבל' : 'ממתינים לחיפוש חי'), { announce: false });
+  const confirmedCount = Object.values(states).filter(state => state === 'confirmed').length;
+  const currentDetail = liveDetail || destinationDetail || (confirmedCount ? 'התוכנית מתקדמת לפי המידע שאומת' : 'ממתינים לבחירה חדשה');
+  announceMapProgress(`התקדמות התוכנית: ${confirmedCount} מתוך 4 שלבים הושלמו. ${currentDetail}`);
+}
+
 function updateGlobeSelectionRail(data, options = {}) {
   const rail = document.querySelector('[data-globe-selection]');
   if (!rail) return;
@@ -1178,6 +1246,7 @@ function updateGlobeSelectionRail(data, options = {}) {
       action.href = destinationPlanUrl('/ai-planner/', { selection_id: options.selectionId || '', selection_kind: 'map_point', latitude: latitudeValue.toFixed(4), longitude: longitudeValue.toFixed(4), mode: 'map_point', intent: activePlanIntent, scope: fullTripPlanningScope });
       action.firstChild.textContent = 'המשיכו עם הסוכן';
     }
+    setMapProgressState({ destination: 'waiting', scopes: 'confirmed', live: 'waiting', destinationDetail: 'ממתין לזיהוי מדויק', liveDetail: 'אין עדיין נתוני ספק' });
     return;
   }
   const selectedPlan = selectedPlanForDestination(data);
@@ -1194,6 +1263,15 @@ function updateGlobeSelectionRail(data, options = {}) {
     action.href = '#destination-plan-title';
     action.firstChild.textContent = 'צפו בתוכנית';
   }
+  const anyCurrentLiveData = discoveryCommercialDataIsCurrent();
+  const liveState = options.awaiting
+    ? 'running'
+    : (anyCurrentLiveData ? 'confirmed' : (discoverySnapshotIsStale() ? 'stale' : 'waiting'));
+  setMapProgressState({
+    destinationDetail: data.city,
+    live: liveState,
+    liveDetail: options.awaiting ? 'בודקים מקורות זמינים' : (anyCurrentLiveData ? 'מידע עדכני התקבל' : (discoverySnapshotIsStale() ? 'נדרש רענון' : 'ממתינים לחיפוש חי'))
+  });
 }
 
 function revealGlobeSelection(inputType = 'pointer') {
@@ -1225,7 +1303,7 @@ function renderUnsupportedGlobeSelection(detail = {}) {
   discoveryBudgetApplied = false;
   discoveryBudgetFilterActive = false;
   updateBudgetCoverageStatus();
-  window.traVelGlobe3D?.clearSelection();
+  window.traVelGlobe3D?.clearSelection({ preservePoint: true });
   renderRoutes([]);
   const routeTitle = document.querySelector('[data-route-title]');
   if (routeTitle) routeTitle.textContent = 'המסלול ייבנה לאחר זיהוי היעד והנוסעים';
@@ -1288,12 +1366,14 @@ function renderUnsupportedGlobeSelection(detail = {}) {
     const meter = plan.querySelector('[data-plan-meter]');
     if (meter) {
       meter.setAttribute('aria-valuemax', '12');
-      meter.setAttribute('aria-valuenow', '12');
+      meter.setAttribute('aria-valuenow', '0');
       meter.setAttribute('aria-valuetext', '12 תחומי החלטה נפתחו; 0 אומתו בחיפוש חי; אין הזמנה מאושרת');
       const count = meter.querySelector('[data-plan-meter-count]');
       const fill = meter.querySelector('[data-plan-meter-fill]');
-      if (count) count.textContent = '12/12';
-      if (fill) fill.style.setProperty('--plan-coverage', '100%');
+      const label = meter.querySelector('[data-plan-meter-label]');
+      if (count) count.textContent = '0/12';
+      if (fill) fill.style.setProperty('--plan-coverage', '0%');
+      if (label) label.textContent = 'תחומים אומתו';
     }
     const coverage = plan.querySelector('[data-plan-coverage-copy]');
     if (coverage) coverage.textContent = 'כל 12 תחומי ההחלטה נפתחו מהנקודה. כולם ממתינים לזיהוי יעד, פרטים וחיפוש חי.';
@@ -1961,6 +2041,18 @@ function setDiscoveryStatus(mode, message) {
     status.dataset.state = state;
     status.textContent = message;
   }
+  const anyCurrentLiveData = discoveryCommercialDataIsCurrent();
+  const liveProgressState = mode === 'loading'
+    ? 'running'
+    : (anyCurrentLiveData && ['live', 'mixed'].includes(mode)
+      ? 'confirmed'
+      : (['refreshing', 'stale'].includes(mode) ? 'stale' : (['fallback', 'error'].includes(mode) ? 'failed' : 'waiting')));
+  const liveProgressDetail = liveProgressState === 'running'
+    ? 'בודקים מקורות זמינים'
+    : (liveProgressState === 'confirmed'
+      ? 'מידע עדכני התקבל'
+      : (liveProgressState === 'stale' ? 'מוצג מידע קודם ונדרש רענון' : (liveProgressState === 'failed' ? 'הבדיקה נעצרה, אפשר לנסות שוב' : 'ממתינים לחיפוש חי')));
+  setMapProgressCheckpoint('live', liveProgressState, liveProgressDetail);
   if (mode === 'loading') {
     updatePins();
     const pendingData = destinationData[activeDestination];

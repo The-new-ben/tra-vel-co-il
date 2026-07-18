@@ -87,13 +87,14 @@ class FakeElement {
 }
 
 const mapShell = new FakeElement();
+const documentQueries = new Map([['.theme-map-shell', mapShell]]);
 const windowListeners = new Map();
 const documentStub = {
   readyState: 'loading',
   visibilityState: 'visible',
   documentElement: { dataset: {} },
   addEventListener() {},
-  querySelector(selector) { return selector === '.theme-map-shell' ? mapShell : null; },
+  querySelector(selector) { return documentQueries.get(selector) || null; },
   querySelectorAll() { return []; },
   createElement() { return new FakeElement(); }
 };
@@ -124,6 +125,50 @@ const context = vm.createContext({
   clearTimeout: windowStub.clearTimeout
 });
 new vm.Script(appSource, { filename: appPath }).runInContext(context);
+
+const mapCheckpoints = Object.fromEntries(['point', 'destination', 'scopes', 'live'].map(name => {
+  const checkpoint = new FakeElement();
+  const detail = new FakeElement();
+  checkpoint.queries.set('[data-map-checkpoint-detail]', detail);
+  documentQueries.set(`[data-map-checkpoint="${name}"]`, checkpoint);
+  return [name, { checkpoint, detail }];
+}));
+const mapProgressLive = new FakeElement();
+documentQueries.set('[data-map-progress-live]', mapProgressLive);
+context.setMapProgressState({ destination: 'waiting', scopes: 'confirmed', live: 'running', destinationDetail: 'Awaiting exact identification', liveDetail: 'Checking available sources' });
+assert.equal(mapCheckpoints.point.checkpoint.dataset.state, 'confirmed', 'An Earth click must immediately confirm point receipt.');
+assert.equal(mapCheckpoints.destination.checkpoint.dataset.state, 'waiting', 'An unidentified point must not confirm a destination.');
+assert.equal(mapCheckpoints.scopes.checkpoint.dataset.state, 'confirmed', 'Opening the twelve planning scopes is a real structural milestone.');
+assert.equal(mapCheckpoints.live.checkpoint.dataset.state, 'running', 'Supplier work may be indeterminate without incrementing verified progress.');
+assert.equal(mapProgressLive.textWrites, 1, 'A multi-checkpoint journey transition must produce one atomic progress announcement.');
+context.setMapProgressCheckpoint('live', 'confirmed', 'Current supplier data received');
+assert.equal(mapCheckpoints.live.checkpoint.dataset.state, 'confirmed', 'Live progress advances only after an authoritative confirmed transition.');
+assert.equal(mapCheckpoints.live.checkpoint.classList.contains('is-new'), true, 'A newly confirmed checkpoint receives one positive acknowledgement.');
+context.setMapProgressCheckpoint('live', 'stale', 'Refresh required');
+assert.equal(mapCheckpoints.live.checkpoint.classList.contains('is-new'), false, 'A stale state must stop positive confirmation motion.');
+assert.equal(mapCheckpoints.live.detail.textContent, 'Refresh required', 'A stale state must keep a recoverable next-state explanation.');
+const announcementsBeforeRepeat = mapProgressLive.textWrites;
+context.setMapProgressCheckpoint('live', 'stale', 'Refresh required');
+assert.equal(mapProgressLive.textWrites, announcementsBeforeRepeat, 'An unchanged checkpoint must not repeat its polite announcement.');
+const weatherOnlyIsCommercialProgress = vm.runInContext(`
+  discoveryFreshness = 'current';
+  discoveryCacheState = 'fresh';
+  discoveryLiveLayers = { deals:false, hotels:false, airports:false, airportDetails:false, weather:true, routePrices:false, routeTotal:false };
+  discoveryCommercialDataIsCurrent();
+`, context);
+assert.equal(weatherOnlyIsCommercialProgress, false, 'Current weather alone must not confirm price and availability progress.');
+const pricedRouteIsCommercialProgress = vm.runInContext(`
+  discoveryLiveLayers.routePrices = true;
+  discoveryCommercialDataIsCurrent();
+`, context);
+assert.equal(pricedRouteIsCommercialProgress, true, 'Current supplier route pricing may confirm commercial progress.');
+vm.runInContext(`discoveryLiveLayers = { deals:false, hotels:false, airports:false, airportDetails:false, weather:false, routePrices:false, routeTotal:false };`, context);
+context.setDiscoveryStatus('fallback', 'Previous planning data remains available');
+assert.equal(mapCheckpoints.live.checkpoint.dataset.state, 'failed', 'A failed live check must stay failed even when fallback planning data remains visible.');
+context.renderDiscoveryEmptyState();
+for (const { checkpoint } of Object.values(mapCheckpoints)) {
+  assert.equal(checkpoint.dataset.state, 'waiting', 'An empty result must clear every previous progress confirmation.');
+}
 
 const root = new FakeElement();
 const runStatus = new FakeElement();
@@ -236,6 +281,9 @@ for (const selector of [
 ]) {
   assert(cssSource.includes(selector), `Transport freeze CSS is missing: ${selector}`);
 }
+assert(cssSource.includes('.map-progress-checkpoints li[data-state="running"] > i'), 'Map progress needs a visible indeterminate state without fake percentage growth.');
+assert(cssSource.includes('.theme-map-shell .globe-selection-point::after'), 'The exact selected Earth point needs a persistent marker with one-shot acknowledgement.');
+assert(cssSource.includes('.map-progress-checkpoints li,.map-progress-checkpoints li > i,.theme-map-shell .globe-selection-point::after'), 'Map progress must preserve state while removing motion for reduced-motion users.');
 assert.match(cssSource, /@media \(max-width: 760px\)[\s\S]*?\.agent-journey-head > div:first-child > span,[^{}]+\{ font-size: 11px; \}[\s\S]*?\.agent-journey-next small \{ font-size: 11px; \}/, 'Narrow-screen journey labels must remain readable.');
 
 console.log('Tra-Vel animated journey runtime checks passed.');
