@@ -115,6 +115,11 @@ $search_value = isset( $_GET['q'] ) ? sanitize_text_field( wp_unslash( $_GET['q'
 				<a class="map-imagery-attribution" href="https://visibleearth.nasa.gov/images/74218/december-blue-marble-next-generation/74226l" target="_blank" rel="noopener noreferrer">NASA Blue Marble</a>
 				<a class="map-weather-attribution" data-weather-attribution href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer" hidden>Weather data by Open-Meteo · CC BY 4.0</a>
 			</div>
+			<div class="map-trip-context" data-map-trip-context hidden>
+				<span class="map-trip-context-icon" aria-hidden="true"><i data-lucide="list-checks"></i></span>
+				<span><small><?php esc_html_e( 'פרטי הנסיעה התקבלו', 'tra-vel-v2' ); ?></small><strong data-map-trip-context-summary></strong></span>
+				<a data-map-trip-context-edit href="<?php echo esc_url( home_url( '/#search' ) ); ?>"><?php esc_html_e( 'עריכת פרטים', 'tra-vel-v2' ); ?><i data-lucide="arrow-left"></i></a>
+			</div>
 			<div class="map-selection-rail" data-globe-selection data-state="supported" tabindex="-1">
 				<span class="map-selection-signal" aria-hidden="true"><i data-lucide="map-pin-check"></i></span>
 				<span class="map-selection-copy"><small data-globe-selection-kicker><?php esc_html_e( 'הנקודה התקבלה', 'tra-vel-v2' ); ?></small><strong data-globe-selection-title><?php esc_html_e( 'בנגקוק נבחרה. תוכנית 360° נפתחה.', 'tra-vel-v2' ); ?></strong><span data-globe-selection-detail><?php esc_html_e( '12 תחומי החלטה מסודרים מתחת למפה. מחירים והזמנה יאומתו בחיפוש חי.', 'tra-vel-v2' ); ?></span></span>

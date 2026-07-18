@@ -34,6 +34,7 @@ let insuranceSearchController = null;
 let insuranceSearchGeneration = 0;
 let activePlanIntent = 'smart';
 let discoveryDestinationLocked = false;
+let discoveryDestinationMode = 'recommended';
 let activePlanningSelection = null;
 const discoveryLayers = new Set(['deals', 'hotels', 'airports', 'weather']);
 const discoverySorts = new Set(['smart', 'price', 'time', 'comfort']);
@@ -49,6 +50,14 @@ const discoveryDefaults = {
   allow_overnight: false
 };
 let discoveryQuery = { ...discoveryDefaults };
+const discoveryTripProductLabels = {
+  package: 'טיסה ומלון',
+  packages: 'חבילה',
+  flights: 'טיסות',
+  hotels: 'מלונות',
+  insurance: 'ביטוח נסיעות'
+};
+let discoveryTripContext = { product: '', origin: '', departureDate: '', returnDate: '', adults: null, children: null, rooms: null };
 const destinationPlanIntents = {
   smart: { label: 'החכמה', summary: 'מאזנים זמן, נוחות, גמישות ועלות מלאה לפני שבוחרים.' },
   value: { label: 'המשתלמת', summary: 'בודקים מה מקבלים בכל שקל ולא מסתפקים במחיר הכותרת.' },
@@ -71,6 +80,7 @@ const destinationPlanIntentConstraints = {
 };
 const directoryDestinationAliases = { bangkok: 'thailand' };
 const directoryDestinationIds = new Set(['budapest', 'prague', 'vienna', 'thailand', 'athens', 'tokyo']);
+const destinationCodeAliases = { bud: 'budapest', ath: 'athens', dxb: 'dubai', bkk: 'bangkok', hnd: 'tokyo', lis: 'lisbon' };
 
 function renderIcons() {
   if (window.lucide) window.lucide.createIcons({ attrs: { 'stroke-width': 1.8 } });
@@ -86,6 +96,23 @@ function preferredScrollBehavior() {
 
 function setTextContentIfChanged(element, value) {
   if (element && element.textContent !== value) element.textContent = value;
+}
+
+function travelDateAfter(value, days = 1) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value || '')) return '';
+  const date = new Date(`${value}T00:00:00Z`);
+  if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== value) return '';
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+function syncStrictTravelEndDate(start, end, fallbackDays) {
+  if (!start || !end) return;
+  const minimum = travelDateAfter(start.value, 1);
+  if (!minimum) return;
+  end.min = minimum;
+  if (end.value && end.value >= minimum) return;
+  end.value = travelDateAfter(start.value, fallbackDays) || minimum;
 }
 
 function createPlanningSelectionId(prefix = 'map') {
@@ -160,6 +187,51 @@ function restorePlanningSelectionFromHistory(value) {
   return true;
 }
 
+function restorePlanningSelectionFromUrl(params, { preserveMissing = false } = {}) {
+  const selectionKeys = ['selection_id', 'selection_kind', 'selection_destination', 'latitude', 'longitude'];
+  const hasSelectionContext = selectionKeys.some(key => params.has(key));
+  if (!hasSelectionContext) {
+    if (!preserveMissing) activePlanningSelection = null;
+    return false;
+  }
+
+  const kind = String(params.get('selection_kind') || '');
+  const selectionId = String(params.get('selection_id') || '');
+  const requestedDestination = String(params.get('selection_destination') || params.get('destination') || '').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 60);
+  const destination = requestedDestination === 'anywhere' ? '' : (destinationCodeAliases[requestedDestination] || requestedDestination);
+  const latitude = Number(params.get('latitude'));
+  const longitude = Number(params.get('longitude'));
+  const hasCoordinates = params.has('latitude') && params.has('longitude')
+    && Number.isFinite(latitude) && latitude >= -90 && latitude <= 90
+    && Number.isFinite(longitude) && longitude >= -180 && longitude <= 180;
+  const selectionIdIsValid = !selectionId || /^[A-Za-z0-9_-]{8,80}$/.test(selectionId);
+  const valid = selectionIdIsValid
+    && ((kind === 'map_point' && hasCoordinates) || (kind === 'destination' && Boolean(destination)));
+
+  if (!valid) {
+    activePlanningSelection = null;
+    return false;
+  }
+
+  setActivePlanningSelection({
+    selectionId,
+    latitude: hasCoordinates ? latitude : null,
+    longitude: hasCoordinates ? longitude : null,
+    destination,
+    kind
+  });
+  return true;
+}
+
+function activeFreePlanningPoint() {
+  return Boolean(
+    activePlanningSelection?.kind === 'map_point'
+    && Number.isFinite(activePlanningSelection.latitude)
+    && Number.isFinite(activePlanningSelection.longitude)
+    && !activePlanningSelection.destination
+  );
+}
+
 function discoverySnapshotIsCurrent() {
   return discoveryFreshness === 'current' && ['fresh', 'miss'].includes(discoveryCacheState);
 }
@@ -214,16 +286,106 @@ function clampDiscoveryNumber(value, minimum, maximum, fallback) {
   return Number.isFinite(number) ? Math.min(maximum, Math.max(minimum, Math.round(number))) : fallback;
 }
 
+function normalizeDiscoveryTripDate(value) {
+  const normalized = String(value || '');
+  const match = normalized.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return '';
+  const timestamp = Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+  const date = new Date(timestamp);
+  const valid = date.getUTCFullYear() === Number(match[1])
+    && date.getUTCMonth() === Number(match[2]) - 1
+    && date.getUTCDate() === Number(match[3]);
+  if (!valid) return '';
+  const now = new Date();
+  const localToday = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+  return normalized >= localToday ? normalized : '';
+}
+
+function readDiscoveryTripContext(params) {
+  const requestedProduct = String(params.get('product') || '').replace(/[^a-z]/g, '');
+  const product = Object.prototype.hasOwnProperty.call(discoveryTripProductLabels, requestedProduct) ? requestedProduct : '';
+  const originValue = String(params.get('origin') || '').toUpperCase();
+  const origin = /^[A-Z]{3}$/.test(originValue) ? originValue : '';
+  const departureDate = normalizeDiscoveryTripDate(params.get('departure_date') || params.get('checkin') || params.get('start_date'));
+  let returnDate = normalizeDiscoveryTripDate(params.get('return_date') || params.get('checkout') || params.get('end_date'));
+  const sameDayAllowed = product === 'insurance';
+  if (departureDate && returnDate && (returnDate < departureDate || (!sameDayAllowed && returnDate === departureDate))) returnDate = '';
+  const adults = params.has('adults') ? clampDiscoveryNumber(params.get('adults'), 1, 6, 2) : null;
+  const children = params.has('children') ? clampDiscoveryNumber(params.get('children'), 0, 4, 0) : null;
+  const rooms = params.has('rooms') ? clampDiscoveryNumber(params.get('rooms'), 1, 3, 1) : null;
+  discoveryTripContext = { product, origin, departureDate, returnDate, adults, children, rooms };
+  return discoveryTripContext;
+}
+
+function discoveryTripContextQuery(target = 'map') {
+  const context = discoveryTripContext;
+  const query = {};
+  if (target === 'map' && context.product) query.product = context.product;
+  if (context.origin && ['map', 'flights', 'package', 'packages', 'ai'].includes(target)) query.origin = context.origin;
+  if (context.departureDate) {
+    const startKey = target === 'hotels' ? 'checkin' : (target === 'insurance' ? 'start_date' : 'departure_date');
+    query[startKey] = context.departureDate;
+  }
+  if (context.returnDate) {
+    const endKey = target === 'hotels' ? 'checkout' : (target === 'insurance' ? 'end_date' : 'return_date');
+    query[endKey] = context.returnDate;
+  }
+  if (context.adults !== null) query.adults = context.adults;
+  if (context.children !== null) query.children = context.children;
+  if (context.rooms !== null && ['map', 'hotels', 'package', 'packages', 'ai'].includes(target)) query.rooms = context.rooms;
+  if (target === 'ai' && context.product) query.product = context.product;
+  return query;
+}
+
+function syncDiscoveryTripContext() {
+  const container = document.querySelector('[data-map-trip-context]');
+  if (!container) return;
+  const context = discoveryTripContext;
+  const hasContext = Boolean(context.product || context.origin || context.departureDate || context.returnDate || context.adults !== null || context.children !== null || context.rooms !== null);
+  container.hidden = !hasContext;
+  if (!hasContext) return;
+  const parts = [];
+  if (context.product) parts.push(discoveryTripProductLabels[context.product]);
+  if (context.departureDate && context.returnDate) parts.push(`${context.departureDate} עד ${context.returnDate}`);
+  if (context.adults !== null) parts.push(`${context.adults + (context.children || 0)} נוסעים`);
+  if (context.rooms !== null && ['package', 'packages', 'hotels'].includes(context.product)) parts.push(`${context.rooms} חדרים`);
+  if (context.origin) parts.push(`יציאה מ-${context.origin}`);
+  const summary = container.querySelector('[data-map-trip-context-summary]');
+  if (summary) summary.textContent = parts.join(' · ');
+  const edit = container.querySelector('[data-map-trip-context-edit]');
+  if (edit) {
+    const editUrl = new URL('/', window.location.origin);
+    Object.entries(discoveryTripContextQuery('map')).forEach(([key, value]) => editUrl.searchParams.set(key, String(value)));
+    if (activeDestination) editUrl.searchParams.set('destination', activeDestination);
+    else editUrl.searchParams.set('destination_mode', 'anywhere');
+    editUrl.hash = 'search';
+    edit.href = editUrl.toString();
+  }
+  const signature = JSON.stringify(context);
+  if (container.dataset.signature !== signature) {
+    container.dataset.signature = signature;
+    container.classList.remove('is-new');
+    if (!prefersReducedMotion()) {
+      void container.offsetWidth;
+      container.classList.add('is-new');
+      window.clearTimeout(container.traVelMotionTimer);
+      container.traVelMotionTimer = window.setTimeout(() => container.classList.remove('is-new'), 760);
+    }
+  }
+}
+
 function isMapWorkspacePage() {
   return Boolean(document.querySelector('.theme-map-shell'));
 }
 
-function readDiscoveryStateFromUrl() {
+function readDiscoveryStateFromUrl({ preservePlanningSelection = false } = {}) {
   const params = new URLSearchParams(window.location.search);
   const layer = params.get('layer');
   const intent = params.get('intent');
   const sort = params.get('sort');
   const trip = params.get('trip');
+  restorePlanningSelectionFromUrl(params, { preserveMissing: preservePlanningSelection });
+  readDiscoveryTripContext(params);
   activeLayer = layer && discoveryLayers.has(layer) ? layer : 'deals';
   activePlanIntent = intent && destinationPlanIntents[intent] ? intent : 'smart';
   const intentConstraints = destinationPlanIntentConstraints[activePlanIntent] || destinationPlanIntentConstraints.smart;
@@ -237,9 +399,18 @@ function readDiscoveryStateFromUrl() {
     max_duration: params.has('max_duration') ? clampDiscoveryNumber(params.get('max_duration'), 60, 3000, intentConstraints.max_duration) : intentConstraints.max_duration,
     allow_overnight: params.has('allow_overnight') ? ['1', 'true'].includes(params.get('allow_overnight')) : intentConstraints.allow_overnight
   };
-  const destination = String(params.get('destination') || '').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 60);
+  const requestedDestination = String(params.get('destination') || '').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 60);
+  const destination = requestedDestination === 'anywhere' ? '' : (destinationCodeAliases[requestedDestination] || requestedDestination);
+  const openEndedRequested = params.get('destination_mode') === 'anywhere' || requestedDestination === 'anywhere';
+  discoveryDestinationMode = openEndedRequested && !destination ? 'anywhere' : 'recommended';
   discoveryDestinationLocked = Boolean(destination);
   if (destination) activeDestination = destination;
+  else if (discoveryDestinationMode === 'anywhere') activeDestination = '';
+  if (activeFreePlanningPoint()) {
+    discoveryDestinationMode = 'recommended';
+    discoveryDestinationLocked = false;
+    activeDestination = '';
+  }
 }
 
 function normalizeFieldProvenance(provenance = {}) {
@@ -378,14 +549,16 @@ function syncDiscoveryControls() {
   });
   const mapQuery = document.querySelector('.map-search-bar [name="q"]');
   if (mapQuery) mapQuery.value = discoveryQuery.q;
+  syncDiscoveryTripContext();
 }
 
 function syncDiscoveryUrl(mode = 'push') {
   if (!isMapWorkspacePage()) return;
   const url = new URL(window.location.href);
-  const keys = ['destination', 'layer', 'intent', 'q', 'budget', 'direct', 'sort', 'trip', 'max_stops', 'max_duration', 'allow_overnight'];
+  const keys = ['destination', 'destination_mode', 'selection_id', 'selection_kind', 'selection_destination', 'latitude', 'longitude', 'layer', 'intent', 'q', 'budget', 'direct', 'sort', 'trip', 'max_stops', 'max_duration', 'allow_overnight', 'product', 'origin', 'departure_date', 'return_date', 'checkin', 'checkout', 'start_date', 'end_date', 'adults', 'children', 'rooms'];
   keys.forEach(key => url.searchParams.delete(key));
   if (discoveryDestinationLocked && activeDestination) url.searchParams.set('destination', activeDestination);
+  else if (discoveryDestinationMode === 'anywhere') url.searchParams.set('destination_mode', 'anywhere');
   if (activeLayer !== 'deals') url.searchParams.set('layer', activeLayer);
   if (activePlanIntent !== 'smart') url.searchParams.set('intent', activePlanIntent);
   if (discoveryQuery.q) url.searchParams.set('q', discoveryQuery.q);
@@ -396,6 +569,19 @@ function syncDiscoveryUrl(mode = 'push') {
   if (discoveryQuery.max_stops !== discoveryDefaults.max_stops) url.searchParams.set('max_stops', String(discoveryQuery.max_stops));
   if (discoveryQuery.max_duration !== discoveryDefaults.max_duration) url.searchParams.set('max_duration', String(discoveryQuery.max_duration));
   if (discoveryQuery.allow_overnight) url.searchParams.set('allow_overnight', '1');
+  Object.entries(discoveryTripContextQuery('map')).forEach(([key, value]) => url.searchParams.set(key, String(value)));
+  const selectionMatchesLockedDestination = discoveryDestinationLocked
+    && Boolean(activeDestination)
+    && activePlanningSelection?.destination === activeDestination;
+  if (activeFreePlanningPoint() || (activePlanningSelection && ['destination', 'map_point'].includes(activePlanningSelection.kind) && selectionMatchesLockedDestination)) {
+    const selectionQuery = activePlanningSelectionQuery('');
+    const selectionDestination = selectionQuery.destination;
+    delete selectionQuery.destination;
+    Object.entries(selectionQuery).forEach(([key, value]) => {
+      if (value !== '' && value !== undefined && value !== null) url.searchParams.set(key, String(value));
+    });
+    if (selectionDestination) url.searchParams.set('selection_destination', selectionDestination);
+  }
   const method = mode === 'replace' ? 'replaceState' : 'pushState';
   window.history[method]({ traVelMap: true, focus: activeDestination || '', planningSelection: planningSelectionHistoryState() }, '', `${url.pathname}${url.search}${url.hash}`);
 }
@@ -458,6 +644,7 @@ function bindDestinationPin(pin) {
   pin.dataset.selectionBound = 'true';
   pin.addEventListener('click', event => {
     event.stopPropagation();
+    discoveryDestinationMode = 'recommended';
     setActivePlanningSelection({ latitude: pin.dataset.latitude, longitude: pin.dataset.longitude, destination: pin.dataset.destination, kind: 'destination' });
     discoveryDestinationLocked = true;
     discoverySelectedPlan = null;
@@ -616,8 +803,8 @@ function setActiveDestination(key, pin, motion = true) {
     replaceChildrenWithSpans(card.querySelector('[data-result-tags]'), displayTags);
     const cardLinks = {
       '[data-result-guide]': data.url || destinationPlanUrl('/destinations/', { destination: data.id }),
-      '[data-result-hotels]': destinationPlanUrl('/hotels/', { destination: data.airportCode || '', area: data.hotelArea || '' }),
-      '[data-result-insurance]': destinationPlanUrl('/travel-insurance/', { trip_destination: data.id })
+      '[data-result-hotels]': destinationPlanUrl('/hotels/', { destination: data.airportCode || '', area: data.hotelArea || '', ...discoveryTripContextQuery('hotels') }),
+      '[data-result-insurance]': destinationPlanUrl('/travel-insurance/', { trip_destination: data.id, ...discoveryTripContextQuery('insurance') })
     };
     Object.entries(cardLinks).forEach(([selector, href]) => {
       const link = card.querySelector(selector);
@@ -648,6 +835,7 @@ function setActiveDestination(key, pin, motion = true) {
   updateHomeDestinationPlan(data, animatePlan && responseConfirmed);
   updateDestinationPlan(data, animatePlan, responseState);
   updateGlobeSelectionRail(data, { animate: animatePlan });
+  syncDiscoveryTripContext();
 }
 
 function resetDestinationPlanTransientState(plan, { pointReceived = false } = {}) {
@@ -717,7 +905,9 @@ function resetDestinationPlanTransientState(plan, { pointReceived = false } = {}
   }
 }
 
-function renderDiscoveryEmptyState() {
+function renderDiscoveryEmptyState({ reason = 'filters' } = {}) {
+  const openEnded = reason === 'open';
+  activePlanningSelection = null;
   activeDestination = '';
   activeRouteId = '';
   activeRouteSelectionLocked = false;
@@ -734,11 +924,11 @@ function renderDiscoveryEmptyState() {
     const image = card.querySelector('[data-result-image]');
     if (image) image.hidden = true;
     const fields = {
-      '[data-result-city]': 'לא נמצא יעד שתואם לבחירות',
-      '[data-result-state-label]': 'תוצאת הסינון',
-      '[data-result-price]': 'נדרש שינוי סינון',
-      '[data-result-total]': 'אין תוצאה',
-      '[data-result-note]': 'נסו להרחיב תקציב, גמישות או יעדים.',
+      '[data-result-city]': openEnded ? 'היעד נשאר פתוח לבחירה' : 'לא נמצא יעד שתואם לבחירות',
+      '[data-result-state-label]': openEnded ? 'חיפוש בלי יעד קבוע' : 'תוצאת הסינון',
+      '[data-result-price]': openEnded ? 'בחרו נקודה או יעד' : 'נדרש שינוי סינון',
+      '[data-result-total]': openEnded ? 'לא בחרנו במקומכם' : 'אין תוצאה',
+      '[data-result-note]': openEnded ? 'היעדים והמפה מוכנים. תוכנית 360° תיפתח אחרי הבחירה הראשונה.' : 'נסו להרחיב תקציב, גמישות או יעדים.',
       '[data-result-airport]': 'שדות תעופה',
       '[data-result-hotel]': 'אזורי לינה',
       '[data-result-weather]': 'מזג אוויר'
@@ -747,12 +937,12 @@ function renderDiscoveryEmptyState() {
       const field = card.querySelector(selector);
       if (field) field.textContent = value;
     });
-    replaceChildrenWithSpans(card.querySelector('[data-result-tags]'), ['הרחיבו תקציב', 'שנו תאריכים', 'פתחו יעדים']);
+    replaceChildrenWithSpans(card.querySelector('[data-result-tags]'), openEnded ? ['הבקשה התקבלה', 'היעד פתוח', 'אתם בשליטה'] : ['הרחיבו תקציב', 'שנו תאריכים', 'פתחו יעדים']);
     const saveButton = card.querySelector('.save-button');
     if (saveButton) {
       saveButton.disabled = true;
       saveButton.classList.remove('is-saved');
-      saveButton.setAttribute('aria-label', 'אין יעד זמין לשמירה');
+      saveButton.setAttribute('aria-label', openEnded ? 'בחרו יעד לפני שמירה' : 'אין יעד זמין לשמירה');
     }
     const fallbackLinks = {
       '[data-result-guide]': destinationPlanUrl('/destinations/'),
@@ -761,11 +951,20 @@ function renderDiscoveryEmptyState() {
     };
     Object.entries(fallbackLinks).forEach(([selector, href]) => {
       const link = card.querySelector(selector);
-      if (link) link.href = href;
+      if (!link) return;
+      if (openEnded) {
+        link.removeAttribute('href');
+        link.setAttribute('aria-disabled', 'true');
+        link.tabIndex = -1;
+        return;
+      }
+      link.href = href;
+      link.removeAttribute('aria-disabled');
+      link.removeAttribute('tabindex');
     });
   });
   const routeTitle = document.querySelector('[data-route-title]');
-  if (routeTitle) routeTitle.textContent = 'אין מסלול עד שבוחרים יעד תואם';
+  if (routeTitle) routeTitle.textContent = openEnded ? 'המסלול ייבנה אחרי בחירת יעד' : 'אין מסלול עד שבוחרים יעד תואם';
   const homeRouteBoard = document.querySelector('[data-home-route-board]');
   const homeRouteEmpty = document.querySelector('[data-home-route-empty]');
   if (homeRouteBoard && homeRouteEmpty) {
@@ -773,7 +972,7 @@ function renderDiscoveryEmptyState() {
     homeRouteEmpty.hidden = false;
   }
   const homePlanSummary = document.querySelector('[data-home-plan-summary]');
-  if (homePlanSummary) homePlanSummary.textContent = 'שנו את הבחירות כדי לפתוח תוכנית 360° ליעד מתאים.';
+  if (homePlanSummary) homePlanSummary.textContent = openEnded ? 'בחרו יעד כדי לפתוח תוכנית 360° בלי לאבד את פרטי הנסיעה.' : 'שנו את הבחירות כדי לפתוח תוכנית 360° ליעד מתאים.';
   document.querySelectorAll('[data-home-plan-flight],[data-home-plan-stay],[data-home-plan-guide],[data-home-plan-ai],[data-home-plan-full]').forEach(link => {
     link.setAttribute('aria-disabled', 'true');
     link.removeAttribute('href');
@@ -790,29 +989,29 @@ function renderDiscoveryEmptyState() {
     const title = plan.querySelector('[data-plan-title]');
     const state = plan.querySelector('[data-plan-state]');
     const summary = plan.querySelector('[data-plan-summary]');
-    if (title) title.textContent = 'התוכנית מחכה ליעד מתאים';
-    if (state) state.textContent = 'שנו את הבחירות כדי להמשיך';
-    if (summary) summary.textContent = 'לא נשאיר מידע ישן מתחת למפה כאשר אין תוצאה תואמת.';
+    if (title) title.textContent = openEnded ? 'התוכנית מחכה לבחירה הראשונה שלכם' : 'התוכנית מחכה ליעד מתאים';
+    if (state) state.textContent = openEnded ? 'פרטי הנסיעה נשמרו · היעד פתוח' : 'שנו את הבחירות כדי להמשיך';
+    if (summary) summary.textContent = openEnded ? 'סובבו את העולם, בחרו יעד או תנו לסוכן להציע כיוון לפי הפרטים שכבר התקבלו.' : 'לא נשאיר מידע ישן מתחת למפה כאשר אין תוצאה תואמת.';
     plan.querySelectorAll('[data-plan-flight],[data-plan-stay],[data-plan-experience],[data-plan-weather],[data-plan-cover],[data-plan-total],[data-plan-guide]').forEach(link => {
       link.setAttribute('aria-disabled', 'true');
       link.tabIndex = -1;
       link.removeAttribute('href');
     });
     const ai = plan.querySelector('[data-plan-ai]');
-    if (ai) ai.href = destinationPlanUrl('/ai-planner/', { mode: 'surprise' });
+    if (ai) ai.href = destinationPlanUrl('/ai-planner/', { mode: 'surprise', ...discoveryTripContextQuery('ai') });
     const save = plan.querySelector('[data-plan-save]');
     if (save) save.disabled = true;
     const meter = plan.querySelector('[data-plan-meter]');
     if (meter) {
       meter.setAttribute('aria-valuenow', '0');
-      meter.setAttribute('aria-valuetext', '0 תחומים מופו; אין יעד; אין הזמנה מאושרת');
+      meter.setAttribute('aria-valuetext', openEnded ? 'פרטי הנסיעה התקבלו; אין יעד; אין הזמנה מאושרת' : '0 תחומים מופו; אין יעד; אין הזמנה מאושרת');
       const count = meter.querySelector('[data-plan-meter-count]');
       const fill = meter.querySelector('[data-plan-meter-fill]');
       if (count) count.textContent = '0/12';
       if (fill) fill.style.setProperty('--plan-coverage', '0%');
     }
     const coverageCopy = plan.querySelector('[data-plan-coverage-copy]');
-    if (coverageCopy) coverageCopy.textContent = 'אין כיסוי פעיל. 12 תחומי ההחלטה ייפתחו מחדש לאחר בחירת יעד.';
+    if (coverageCopy) coverageCopy.textContent = openEnded ? 'פרטי הנסיעה נשמרו. 12 תחומי ההחלטה ייפתחו לאחר בחירת יעד.' : 'אין כיסוי פעיל. 12 תחומי ההחלטה ייפתחו מחדש לאחר בחירת יעד.';
     plan.querySelectorAll('[data-plan-module]').forEach(module => {
       module.dataset.state = 'unknown';
       const moduleState = module.querySelector('[data-plan-module-state]');
@@ -821,7 +1020,7 @@ function renderDiscoveryEmptyState() {
       if (moduleState) moduleState.textContent = 'ממתין ליעד';
       if (moduleDetail) moduleDetail.textContent = 'לא נשאיר כאן פרטים מהיעד הקודם. בחרו יעד או בקשו מהסוכן להציע אחד.';
       if (moduleAction) {
-        moduleAction.href = destinationPlanUrl('/ai-planner/', { mode: 'surprise', scope: module.dataset.planModule || '' });
+        moduleAction.href = destinationPlanUrl('/ai-planner/', { mode: 'surprise', scope: module.dataset.planModule || '', ...discoveryTripContextQuery('ai') });
         moduleAction.removeAttribute('aria-disabled');
       }
     });
@@ -841,20 +1040,20 @@ function renderDiscoveryEmptyState() {
     if (ledgerState) ledgerState.textContent = '12 רכיבי עלות ממתינים';
     if (ledgerTruth) ledgerTruth.textContent = 'אין מחיר, חיסכון או הזמנה עד לבחירת יעד וחיפוש ספקים בר-השוואה.';
     const planTruth = plan.querySelector('[data-plan-truth]');
-    if (planTruth) planTruth.textContent = 'אין מידע ישן, מחיר או הזמנה פעילה. בחרו יעד כדי להתחיל מחדש.';
+    if (planTruth) planTruth.textContent = openEnded ? 'פרטי הנסיעה התקבלו. עדיין אין יעד, מחיר, זמינות או הזמנה.' : 'אין מידע ישן, מחיר או הזמנה פעילה. בחרו יעד כדי להתחיל מחדש.';
   }
   const rail = document.querySelector('[data-globe-selection]');
   if (rail) {
-    rail.dataset.state = 'empty';
+    rail.dataset.state = openEnded ? 'open' : 'empty';
     const kicker = rail.querySelector('[data-globe-selection-kicker]');
     const title = rail.querySelector('[data-globe-selection-title]');
     const detail = rail.querySelector('[data-globe-selection-detail]');
     const action = rail.querySelector('[data-globe-selection-action]');
-    if (kicker) kicker.textContent = 'אין תוצאה פעילה';
-    if (title) title.textContent = 'אין כרגע יעד שתואם לבחירות';
-    if (detail) detail.textContent = 'הרחיבו תקציב, גמישות או חיפוש כדי לפתוח שוב את תוכנית 360°.';
+    if (kicker) kicker.textContent = openEnded ? 'הבקשה התקבלה' : 'אין תוצאה פעילה';
+    if (title) title.textContent = openEnded ? 'לא בחרנו יעד במקומכם' : 'אין כרגע יעד שתואם לבחירות';
+    if (detail) detail.textContent = openEnded ? 'סובבו את הגלובוס ובחרו נקודה, או בקשו מהסוכן להציע יעד לפי התאריכים וההרכב.' : 'הרחיבו תקציב, גמישות או חיפוש כדי לפתוח שוב את תוכנית 360°.';
     if (action) {
-      action.href = destinationPlanUrl('/ai-planner/', { mode: 'surprise' });
+      action.href = destinationPlanUrl('/ai-planner/', { mode: 'surprise', ...discoveryTripContextQuery('ai') });
       action.firstChild.textContent = 'תפתיעו אותי';
     }
   }
@@ -863,8 +1062,8 @@ function renderDiscoveryEmptyState() {
     destination: 'waiting',
     scopes: 'waiting',
     live: 'waiting',
-    destinationDetail: 'אין יעד שתואם לבחירות',
-    liveDetail: 'שנו את הסינון כדי להתחיל מחדש'
+    destinationDetail: openEnded ? 'ממתינים לבחירה שלכם' : 'אין יעד שתואם לבחירות',
+    liveDetail: openEnded ? 'מחיר וזמינות ייבדקו לאחר בחירת יעד' : 'שנו את הסינון כדי להתחיל מחדש'
   });
 }
 
@@ -1243,7 +1442,16 @@ function updateGlobeSelectionRail(data, options = {}) {
     if (title) title.textContent = `נבחר אזור ב-${latitude}°, ${longitude}°`;
     if (detail) detail.textContent = 'לא נמציא יעד. הכיסוי המובנה עדיין חסר, והסוכן יכול להתחיל מהנקודה ולבקש רק את הפרטים הנחוצים.';
     if (action) {
-      action.href = destinationPlanUrl('/ai-planner/', { selection_id: options.selectionId || '', selection_kind: 'map_point', latitude: latitudeValue.toFixed(4), longitude: longitudeValue.toFixed(4), mode: 'map_point', intent: activePlanIntent, scope: fullTripPlanningScope });
+      action.href = destinationPlanUrl('/ai-planner/', {
+        selection_id: options.selectionId || '',
+        selection_kind: 'map_point',
+        latitude: latitudeValue.toFixed(4),
+        longitude: longitudeValue.toFixed(4),
+        mode: 'map_point',
+        intent: activePlanIntent,
+        ...discoveryTripContextQuery('ai'),
+        scope: fullTripPlanningScope
+      });
       action.firstChild.textContent = 'המשיכו עם הסוכן';
     }
     setMapProgressState({ destination: 'waiting', scopes: 'confirmed', live: 'waiting', destinationDetail: 'ממתין לזיהוי מדויק', liveDetail: 'אין עדיין נתוני ספק' });
@@ -1287,9 +1495,14 @@ function renderUnsupportedGlobeSelection(detail = {}) {
   const latitude = Number(detail.latitude);
   const longitude = Number(detail.longitude);
   if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
-  const selectionId = /^[A-Za-z0-9_-]{8,80}$/.test(detail.selectionId || '')
-    ? detail.selectionId
-    : setActivePlanningSelection({ latitude, longitude, kind: 'map_point' }).selection_id;
+  const requestedSelectionId = /^[A-Za-z0-9_-]{8,80}$/.test(detail.selectionId || '') ? detail.selectionId : '';
+  const selectionId = setActivePlanningSelection({
+    selectionId: requestedSelectionId,
+    latitude,
+    longitude,
+    destination: '',
+    kind: 'map_point'
+  }).selection_id;
   discoveryRequestController?.abort();
   discoveryRequestController = null;
   discoveryRequestGeneration += 1;
@@ -1299,11 +1512,17 @@ function renderUnsupportedGlobeSelection(detail = {}) {
   discoverySelectedPlan = null;
   discoveryRoutes = [];
   discoveryDestinationLocked = false;
+  discoveryDestinationMode = 'recommended';
   discoveryBudgetCoverage = 'none';
   discoveryBudgetApplied = false;
   discoveryBudgetFilterActive = false;
   updateBudgetCoverageStatus();
   window.traVelGlobe3D?.clearSelection({ preservePoint: true });
+  document.querySelectorAll('.price-pin[data-destination]').forEach(item => {
+    item.classList.remove('is-active');
+    if (item.matches('button')) item.setAttribute('aria-pressed', 'false');
+    else item.removeAttribute('aria-current');
+  });
   renderRoutes([]);
   const routeTitle = document.querySelector('[data-route-title]');
   if (routeTitle) routeTitle.textContent = 'המסלול ייבנה לאחר זיהוי היעד והנוסעים';
@@ -1361,7 +1580,7 @@ function renderUnsupportedGlobeSelection(detail = {}) {
       link.removeAttribute('href');
     });
     const ai = plan.querySelector('[data-plan-ai]');
-    const pointContext = { selection_id: selectionId, selection_kind: 'map_point', latitude: latitude.toFixed(4), longitude: longitude.toFixed(4), mode: 'map_point', intent: activePlanIntent };
+    const pointContext = { selection_id: selectionId, selection_kind: 'map_point', latitude: latitude.toFixed(4), longitude: longitude.toFixed(4), mode: 'map_point', intent: activePlanIntent, ...discoveryTripContextQuery('ai') };
     if (ai) ai.href = destinationPlanUrl('/ai-planner/', { ...pointContext, scope: fullTripPlanningScope });
     const meter = plan.querySelector('[data-plan-meter]');
     if (meter) {
@@ -1427,6 +1646,7 @@ function initGlobePointSelection() {
       renderUnsupportedGlobeSelection(detail);
       return;
     }
+    discoveryDestinationMode = 'recommended';
     discoveryDestinationLocked = true;
     discoverySelectedPlan = null;
     activeRouteId = '';
@@ -1573,16 +1793,17 @@ function updateDestinationPlan(data, animate = true, responseState = animate ? '
     route: activeRouteId
   };
   const links = {
-    '[data-plan-flight]': destinationPlanUrl('/flights/', { destination: airportCode, ...planningContext }),
-    '[data-plan-stay]': destinationPlanUrl('/hotels/', { destination: airportCode, area: data.hotelArea || '', ...planningContext }),
-    '[data-plan-experience]': destinationDirectoryUrl(destinationId, planningContext),
-    '[data-plan-weather]': destinationPlanUrl('/travel-map/', { destination: destinationId, layer: 'weather', intent: activePlanIntent, ...discoveryQuery }),
-    '[data-plan-cover]': destinationPlanUrl('/travel-insurance/', { trip_destination: destinationId, intent: activePlanIntent }),
-    '[data-plan-total]': destinationPlanUrl('/packages/', { destination: airportCode, ...planningContext }),
+    '[data-plan-flight]': destinationPlanUrl('/flights/', { destination: airportCode, ...discoveryTripContextQuery('flights'), ...planningContext }),
+    '[data-plan-stay]': destinationPlanUrl('/hotels/', { destination: airportCode, area: data.hotelArea || '', ...discoveryTripContextQuery('hotels'), ...planningContext }),
+    '[data-plan-experience]': destinationDirectoryUrl(destinationId, { ...discoveryTripContextQuery('map'), ...planningContext }),
+    '[data-plan-weather]': destinationPlanUrl('/travel-map/', { destination: destinationId, layer: 'weather', intent: activePlanIntent, ...discoveryQuery, ...discoveryTripContextQuery('map') }),
+    '[data-plan-cover]': destinationPlanUrl('/travel-insurance/', { trip_destination: destinationId, intent: activePlanIntent, ...discoveryTripContextQuery('insurance') }),
+    '[data-plan-total]': destinationPlanUrl('/packages/', { destination: airportCode, ...discoveryTripContextQuery('packages'), ...planningContext }),
     '[data-plan-guide]': data.url || destinationPlanUrl('/destinations/', { destination: destinationId }),
     '[data-plan-ai]': destinationPlanUrl('/ai-planner/', {
       ...activePlanningSelectionQuery(destinationId),
       scope: fullTripPlanningScope,
+      ...discoveryTripContextQuery('ai'),
       ...planningContext
     })
   };
@@ -2027,7 +2248,7 @@ function selectRoute(card) {
   window.traVelGlobe3D?.pulseRoute?.();
 }
 
-function setDiscoveryStatus(mode, message) {
+function setDiscoveryStatus(mode, message, { planWork = true } = {}) {
   discoveryRequestPending = mode === 'loading';
   if (mode === 'loading') updateBudgetCoverageStatus('loading');
   const canvas = document.querySelector('[data-map-canvas]');
@@ -2042,19 +2263,23 @@ function setDiscoveryStatus(mode, message) {
     status.textContent = message;
   }
   const anyCurrentLiveData = discoveryCommercialDataIsCurrent();
-  const liveProgressState = mode === 'loading'
+  const liveProgressState = !planWork
+    ? 'waiting'
+    : (mode === 'loading'
     ? 'running'
     : (anyCurrentLiveData && ['live', 'mixed'].includes(mode)
       ? 'confirmed'
-      : (['refreshing', 'stale'].includes(mode) ? 'stale' : (['fallback', 'error'].includes(mode) ? 'failed' : 'waiting')));
-  const liveProgressDetail = liveProgressState === 'running'
+      : (['refreshing', 'stale'].includes(mode) ? 'stale' : (['fallback', 'error'].includes(mode) ? 'failed' : 'waiting'))));
+  const liveProgressDetail = !planWork
+    ? 'בחרו יעד כדי להתחיל בדיקת מחיר וזמינות'
+    : (liveProgressState === 'running'
     ? 'בודקים מקורות זמינים'
     : (liveProgressState === 'confirmed'
       ? 'מידע עדכני התקבל'
-      : (liveProgressState === 'stale' ? 'מוצג מידע קודם ונדרש רענון' : (liveProgressState === 'failed' ? 'הבדיקה נעצרה, אפשר לנסות שוב' : 'ממתינים לחיפוש חי')));
+      : (liveProgressState === 'stale' ? 'מוצג מידע קודם ונדרש רענון' : (liveProgressState === 'failed' ? 'הבדיקה נעצרה, אפשר לנסות שוב' : 'ממתינים לחיפוש חי'))));
   setMapProgressCheckpoint('live', liveProgressState, liveProgressDetail);
-  if (mode === 'loading') {
-    updatePins();
+  updatePins();
+  if (mode === 'loading' && planWork) {
     const pendingData = destinationData[activeDestination];
     if (pendingData) {
       setActiveDestination(activeDestination, null, {
@@ -2068,10 +2293,10 @@ function setDiscoveryStatus(mode, message) {
   }
   const plan = document.querySelector('[data-destination-plan]');
   if (plan) {
-    plan.dataset.requestState = mode;
-    plan.setAttribute('aria-busy', String(mode === 'loading'));
+    plan.dataset.requestState = planWork ? mode : 'waiting-for-destination';
+    plan.setAttribute('aria-busy', String(planWork && mode === 'loading'));
     const planState = plan.querySelector('[data-plan-state]');
-    if (mode === 'loading') {
+    if (mode === 'loading' && planWork) {
       plan.classList.remove('is-updating');
       updateDestinationPlanStages(plan, 'pending');
       if (planState) planState.textContent = 'מעדכנים את התוכנית לפי הבחירה שלכם';
@@ -2079,15 +2304,15 @@ function setDiscoveryStatus(mode, message) {
       if (save) save.disabled = true;
     }
   }
-  if (mode === 'loading') {
+  if (mode === 'loading' && planWork) {
     document.querySelectorAll('[data-map-result] .save-button').forEach(button => { button.disabled = true; });
   }
   const homePlan = document.querySelector('[data-home-plan]');
   if (homePlan) {
-    homePlan.dataset.requestState = mode;
-    homePlan.setAttribute('aria-busy', String(mode === 'loading'));
+    homePlan.dataset.requestState = planWork ? mode : 'waiting-for-destination';
+    homePlan.setAttribute('aria-busy', String(planWork && mode === 'loading'));
     const homeSummary = homePlan.querySelector('[data-home-plan-summary]');
-    if (mode === 'loading') {
+    if (mode === 'loading' && planWork) {
       homePlan.classList.remove('is-updating');
       if (homeSummary) homeSummary.textContent = 'היעד נבחר. בודקים דרך, לינה, חוויות ותנאים...';
     }
@@ -2110,6 +2335,7 @@ async function hydrateDiscovery(params = {}) {
   const endpoint = window.traVelV2?.discoveryUrl;
   if (!endpoint || !document.querySelector('[data-discovery-globe] .price-pin[data-destination]')) return;
   const requestParams = discoveryRequestParams(params);
+  const openEndedRequest = discoveryDestinationMode === 'anywhere' && !discoveryDestinationLocked && !requestParams.destination;
   const url = new URL(endpoint, window.location.origin);
   Object.entries(requestParams).forEach(([key, value]) => {
     if (value !== '' && value !== undefined && value !== false) url.searchParams.set(key, String(value));
@@ -2123,8 +2349,13 @@ async function hydrateDiscovery(params = {}) {
     timedOut = true;
     controller.abort();
   }, 12000) : 0;
-  setDiscoveryStatus('loading', 'מעדכן יעדים ומסלולים...');
-  setRouteListBusy(true);
+  if (openEndedRequest) {
+    renderDiscoveryEmptyState({ reason: 'open' });
+    setDiscoveryStatus('loading', 'מעדכנים את היעדים הזמינים על המפה. בדיקת מחיר ותוכנית תתחיל רק לאחר בחירה.', { planWork: false });
+  } else {
+    setDiscoveryStatus('loading', 'מעדכן יעדים ומסלולים...');
+    setRouteListBusy(true);
+  }
   try {
     const response = await fetch(url, { headers: { Accept: 'application/json' }, ...(controller ? { signal: controller.signal } : {}) });
     if (!response.ok) throw new Error(`Discovery request failed: ${response.status}`);
@@ -2159,7 +2390,12 @@ async function hydrateDiscovery(params = {}) {
     const selected = destinationData[resolvedDestination]
       ? resolvedDestination
       : (destinationData[requestParams.destination] ? requestParams.destination : Object.keys(destinationData)[0]);
-    if (selected) {
+    const remainOpen = openEndedRequest;
+    if (remainOpen) {
+      discoveryLiveLayers = { deals: false, hotels: false, airports: false, airportDetails: false, weather: false, routePrices: false, routeTotal: false };
+      renderDiscoveryEmptyState({ reason: 'open' });
+      syncDiscoveryUrl('replace');
+    } else if (selected) {
       discoveryLiveLayers = destinationData[selected]?.liveLayers || resolveDiscoveryLiveLayers(discoveryFieldProvenance, selected);
       discoveryRoutes = resolvedDestination === selected && Array.isArray(payload.routes)
         ? payload.routes.filter(route => route.destination_id === selected)
@@ -2185,18 +2421,20 @@ async function hydrateDiscovery(params = {}) {
       : (payload.layers?.find(layer => layer.id === activeLayer)?.label || 'יעדים');
     const liveModeLabels = { deals: 'מחירי הצעה מעודכנים', hotels: 'מחירי לינה מעודכנים', airports: 'נתוני דרך מעודכנים', weather: 'תנאי מזג אוויר נוכחיים' };
     const verificationLabels = { deals: 'מחיר יוצג לאחר חיפוש', hotels: 'מחיר חדר ותנאים ייבדקו בחיפוש', airports: 'זמן, עצירות ותנאים ייבדקו בחיפוש', weather: 'תחזית תוצג לפי תאריך הנסיעה' };
-    const modeLabel = discoveryFreshness !== 'current'
+    const modeLabel = remainOpen
+      ? 'בחרו יעד כדי לפתוח מחיר, זמינות ותוכנית מלאה'
+      : (discoveryFreshness !== 'current'
       ? discoveryFreshnessLabel()
       : (discoveryLiveLayers[activeLayer]
       ? liveModeLabels[activeLayer]
-      : verificationLabels[activeLayer]);
+      : verificationLabels[activeLayer]));
     const confirmedState = discoverySnapshotIsStale()
       ? discoveryFreshness
       : (['fallback', 'error'].includes(discoveryDataMode)
       ? discoveryDataMode
       : (discoveryLiveLayers[activeLayer] && discoverySnapshotIsCurrent() ? 'live' : 'demo'));
     const budgetLabel = budgetCoverageLabel();
-    setDiscoveryStatus(confirmedState, `${layerName} · ${payload.meta.result_count} יעדים · ${modeLabel}${budgetLabel ? ` · ${budgetLabel}` : ''}`);
+    setDiscoveryStatus(confirmedState, `${layerName} · ${payload.meta.result_count} יעדים · ${modeLabel}${budgetLabel ? ` · ${budgetLabel}` : ''}`, { planWork: !remainOpen });
   } catch (error) {
     if ((error?.name === 'AbortError' && !timedOut) || generation !== discoveryRequestGeneration) return;
     discoveryDataMode = 'demo';
@@ -2218,8 +2456,12 @@ async function hydrateDiscovery(params = {}) {
     updateBudgetCoverageStatus();
     updatePins();
     renderRoutes([]);
-    const fallbackDestination = destinationData[requestParams.destination] ? requestParams.destination : Object.keys(destinationData)[0];
-    if (fallbackDestination) {
+    const remainOpen = openEndedRequest;
+    const fallbackDestination = remainOpen ? '' : (destinationData[requestParams.destination] ? requestParams.destination : Object.keys(destinationData)[0]);
+    if (remainOpen) {
+      renderDiscoveryEmptyState({ reason: 'open' });
+      syncDiscoveryUrl('replace');
+    } else if (fallbackDestination) {
       setActiveDestination(fallbackDestination, document.querySelector(`[data-destination="${fallbackDestination}"]`), {
         animate: false,
         responseConfirmed: false,
@@ -2229,7 +2471,7 @@ async function hydrateDiscovery(params = {}) {
       });
       syncDiscoveryUrl('replace');
     }
-    setDiscoveryStatus(fallbackDestination ? 'fallback' : 'error', timedOut ? 'העדכון החי נעצר בזמן · 6 יעדים נשארו זמינים לתכנון' : '6 יעדים זמינים · מחירים יופיעו בחיפוש חי');
+    setDiscoveryStatus(remainOpen || fallbackDestination ? 'fallback' : 'error', timedOut ? 'העדכון החי נעצר בזמן · 6 יעדים נשארו זמינים לתכנון' : '6 יעדים זמינים · מחירים יופיעו בחיפוש חי', { planWork: !remainOpen });
     console.warn(error);
   } finally {
     if (timeoutId) window.clearTimeout(timeoutId);
@@ -2368,14 +2610,7 @@ function initFlightSearch() {
   const departure = form.querySelector('[name="departure_date"]');
   const returning = form.querySelector('[name="return_date"]');
   departure?.addEventListener('change', () => {
-    if (returning) {
-      returning.min = departure.value;
-      if (returning.value <= departure.value) {
-        const next = new Date(`${departure.value}T12:00:00`);
-        next.setDate(next.getDate() + 7);
-        returning.value = next.toISOString().slice(0, 10);
-      }
-    }
+    syncStrictTravelEndDate(departure, returning, 7);
   });
   form.querySelectorAll('[name="origin"], [name="destination"]').forEach(input => input.addEventListener('input', () => {
     input.value = input.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3);
@@ -2574,13 +2809,7 @@ function initHotelSearch() {
   const checkin = form.querySelector('[name="checkin"]');
   const checkout = form.querySelector('[name="checkout"]');
   checkin?.addEventListener('change', () => {
-    if (!checkout) return;
-    checkout.min = checkin.value;
-    if (checkout.value <= checkin.value) {
-      const next = new Date(`${checkin.value}T12:00:00`);
-      next.setDate(next.getDate() + 4);
-      checkout.value = next.toISOString().slice(0, 10);
-    }
+    syncStrictTravelEndDate(checkin, checkout, 4);
   });
   form.querySelector('[name="destination"]')?.addEventListener('input', event => {
     event.target.value = event.target.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3);
@@ -3053,13 +3282,7 @@ function initTripPackageSearch() {
   const departure = form.querySelector('[name="departure_date"]');
   const returnDate = form.querySelector('[name="return_date"]');
   departure?.addEventListener('change', () => {
-    if (!returnDate) return;
-    returnDate.min = departure.value;
-    if (returnDate.value <= departure.value) {
-      const next = new Date(`${departure.value}T12:00:00`);
-      next.setDate(next.getDate() + 4);
-      returnDate.value = next.toISOString().slice(0, 10);
-    }
+    syncStrictTravelEndDate(departure, returnDate, 4);
   });
   form.addEventListener('submit', event => {
     event.preventDefault();
@@ -3776,25 +3999,297 @@ function initMap() {
   if (isMapWorkspacePage()) {
     window.addEventListener('popstate', event => {
       activeRouteSelectionLocked = false;
-      restorePlanningSelectionFromHistory(event.state?.planningSelection);
-      readDiscoveryStateFromUrl();
+      const historySelectionRestored = restorePlanningSelectionFromHistory(event.state?.planningSelection);
+      readDiscoveryStateFromUrl({ preservePlanningSelection: historySelectionRestored });
       const historyFocus = String(event.state?.focus || '').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 60);
-      if (!discoveryDestinationLocked && historyFocus && destinationData[historyFocus]) activeDestination = historyFocus;
+      if (discoveryDestinationMode !== 'anywhere' && !discoveryDestinationLocked && historyFocus && destinationData[historyFocus]) activeDestination = historyFocus;
       syncDiscoveryControls();
       updatePins();
-      if (destinationData[activeDestination]) setActiveDestination(activeDestination, null, false);
+      if (activeFreePlanningPoint()) {
+        renderUnsupportedGlobeSelection({
+          selectionId: activePlanningSelection.selection_id,
+          latitude: activePlanningSelection.latitude,
+          longitude: activePlanningSelection.longitude,
+          inputType: 'history'
+        });
+        return;
+      }
+      if (discoveryDestinationMode === 'anywhere') renderDiscoveryEmptyState({ reason: 'open' });
+      else if (destinationData[activeDestination]) setActiveDestination(activeDestination, null, false);
       hydrateDiscovery(discoveryRequestParams(!discoveryDestinationLocked && historyFocus ? { focus: historyFocus } : {}));
     });
   }
 }
 
+const homeSearchProductContracts = Object.freeze({
+  package: { destination: 'destination', departure: 'departure_date', return: 'return_date', usesOrigin: true, usesRooms: true, destinationMode: 'code' },
+  packages: { destination: 'destination', departure: 'departure_date', return: 'return_date', usesOrigin: true, usesRooms: true, destinationMode: 'code' },
+  flights: { destination: 'destination', departure: 'departure_date', return: 'return_date', usesOrigin: true, usesRooms: false, destinationMode: 'code' },
+  hotels: { destination: 'destination', departure: 'checkin', return: 'checkout', usesOrigin: false, usesRooms: true, destinationMode: 'code' },
+  insurance: { destination: 'trip_destination', departure: 'start_date', return: 'end_date', usesOrigin: false, usesRooms: false, destinationMode: 'slug' }
+});
+
+function homeSearchProductContract(kind) {
+  return homeSearchProductContracts[kind] || homeSearchProductContracts.package;
+}
+
+function homeSearchFollowingDate(value) {
+  return travelDateAfter(value, 1);
+}
+
+function setHomeSearchStep(progress, name, state, detail = '', animate = true) {
+  const step = progress?.querySelector(`[data-home-search-step="${name}"]`);
+  if (!step) return;
+  const previousState = step.dataset.state || '';
+  const detailElement = step.querySelector('small');
+  const changed = previousState !== state || (detail && detailElement?.textContent !== detail);
+  step.dataset.state = state;
+  if (detail && detailElement) detailElement.textContent = detail;
+  step.classList.remove('is-new');
+  if (changed && animate && state === 'confirmed' && !prefersReducedMotion()) {
+    void step.offsetWidth;
+    step.classList.add('is-new');
+    window.clearTimeout(step.traVelMotionTimer);
+    step.traVelMotionTimer = window.setTimeout(() => step.classList.remove('is-new'), 760);
+  }
+}
+
+function homeSearchDatesAreValid(form) {
+  const departure = form?.querySelector('[data-home-departure]');
+  const returning = form?.querySelector('[data-home-return]');
+  if (!departure || !returning) return false;
+  const sameDayAllowed = form.dataset.productKind === 'insurance';
+  const ordered = Boolean(departure.value && returning.value && (sameDayAllowed ? returning.value >= departure.value : returning.value > departure.value));
+  returning.setCustomValidity(ordered ? '' : (sameDayAllowed ? 'סיום הכיסוי לא יכול להיות לפני תחילת הכיסוי' : 'תאריך הסיום חייב להיות אחרי תאריך ההתחלה'));
+  returning.min = sameDayAllowed ? (departure.value || returning.min) : (homeSearchFollowingDate(departure.value) || returning.min);
+  return ordered;
+}
+
+function homeSearchCriteriaAreValid(form) {
+  return Boolean(form && homeSearchDatesAreValid(form) && form.checkValidity());
+}
+
+function updateHomeSearchCriteriaState(form, { announce = true, animate = true } = {}) {
+  const progress = document.querySelector('[data-home-search-progress]');
+  const status = progress?.querySelector('[data-home-search-status]');
+  const ready = homeSearchCriteriaAreValid(form);
+  const departure = form?.querySelector('[data-home-departure]')?.value || '';
+  const returning = form?.querySelector('[data-home-return]')?.value || '';
+  const adults = Number(form?.querySelector('[data-home-adults]')?.value || 0);
+  const children = Number(form?.querySelector('[data-home-children]')?.value || 0);
+  const rooms = form?.querySelector('[data-home-rooms]');
+  const partySize = adults + children;
+  const roomDetail = rooms && !rooms.disabled ? ` · ${Number(rooms.value) || 1} חדרים` : '';
+  const readyDetail = departure && returning && partySize
+    ? `${departure} עד ${returning} · ${partySize} נוסעים${roomDetail}`
+    : 'הפרטים מוכנים';
+  if (form.dataset.state !== 'navigating') form.dataset.state = ready ? 'ready' : 'invalid';
+  if (progress && form.dataset.state !== 'navigating') progress.dataset.state = ready ? 'ready' : 'invalid';
+  setHomeSearchStep(progress, 'criteria', ready ? 'confirmed' : 'failed', ready ? readyDetail : 'נדרש להשלים או לתקן פרטים', animate);
+  const handoff = progress?.querySelector('[data-home-search-step="handoff"]');
+  if (ready && handoff?.dataset.state === 'failed') setHomeSearchStep(progress, 'handoff', 'waiting', 'תתחיל לאחר לחיצה', false);
+  if (announce) {
+    setTextContentIfChanged(status, ready
+      ? 'הפרטים מוכנים. המחירים והזמינות ייבדקו רק בעמוד ההשוואה.'
+      : 'יש להשלים את הפרטים המסומנים לפני פתיחת ההשוואה.');
+  }
+  return ready;
+}
+
+function syncHomeSearchProduct(form, tab, { announce = true, animate = true, focus = false } = {}) {
+  if (!form || !tab) return;
+  const tabs = Array.from(document.querySelectorAll('.product-tabs [role="tab"][data-product-kind]'));
+  const kind = homeSearchProductContracts[tab.dataset.productKind] ? tab.dataset.productKind : 'package';
+  const contract = homeSearchProductContract(kind);
+  tabs.forEach(item => {
+    const selected = item === tab;
+    item.classList.toggle('is-active', selected);
+    item.setAttribute('aria-selected', String(selected));
+    item.tabIndex = selected ? 0 : -1;
+  });
+  form.dataset.productKind = kind;
+  form.action = tab.dataset.productAction || form.action;
+  form.setAttribute('aria-labelledby', tab.id);
+
+  const originWrap = form.querySelector('[data-home-origin-wrap]');
+  const origin = originWrap?.querySelector('input');
+  form.dataset.usesOrigin = String(contract.usesOrigin);
+  if (originWrap) originWrap.hidden = !contract.usesOrigin;
+  if (origin) origin.disabled = !contract.usesOrigin;
+
+  const destination = form.querySelector('[data-home-destination]');
+  if (destination) {
+    Array.from(destination.options).forEach(option => {
+      option.value = contract.destinationMode === 'slug' ? option.dataset.slug : option.dataset.code;
+    });
+    destination.name = contract.destination;
+  }
+  const departure = form.querySelector('[data-home-departure]');
+  const returning = form.querySelector('[data-home-return]');
+  if (departure) departure.name = contract.departure;
+  if (returning) returning.name = contract.return;
+  const roomsWrap = form.querySelector('[data-home-rooms-wrap]');
+  const rooms = form.querySelector('[data-home-rooms]');
+  form.dataset.usesRooms = String(contract.usesRooms);
+  if (roomsWrap) roomsWrap.hidden = !contract.usesRooms;
+  if (rooms) rooms.disabled = !contract.usesRooms;
+  setTextContentIfChanged(form.querySelector('[data-home-departure-label]'), tab.dataset.departureLabel || 'יציאה');
+  setTextContentIfChanged(form.querySelector('[data-home-return-label]'), tab.dataset.returnLabel || 'חזרה');
+  setTextContentIfChanged(form.querySelector('[data-home-search-submit] span'), tab.dataset.submitLabel || 'פתחו השוואה');
+
+  const progress = document.querySelector('[data-home-search-progress]');
+  const productLabel = tab.textContent.trim().replace(/\s+/g, ' ');
+  setHomeSearchStep(progress, 'product', 'confirmed', `${productLabel} נבחרו`, animate);
+  setHomeSearchStep(progress, 'handoff', 'waiting', 'תתחיל לאחר לחיצה', false);
+  if (progress) progress.dataset.state = 'ready';
+  if (announce) setTextContentIfChanged(progress?.querySelector('[data-home-search-status]'), `${productLabel} נבחרו. השלימו פרטים ופתחו השוואה עדכנית.`);
+  updateHomeSearchCriteriaState(form, { announce: false, animate });
+  if (focus) tab.focus();
+}
+
+function setHomeSearchRoutingState(form, message) {
+  const progress = document.querySelector('[data-home-search-progress]');
+  const submit = form.querySelector('[data-home-search-submit]');
+  form.dataset.state = 'navigating';
+  form.setAttribute('aria-busy', 'true');
+  if (submit) submit.disabled = true;
+  if (progress) progress.dataset.state = 'navigating';
+  setHomeSearchStep(progress, 'handoff', 'running', 'פותחים את עמוד ההשוואה', false);
+  setTextContentIfChanged(progress?.querySelector('[data-home-search-status]'), message);
+}
+
+function homeSearchNavigationUrl(form, anywhere) {
+  const url = new URL(anywhere ? (form.dataset.mapAction || '/travel-map/') : form.action, window.location.origin);
+  const controls = [
+    form.querySelector('[data-home-origin-wrap] input'),
+    form.querySelector('[data-home-destination]'),
+    form.querySelector('[data-home-departure]'),
+    form.querySelector('[data-home-return]'),
+    form.querySelector('[data-home-adults]'),
+    form.querySelector('[data-home-children]'),
+    form.querySelector('[data-home-rooms]')
+  ];
+  if (!anywhere) {
+    controls.forEach(control => {
+      if (!control?.disabled && control.name && control.value !== '') url.searchParams.set(control.name, control.value);
+    });
+    return url;
+  }
+  url.searchParams.set('destination_mode', 'anywhere');
+  url.searchParams.set('product', form.dataset.productKind || 'package');
+  const origin = controls[0];
+  const rooms = controls[6];
+  if (origin && !origin.disabled) url.searchParams.set('origin', origin.value.toUpperCase());
+  url.searchParams.set('departure_date', controls[2]?.value || '');
+  url.searchParams.set('return_date', controls[3]?.value || '');
+  url.searchParams.set('adults', controls[4]?.value || '2');
+  url.searchParams.set('children', controls[5]?.value || '0');
+  if (rooms && !rooms.disabled) url.searchParams.set('rooms', rooms.value || '1');
+  return url;
+}
+
+function scheduleHomeSearchNavigation(url) {
+  let navigated = false;
+  let fallbackTimer = 0;
+  const navigate = () => {
+    if (navigated) return;
+    navigated = true;
+    if (fallbackTimer) window.clearTimeout(fallbackTimer);
+    window.location.assign(url.toString());
+  };
+  if (prefersReducedMotion() || typeof window.requestAnimationFrame !== 'function') {
+    navigate();
+    return;
+  }
+  fallbackTimer = window.setTimeout(navigate, 700);
+  window.requestAnimationFrame(() => window.requestAnimationFrame(() => window.setTimeout(navigate, 120)));
+}
+
+function initHomeDiscoverySearch() {
+  const form = document.querySelector('[data-home-search]');
+  const tabs = Array.from(document.querySelectorAll('.product-tabs [role="tab"][data-product-kind]'));
+  if (!form || !tabs.length) return;
+  const params = new URLSearchParams(window.location.search);
+  const requestedKind = String(params.get('product') || '').replace(/[^a-z]/g, '');
+  const activeTab = tabs.find(tab => tab.dataset.productKind === requestedKind)
+    || tabs.find(tab => tab.getAttribute('aria-selected') === 'true')
+    || tabs[0];
+  syncHomeSearchProduct(form, activeTab, { announce: false, animate: false });
+
+  const origin = form.querySelector('[data-home-origin-wrap] input');
+  const requestedOrigin = String(params.get('origin') || '').toUpperCase();
+  if (origin && /^[A-Z]{3}$/.test(requestedOrigin)) origin.value = requestedOrigin;
+  const destination = form.querySelector('[data-home-destination]');
+  const requestedDestination = String(params.get('destination') || '').toLowerCase();
+  if (destination && requestedDestination) {
+    const option = Array.from(destination.options).find(item => item.dataset.code?.toLowerCase() === requestedDestination || item.dataset.slug === requestedDestination);
+    if (option) destination.value = option.value;
+  }
+  const departure = form.querySelector('[data-home-departure]');
+  const returning = form.querySelector('[data-home-return]');
+  const requestedDeparture = normalizeDiscoveryTripDate(params.get('departure_date') || params.get('checkin') || params.get('start_date'));
+  const requestedReturn = normalizeDiscoveryTripDate(params.get('return_date') || params.get('checkout') || params.get('end_date'));
+  if (departure && requestedDeparture) departure.value = requestedDeparture;
+  if (returning && requestedReturn) returning.value = requestedReturn;
+  const adults = form.querySelector('[data-home-adults]');
+  const children = form.querySelector('[data-home-children]');
+  const rooms = form.querySelector('[data-home-rooms]');
+  if (adults && params.has('adults')) adults.value = String(clampDiscoveryNumber(params.get('adults'), 1, 6, 2));
+  if (children && params.has('children')) children.value = String(clampDiscoveryNumber(params.get('children'), 0, 4, 0));
+  if (rooms && params.has('rooms')) rooms.value = String(clampDiscoveryNumber(params.get('rooms'), 1, 3, 1));
+  updateHomeSearchCriteriaState(form, { announce: false, animate: false });
+
+  tabs.forEach((tab, index) => {
+    tab.addEventListener('click', () => syncHomeSearchProduct(form, tab));
+    tab.addEventListener('keydown', event => {
+      let nextIndex = -1;
+      if (event.key === 'Home') nextIndex = 0;
+      if (event.key === 'End') nextIndex = tabs.length - 1;
+      if (event.key === 'ArrowLeft') nextIndex = (index + 1) % tabs.length;
+      if (event.key === 'ArrowRight') nextIndex = (index - 1 + tabs.length) % tabs.length;
+      if (nextIndex < 0) return;
+      event.preventDefault();
+      syncHomeSearchProduct(form, tabs[nextIndex], { focus: true });
+    });
+  });
+
+  form.addEventListener('input', () => updateHomeSearchCriteriaState(form));
+  form.addEventListener('change', () => updateHomeSearchCriteriaState(form));
+  form.addEventListener('submit', event => {
+    if (!updateHomeSearchCriteriaState(form, { announce: false })) {
+      event.preventDefault();
+      const progress = document.querySelector('[data-home-search-progress]');
+      setHomeSearchStep(progress, 'handoff', 'failed', 'ההשוואה לא נפתחה', false);
+      setTextContentIfChanged(progress?.querySelector('[data-home-search-status]'), 'ההשוואה לא נפתחה. תקנו את השדות המסומנים ונסו שוב.');
+      form.reportValidity();
+      return;
+    }
+    const destination = form.querySelector('[data-home-destination]');
+    const selectedOption = destination?.selectedOptions?.[0];
+    const anywhere = !selectedOption || selectedOption.dataset.code === 'anywhere';
+    setHomeSearchRoutingState(form, anywhere
+      ? 'הבחירה התקבלה. פותחים את מפת המסע בלי לבחור יעד במקומכם.'
+      : 'הבחירה התקבלה. פותחים את עמוד ההשוואה עם הפרטים שבחרתם; שם תוכלו להתחיל בדיקה מול ספק מחובר.');
+    event.preventDefault();
+    scheduleHomeSearchNavigation(homeSearchNavigationUrl(form, anywhere));
+  });
+
+  window.addEventListener('pageshow', () => {
+    const ready = updateHomeSearchCriteriaState(form, { announce: false, animate: false });
+    form.dataset.state = ready ? 'ready' : 'invalid';
+    form.setAttribute('aria-busy', 'false');
+    const submit = form.querySelector('[data-home-search-submit]');
+    if (submit) submit.disabled = false;
+    const progress = document.querySelector('[data-home-search-progress]');
+    if (progress) progress.dataset.state = form.dataset.state;
+    setHomeSearchStep(progress, 'handoff', 'waiting', 'תתחיל לאחר לחיצה', false);
+    setTextContentIfChanged(progress?.querySelector('[data-home-search-status]'), ready
+      ? 'הפרטים מוכנים. המחירים והזמינות ייבדקו רק בעמוד ההשוואה.'
+      : 'יש להשלים את הפרטים המסומנים לפני פתיחת ההשוואה.');
+  });
+}
+
 function initControls() {
-  document.querySelectorAll('.product-tabs button').forEach(button => button.addEventListener('click', () => {
-    document.querySelectorAll('.product-tabs button').forEach(item => item.classList.remove('is-active'));
-    button.classList.add('is-active');
-    const searchDock = document.querySelector('.search-dock');
-    if (searchDock && button.dataset.productAction) searchDock.action = button.dataset.productAction;
-  }));
   document.querySelectorAll('[data-filter-kind] button').forEach(button => button.addEventListener('click', () => {
     button.closest('[data-filter-kind]').querySelectorAll('button').forEach(item => {
       const selected = item === button;
@@ -5653,16 +6148,28 @@ function initTraVelV2() {
   const heroCampaign = document.querySelector('[data-hero-campaign]');
   const initialActivePin = document.querySelector('.price-pin.is-active[data-destination]');
   const hasRequestedDestination = new URLSearchParams(window.location.search).has('destination');
-  if (!hasRequestedDestination && heroCampaign?.dataset.mapState && destinationData[heroCampaign.dataset.mapState]) {
+  const openEndedDestination = discoveryDestinationMode === 'anywhere';
+  const restoredFreePoint = isMapWorkspacePage() && activeFreePlanningPoint();
+  if (!restoredFreePoint && !openEndedDestination && !hasRequestedDestination && heroCampaign?.dataset.mapState && destinationData[heroCampaign.dataset.mapState]) {
     activeDestination = heroCampaign.dataset.mapState;
-  } else if (!hasRequestedDestination && initialActivePin?.dataset.destination && destinationData[initialActivePin.dataset.destination]) {
+  } else if (!restoredFreePoint && !openEndedDestination && !hasRequestedDestination && initialActivePin?.dataset.destination && destinationData[initialActivePin.dataset.destination]) {
     activeDestination = initialActivePin.dataset.destination;
   }
   renderIcons();
   initNavigation();
   initMap();
   initGlobePointSelection();
+  if (restoredFreePoint) {
+    renderUnsupportedGlobeSelection({
+      selectionId: activePlanningSelection.selection_id,
+      latitude: activePlanningSelection.latitude,
+      longitude: activePlanningSelection.longitude,
+      inputType: 'restore'
+    });
+  } else if (openEndedDestination) renderDiscoveryEmptyState({ reason: 'open' });
+  syncDiscoveryTripContext();
   initDestinationPlan();
+  initHomeDiscoverySearch();
   initControls();
   initAIConversationEntry();
   initDirectory();
@@ -5674,7 +6181,7 @@ function initTraVelV2() {
   initTravelerWorkspace();
   syncDiscoveryControls();
   syncDiscoveryUrl('replace');
-  hydrateDiscovery(discoveryRequestParams());
+  if (!restoredFreePoint) hydrateDiscovery(discoveryRequestParams());
 }
 
 if (document.readyState === 'loading') {
