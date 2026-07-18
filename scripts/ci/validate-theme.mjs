@@ -187,7 +187,7 @@ if (!appJs.includes('request?.planning_context?.scope') || !appJs.includes('late
 if (!appJs.includes('setTextContentIfChanged(next, agentJourneyNextAction(run))') || !appJs.includes('setTextContentIfChanged(status, message)') || !appJs.includes('setTextContentIfChanged(supplier, latest.message)')) failures.push('Unchanged Agent polling can repeatedly announce live-region content.');
 
 const mapPage = readFileSync(join(themeRoot, 'page-map.php'), 'utf8');
-for (const marker of ['map-view-layout', 'map-support-section', 'map-destination-panel', 'map-depth-section', 'destination-plan-360', 'data-destination-plan', 'data-plan-intent', 'data-plan-flight', 'data-plan-stay', 'data-plan-cover', 'data-plan-total', 'data-mobile-filter-host', 'data-budget-coverage', 'data-globe-3d', 'data-globe-canvas', 'data-globe-route', 'data-supported-radius-km', 'data-globe-selection', 'destination-decision-cockpit', 'data-plan-meter', 'data-plan-modules', 'data-plan-ledger', 'data-plan-save']) {
+for (const marker of ['map-view-layout', 'map-support-section', 'map-destination-panel', 'map-depth-section', 'destination-plan-360', 'data-destination-plan', 'data-plan-intent', 'data-plan-flight', 'data-plan-stay', 'data-plan-cover', 'data-plan-total', 'data-mobile-filter-host', 'data-budget-coverage', 'data-globe-3d', 'data-globe-canvas', 'data-globe-route', 'data-globe-selection-point', 'data-supported-radius-km', 'data-globe-selection', 'data-map-progress-checkpoints', 'data-map-progress-live', 'destination-decision-cockpit', 'data-plan-meter', 'data-plan-modules', 'data-plan-ledger', 'data-plan-save']) {
   if (!mapPage.includes(marker)) failures.push(`The unobstructed map architecture is missing ${marker}.`);
 }
 if (mapPage.includes('map-search-floating')) failures.push('The map search must not float over the globe.');
@@ -209,7 +209,9 @@ for (const marker of ['discoverySelectedPlan', 'initGlobePointSelection', 'rende
 if (!appJs.includes('createPlanningSelectionId') || !appJs.includes('setActivePlanningSelection') || !appJs.includes('activePlanningSelectionQuery')) failures.push('Earth clicks do not retain a stable planning-selection identity.');
 if (!appJs.includes("const pointContext = { selection_id: selectionId") || !appJs.includes('latitude: latitude.toFixed(4)') || !appJs.includes('longitude: longitude.toFixed(4)')) failures.push('Arbitrary Earth points can lose their exact coordinates during the AI handoff.');
 if (!appJs.includes("selection_kind: 'map_point'")) failures.push('Arbitrary Earth handoffs do not preserve an explicit planning-context kind.');
-if (!appJs.includes("meter.setAttribute('aria-valuenow', '12')") || !appJs.includes('fullTripCostScope.map')) failures.push('Unsupported Earth points do not expose the complete twelve-category planning ledger.');
+if (!appJs.includes("meter.setAttribute('aria-valuenow', '0')") || !appJs.includes("count.textContent = '0/12'") || !appJs.includes('fullTripCostScope.map')) failures.push('Unsupported Earth points must open all twelve planning scopes while reporting zero verified scopes.');
+if (!appJs.includes('const verifiedCount =') || !appJs.includes("module.state === 'live'") || !appJs.includes('setMapProgressCheckpoint') || !appJs.includes('discoveryCommercialDataIsCurrent') || !appJs.includes('announceMapProgress')) failures.push('Map progress is not separated into mapped scopes and authoritative verified progress.');
+if (!appJs.includes("['fallback', 'error'].includes(mode) ? 'failed'") || !appJs.includes("point: 'waiting'") || !appJs.includes("modules: selectedPlan.modules.map(module => module.state === 'live' ? { ...module, state: 'stale' } : module)")) failures.push('Map progress can retain or celebrate stale, empty, or failed supplier state.');
 if (!appJs.includes("if (animate && responseState === 'current')")) failures.push('Destination progress can celebrate an unverified or stale response.');
 const fallbackDestinationSource = appJs.match(/const fallbackDestinations = \{([\s\S]*?)\n\};/)?.[1] || '';
 const fallbackDestinationCount = (fallbackDestinationSource.match(/\bid:\s*'/g) || []).length;
@@ -221,7 +223,8 @@ const fallbackRouteResetIndex = appJs.indexOf("activeRouteId = '';", fallbackAss
 const fallbackSelectionIndex = appJs.indexOf('setActiveDestination(fallbackDestination', fallbackAssignmentIndex);
 if (fallbackAssignmentIndex < 0 || fallbackRouteResetIndex < fallbackAssignmentIndex || fallbackSelectionIndex < fallbackRouteResetIndex) failures.push('A request fallback can rebuild plan links before clearing the previously selected route.');
 if (!appCss.includes('.map-selection-rail { position: relative') || appCss.includes('.map-selection-rail { position: fixed') || appCss.includes('.map-selection-rail { position: absolute')) failures.push('The globe selection handoff must remain in document flow and outside the Earth paint surface.');
-for (const marker of ['.destination-decision-cockpit', '.destination-decision-grid', '.destination-cost-ledger', '@keyframes mapSelectionSignal', '@keyframes globeRouteConfirm']) {
+if (!appCss.includes('.map-search-bar:focus-within') || !appCss.includes('.map-status-row { flex-wrap: wrap;')) failures.push('The map search focus state or tablet-safe status wrapping is missing.');
+for (const marker of ['.destination-decision-cockpit', '.destination-decision-grid', '.destination-cost-ledger', '.map-progress-checkpoints', '.globe-selection-point', '@keyframes mapSelectionSignal', '@keyframes globePointConfirm', '@keyframes globeRouteConfirm']) {
   if (!appCss.includes(marker)) failures.push(`The 360-degree decision cockpit styling is missing ${marker}.`);
 }
 if (!appCss.includes('@keyframes destinationPlanReveal') || !appCss.includes('@media (prefers-reduced-motion: reduce)')) failures.push('The 360-degree destination plan needs truthful progressive motion and a reduced-motion path.');
@@ -245,7 +248,7 @@ if (!appJs.includes('}, 12000)') || !appJs.includes('timedOut')) failures.push('
 if (!appCss.includes('.home-globe-stack .globe { position: relative; inset: auto;') || !appCss.includes('touch-action: pan-y; cursor: default;') || !appCss.includes('.home-globe-stack .globe-tools { position: static;')) failures.push('The homepage globe can trap mobile scrolling or place controls over the Earth.');
 
 const globeJs = readFileSync(join(themeRoot, 'assets/js/globe-3d.js'), 'utf8');
-for (const marker of ['getContext(\'webgl\'', 'pointerdown', 'IntersectionObserver', 'ResizeObserver', 'prefers-reduced-motion', 'focusDestination', 'boxesOverlap', 'greatCircleDistanceKm', 'globePointFromScreen', 'travelglobe:select', 'supportedRadiusKm', 'pointer.moved', "event.key === 'Enter'", 'pulseRoute']) {
+for (const marker of ['getContext(\'webgl\'', 'pointerdown', 'IntersectionObserver', 'ResizeObserver', 'prefers-reduced-motion', 'focusDestination', 'boxesOverlap', 'greatCircleDistanceKm', 'globePointFromScreen', 'travelglobe:select', 'supportedRadiusKm', 'selectedPoint', 'preservePoint', 'data-globe-selection-point', 'pointer.moved', "event.key === 'Enter'", 'pulseRoute']) {
   if (!globeJs.includes(marker)) failures.push(`The production 3D globe is missing ${marker}.`);
 }
 if ((globeJs.match(/state\.visible = document\.visibilityState !== 'hidden'/g) || []).length < 3) failures.push('Globe drag, keyboard and zoom input must wake event-driven rendering.');

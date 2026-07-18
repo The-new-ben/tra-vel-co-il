@@ -21,6 +21,14 @@
   --radius: 22px;
   --radius-lg: 34px;
   --max: 1320px;
+  --motion-fast: 160ms;
+  --motion-base: 320ms;
+  --motion-confirm: 520ms;
+  --motion-route: 680ms;
+  --motion-working: 1200ms;
+  --ease-standard: cubic-bezier(.2,.8,.2,1);
+  --ease-confirm: cubic-bezier(.16,1,.3,1);
+  --motion-shift-sm: 6px;
 }
 
 /* Unobstructed globe workspace: map controls and information never cover the Earth. */
@@ -40,6 +48,7 @@
 .theme-map-shell .filter-panel > .round-button { display: none; }
 .map-main-column { direction: rtl; min-width: 0; display: grid; gap: 14px; }
 .map-search-bar { display: flex; align-items: center; gap: 10px; min-height: 68px; background: #fff; border: 1px solid #dce4df; border-radius: 20px; padding: 10px 14px; box-shadow: 0 18px 50px rgba(5,24,30,.1); }
+.map-search-bar:focus-within { border-color: #769300; box-shadow: 0 0 0 4px rgba(217,255,89,.42),0 18px 50px rgba(5,24,30,.1); }
 .map-search-bar > i { color: #779000; }
 .map-search-bar input { min-width: 0; flex: 1; border: 0; background: transparent; outline: 0; padding: 10px 2px; font-size: 16px; }
 .map-search-bar button { display: inline-flex; align-items: center; gap: 8px; border: 0; border-radius: 13px; padding: 12px 18px; background: var(--ink); color: #fff; font-weight: 900; }
@@ -101,6 +110,8 @@
   .map-support-grid { grid-template-columns: 1fr; }
   .map-destination-panel { display: grid; grid-template-columns: 280px 1fr; }
   .map-destination-panel > img { height: 100%; min-height: 300px; }
+  .map-status-row { flex-wrap: wrap; justify-content: flex-start; }
+  .map-canvas-guidance { flex: 1 1 100%; }
 }
 
 @media (max-width: 760px) {
@@ -2122,9 +2133,12 @@ h3.deal-title { display: block; margin: 6px 0 12px; font-size: 22px; line-height
 .theme-map-shell .globe-route-layer { position: absolute; z-index: 5; inset: 0; overflow: visible; pointer-events: none; }
 .theme-map-shell .globe-route-layer path { fill: none; stroke: var(--lime); stroke-width: 2; stroke-linecap: round; stroke-dasharray: 7 7; filter: drop-shadow(0 0 6px rgba(217,255,89,.55)); }
 .theme-map-shell .globe-webgl .origin-point { top: auto; left: auto; transform: translate(-50%,-50%); }
+.theme-map-shell .globe-selection-point { position: absolute; z-index: 8; width: 21px; height: 21px; border: 3px solid #fff; border-radius: 50%; background: var(--lime); box-shadow: 0 0 0 5px rgba(217,255,89,.2),0 7px 18px rgba(0,0,0,.35); pointer-events: none; transform: translate(-50%,-50%) scale(var(--globe-depth,1)); }
+.theme-map-shell .globe-selection-point::after { content: ''; position: absolute; inset: -9px; border: 2px solid var(--lime); border-radius: inherit; opacity: 0; }
+.theme-map-shell .globe-selection-point.is-new::after { animation: globePointConfirm var(--motion-route) var(--ease-confirm) both; }
 .theme-map-shell .globe-webgl .price-pin { z-index: 7; transform: translate(-50%,-50%) scale(var(--globe-depth,1)); will-change: left,top,transform; }
 .theme-map-shell .globe-webgl .price-pin:hover,.theme-map-shell .globe-webgl .price-pin.is-active { z-index: 9; scale: 1.08; }
-.theme-map-shell .globe-webgl .price-pin[hidden],.theme-map-shell .globe-webgl .origin-point[hidden] { display: none !important; }
+.theme-map-shell .globe-webgl .price-pin[hidden],.theme-map-shell .globe-webgl .origin-point[hidden],.theme-map-shell .globe-selection-point[hidden] { display: none !important; }
 .theme-map-shell .map-imagery-attribution { color: #526970; font-size: 10px; text-decoration: underline; white-space: nowrap; }
 
 @media (max-width: 1000px) {
@@ -2158,6 +2172,21 @@ h3.deal-title { display: block; margin: 6px 0 12px; font-size: 22px; line-height
 .map-selection-rail.is-updating .map-selection-signal { animation: mapSelectionSignal .72s cubic-bezier(.2,.8,.2,1) both; }
 .map-selection-rail.is-updating .map-selection-copy,.map-selection-rail.is-updating > a { animation: mapSelectionReveal .48s cubic-bezier(.2,.8,.2,1) both; }
 .map-selection-rail.is-updating > a { animation-delay: 90ms; }
+.map-progress-checkpoints { grid-column: 1/-1; display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 7px; margin: 1px 0 0; padding: 10px 0 0; border-top: 1px solid #e0e8e4; list-style: none; }
+.map-progress-checkpoints li { min-width: 0; min-height: 58px; display: grid; grid-template-columns: 30px minmax(0,1fr); gap: 8px; align-items: center; padding: 8px 9px; border: 1px solid #dde6e1; border-radius: 13px; color: #53666b; background: #f7f9f7; }
+.map-progress-checkpoints li > i { width: 30px; height: 30px; padding: 7px; border-radius: 10px; color: #64767a; background: #e9efec; }
+.map-progress-checkpoints li span { min-width: 0; display: grid; gap: 2px; }
+.map-progress-checkpoints li b { color: var(--ink); font-size: 12px; line-height: 1.25; }
+.map-progress-checkpoints li small { overflow-wrap: anywhere; font-size: 11px; line-height: 1.3; }
+.map-progress-checkpoints li[data-state="confirmed"] { border-color: #bddb63; color: #526900; background: #f6ffe1; }
+.map-progress-checkpoints li[data-state="confirmed"] > i { color: #496300; background: #e5f6ad; }
+.map-progress-checkpoints li[data-state="running"] { border-color: #91ced9; color: #25616e; background: #f0fbfd; }
+.map-progress-checkpoints li[data-state="running"] > i { color: #086b7e; background: #d5f1f6; animation: mapCheckpointWorking var(--motion-working) ease-in-out infinite; }
+.map-progress-checkpoints li[data-state="stale"] { border-color: #e4c477; color: #755410; background: #fff9ea; }
+.map-progress-checkpoints li[data-state="stale"] > i { color: #815d11; background: #ffedbd; }
+.map-progress-checkpoints li[data-state="failed"] { border-color: #e9a69d; color: #853326; background: #fff4f1; }
+.map-progress-checkpoints li[data-state="failed"] > i { color: #9d3b2d; background: #ffe0da; }
+.map-progress-checkpoints li.is-new { animation: mapCheckpointConfirm var(--motion-confirm) var(--ease-confirm) both; }
 
 .destination-decision-cockpit { margin-top: 14px; padding: 16px; border-radius: 19px; color: #f5faf8; background: radial-gradient(circle at 12% 8%,rgba(217,255,89,.12),transparent 29%),#09232c; }
 .destination-decision-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }
@@ -2227,6 +2256,9 @@ h3.deal-title { display: block; margin: 6px 0 12px; font-size: 22px; line-height
 @keyframes mapSelectionSignal { 0% { opacity: .5; transform: scale(.72); } 58% { transform: scale(1.12); } 100% { opacity: 1; transform: scale(1); } }
 @keyframes mapSelectionReveal { from { opacity: .2; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes globeRouteConfirm { from { opacity: .15; stroke-dashoffset: 45; } to { opacity: 1; stroke-dashoffset: 0; } }
+@keyframes globePointConfirm { 0% { opacity: .9; transform: scale(.35); } 100% { opacity: 0; transform: scale(1.65); } }
+@keyframes mapCheckpointConfirm { 0% { opacity: .55; transform: translateY(var(--motion-shift-sm)) scale(.985); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes mapCheckpointWorking { 0%,100% { transform: scale(.94); opacity: .72; } 50% { transform: scale(1.05); opacity: 1; } }
 
 @media (max-width: 1000px) {
   .theme-map-shell .map-destination-panel { display: block; }
@@ -2237,6 +2269,7 @@ h3.deal-title { display: block; margin: 6px 0 12px; font-size: 22px; line-height
   .map-selection-rail { grid-template-columns: auto minmax(0,1fr); padding: 12px; }
   .map-selection-copy strong { white-space: normal; }
   .map-selection-rail > a { grid-column: 1/-1; width: 100%; }
+  .map-progress-checkpoints { grid-template-columns: repeat(2,minmax(0,1fr)); }
   .destination-decision-cockpit { padding: 13px; border-radius: 16px; }
   .destination-decision-head { display: grid; gap: 10px; }
   .destination-plan-meter { width: 100%; grid-template-columns: auto minmax(80px,1fr); }
@@ -2248,7 +2281,7 @@ h3.deal-title { display: block; margin: 6px 0 12px; font-size: 22px; line-height
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .map-selection-rail.is-updating .map-selection-signal,.map-selection-rail.is-updating .map-selection-copy,.map-selection-rail.is-updating > a,.destination-plan-360.is-updating .destination-decision-grid details,.destination-plan-360.is-updating .destination-cost-ledger,.theme-map-shell .globe-webgl.is-routing .globe-route-layer path { animation: none !important; }
+  .map-selection-rail.is-updating .map-selection-signal,.map-selection-rail.is-updating .map-selection-copy,.map-selection-rail.is-updating > a,.map-progress-checkpoints li,.map-progress-checkpoints li > i,.theme-map-shell .globe-selection-point::after,.destination-plan-360.is-updating .destination-decision-grid details,.destination-plan-360.is-updating .destination-cost-ledger,.theme-map-shell .globe-webgl.is-routing .globe-route-layer path { animation: none !important; }
   .destination-plan-meter > span i,.destination-decision-grid summary > i:last-child { transition: none; }
 }
 

@@ -270,6 +270,7 @@
   function createController(root) {
     const canvas = root.querySelector('[data-globe-canvas]');
     const routePath = root.querySelector('[data-globe-route]');
+    const selectionMarker = root.querySelector('[data-globe-selection-point]');
     const liveRegion = root.querySelector('[data-globe-live]');
     if (!canvas) return null;
 
@@ -310,6 +311,7 @@
       pitch: 12 * DEG,
       distance: 3.15,
       selected: root.querySelector('.price-pin.is-active')?.dataset.destination || '',
+      selectedPoint: null,
       available: new Set(Array.from(root.querySelectorAll('.price-pin[data-destination]'), marker => marker.dataset.destination)),
       visible: true,
       animation: null,
@@ -348,8 +350,10 @@
     }
 
     function updateRoute(width, height, projected) {
-      if (!routePath || !state.selected) return;
-      const destination = projected.get(state.selected);
+      if (!routePath || (!state.selected && !state.selectedPoint)) return;
+      const destination = state.selectedPoint
+        ? projectedPoint(state.selectedPoint.latitude, state.selectedPoint.longitude, state, width, height)
+        : projected.get(state.selected);
       const start = projectedPoint(origin.latitude, origin.longitude, state, width, height);
       if (!destination?.visible || !start.visible) {
         routePath.setAttribute('d', '');
@@ -414,6 +418,17 @@
         if (start.visible) {
           originMarker.style.left = `${start.x}px`;
           originMarker.style.top = `${start.y}px`;
+        }
+      }
+      if (selectionMarker) {
+        const selection = state.selectedPoint
+          ? projectedPoint(state.selectedPoint.latitude, state.selectedPoint.longitude, state, width, height)
+          : null;
+        selectionMarker.hidden = !selection?.visible;
+        if (selection?.visible) {
+          selectionMarker.style.left = `${selection.x}px`;
+          selectionMarker.style.top = `${selection.y}px`;
+          selectionMarker.style.setProperty('--globe-depth', String(clamp(0.88 + selection.depth * 0.14, 0.84, 1.04)));
         }
       }
       updateRoute(width, height, projected);
@@ -558,6 +573,16 @@
         nearestLabel: nearest?.label || '',
         distanceKm: nearest ? Math.round(nearest.distanceKm) : null
       };
+      state.selectedPoint = { latitude: detail.latitude, longitude: detail.longitude };
+      if (selectionMarker) {
+        selectionMarker.hidden = false;
+        selectionMarker.classList.remove('is-new');
+        if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          void selectionMarker.offsetWidth;
+          selectionMarker.classList.add('is-new');
+        }
+      }
+      requestRender();
       root.dispatchEvent(new CustomEvent('travelglobe:select', { bubbles: true, detail }));
       if (liveRegion) {
         liveRegion.textContent = supported
@@ -588,17 +613,22 @@
         if (Number.isFinite(Number(item.latitude))) marker.dataset.latitude = String(item.latitude);
         if (Number.isFinite(Number(item.longitude))) marker.dataset.longitude = String(item.longitude);
       });
-      if (state.selected && !state.available.has(state.selected)) clearSelection();
+      if (state.selected && !state.available.has(state.selected)) clearSelection({ preservePoint: true });
       requestRender();
     }
 
-    function clearSelection() {
+    function clearSelection({ preservePoint = false } = {}) {
       state.selected = '';
       state.animation = null;
+      if (!preservePoint) state.selectedPoint = null;
       markers().forEach(marker => {
         marker.classList.remove('is-active');
         marker.setAttribute('aria-pressed', 'false');
       });
+      if (selectionMarker && !preservePoint) {
+        selectionMarker.hidden = true;
+        selectionMarker.classList.remove('is-new');
+      }
       if (routePath) routePath.setAttribute('d', '');
       requestRender();
     }
@@ -639,6 +669,14 @@
         startedAt: performance.now()
       };
     });
+    root.addEventListener('click', event => {
+      if (!event.target.closest('.price-pin')) return;
+      state.selectedPoint = null;
+      if (selectionMarker) {
+        selectionMarker.hidden = true;
+        selectionMarker.classList.remove('is-new');
+      }
+    }, true);
     root.addEventListener('pointermove', event => {
       if (!state.pointer || state.pointer.id !== event.pointerId) return;
       const totalX = event.clientX - state.pointer.startX;
@@ -746,8 +784,8 @@
     setDestinations(data) {
       controllers.forEach(controller => controller.setDestinations(data));
     },
-    clearSelection() {
-      controllers.forEach(controller => controller.clearSelection());
+    clearSelection(options = {}) {
+      controllers.forEach(controller => controller.clearSelection(options));
     },
     zoom(direction) {
       let handled = false;
