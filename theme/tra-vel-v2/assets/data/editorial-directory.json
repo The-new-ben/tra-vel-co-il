@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated": "2026-07-16",
+  "updated": "2026-07-18",
   "destinations": [
     {
       "id": "budapest",
@@ -33,10 +33,10 @@
       "decision": "עיר עתיקה מול שכונה מקומית וקישור לתחבורה",
       "map_state": "prague",
       "image": "city-prague.webp",
-      "guide_status": "research",
-      "guide_path": "",
-      "word_count": 0,
-      "source_count": 0
+      "guide_status": "published",
+      "guide_path": "/destinations/prague/",
+      "word_count": 5155,
+      "source_count": 14
     },
     {
       "id": "vienna",
