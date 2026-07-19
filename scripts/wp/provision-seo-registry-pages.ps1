@@ -508,8 +508,9 @@ function Invoke-ProvisionContractTests {
     Assert-ContractThrows -Action { Assert-SiteEnvironmentBinding -SiteOrigin ([Uri]'https://staging.example.test') -RequestedEnvironment staging -ExpectedStagingHost 'staging.example.test' -StagingHostConfirmation 'USE TRA-VEL SEO STAGING HOST other.example.test' } -Message 'staging confirmation was not bound to the selected hostname'
     Assert-SiteEnvironmentBinding -SiteOrigin ([Uri]'https://staging.example.test') -RequestedEnvironment staging -ExpectedStagingHost 'staging.example.test' -StagingHostConfirmation 'USE TRA-VEL SEO STAGING HOST staging.example.test' | Out-Null
     Assert-ContractThrows -Action { Assert-CredentialEnvironmentBinding -RequestedEnvironment staging -CredentialFile $DefaultProductionCredentialPath -DefaultProductionCredentialFile $DefaultProductionCredentialPath } -Message 'staging accepted the default production credential file'
-    Assert-ContractThrows -Action { Assert-CredentialEnvironmentBinding -RequestedEnvironment staging -CredentialFile (Join-Path $env:TEMP 'tra-vel-staging.credential.xml') -DefaultProductionCredentialFile $DefaultProductionCredentialPath } -Message 'staging accepted an implicit credential path'
-    Assert-CredentialEnvironmentBinding -RequestedEnvironment staging -CredentialFile (Join-Path $env:TEMP 'tra-vel-staging.credential.xml') -DefaultProductionCredentialFile $DefaultProductionCredentialPath -CredentialPathWasExplicit $true | Out-Null
+    $ContractStagingCredentialPath = [IO.Path]::Combine([IO.Path]::GetTempPath(), 'tra-vel-staging.credential.xml')
+    Assert-ContractThrows -Action { Assert-CredentialEnvironmentBinding -RequestedEnvironment staging -CredentialFile $ContractStagingCredentialPath -DefaultProductionCredentialFile $DefaultProductionCredentialPath } -Message 'staging accepted an implicit credential path'
+    Assert-CredentialEnvironmentBinding -RequestedEnvironment staging -CredentialFile $ContractStagingCredentialPath -DefaultProductionCredentialFile $DefaultProductionCredentialPath -CredentialPathWasExplicit $true | Out-Null
     Write-Host 'SEO opportunity provision contract tests passed.'
 }
 
