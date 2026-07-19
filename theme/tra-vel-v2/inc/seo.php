@@ -185,7 +185,7 @@ add_filter( 'wpseo_sitemap_exclude_taxonomy', 'tra_vel_v2_sitemap_exclude_taxono
  */
 function tra_vel_v2_sitemap_exclude_noindexed_pages( $excluded_ids ) {
 	$excluded_ids = is_array( $excluded_ids ) ? $excluded_ids : array();
-	foreach ( array( 'saved', 'account' ) as $private_slug ) {
+	foreach ( array( 'saved', 'account', 'budapest-vacation', 'prague-vacation' ) as $private_slug ) {
 		$private_page = get_page_by_path( $private_slug );
 		if ( $private_page instanceof WP_Post ) {
 			$excluded_ids[] = (int) $private_page->ID;

@@ -108,7 +108,7 @@ function tra_vel_v2_enqueue_assets() {
 add_action( 'wp_enqueue_scripts', 'tra_vel_v2_enqueue_assets' );
 
 function tra_vel_v2_script_attributes( $tag, $handle ) {
-	if ( ! in_array( $handle, array( 'tra-vel-v2-app', 'tra-vel-v2-globe-3d', 'tra-vel-v2-customer-trip-cockpit' ), true ) ) {
+	if ( ! in_array( $handle, array( 'tra-vel-v2-app', 'tra-vel-v2-globe-3d', 'tra-vel-v2-customer-trip-cockpit', 'tra-vel-v2-lucide' ), true ) ) {
 		return $tag;
 	}
 	return str_replace( ' src=', ' defer src=', $tag );
