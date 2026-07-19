@@ -11,7 +11,7 @@ $customer_cockpit_cookie      = '' !== $customer_cockpit_cookie_name && isset( $
 $has_customer_cockpit_session = '' !== $customer_cockpit_cookie && 1 === preg_match( '/^[A-Za-z0-9_-]{32,128}$/', $customer_cockpit_cookie );
 $customer_cockpit_signed_in   = is_user_logged_in();
 $customer_cockpit_mode        = $has_customer_cockpit_session ? 'scoped-session' : ( $customer_cockpit_signed_in ? 'signed-in' : 'scoped-session' );
-$show_customer_cockpit        = class_exists( 'Tra_Vel_Customer_Trip_Cockpit_Controller' ) && apply_filters( 'tra_vel_v2_cockpit_feed_available', false );
+$show_customer_cockpit        = class_exists( 'Tra_Vel_Customer_Trip_Cockpit_Controller' ) && apply_filters( 'tra_vel_v2_cockpit_feed_available', false ) && ( $has_customer_cockpit_session || $customer_cockpit_signed_in );
 if ( $has_customer_cockpit_session || $customer_cockpit_signed_in ) {
 	if ( ! defined( 'DONOTCACHEPAGE' ) ) {
 		define( 'DONOTCACHEPAGE', true );

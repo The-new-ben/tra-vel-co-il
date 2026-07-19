@@ -77,7 +77,9 @@ function tra_vel_v2_enqueue_assets() {
 		)
 	);
 
-	if ( is_page_template( 'page-saved.php' ) && apply_filters( 'tra_vel_v2_cockpit_feed_available', false ) ) {
+	$cockpit_cookie_name  = class_exists( 'Tra_Vel_VIP_Capability_Session_Controller' ) ? Tra_Vel_VIP_Capability_Session_Controller::SESSION_COOKIE : '';
+	$cockpit_has_audience = is_user_logged_in() || ( '' !== $cockpit_cookie_name && isset( $_COOKIE[ $cockpit_cookie_name ] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+	if ( is_page_template( 'page-saved.php' ) && $cockpit_has_audience && apply_filters( 'tra_vel_v2_cockpit_feed_available', false ) ) {
 		wp_enqueue_script(
 			'tra-vel-v2-customer-trip-cockpit',
 			TRA_VEL_V2_URI . '/assets/js/customer-trip-cockpit.js',
