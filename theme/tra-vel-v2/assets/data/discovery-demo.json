@@ -97,7 +97,7 @@
       "weather": { "temperature_c": 17, "condition": "נעים", "season_fit": "טוב" },
       "planning": {
         "reviewed_on": "2026-07-17",
-        "source_label": "Tra-Vel editorial planning profile",
+        "source_label": "פרופיל התכנון של Tra-Vel",
         "modules": {
           "mobility": { "state": "editorial", "headline": "מהשדה למרכז ולתחבורה הציבורית", "detail": "מתחילים מזמן העברה משוער של 35 דקות, ואז בודקים שאטל, מונית ותחבורה ציבורית לפי שעת הנחיתה והמלון.", "next_action": "השוו העברות" },
           "dining": { "state": "needs_details", "headline": "אוכל וכשרות לפי אזור הלינה", "detail": "רמת כשרות, אלרגיות, ילדים ותקציב לארוחה נדרשים לפני בניית מסלול מסעדות.", "next_action": "הוסיפו העדפות אוכל" },
@@ -123,7 +123,7 @@
       "weather": { "temperature_c": 16, "condition": "קריר ונעים", "season_fit": "טוב" },
       "planning": {
         "reviewed_on": "2026-07-18",
-        "source_label": "Tra-Vel editorial planning profile",
+        "source_label": "פרופיל התכנון של Tra-Vel",
         "modules": {
           "mobility": { "state": "editorial", "headline": "מהשדה למרכז ומעבר בין אזורי העיר", "detail": "זמן העברה בסיסי של 35 דקות נבדק מחדש לפי שעת הנחיתה, אזור המלון, כבודה ונגישות; משווים תחבורה ציבורית, הסעה ומונית.", "next_action": "השוו העברות" },
           "dining": { "state": "needs_details", "headline": "אוכל, כשרות והזמנות לפי המסלול", "detail": "מגדירים כשרות, אלרגיות, ילדים ותקציב כדי לחבר מסעדות לאזורי הטיול בלי נסיעות מיותרות.", "next_action": "הוסיפו העדפות אוכל" },
@@ -149,7 +149,7 @@
       "weather": { "temperature_c": 17, "condition": "נעים וקריר", "season_fit": "טוב" },
       "planning": {
         "reviewed_on": "2026-07-18",
-        "source_label": "Tra-Vel editorial planning profile",
+        "source_label": "פרופיל התכנון של Tra-Vel",
         "modules": {
           "mobility": { "state": "editorial", "headline": "מהשדה למרכז ומעבר בין טבעות העיר", "detail": "זמן העברה בסיסי של 25 דקות נבדק מחדש לפי שעת הנחיתה, אזור הלינה, כבודה ונגישות; משווים רכבת, הסעה ומונית.", "next_action": "השוו העברות" },
           "dining": { "state": "needs_details", "headline": "אוכל, כשרות והזמנות ליד המסלול", "detail": "מגדירים כשרות, אלרגיות, ילדים ותקציב כדי לחבר מסעדות לאזורי הביקור בלי מעברים מיותרים.", "next_action": "הוסיפו העדפות אוכל" },
@@ -175,7 +175,7 @@
       "weather": { "temperature_c": 23, "condition": "שמשי", "season_fit": "מצוין" },
       "planning": {
         "reviewed_on": "2026-07-17",
-        "source_label": "Tra-Vel editorial planning profile",
+        "source_label": "פרופיל התכנון של Tra-Vel",
         "modules": {
           "mobility": { "state": "editorial", "headline": "מהשדה לפלאקה, למרכז או לפיראוס", "detail": "זמן העברה בסיסי של 40 דקות משתנה לפי יעד הלינה והמשך לאיים; משווים מטרו, אוטובוס ומונית.", "next_action": "השוו העברות" },
           "dining": { "state": "needs_details", "headline": "טברנות, כשרות וארוחות בדרך", "detail": "מוסיפים רמת כשרות, אלרגיות, שעות ותקציב כדי לשלב אוכל בלי לפגוע במסלול.", "next_action": "הוסיפו העדפות אוכל" },
@@ -201,7 +201,7 @@
       "weather": { "temperature_c": 31, "condition": "חם ויבש", "season_fit": "טוב" },
       "planning": {
         "reviewed_on": "2026-07-17",
-        "source_label": "Tra-Vel editorial planning profile",
+        "source_label": "פרופיל התכנון של Tra-Vel",
         "modules": {
           "mobility": { "state": "editorial", "headline": "שדה, מטרו, מונית ומרחקים בין אזורים", "detail": "זמן העברה בסיסי של 25 דקות נבדק מחדש לפי הטרמינל, שעת הנחיתה ואזור המלון.", "next_action": "השוו העברות" },
           "dining": { "state": "needs_details", "headline": "כשרות, הזמנות ותקציב לארוחה", "detail": "מגדירים כשרות, אלרגיות וסגנון אוכל כדי להתאים מסעדות למרחקים ולשעות הפעילות.", "next_action": "הוסיפו העדפות אוכל" },
@@ -227,7 +227,7 @@
       "weather": { "temperature_c": 29, "condition": "חם עם ממטרים", "season_fit": "טוב" },
       "planning": {
         "reviewed_on": "2026-07-17",
-        "source_label": "Tra-Vel editorial planning profile",
+        "source_label": "פרופיל התכנון של Tra-Vel",
         "modules": {
           "mobility": { "state": "editorial", "headline": "מהשדה לסיאם והמשך בתוך תאילנד", "detail": "זמן העברה בסיסי של 45 דקות הוא רק נקודת פתיחה; בודקים שדה, שעה, מלון והמשך לאיים.", "next_action": "השוו העברות" },
           "dining": { "state": "needs_details", "headline": "אוכל רחוב, מסעדות וכשרות", "detail": "רמת כשרות, אלרגיות, ילדים ותקציב קובעים את אזורי האוכל ואת התכנון היומי.", "next_action": "הוסיפו העדפות אוכל" },
@@ -253,7 +253,7 @@
       "weather": { "temperature_c": 18, "condition": "קריר ובהיר", "season_fit": "מצוין" },
       "planning": {
         "reviewed_on": "2026-07-17",
-        "source_label": "Tra-Vel editorial planning profile",
+        "source_label": "פרופיל התכנון של Tra-Vel",
         "modules": {
           "mobility": { "state": "editorial", "headline": "מהנדה לשינג׳וקו ורכבות בין ערים", "detail": "זמן העברה בסיסי של 35 דקות נבדק לפי שדה, רכבת, כבודה ושעת ההגעה.", "next_action": "השוו העברות" },
           "dining": { "state": "needs_details", "headline": "הזמנות, כשרות, אלרגיות ותקציב", "detail": "מגדירים מגבלות וסגנון אוכל מראש כדי לשלב מסעדות בלי נסיעות מיותרות.", "next_action": "הוסיפו העדפות אוכל" },
@@ -279,7 +279,7 @@
       "weather": { "temperature_c": 21, "condition": "נעים ורוחי", "season_fit": "טוב" },
       "planning": {
         "reviewed_on": "2026-07-17",
-        "source_label": "Tra-Vel editorial planning profile",
+        "source_label": "פרופיל התכנון של Tra-Vel",
         "modules": {
           "mobility": { "state": "editorial", "headline": "מהשדה לבאישה ועליות בתוך העיר", "detail": "זמן העברה בסיסי של 25 דקות נבדק מול שעה, מלון, מטרו, מונית ומרחק בעלייה.", "next_action": "השוו העברות" },
           "dining": { "state": "needs_details", "headline": "מסעדות, כשרות וימי טיול", "detail": "מוסיפים כשרות, אלרגיות, תקציב ושעות כדי לשלב אוכל במסלול לעיר ולסינטרה.", "next_action": "הוסיפו העדפות אוכל" },

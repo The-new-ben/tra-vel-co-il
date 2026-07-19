@@ -77,13 +77,31 @@ function tra_vel_v2_enqueue_assets() {
 		)
 	);
 
-	if ( is_page_template( 'page-saved.php' ) ) {
+	if ( is_page_template( 'page-saved.php' ) && apply_filters( 'tra_vel_v2_cockpit_feed_available', false ) ) {
 		wp_enqueue_script(
 			'tra-vel-v2-customer-trip-cockpit',
 			TRA_VEL_V2_URI . '/assets/js/customer-trip-cockpit.js',
 			array( 'tra-vel-v2-app' ),
 			tra_vel_v2_asset_version( '/assets/js/customer-trip-cockpit.js' ),
 			true
+		);
+	}
+
+	wp_add_inline_script( 'tra-vel-v2-app', 'window.dataLayer = window.dataLayer || [];', 'before' );
+
+	$ga4_id = apply_filters( 'tra_vel_v2_ga4_measurement_id', get_option( 'tra_vel_v2_ga4_id', '' ) );
+	$ga4_id = is_string( $ga4_id ) ? trim( $ga4_id ) : '';
+	if ( preg_match( '/^G-[A-Z0-9]{4,16}$/', $ga4_id ) ) {
+		wp_enqueue_script(
+			'tra-vel-v2-ga4',
+			'https://www.googletagmanager.com/gtag/js?id=' . rawurlencode( $ga4_id ),
+			array(),
+			null,
+			false
+		);
+		wp_add_inline_script(
+			'tra-vel-v2-ga4',
+			"window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'granted'});gtag('js',new Date());gtag('config','" . esc_js( $ga4_id ) . "');"
 		);
 	}
 }

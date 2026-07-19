@@ -110,7 +110,7 @@ get_header();
 	<?php endif; ?>
 
 	<section class="section page-width experience-next" aria-labelledby="seo-opportunity-next-step">
-		<div><span class="eyebrow"><?php esc_html_e( 'השלב הבא', 'tra-vel-v2' ); ?></span><h2 id="seo-opportunity-next-step"><?php echo esc_html( $entry['conversionAction'] ); ?></h2><p><?php echo esc_html( $is_decision ? __( 'שמרו את ההחלטה בתוך התכנון המלא ובדקו איך היא משפיעה על המסלול, הזמן והתקציב.', 'tra-vel-v2' ) : __( 'השלימו תאריכים והרכב כדי לבדוק אפשרויות מתאימות. המחיר, הזמינות והתנאים הסופיים יינתנו לאחר בדיקה מחדש, לפני הרכישה.', 'tra-vel-v2' ) ); ?></p></div>
+		<div><span class="eyebrow"><?php esc_html_e( 'השלב הבא', 'tra-vel-v2' ); ?></span><h2 id="seo-opportunity-next-step"><?php echo esc_html( $entry['conversionAction'] ); ?></h2><p><?php echo esc_html( $is_decision ? __( 'שמרו את ההחלטה בתוך התכנון המלא ובדקו איך היא משפיעה על המסלול, הזמן והתקציב.', 'tra-vel-v2' ) : __( 'השלימו תאריכים והרכב כדי לבדוק אפשרויות מתאימות. המחיר, הזמינות והתנאים מאומתים לפני התשלום.', 'tra-vel-v2' ) ); ?></p></div>
 		<a class="button-link dark-button" href="<?php echo esc_url( $action_url ); ?>"><?php echo esc_html( $entry['conversionAction'] ); ?><i data-lucide="arrow-left"></i></a>
 	</section>
 </main>

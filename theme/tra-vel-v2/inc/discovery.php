@@ -885,7 +885,7 @@ class Tra_Vel_V2_Discovery_Controller extends WP_REST_Controller {
 			'provenance'  => array(
 				'source'       => $is_live && ! empty( $provenance['source'] )
 					? sanitize_text_field( $provenance['source'] )
-					: sanitize_text_field( isset( $planning['source_label'] ) ? $planning['source_label'] : 'Tra-Vel editorial planning profile' ),
+					: sanitize_text_field( isset( $planning['source_label'] ) ? $planning['source_label'] : 'פרופיל התכנון של Tra-Vel' ),
 				'observed_at'  => $is_live && ! empty( $provenance['observed_at'] ) ? sanitize_text_field( $provenance['observed_at'] ) : null,
 				'retrieved_at' => $is_live && ! empty( $provenance['retrieved_at'] ) ? sanitize_text_field( $provenance['retrieved_at'] ) : null,
 				'reviewed_on'  => ! $is_live && ! empty( $planning['reviewed_on'] ) ? sanitize_text_field( $planning['reviewed_on'] ) : null,
@@ -1000,7 +1000,7 @@ class Tra_Vel_V2_Discovery_Controller extends WP_REST_Controller {
 
 		$planning       = isset( $destination['planning'] ) && is_array( $destination['planning'] ) ? $destination['planning'] : array();
 		$planning_items = isset( $planning['modules'] ) && is_array( $planning['modules'] ) ? $planning['modules'] : array();
-		$editorial_source = isset( $planning['source_label'] ) ? sanitize_text_field( $planning['source_label'] ) : 'Tra-Vel editorial planning profile';
+		$editorial_source = isset( $planning['source_label'] ) ? sanitize_text_field( $planning['source_label'] ) : 'פרופיל התכנון של Tra-Vel';
 		$reviewed_on      = isset( $planning['reviewed_on'] ) ? sanitize_text_field( $planning['reviewed_on'] ) : null;
 		$route_provenance  = $this->field_provenance_for_destination( $field_provenance, 'routes', $selected_id );
 		$hotel_provenance  = $this->field_provenance_for_destination( $field_provenance, 'hotels', $selected_id );

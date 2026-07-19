@@ -550,7 +550,7 @@ for (const marker of [
 ]) {
   if (!frontPage.includes(marker)) failures.push(`The homepage full-trip plan is missing ${marker}.`);
 }
-if (!frontPage.includes('<ul class="home-plan-modules"') || !frontPage.includes('המחיר, הזמינות והתנאים הסופיים יינתנו לאחר בדיקה מחדש, לפני הרכישה.')) failures.push('The homepage plan must expose semantic supporting components and a pre-purchase revalidation boundary.');
+if (!frontPage.includes('<ul class="home-plan-modules"') || !frontPage.includes('המחיר, הזמינות והתנאים מאומתים לפני התשלום.')) failures.push('The homepage plan must expose semantic supporting components and a pre-purchase revalidation boundary.');
 if (!frontPage.includes('data-lucide="compass"') || frontPage.includes('data-lucide="dices"')) failures.push('The one-click Surprise journey must use travel discovery imagery without dice or casino cues.');
 if (frontPage.includes('בחירה עונתית') || frontPage.includes('מצב שמונת רכיבי התכנון')) failures.push('The homepage must use traveler-facing benefit copy rather than internal merchandising or component-state language.');
 for (const phrase of ['מקור מחובר', 'ספק מחובר', 'בעלות ספק', 'בקשת סיוע', 'בקשת הסיוע', 'זהות מסחרית', 'מצב רכיבים', 'הצעה סופית', 'אישור בהצעה האישית', 'המחיר הסופי יינתן לאחר בדיקה אישית', 'מחיר סופי לאחר בדיקה מחדש', 'המחיר הסופי טרם אושר']) {
@@ -1163,7 +1163,7 @@ for (const marker of [
   "appendTextElement(identity, 'h3', offer.label)",
   "appendTextElement(body, 'h3', property.name)",
   "appendTextElement(identity, 'h3', tripPackage.name)",
-  'המחיר, הזמינות והתנאים הסופיים יינתנו לאחר בדיקה מחדש, לפני הרכישה',
+  'המחיר, הזמינות והתנאים מאומתים לפני התשלום',
   'בקשו בדיקת מחיר לטיסה',
   'בקשו בדיקת מלון',
   'בקשו בדיקת חופשה'
