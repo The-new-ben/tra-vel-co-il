@@ -13,11 +13,18 @@ $GLOBALS['tv2_options']    = array();
 
 class WP_Error {
 	private $code;
-	public function __construct( $code ) {
+	private $message;
+	private $data;
+	public function __construct( $code, $message = '', $data = array() ) {
 		$this->code = $code;
+		$this->message = $message;
+		$this->data = $data;
 	}
 	public function get_error_code() {
 		return $this->code;
+	}
+	public function get_error_data() {
+		return $this->data;
 	}
 }
 
@@ -45,6 +52,9 @@ class WP_REST_Response {
 
 function is_wp_error( $value ) {
 	return $value instanceof WP_Error;
+}
+function rest_ensure_response( $value ) {
+	return $value instanceof WP_REST_Response ? $value : new WP_REST_Response( $value );
 }
 function sanitize_key( $value ) {
 	return preg_replace( '/[^a-z0-9_\-]/', '', strtolower( (string) $value ) );
@@ -187,14 +197,34 @@ function tv2_find_plan_module( $response, $module_id ) {
 	return null;
 }
 
+function tv2_find_map_entity( $response, $destination_id ) {
+	if ( empty( $response->data['map_entities'] ) ) {
+		return null;
+	}
+	foreach ( $response->data['map_entities'] as $entity ) {
+		if ( isset( $entity['destination_id'] ) && $destination_id === $entity['destination_id'] ) {
+			return $entity;
+		}
+	}
+	return null;
+}
+
 $repository = new Tra_Vel_V2_Discovery_Repository();
 $first      = $repository->get();
 $second     = $repository->get();
 
 tv2_assert( ! is_wp_error( $first ), 'demo repository returned an error' );
+$canonical_destination_count = isset( $first['data']['destinations'] ) && is_array( $first['data']['destinations'] ) ? count( $first['data']['destinations'] ) : 0;
+$canonical_destination_ids   = $canonical_destination_count ? array_column( $first['data']['destinations'], 'id' ) : array();
+$canonical_exploration_hubs  = isset( $first['data']['exploration_hubs'] ) && is_array( $first['data']['exploration_hubs'] ) ? $first['data']['exploration_hubs'] : array();
+$canonical_hub_ids           = $canonical_exploration_hubs ? array_column( $canonical_exploration_hubs, 'id' ) : array();
 tv2_assert( 'miss' === $first['runtime']['cache_state'], 'first request must be a cache miss' );
 tv2_assert( 'fresh' === $second['runtime']['cache_state'], 'second request must use fresh cache' );
-tv2_assert( 6 === count( $first['data']['destinations'] ), 'demo destination count changed' );
+tv2_assert( 0 < $canonical_destination_count, 'canonical discovery contract must expose at least one destination' );
+tv2_assert( $canonical_destination_count === count( array_unique( $canonical_destination_ids ) ), 'canonical discovery destination ids must remain unique as the collection expands' );
+tv2_assert( count( $canonical_exploration_hubs ) >= 30 && count( $canonical_exploration_hubs ) <= 80, 'canonical discovery must expose the bounded global exploration-hub layer' );
+tv2_assert( count( $canonical_exploration_hubs ) === count( array_unique( $canonical_hub_ids ) ), 'canonical exploration-hub ids must remain unique' );
+tv2_assert( ! array_intersect( $canonical_destination_ids, $canonical_hub_ids ), 'exploration hubs must not shadow destination ids' );
 tv2_assert( 'demo' === $first['data']['data_mode'], 'demo adapter must remain demo mode' );
 tv2_assert( false === $first['data']['field_provenance']['deals']['live'], 'editorial deal values were certified as live' );
 tv2_assert( false === $first['data']['field_provenance']['weather_current']['live'], 'editorial weather values were certified as live' );
@@ -203,6 +233,9 @@ tv2_assert( false === $first['runtime']['adapters']['open_meteo_commercial']['co
 
 $discovery_controller = new Tra_Vel_V2_Test_Discovery_Controller( $repository );
 $bangkok_response      = tv2_discovery_request( $discovery_controller, array( 'destination' => 'bangkok' ) );
+$bangkok_hotels        = tv2_discovery_request( $discovery_controller, array( 'destination' => 'bangkok', 'layer' => 'hotels' ) );
+$bangkok_airports      = tv2_discovery_request( $discovery_controller, array( 'destination' => 'bangkok', 'layer' => 'airports' ) );
+$bangkok_weather       = tv2_discovery_request( $discovery_controller, array( 'destination' => 'bangkok', 'layer' => 'weather' ) );
 $bangkok_overnight     = tv2_discovery_request( $discovery_controller, array( 'destination' => 'bangkok', 'allow_overnight' => true ) );
 $budapest_response     = tv2_discovery_request( $discovery_controller, array( 'destination' => 'budapest' ) );
 $demo_budget_response  = tv2_discovery_request( $discovery_controller, array( 'budget' => 550 ) );
@@ -216,17 +249,56 @@ $focus_precedence      = tv2_discovery_request( $discovery_controller, array( 'd
 $empty_response        = tv2_discovery_request( $discovery_controller, array( 'q' => 'no-such-destination' ) );
 $collection_params     = $discovery_controller->get_collection_params();
 $item_schema           = $discovery_controller->get_item_schema();
+$contract_schema_response = $discovery_controller->get_contract_schema();
 $bangkok_destination   = tv2_find_destination( $bangkok_response, 'bangkok' );
 $budapest_destination  = tv2_find_destination( $bangkok_response, 'budapest' );
 $athens_destination    = tv2_find_destination( $bangkok_response, 'athens' );
 $tokyo_destination     = tv2_find_destination( $bangkok_response, 'tokyo' );
+$bangkok_deal_entity   = tv2_find_map_entity( $bangkok_response, 'bangkok' );
+$bangkok_hotel_entity  = tv2_find_map_entity( $bangkok_hotels, 'bangkok' );
+$bangkok_airport_entity = tv2_find_map_entity( $bangkok_airports, 'bangkok' );
+$bangkok_weather_entity = tv2_find_map_entity( $bangkok_weather, 'bangkok' );
 
 tv2_assert( $bangkok_response instanceof WP_REST_Response, 'discovery controller did not return a REST response' );
+tv2_assert( $contract_schema_response instanceof WP_REST_Response && '1.3.0' === $contract_schema_response->data['properties']['contract_version']['const'], 'discovery schema endpoint did not expose the versioned typed-map contract' );
+tv2_assert( isset( $contract_schema_response->data['definitions']['mapEntity'], $contract_schema_response->data['definitions']['mapSegment'], $contract_schema_response->data['properties']['airport_registry'] ), 'discovery schema endpoint omitted typed map definitions or airport registry' );
+tv2_assert( isset( $contract_schema_response->data['definitions']['explorationHub'], $contract_schema_response->data['properties']['exploration_hubs'] ), 'discovery schema endpoint omitted its closed exploration-hub contract' );
 tv2_assert( false === $bangkok_response->data['field_provenance']['deals']['live'], 'REST response certified editorial deal values as live' );
 tv2_assert( false === $bangkok_response->data['field_provenance']['routes']['live'], 'REST response certified editorial route values as live' );
 tv2_assert( 'bangkok' === $bangkok_response->data['meta']['selected_destination'], 'requested visible destination was not selected' );
 tv2_assert( 2 === count( $bangkok_response->data['routes'] ), 'default route filters did not exclude the overnight option' );
 tv2_assert( array( 'bangkok' ) === array_values( array_unique( array_column( $bangkok_response->data['routes'], 'destination_id' ) ) ), 'returned routes are not explicitly bound to Bangkok' );
+tv2_assert( '1.3.0' === $bangkok_response->data['meta']['contract_version'] && '1.3.0' === $bangkok_response->data['selected_plan']['contract_version'], 'typed map contract version did not reach the response and selected plan' );
+tv2_assert( count( $canonical_exploration_hubs ) === count( $bangkok_response->data['exploration_hubs'] ), 'the REST response lost exploration hubs while filtering a destination' );
+tv2_assert( $canonical_destination_count === count( $bangkok_response->data['map_entities'] ), 'active deal layer did not expose one typed entity per filtered destination' );
+tv2_assert( array( 'deal' ) === array_values( array_unique( array_column( $bangkok_response->data['map_entities'], 'kind' ) ) ), 'deal layer mixed entity kinds' );
+tv2_assert( is_array( $bangkok_deal_entity ) && 'demo' === $bangkok_deal_entity['data_mode'] && 'planning' === $bangkok_deal_entity['truth_state'] && 'current' === $bangkok_deal_entity['freshness'], 'demo deal entity was not explicitly labeled as current planning data' );
+tv2_assert( 1347.0 === $bangkok_deal_entity['price']['amount'] && 'per_person_total' === $bangkok_deal_entity['price']['basis'] && 'planning' === $bangkok_deal_entity['price']['state'] && false === $bangkok_deal_entity['price']['bookable'], 'demo deal price lost its planning/non-bookable boundary' );
+tv2_assert( 'search_packages' === $bangkok_deal_entity['action']['type'] && true === $bangkok_deal_entity['action']['requires_live_search'], 'deal entity does not hand off to a live package search' );
+tv2_assert( null === $bangkok_deal_entity['provenance']['observed_at'] && null === $bangkok_deal_entity['provenance']['retrieved_at'] && '2026-07-17' === $bangkok_deal_entity['provenance']['reviewed_on'], 'demo deal entity invented supplier observation provenance' );
+tv2_assert( is_array( $bangkok_hotel_entity ) && 'hotel_area' === $bangkok_hotel_entity['kind'] && 'search_hotels' === $bangkok_hotel_entity['action']['type'], 'hotel layer did not expose a typed hotel-area action' );
+tv2_assert( 65.0 === $bangkok_hotel_entity['price']['amount'] && 'per_night' === $bangkok_hotel_entity['price']['basis'] && false === $bangkok_hotel_entity['price']['bookable'], 'hotel-area planning price is not explicitly per-night and non-bookable' );
+tv2_assert( is_array( $bangkok_airport_entity ) && 'airport' === $bangkok_airport_entity['kind'] && null === $bangkok_airport_entity['price'] && 'compare_routes' === $bangkok_airport_entity['action']['type'], 'airport layer did not expose a price-free route-comparison entity' );
+tv2_assert( 13.69 === $bangkok_airport_entity['lat'] && 100.7501 === $bangkok_airport_entity['lng'], 'airport entity used city-center coordinates instead of the canonical BKK point' );
+tv2_assert( is_array( $bangkok_weather_entity ) && 'weather' === $bangkok_weather_entity['kind'] && null === $bangkok_weather_entity['price'] && 'plan_for_weather' === $bangkok_weather_entity['action']['type'], 'weather layer did not expose a price-free planning entity' );
+$bangkok_deal_action_query = array();
+$bangkok_hotel_action_query = array();
+$bangkok_airport_action_query = array();
+$bangkok_weather_action_query = array();
+parse_str( (string) parse_url( $bangkok_deal_entity['action']['href'], PHP_URL_QUERY ), $bangkok_deal_action_query );
+parse_str( (string) parse_url( $bangkok_hotel_entity['action']['href'], PHP_URL_QUERY ), $bangkok_hotel_action_query );
+parse_str( (string) parse_url( $bangkok_airport_entity['action']['href'], PHP_URL_QUERY ), $bangkok_airport_action_query );
+parse_str( (string) parse_url( $bangkok_weather_entity['action']['href'], PHP_URL_QUERY ), $bangkok_weather_action_query );
+tv2_assert( 'BKK' === $bangkok_deal_action_query['destination'], 'deal marker did not hand off the airport-code destination required by package search' );
+tv2_assert( 'BKK' === $bangkok_hotel_action_query['destination'] && 'Siam' === $bangkok_hotel_action_query['area'], 'hotel-area marker lost its airport code or selected area before hotel search' );
+tv2_assert( 'BKK' === $bangkok_airport_action_query['destination'], 'airport marker did not preserve its canonical airport code for route comparison' );
+tv2_assert( 'bangkok' === $bangkok_weather_action_query['destination'] && 'destination' === $bangkok_weather_action_query['mode'], 'weather marker did not retain its destination planning context' );
+tv2_assert( 2 === count( $bangkok_response->data['map_segments'] ), 'one-stop recommended route did not produce exactly two map segments' );
+tv2_assert( array( 1, 2 ) === array_column( $bangkok_response->data['map_segments'], 'sequence' ), 'route segment sequence is not contiguous and one-based' );
+tv2_assert( array( 'bangkok-dubai' ) === array_values( array_unique( array_column( $bangkok_response->data['map_segments'], 'route_id' ) ) ), 'map segments are not bound to the recommended route' );
+tv2_assert( 'TLV' === $bangkok_response->data['map_segments'][0]['from']['code'] && 'DXB' === $bangkok_response->data['map_segments'][0]['to']['code'] && 'DXB' === $bangkok_response->data['map_segments'][1]['from']['code'] && 'BKK' === $bangkok_response->data['map_segments'][1]['to']['code'], 'recommended route geometry did not follow TLV-DXB-BKK' );
+tv2_assert( 32.0114 === $bangkok_response->data['map_segments'][0]['from']['lat'] && 34.8867 === $bangkok_response->data['map_segments'][0]['from']['lng'] && 25.2532 === $bangkok_response->data['map_segments'][0]['to']['lat'] && 55.3657 === $bangkok_response->data['map_segments'][0]['to']['lng'], 'map segment endpoints lost canonical airport coordinates' );
+tv2_assert( 'demo' === $bangkok_response->data['map_segments'][0]['truth']['data_mode'] && 'planning' === $bangkok_response->data['map_segments'][0]['truth']['truth_state'] && false === $bangkok_response->data['map_segments'][0]['truth']['bookable'], 'demo map segment was promoted beyond planning state' );
 tv2_assert( 3 === count( $bangkok_overnight->data['routes'] ), 'explicit overnight permission did not restore the overnight option' );
 tv2_assert( 'budapest' === $budapest_response->data['meta']['selected_destination'], 'Budapest selection was replaced by another visible destination' );
 tv2_assert( 2 === count( $budapest_response->data['routes'] ), 'Budapest does not expose its two truthful route candidates' );
@@ -240,15 +312,18 @@ tv2_assert( null === $bangkok_response->data['selected_plan']['cost_ledger']['sa
 tv2_assert( ! array_filter( $bangkok_response->data['selected_plan']['cost_ledger']['line_items'], static function ( $item ) { return null !== $item['amount']; } ), 'demo cost ledger leaked sample component prices' );
 tv2_assert( 550 === $demo_budget_response->data['meta']['filters']['budget'], 'demo response did not echo the requested budget' );
 tv2_assert( false === $demo_budget_response->data['meta']['filters']['budget_applied'], 'demo prices silently activated monetary filtering' );
-tv2_assert( 6 === count( $demo_budget_response->data['destinations'] ), 'demo budget excluded editorial destinations' );
-tv2_assert( array( 'bangkok', 'lisbon', 'tokyo' ) === array_column( $long_trip_response->data['destinations'], 'id' ), 'long-trip intent returned the wrong destination set' );
-tv2_assert( array( 'budapest', 'dubai', 'athens' ) === array_column( $short_trip_response->data['destinations'], 'id' ), 'short-trip intent returned the wrong destination set' );
+tv2_assert( $canonical_destination_count === count( $demo_budget_response->data['destinations'] ), 'demo budget excluded editorial destinations' );
+// Smart discovery uses traveler friction, not unsourced trend or savings claims: direct service first,
+// then shorter flight and airport transfer, with destination id only as a deterministic final tie-breaker.
+tv2_assert( array( 'bangkok', 'lisbon', 'tokyo' ) === array_column( $long_trip_response->data['destinations'], 'id' ), 'long-trip smart order did not follow direct-service and travel-time friction' );
+tv2_assert( array( 'athens', 'dubai', 'budapest', 'vienna', 'prague' ) === array_column( $short_trip_response->data['destinations'], 'id' ), 'short-trip smart order did not follow direct-service and travel-time friction' );
 tv2_assert( null === $excluded_response->data['meta']['selected_destination'], 'an explicitly filtered destination was silently replaced' );
 tv2_assert( array() === $excluded_response->data['destinations'] && array() === $excluded_response->data['routes'], 'an explicitly filtered destination did not return a truthful empty state' );
 tv2_assert( 'bangkok' === $limited_response->data['meta']['selected_destination'], 'sorting and limit replaced an explicit visible destination' );
 tv2_assert( array( 'bangkok' ) === array_column( $limited_response->data['destinations'], 'id' ), 'explicit destination did not survive the result limit' );
 tv2_assert( $comfort_response->data['routes'][0]['id'] === $comfort_response->data['recommended']['id'], 'recommended route does not match comfort ordering' );
 tv2_assert( 'bangkok-direct' === $comfort_response->data['recommended']['id'], 'comfort ordering did not recommend the direct route' );
+tv2_assert( 1 === count( $comfort_response->data['map_segments'] ) && 'TLV' === $comfort_response->data['map_segments'][0]['from']['code'] && 'BKK' === $comfort_response->data['map_segments'][0]['to']['code'], 'direct recommended route did not collapse to one exact segment' );
 tv2_assert( 'tokyo' === $focused_response->data['meta']['selected_destination'], 'transient focus did not preserve the active globe destination' );
 tv2_assert( 3 === count( $focused_response->data['destinations'] ), 'transient focus changed the requested global result limit' );
 tv2_assert( in_array( 'tokyo', array_column( $focused_response->data['destinations'], 'id' ), true ), 'transient focus did not keep the active globe destination visible' );
@@ -258,6 +333,7 @@ tv2_assert( array( 'bangkok' ) === array_values( array_unique( array_column( $fo
 tv2_assert( null === $empty_response->data['meta']['selected_destination'], 'zero-result discovery retained a stale selected destination' );
 tv2_assert( array() === $empty_response->data['routes'] && null === $empty_response->data['recommended'], 'zero-result discovery retained stale route state' );
 tv2_assert( null === $empty_response->data['selected_plan'], 'zero-result discovery retained a stale 360 plan' );
+tv2_assert( array() === $empty_response->data['map_entities'] && array() === $empty_response->data['map_segments'], 'zero-result discovery retained stale map entities or route geometry' );
 tv2_assert( 'rest_validate_request_arg' === $collection_params['direct']['validate_callback'], 'direct boolean lacks strict REST validation' );
 tv2_assert( 'rest_validate_request_arg' === $collection_params['allow_overnight']['validate_callback'], 'overnight boolean lacks strict REST validation' );
 tv2_assert( 'sanitize_key' === $collection_params['focus']['sanitize_callback'], 'focus parameter lacks key sanitization' );
@@ -266,6 +342,15 @@ tv2_assert( 'rest_validate_request_arg' === $collection_params['destination']['v
 tv2_assert( 'rest_validate_request_arg' === $collection_params['q']['validate_callback'], 'query parameter lacks strict REST validation' );
 tv2_assert( isset( $item_schema['properties']['selected_plan']['properties']['cost_ledger']['properties']['booking_confirmed'] ), 'selected-plan REST schema is still an untyped object bag' );
 tv2_assert( isset( $item_schema['properties']['selected_plan']['properties']['modules']['items']['properties']['provenance'] ), 'selected-plan module provenance is missing from the REST schema' );
+$map_entity_schema = isset( $item_schema['properties']['map_entities']['items'] ) ? $item_schema['properties']['map_entities']['items'] : array();
+$map_segment_schema = isset( $item_schema['properties']['map_segments']['items'] ) ? $item_schema['properties']['map_segments']['items'] : array();
+$required_map_entity_fields = array( 'id', 'kind', 'destination_id', 'lat', 'lng', 'label', 'summary', 'data_mode', 'truth_state', 'freshness', 'action', 'provenance', 'price' );
+$required_map_segment_fields = array( 'id', 'route_id', 'destination_id', 'sequence', 'from', 'to', 'truth', 'provenance' );
+tv2_assert( ! array_diff( $required_map_entity_fields, isset( $map_entity_schema['required'] ) ? $map_entity_schema['required'] : array() ), 'REST schema does not require the complete typed map entity contract' );
+tv2_assert( ! array_diff( $required_map_segment_fields, isset( $map_segment_schema['required'] ) ? $map_segment_schema['required'] : array() ), 'REST schema does not require the complete typed route segment contract' );
+tv2_assert( array( 'deal', 'hotel_area', 'airport', 'weather' ) === $map_entity_schema['properties']['kind']['enum'], 'REST schema map kind enum drifted' );
+tv2_assert( array( 'search_packages', 'search_hotels', 'compare_routes', 'plan_for_weather' ) === $map_entity_schema['properties']['action']['properties']['type']['enum'], 'REST schema action enum drifted' );
+tv2_assert( array( false ) === $map_entity_schema['properties']['price']['properties']['bookable']['enum'] && array( false ) === $map_segment_schema['properties']['truth']['properties']['bookable']['enum'], 'REST schema permits map prices or segments to imply a booking confirmation' );
 tv2_assert( is_array( $bangkok_destination ) && 'https://tra-vel.test/destinations/thailand/' === $bangkok_destination['url'], 'Bangkok did not resolve to the published Thailand guide' );
 tv2_assert( is_array( $budapest_destination ) && 'https://tra-vel.test/destinations/budapest/' === $budapest_destination['url'], 'Budapest did not resolve to its canonical guide' );
 tv2_assert( is_array( $athens_destination ) && 'https://tra-vel.test/destinations/athens/' === $athens_destination['url'], 'Athens did not resolve to its canonical guide' );
@@ -343,6 +428,9 @@ tv2_assert( 12 === count( $context_first->data['selected_plan']['cost_ledger']['
 tv2_assert( null === $context_first->data['selected_plan']['cost_ledger']['savings'], 'route totals created an unverified savings claim' );
 tv2_assert( false === $context_first->data['selected_plan']['cost_ledger']['comparable_verified'], 'non-comparable route totals were marked verified' );
 tv2_assert( false === $context_first->data['selected_plan']['cost_ledger']['booking_confirmed'], 'supplier prices were presented as a confirmed booking' );
+$context_bangkok_deal = tv2_find_map_entity( $context_first, 'bangkok' );
+tv2_assert( is_array( $context_bangkok_deal ) && 'live' === $context_bangkok_deal['data_mode'] && 'supplier_snapshot' === $context_bangkok_deal['truth_state'] && 'supplier_snapshot' === $context_bangkok_deal['price']['state'], 'current supplier deal was not represented as a field-scoped snapshot' );
+tv2_assert( false === $context_bangkok_deal['price']['bookable'] && 'context-test' === $context_bangkok_deal['provenance']['source'] && null === $context_bangkok_deal['provenance']['reviewed_on'], 'supplier map price implied booking or inherited editorial provenance' );
 
 $focus_context_count = count( $context_registry->contexts );
 $context_focus_tokyo = tv2_discovery_request( $context_controller, array( 'focus' => 'tokyo' ) );
@@ -374,7 +462,7 @@ $weather_mixed_controller = new Tra_Vel_V2_Test_Discovery_Controller(
 );
 $weather_mixed_budget = tv2_discovery_request( $weather_mixed_controller, array( 'budget' => 550, 'layer' => 'weather' ) );
 tv2_assert( false === $weather_mixed_budget->data['meta']['filters']['budget_applied'], 'live weather activated hidden editorial price filtering' );
-tv2_assert( 6 === count( $weather_mixed_budget->data['destinations'] ), 'live weather excluded destinations using hidden editorial prices' );
+tv2_assert( $canonical_destination_count === count( $weather_mixed_budget->data['destinations'] ), 'live weather excluded destinations using hidden editorial prices' );
 
 class Tra_Vel_V2_Test_Field_Provenance_Adapter implements Tra_Vel_V2_Supplier_Adapter {
 	private $with_current;
@@ -452,6 +540,7 @@ function tv2_live_route_fixture( $id, $overrides = array() ) {
 		'badge'            => 'Live',
 		'duration_minutes' => 780,
 		'stops'            => 1,
+		'via'              => 'DXB',
 		'ticket_mode'      => 'single',
 		'risk'             => 'low',
 		'emissions_kg'     => 420,
@@ -651,7 +740,7 @@ $coverage_registry->register(
 	)
 );
 $coverage_resolved = $coverage_registry->resolve( array() );
-tv2_assert( 'mixed' === $coverage_resolved['data']['data_mode'], 'one fully live destination mislabeled the entire six-destination dataset live' );
+tv2_assert( 'mixed' === $coverage_resolved['data']['data_mode'], 'one fully live destination mislabeled the entire canonical dataset live' );
 
 $coverage_controller = new Tra_Vel_V2_Test_Discovery_Controller(
 	new Tra_Vel_V2_Discovery_Repository( $coverage_registry )
@@ -682,7 +771,7 @@ $unknown_destination_registry->register(
 );
 $unknown_destination = $unknown_destination_registry->resolve( array() );
 tv2_assert( null === tv2_find_contract_destination( $unknown_destination['data'], 'newcity' ), 'unreviewed supplier destination entered the public contract' );
-tv2_assert( 6 === count( $unknown_destination['data']['destinations'] ), 'unreviewed supplier destination changed the canonical destination count' );
+tv2_assert( $canonical_destination_count === count( $unknown_destination['data']['destinations'] ), 'unreviewed supplier destination changed the canonical destination count' );
 tv2_assert( array() === $unknown_destination['data']['field_provenance']['deals']['destination_ids'], 'unreviewed supplier destination received live price provenance' );
 
 /* Partial monetary fragments cannot certify inherited demo deal or hotel prices. */
@@ -715,7 +804,7 @@ $partial_price_controller = new Tra_Vel_V2_Test_Discovery_Controller(
 $partial_price_budget = tv2_discovery_request( $partial_price_controller, array( 'budget' => 550, 'destination' => 'bangkok' ) );
 $partial_price_stay = tv2_find_plan_module( $partial_price_budget, 'stay' );
 tv2_assert( false === $partial_price_budget->data['meta']['filters']['budget_applied'], 'partial deal fragment activated monetary filtering' );
-tv2_assert( 6 === count( $partial_price_budget->data['destinations'] ), 'partial deal price excluded editorial destinations' );
+tv2_assert( $canonical_destination_count === count( $partial_price_budget->data['destinations'] ), 'partial deal price excluded editorial destinations' );
 tv2_assert( 'bangkok' === $partial_price_budget->data['meta']['selected_destination'], 'partial prices excluded the requested destination' );
 tv2_assert( is_array( $partial_price_stay ) && 'live' !== $partial_price_stay['state'], 'partial hotel fragment activated live stay pricing' );
 tv2_assert( null === $partial_price_budget->data['selected_plan']['cost_ledger']['total'], 'partial price fragments exposed a full trip total' );
@@ -856,6 +945,10 @@ tv2_assert( null === $flight_ledger['savings'], 'flight-only route invented a sa
 tv2_assert( false === $flight_ledger['comparable_verified'], 'flight-only route claimed a verified comparison cohort' );
 tv2_assert( 'flight_route_components' === $flight_ledger['source'], 'flight ledger lost its adapter source' );
 tv2_assert( ! empty( $flight_ledger['retrieved_at'] ), 'flight ledger lost its retrieval timestamp' );
+$live_route_segments = $flight_route_response->data['map_segments'];
+tv2_assert( 2 === count( $live_route_segments ) && array( 'bangkok-flight-components' ) === array_values( array_unique( array_column( $live_route_segments, 'route_id' ) ) ), 'live selected route did not expose its exact two-segment geometry' );
+tv2_assert( 'live' === $live_route_segments[0]['truth']['data_mode'] && 'supplier_snapshot' === $live_route_segments[0]['truth']['truth_state'] && 'current' === $live_route_segments[0]['truth']['freshness'] && false === $live_route_segments[0]['truth']['bookable'], 'current live route geometry was not labeled as a non-bookable supplier snapshot' );
+tv2_assert( 'flight_route_components' === $live_route_segments[0]['provenance']['source'] && $flight_route_provenance['observed_at'] === $live_route_segments[0]['provenance']['observed_at'] && $flight_route_provenance['retrieved_at'] === $live_route_segments[0]['provenance']['retrieved_at'] && null === $live_route_segments[0]['provenance']['reviewed_on'], 'live route segment lost its exact supplier provenance' );
 
 /* A package label cannot turn a thin flight fragment into a complete trip total. */
 $thin_package_registry = new Tra_Vel_V2_Supplier_Registry();
@@ -1070,7 +1163,8 @@ $partial_budget_response   = tv2_discovery_request( $partial_budget_controller, 
 tv2_assert( 'partial' === $partial_budget_response->data['meta']['filters']['budget_coverage'], 'partial live budget coverage was not disclosed' );
 tv2_assert( false === $partial_budget_response->data['meta']['filters']['budget_applied'], 'partial budget qualification was labeled fully applied' );
 tv2_assert( true === $partial_budget_response->data['meta']['filters']['budget_filter_active'], 'partial live budget filter did not disclose active filtering' );
-tv2_assert( 5 === count( $partial_budget_response->data['destinations'] ), 'partial budget fixture returned the wrong result set' );
+tv2_assert( $canonical_destination_count - 1 === count( $partial_budget_response->data['destinations'] ), 'partial budget fixture returned the wrong result set' );
+tv2_assert( ! in_array( 'bangkok', array_column( $partial_budget_response->data['destinations'], 'id' ), true ), 'partial live budget qualification did not exclude its over-budget live destination' );
 
 class Tra_Vel_V2_Test_Registry extends Tra_Vel_V2_Supplier_Registry {
 	public $fail = false;
@@ -1152,6 +1246,37 @@ class Tra_Vel_V2_Test_Fixed_Repository {
 	}
 }
 
+/* Invalid or incomplete geometry must fail closed instead of drawing guesses. */
+$invalid_coordinate_result = $first;
+$invalid_coordinate_result['data']['airport_registry']['BKK']['latitude'] = 91;
+$invalid_coordinate_controller = new Tra_Vel_V2_Test_Discovery_Controller( new Tra_Vel_V2_Test_Fixed_Repository( $invalid_coordinate_result ) );
+$invalid_coordinate_response = tv2_discovery_request( $invalid_coordinate_controller, array( 'destination' => 'bangkok' ) );
+tv2_assert( is_wp_error( $invalid_coordinate_response ) && 'tra_vel_map_contract_invalid' === $invalid_coordinate_response->get_error_code(), 'out-of-range airport coordinates did not fail the map response closed' );
+tv2_assert( 500 === $invalid_coordinate_response->get_error_data()['status'], 'invalid map geometry did not return an explicit server contract error status' );
+
+$invalid_via_result = $first;
+$invalid_via_result['data']['route_sets']['bangkok'][1]['via'] = 'ZZZ';
+$invalid_via_controller = new Tra_Vel_V2_Test_Discovery_Controller( new Tra_Vel_V2_Test_Fixed_Repository( $invalid_via_result ) );
+$invalid_via_response = tv2_discovery_request( $invalid_via_controller, array( 'destination' => 'bangkok' ) );
+tv2_assert( is_wp_error( $invalid_via_response ) && 'tra_vel_map_contract_invalid' === $invalid_via_response->get_error_code(), 'unregistered route via code did not fail the map response closed' );
+
+$wrong_destination_airport_result = $first;
+foreach ( $wrong_destination_airport_result['data']['destinations'] as &$wrong_destination_airport ) {
+	if ( 'bangkok' === $wrong_destination_airport['id'] ) {
+		$wrong_destination_airport['airport']['code'] = 'DXB';
+	}
+}
+unset( $wrong_destination_airport );
+$wrong_destination_airport_controller = new Tra_Vel_V2_Test_Discovery_Controller( new Tra_Vel_V2_Test_Fixed_Repository( $wrong_destination_airport_result ) );
+$wrong_destination_airport_response = tv2_discovery_request( $wrong_destination_airport_controller, array( 'destination' => 'bangkok' ) );
+tv2_assert( is_wp_error( $wrong_destination_airport_response ) && 'tra_vel_map_contract_invalid' === $wrong_destination_airport_response->get_error_code(), 'known airport code bound to the wrong destination did not fail closed' );
+
+$mismatched_origin_result = $first;
+$mismatched_origin_result['data']['origin']['latitude'] = 32.0005;
+$mismatched_origin_controller = new Tra_Vel_V2_Test_Discovery_Controller( new Tra_Vel_V2_Test_Fixed_Repository( $mismatched_origin_result ) );
+$mismatched_origin_response = tv2_discovery_request( $mismatched_origin_controller );
+tv2_assert( is_wp_error( $mismatched_origin_response ) && 'tra_vel_map_contract_invalid' === $mismatched_origin_response->get_error_code(), 'origin/registry coordinate disagreement did not fail the map response closed' );
+
 $stale_controller = new Tra_Vel_V2_Test_Discovery_Controller(
 	new Tra_Vel_V2_Test_Fixed_Repository(
 		array(
@@ -1198,6 +1323,9 @@ tv2_assert( $coverage_route_time === tv2_find_plan_module( $stale_response, 'rou
 tv2_assert( $coverage_hotel_time === tv2_find_plan_module( $stale_response, 'stay' )['provenance']['observed_at'], 'stale stay module lost its supplier observation timestamp' );
 tv2_assert( $coverage_weather_time === tv2_find_plan_module( $stale_response, 'weather' )['provenance']['observed_at'], 'stale weather module lost its supplier observation timestamp' );
 tv2_assert( ! array_filter( $stale_ledger_rows, static function ( $line_item ) use ( $coverage_route_time ) { return $coverage_route_time !== $line_item['observed_at']; } ), 'stale ledger rows lost their supplier observation timestamp' );
+$stale_segments = $stale_response->data['map_segments'];
+tv2_assert( ! empty( $stale_segments ) && 'live' === $stale_segments[0]['truth']['data_mode'] && 'last_observed' === $stale_segments[0]['truth']['truth_state'] && 'stale' === $stale_segments[0]['truth']['freshness'], 'stale supplier route geometry was presented as a current snapshot' );
+tv2_assert( $coverage_route_time === $stale_segments[0]['provenance']['observed_at'] && false === $stale_segments[0]['truth']['bookable'], 'stale route geometry lost provenance or implied booking confirmation' );
 
 $app_javascript = file_get_contents( TRA_VEL_V2_PATH . '/assets/js/app.js' );
 $confirmed_motion_expression = array();
@@ -1219,4 +1347,4 @@ $tokyo_utc   = $normalize_weather_time->invoke( $open_meteo_adapter, '2036-07-08
 tv2_assert( '2036-07-08T09:10:00Z' === $bangkok_utc && $bangkok_utc === $tokyo_utc, 'Open-Meteo multi-destination observations are not normalized to RFC3339 UTC' );
 tv2_assert( null === $normalize_weather_time->invoke( $open_meteo_adapter, '2036-07-08 09:10' ), 'Open-Meteo adapter accepted an ambiguous non-ISO observation time' );
 
-echo "Tra-Vel supplier runtime validation passed (destination-scoped provenance and timestamps, dataset/selected modes, unknown-destination rejection, price/place/route validation, exact twelve-row ledgers, stale freshness, cache fallback, purge generation).\n";
+echo "Tra-Vel supplier runtime validation passed (typed map layers and exact segments, fail-closed airport geometry, destination-scoped provenance, planning/non-bookable prices, stale freshness, twelve-row ledgers, cache fallback, purge generation).\n";

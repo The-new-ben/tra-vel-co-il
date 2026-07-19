@@ -1,6 +1,6 @@
 # Tra-Vel search, content, and revenue architecture
 
-Updated: 2026-07-16
+Updated: 2026-07-18
 
 ## Product promise
 
@@ -8,12 +8,14 @@ Tra-Vel helps an Israeli traveler discover a destination, understand the complet
 
 ## Search architecture
 
-### Competitive evidence refreshed 2026-07-16
+### Competitive evidence refreshed 2026-07-18
 
 - ISSTA's public product range covers flights, hotels, packages, organized trips, cruises, car rental and supporting travel services. Tra-Vel must match that commercial breadth while making tradeoffs easier to understand.
 - Gulliver's public homepage combines live-looking deal cards with high-intent landing links for flights, packages, hotels, last minute, charter routes and destination clusters. Tra-Vel should preserve the intent coverage but avoid unsupported prices or generic destination copy.
 - Google Search Central states that crawlable discovery depends on real HTML links with `href`, and recommends server-rendered or pre-rendered content because not every bot executes JavaScript. The globe therefore links into permanent destination hubs instead of acting as the only source of destination information.
 - Google supports breadcrumb markup for visible hierarchy. Destination hubs use `/destinations/{destination}/` and connect upward to the destination directory, sideways to related decisions and downward to live commercial searches.
+- Travelist demonstrates the value of supplier comparison and route-specific commercial pages. Lametayel demonstrates the depth possible in destination, attraction, food, route and community content. Booking and Expedia connect conversational discovery to saved trip objects, while Skyscanner and Google Flights make flexible-destination and route tradeoffs explicit.
+- The resulting Tra-Vel moat is not a chat box or a spinning Earth by itself. It is one editable trip graph that keeps destination, route, city, cost, evidence, saved state and eventual supplier outcome synchronized.
 
 ### Level 1: commercial hubs
 
@@ -57,6 +59,10 @@ Published Athens hub:
 
 The Athens cluster owns the city-break and island-gateway intent. Its first supporting pages are: flights from Tel Aviv to Athens, airport to city or Piraeus, where to stay in Athens, Athens with children, and Athens plus a Greek island. A future Greece family-island comparison owns the separate “which island” intent so it does not compete with the Athens hub.
 
+Published Prague hub:
+
+- `/destinations/prague/`: 5,155 visible Hebrew words, 14 sources and decision sections covering route choice, airport access, neighborhoods, transport, Jewish Prague, accessibility, family planning and booking checks.
+
 ### Level 3: high-intent landing pages
 
 Each destination hub can support focused pages when the intent is distinct and the page has unique value.
@@ -88,6 +94,8 @@ Decision articles answer a narrow question and send the traveler to a destinatio
 ## Initial keyword and destination queue
 
 This is a prioritization hypothesis, not a volume claim. It must be validated every month with Google Search Console, Google Trends Israel, paid-search query reports, and supplier conversion data.
+
+The first 75 page owners are stored in `content/seo/content-opportunity-registry.json`. Each entry has one canonical path, one dominant Hebrew intent, one cluster owner, one conversion action, one map state and explicit monetization paths. Eight Vienna owners reserve the pillar, flight, package, hotel, area, airport-transfer, family, and Christmas-market decisions. Nine Dubai owners reserve the full-holiday pillar, flights, packages, hotel inventory, area choice, DXB transfer, family, stopover, and first-trip local-law decisions. Ten Tokyo owners reserve the city pillar and its highest-friction city decisions, while a separate Japan multi-city owner has no Earth state. Eleven Lisbon owners reserve the city pillar and its commercial, area, airport, transit, Sintra, family, accessibility, and first-trip decisions; separate Portugal and Porto owners also remain mapless. Five Bangkok owners reserve the nested city pillar, hotel inventory, BKK-versus-DMK decision, airport-to-city chain, and short-stop itinerary without creating another top-level Earth owner. These additions remain backlog and expose no thin public page. The Dubai and Abu Dhabi comparison, Tokyo day-trip cluster, and Lisbon-versus-Porto comparison remain unowned until evidence demonstrates a distinct task and an operational conversion path. `scripts/ci/validate-content-opportunity-registry.mjs` rejects duplicate intent ownership, future-dated evidence, broken hierarchy, unsupported map states, and a `content-ready` claim without a matching publish-ready guide packet.
 
 ### Priority 0: revenue foundations
 

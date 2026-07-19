@@ -1,0 +1,73 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://tra-vel.co.il/schemas/vip-capability-session.schema.json",
+  "title": "Tra-Vel private low-risk capability session",
+  "description": "A closed, digest-only private projection. It is never a bearer credential or a commercial authorization.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "session_ref",
+    "session_digest",
+    "capability_ref",
+    "capability_digest",
+    "trip_ref",
+    "case_ref",
+    "account_ref",
+    "allowed_scopes",
+    "disclosure_classes",
+    "rotation_generation",
+    "state",
+    "created_at",
+    "expires_at",
+    "revoked_at",
+    "authorization_effect",
+    "data_boundary"
+  ],
+  "properties": {
+    "contract_version": { "const": "1.0.0" },
+    "session_ref": { "type": "string", "pattern": "^tv_capability_session_[A-Za-z0-9_-]{16,96}$" },
+    "session_digest": { "$ref": "#/definitions/digest" },
+    "capability_ref": { "type": "string", "pattern": "^tv_capability_[A-Za-z0-9_-]{16,96}$" },
+    "capability_digest": { "$ref": "#/definitions/digest" },
+    "trip_ref": { "type": "string", "pattern": "^tv_trip_[A-Za-z0-9_-]{16,96}$" },
+    "case_ref": { "type": ["string", "null"], "pattern": "^tv_case_[A-Za-z0-9_-]{16,96}$" },
+    "account_ref": { "type": ["string", "null"], "pattern": "^tv_account_[A-Za-z0-9_-]{16,96}$" },
+    "allowed_scopes": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "enum": ["trip_view_redacted", "incident_report", "ordinary_evidence_add", "safe_contact_update", "case_progress_view", "operator_contact_approve", "decision_view"] }
+    },
+    "disclosure_classes": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "enum": ["public_emergency_guidance", "trip_redacted", "case_progress", "ordinary_evidence_metadata", "safe_contact_location"] }
+    },
+    "rotation_generation": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+    "state": { "enum": ["active", "revoked", "expired"] },
+    "created_at": { "$ref": "#/definitions/dateTime" },
+    "expires_at": { "$ref": "#/definitions/dateTime" },
+    "revoked_at": { "$ref": "#/definitions/nullableDateTime" },
+    "authorization_effect": { "const": "low_risk_capability_only" },
+    "data_boundary": { "$ref": "#/definitions/dataBoundary" }
+  },
+  "definitions": {
+    "digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "dateTime": { "type": "string", "format": "date-time", "pattern": "Z$" },
+    "nullableDateTime": { "type": ["string", "null"], "format": "date-time", "pattern": "Z$" },
+    "dataBoundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["raw_identity_data_exposed", "raw_payment_data_exposed", "raw_medical_data_exposed", "raw_provider_payload_exposed", "bearer_secret_exposed"],
+      "properties": {
+        "raw_identity_data_exposed": { "const": false },
+        "raw_payment_data_exposed": { "const": false },
+        "raw_medical_data_exposed": { "const": false },
+        "raw_provider_payload_exposed": { "const": false },
+        "bearer_secret_exposed": { "const": false }
+      }
+    }
+  }
+}

@@ -1,0 +1,185 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://tra-vel.co.il/schemas/private/commerce-currency-reconciliation-bridge.schema.json",
+  "title": "Tra-Vel private commerce cross-ledger currency bridge",
+  "description": "Server-only sandbox projection binding one complete funds-flow snapshot to one complete FX reconciliation snapshot. Source-currency customer funds and accruals remain separate from target-currency supplier settlement evidence.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version", "environment", "bridge_ref", "bridge_binding_digest",
+    "snapshot_digest", "binding", "currency_bridge", "source_customer_funds",
+    "source_supplier_accrual", "target_supplier_settlement", "overall_status",
+    "evaluated_at", "sandbox_truth", "data_boundary"
+  ],
+  "properties": {
+    "contract_version": { "const": "1.0.0" },
+    "environment": { "const": "sandbox" },
+    "bridge_ref": { "$ref": "#/definitions/bridgeRef" },
+    "bridge_binding_digest": { "$ref": "#/definitions/digest" },
+    "snapshot_digest": { "$ref": "#/definitions/digest" },
+    "binding": { "$ref": "#/definitions/binding" },
+    "currency_bridge": { "$ref": "#/definitions/currencyBridge" },
+    "source_customer_funds": { "$ref": "#/definitions/sourceCustomerFunds" },
+    "source_supplier_accrual": { "$ref": "#/definitions/sourceSupplierAccrual" },
+    "target_supplier_settlement": { "$ref": "#/definitions/targetSupplierSettlement" },
+    "overall_status": {
+      "enum": [
+        "waiting_customer_funds", "waiting_source_accrual",
+        "ready_for_target_settlement", "partially_target_settled",
+        "target_settled", "exception"
+      ]
+    },
+    "evaluated_at": { "$ref": "#/definitions/dateTime" },
+    "sandbox_truth": { "$ref": "#/definitions/sandboxTruth" },
+    "data_boundary": { "$ref": "#/definitions/dataBoundary" }
+  },
+  "definitions": {
+    "digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "dateTime": { "type": "string", "pattern": "^[0-9]{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12][0-9]|3[01])T(?:[01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]Z$" },
+    "money": { "type": "integer", "minimum": 0, "maximum": 1000000000000 },
+    "currency": { "enum": ["EUR", "GBP", "ILS", "JPY", "KWD", "THB", "USD"] },
+    "exponent": { "type": "integer", "minimum": 0, "maximum": 3 },
+    "positiveVersion": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+    "bridgeRef": { "type": "string", "pattern": "^fxbridge_[a-f0-9]{32}$" },
+    "fundsFlowRef": { "type": "string", "pattern": "^fflow_[A-Za-z0-9_-]{16,96}$", "maxLength": 102 },
+    "reconciliationRef": { "type": "string", "pattern": "^fxrec_[a-f0-9]{32}$" },
+    "orderRef": { "type": "string", "pattern": "^tv_order_[A-Za-z0-9_-]{16,96}$", "maxLength": 120 },
+    "orderItemRef": { "type": "string", "pattern": "^tv_order_item_[A-Za-z0-9_-]{16,96}$", "maxLength": 125 },
+    "binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "owner_scope_digest", "order_ref", "order_version", "order_digest",
+        "order_item_ref", "offer_digest", "routing_binding_digest",
+        "funds_flow_ref", "funds_flow_binding_digest", "funds_flow_snapshot_digest",
+        "fx_reconciliation_ref", "fx_snapshot_digest"
+      ],
+      "properties": {
+        "owner_scope_digest": { "$ref": "#/definitions/digest" },
+        "order_ref": { "$ref": "#/definitions/orderRef" },
+        "order_version": { "$ref": "#/definitions/positiveVersion" },
+        "order_digest": { "$ref": "#/definitions/digest" },
+        "order_item_ref": { "$ref": "#/definitions/orderItemRef" },
+        "offer_digest": { "$ref": "#/definitions/digest" },
+        "routing_binding_digest": { "$ref": "#/definitions/digest" },
+        "funds_flow_ref": { "$ref": "#/definitions/fundsFlowRef" },
+        "funds_flow_binding_digest": { "$ref": "#/definitions/digest" },
+        "funds_flow_snapshot_digest": { "$ref": "#/definitions/digest" },
+        "fx_reconciliation_ref": { "$ref": "#/definitions/reconciliationRef" },
+        "fx_snapshot_digest": { "$ref": "#/definitions/digest" }
+      }
+    },
+    "currencyBridge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "bridge_scope", "source_currency", "source_exponent", "target_currency",
+        "target_exponent", "source_rate_digest", "locked_quote_digest", "fx_ledger_code"
+      ],
+      "properties": {
+        "bridge_scope": { "const": "platform_collected_supplier_payable" },
+        "source_currency": { "$ref": "#/definitions/currency" },
+        "source_exponent": { "$ref": "#/definitions/exponent" },
+        "target_currency": { "$ref": "#/definitions/currency" },
+        "target_exponent": { "$ref": "#/definitions/exponent" },
+        "source_rate_digest": { "$ref": "#/definitions/digest" },
+        "locked_quote_digest": { "$ref": "#/definitions/digest" },
+        "fx_ledger_code": { "const": "settlement_obligation" }
+      }
+    },
+    "sourceCustomerFunds": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "currency", "exponent", "payment_state", "status",
+        "authorized_source_minor", "captured_source_minor", "refunded_source_minor",
+        "disputed_source_minor", "charged_back_source_minor", "net_customer_funds_source_minor"
+      ],
+      "properties": {
+        "currency": { "$ref": "#/definitions/currency" },
+        "exponent": { "$ref": "#/definitions/exponent" },
+        "payment_state": {
+          "enum": [
+            "not_started", "authorization_pending", "authorized", "capture_pending",
+            "partially_captured", "captured", "partially_refunded", "refunded",
+            "disputed", "charged_back", "payment_failed", "uncertain"
+          ]
+        },
+        "status": { "enum": ["not_collected", "partially_collected", "collected", "partially_returned", "returned", "at_risk", "failed", "uncertain"] },
+        "authorized_source_minor": { "$ref": "#/definitions/money" },
+        "captured_source_minor": { "$ref": "#/definitions/money" },
+        "refunded_source_minor": { "$ref": "#/definitions/money" },
+        "disputed_source_minor": { "$ref": "#/definitions/money" },
+        "charged_back_source_minor": { "$ref": "#/definitions/money" },
+        "net_customer_funds_source_minor": { "$ref": "#/definitions/money" }
+      }
+    },
+    "sourceSupplierAccrual": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "currency", "exponent", "settlement_state", "status",
+        "supplier_payable_source_minor", "supplier_due_source_minor",
+        "supplier_paid_source_minor", "supplier_outstanding_source_minor"
+      ],
+      "properties": {
+        "currency": { "$ref": "#/definitions/currency" },
+        "exponent": { "$ref": "#/definitions/exponent" },
+        "settlement_state": { "enum": ["not_started", "accrued", "disputed"] },
+        "status": { "enum": ["not_accrued", "accrued", "disputed"] },
+        "supplier_payable_source_minor": { "$ref": "#/definitions/money" },
+        "supplier_due_source_minor": { "$ref": "#/definitions/money" },
+        "supplier_paid_source_minor": { "const": 0 },
+        "supplier_outstanding_source_minor": { "$ref": "#/definitions/money" }
+      }
+    },
+    "targetSupplierSettlement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "currency", "exponent", "status", "supplier_payable_target_minor",
+        "supplier_settled_target_minor", "supplier_outstanding_target_minor"
+      ],
+      "properties": {
+        "currency": { "$ref": "#/definitions/currency" },
+        "exponent": { "$ref": "#/definitions/exponent" },
+        "status": { "enum": ["not_started", "partially_settled", "settled"] },
+        "supplier_payable_target_minor": { "$ref": "#/definitions/money" },
+        "supplier_settled_target_minor": { "$ref": "#/definitions/money" },
+        "supplier_outstanding_target_minor": { "$ref": "#/definitions/money" }
+      }
+    },
+    "sandboxTruth": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "deterministic_projection", "real_rate_provider_call", "real_processor_call",
+        "real_customer_charge", "real_supplier_payment", "real_settlement", "external_authority"
+      ],
+      "properties": {
+        "deterministic_projection": { "const": true },
+        "real_rate_provider_call": { "const": false },
+        "real_processor_call": { "const": false },
+        "real_customer_charge": { "const": false },
+        "real_supplier_payment": { "const": false },
+        "real_settlement": { "const": false },
+        "external_authority": { "const": false }
+      }
+    },
+    "dataBoundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "server_only", "public_serialization_allowed", "raw_credentials_stored",
+        "raw_payment_data_stored", "personal_data_stored"
+      ],
+      "properties": {
+        "server_only": { "const": true },
+        "public_serialization_allowed": { "const": false },
+        "raw_credentials_stored": { "const": false },
+        "raw_payment_data_stored": { "const": false },
+        "personal_data_stored": { "const": false }
+      }
+    }
+  }
+}

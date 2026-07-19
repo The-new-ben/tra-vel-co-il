@@ -1,0 +1,385 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://tra-vel.co.il/schemas/israel-local-tourism-item-v1.0.0.json",
+  "title": "Tra-Vel Israel local-tourism item",
+  "description": "A source-backed local inventory item. Unknown and conflicting facts remain explicit; only a current authorized provider quote may be bookable.",
+  "type": "object",
+  "required": ["contract_version", "item_ref", "operator_ref", "data_mode", "inventory_type", "variant_code", "title", "classification", "geography", "provenance", "fit_facts", "operations", "commercial"],
+  "properties": {
+    "contract_version": { "const": "1.0.0" },
+    "item_ref": { "type": "string", "pattern": "^local_item_[a-z0-9]{12,64}$" },
+    "operator_ref": { "type": "string", "pattern": "^party_[a-z0-9]{12,64}$" },
+    "data_mode": { "enum": ["planning_only", "synthetic_demo", "live_provider_response"] },
+    "inventory_type": {
+      "enum": ["hotel", "boutique_hotel", "apartment", "short_rental", "villa", "hostel", "guesthouse_bnb", "kibbutz_rural_lodging", "campsite", "glamping", "attraction", "tour", "dining", "mobility_transport"]
+    },
+    "variant_code": { "type": ["string", "null"], "pattern": "^[a-z0-9_-]{2,80}$" },
+    "title": { "type": ["string", "null"], "minLength": 2, "maxLength": 180 },
+    "classification": { "$ref": "#/definitions/classification" },
+    "geography": { "$ref": "#/definitions/geography" },
+    "provenance": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/source" }
+    },
+    "fit_facts": { "$ref": "#/definitions/fitFacts" },
+    "operations": { "$ref": "#/definitions/operations" },
+    "commercial": { "$ref": "#/definitions/commercial" }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "sourceRef": { "type": "string", "pattern": "^src_[a-z0-9]{12,64}$" },
+    "sourceRefList": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/definitions/sourceRef" }
+    },
+    "classification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scheme_code", "scheme_applicability", "official_state", "official_level", "claimed_category_code", "source_refs", "observed_at_utc", "valid_to_utc", "quality_inference_allowed"],
+      "properties": {
+        "scheme_code": { "const": "israel_hotel_ranking" },
+        "scheme_applicability": { "enum": ["applicable", "not_applicable", "unknown"] },
+        "official_state": { "enum": ["ranked", "unranked", "expired", "unknown", "conflict", "not_applicable"] },
+        "official_level": { "type": ["integer", "null"], "minimum": 1, "maximum": 5 },
+        "claimed_category_code": { "type": ["string", "null"], "pattern": "^[a-z0-9_-]{2,80}$" },
+        "source_refs": { "$ref": "#/definitions/sourceRefList" },
+        "observed_at_utc": { "type": ["string", "null"], "format": "date-time", "pattern": "Z$" },
+        "valid_to_utc": { "type": ["string", "null"], "format": "date-time", "pattern": "Z$" },
+        "quality_inference_allowed": { "const": false }
+      }
+    },
+    "source": {
+      "type": "object",
+      "required": ["source_ref", "authority", "source_kind", "owner_ref", "canonical_uri", "observed_at_utc", "retrieved_at_utc", "effective_from", "effective_to", "expires_at_utc", "freshness_state", "content_digest"],
+      "properties": {
+        "source_ref": { "$ref": "#/definitions/sourceRef" },
+        "authority": { "enum": ["signed_partner_response", "provider_authorized_api", "official_live_feed", "official_registry", "official_information", "operator_confirmation", "customer_report", "synthetic_test"] },
+        "source_kind": { "enum": ["api_response", "registry_record", "live_feed", "document", "operator_message", "customer_report", "synthetic_contract"] },
+        "owner_ref": { "type": "string", "pattern": "^party_[a-z0-9]{12,64}$" },
+        "canonical_uri": { "type": ["string", "null"], "format": "uri" },
+        "observed_at_utc": { "type": ["string", "null"], "format": "date-time", "pattern": "Z$" },
+        "retrieved_at_utc": { "type": "string", "format": "date-time", "pattern": "Z$" },
+        "effective_from": { "type": ["string", "null"], "format": "date-time", "pattern": "Z$" },
+        "effective_to": { "type": ["string", "null"], "format": "date-time", "pattern": "Z$" },
+        "expires_at_utc": { "type": ["string", "null"], "format": "date-time", "pattern": "Z$" },
+        "freshness_state": { "enum": ["current", "stale", "unknown", "conflict"] },
+        "content_digest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+      },
+      "additionalProperties": false
+    },
+    "geoNode": {
+      "type": "object",
+      "required": ["node_ref", "label", "source_refs"],
+      "properties": {
+        "node_ref": { "type": "string", "pattern": "^geo_[a-z0-9_-]{4,80}$" },
+        "label": { "type": "string", "minLength": 1, "maxLength": 180 },
+        "source_refs": { "$ref": "#/definitions/sourceRefList" }
+      },
+      "additionalProperties": false
+    },
+    "nullableGeoNode": {
+      "oneOf": [
+        { "$ref": "#/definitions/geoNode" },
+        { "type": "null" }
+      ]
+    },
+    "point": {
+      "type": "object",
+      "required": ["latitude", "longitude"],
+      "properties": {
+        "latitude": { "type": "number", "minimum": -90, "maximum": 90 },
+        "longitude": { "type": "number", "minimum": -180, "maximum": 180 }
+      },
+      "additionalProperties": false
+    },
+    "nullablePoint": {
+      "oneOf": [
+        { "$ref": "#/definitions/point" },
+        { "type": "null" }
+      ]
+    },
+    "travelRegion": {
+      "type": "object",
+      "required": ["region_code", "label", "boundary_kind", "source_refs"],
+      "properties": {
+        "region_code": { "type": "string", "pattern": "^il-travel-[a-z0-9-]{2,80}$" },
+        "label": { "type": "string", "minLength": 2, "maxLength": 180 },
+        "boundary_kind": { "const": "product_navigation_not_legal_boundary" },
+        "source_refs": { "$ref": "#/definitions/sourceRefList" }
+      },
+      "additionalProperties": false
+    },
+    "entrance": {
+      "type": "object",
+      "required": ["entrance_ref", "role", "point", "accessibility_state", "source_refs"],
+      "properties": {
+        "entrance_ref": { "type": "string", "pattern": "^entrance_[a-z0-9]{8,64}$" },
+        "role": { "enum": ["primary", "accessible", "parking", "transit", "service", "meeting_point"] },
+        "point": { "$ref": "#/definitions/point" },
+        "accessibility_state": { "enum": ["verified_true", "verified_false", "unknown", "conflict", "not_applicable"] },
+        "source_refs": { "$ref": "#/definitions/sourceRefList" }
+      },
+      "additionalProperties": false
+    },
+    "bounds": {
+      "type": "object",
+      "required": ["north", "east", "south", "west"],
+      "properties": {
+        "north": { "type": "number", "minimum": -90, "maximum": 90 },
+        "east": { "type": "number", "minimum": -180, "maximum": 180 },
+        "south": { "type": "number", "minimum": -90, "maximum": 90 },
+        "west": { "type": "number", "minimum": -180, "maximum": 180 }
+      },
+      "additionalProperties": false
+    },
+    "serviceGeometry": {
+      "type": "object",
+      "required": ["geometry_type", "geometry_ref", "bounds", "source_refs"],
+      "properties": {
+        "geometry_type": { "enum": ["polygon", "route", "bounds"] },
+        "geometry_ref": { "type": "string", "pattern": "^geometry_[a-z0-9]{8,64}$" },
+        "bounds": { "$ref": "#/definitions/bounds" },
+        "source_refs": { "$ref": "#/definitions/sourceRefList" }
+      },
+      "additionalProperties": false
+    },
+    "nullableServiceGeometry": {
+      "oneOf": [
+        { "$ref": "#/definitions/serviceGeometry" },
+        { "type": "null" }
+      ]
+    },
+    "jurisdiction": {
+      "type": "object",
+      "required": ["country_code", "district", "municipality", "locality", "neighborhood", "address"],
+      "properties": {
+        "country_code": { "const": "IL" },
+        "district": { "$ref": "#/definitions/nullableGeoNode" },
+        "municipality": { "$ref": "#/definitions/nullableGeoNode" },
+        "locality": { "$ref": "#/definitions/nullableGeoNode" },
+        "neighborhood": { "$ref": "#/definitions/nullableGeoNode" },
+        "address": { "$ref": "#/definitions/nullableGeoNode" }
+      },
+      "additionalProperties": false
+    },
+    "geography": {
+      "type": "object",
+      "required": ["hierarchy_state", "jurisdiction", "travel_regions", "coordinate_state", "primary_point", "coordinate_source_refs", "entrances", "service_geometry"],
+      "properties": {
+        "hierarchy_state": { "enum": ["complete", "partial", "unknown", "conflict"] },
+        "jurisdiction": { "$ref": "#/definitions/jurisdiction" },
+        "travel_regions": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/definitions/travelRegion" }
+        },
+        "coordinate_state": { "enum": ["verified", "approximate", "unknown", "conflict"] },
+        "primary_point": { "$ref": "#/definitions/nullablePoint" },
+        "coordinate_source_refs": { "$ref": "#/definitions/sourceRefList" },
+        "entrances": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/entrance" }
+        },
+        "service_geometry": { "$ref": "#/definitions/nullableServiceGeometry" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "coordinate_state": { "enum": ["verified", "approximate"] } } },
+          "then": {
+            "properties": {
+              "primary_point": { "$ref": "#/definitions/point" },
+              "coordinate_source_refs": { "minItems": 1 }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "coordinate_state": { "const": "unknown" } } },
+          "then": {
+            "properties": {
+              "primary_point": { "type": "null" },
+              "coordinate_source_refs": { "maxItems": 0 }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "coordinate_state": { "const": "conflict" } } },
+          "then": {
+            "properties": {
+              "primary_point": { "type": "null" },
+              "coordinate_source_refs": { "minItems": 2 }
+            }
+          }
+        }
+      ],
+      "additionalProperties": false
+    },
+    "factAssertion": {
+      "type": "object",
+      "required": ["code", "state", "value_code", "authority_ref", "certificate_ref", "valid_from", "valid_to", "limitations", "source_refs", "observed_at_utc", "expires_at_utc"],
+      "properties": {
+        "code": { "type": "string", "pattern": "^[a-z][a-z0-9_]{2,80}$" },
+        "state": { "enum": ["verified_true", "verified_false", "unknown", "conflict", "not_applicable"] },
+        "value_code": { "type": ["string", "null"], "pattern": "^[a-z0-9_-]{1,100}$" },
+        "authority_ref": { "type": ["string", "null"], "pattern": "^party_[a-z0-9]{12,64}$" },
+        "certificate_ref": { "type": ["string", "null"], "pattern": "^certificate_[a-z0-9]{8,80}$" },
+        "valid_from": { "type": ["string", "null"], "format": "date-time", "pattern": "Z$" },
+        "valid_to": { "type": ["string", "null"], "format": "date-time", "pattern": "Z$" },
+        "limitations": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 2, "maxLength": 240 }
+        },
+        "source_refs": { "$ref": "#/definitions/sourceRefList" },
+        "observed_at_utc": { "type": ["string", "null"], "format": "date-time", "pattern": "Z$" },
+        "expires_at_utc": { "type": ["string", "null"], "format": "date-time", "pattern": "Z$" }
+      },
+      "additionalProperties": false
+    },
+    "factGroup": {
+      "type": "object",
+      "required": ["group_state", "next_action", "last_reviewed_at_utc", "assertions"],
+      "properties": {
+        "group_state": { "enum": ["evidence_current", "evidence_partial", "unknown", "conflict", "not_applicable"] },
+        "next_action": { "enum": ["none", "verify", "resolve_conflict", "not_relevant"] },
+        "last_reviewed_at_utc": { "type": ["string", "null"], "format": "date-time", "pattern": "Z$" },
+        "assertions": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/factAssertion" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "fitFacts": {
+      "type": "object",
+      "required": ["kosher", "shabbat", "accessibility", "family", "parking", "shelter", "seasonal_operation"],
+      "properties": {
+        "kosher": { "$ref": "#/definitions/factGroup" },
+        "shabbat": { "$ref": "#/definitions/factGroup" },
+        "accessibility": { "$ref": "#/definitions/factGroup" },
+        "family": { "$ref": "#/definitions/factGroup" },
+        "parking": { "$ref": "#/definitions/factGroup" },
+        "shelter": { "$ref": "#/definitions/factGroup" },
+        "seasonal_operation": { "$ref": "#/definitions/factGroup" }
+      },
+      "additionalProperties": false
+    },
+    "openingPeriod": {
+      "type": "object",
+      "required": ["day", "opens_local", "closes_local", "valid_from", "valid_to"],
+      "properties": {
+        "day": { "enum": ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "holiday"] },
+        "opens_local": { "type": "string", "pattern": "^(?:[01][0-9]|2[0-3]):[0-5][0-9]$" },
+        "closes_local": { "type": "string", "pattern": "^(?:[01][0-9]|2[0-3]):[0-5][0-9]$" },
+        "valid_from": { "type": ["string", "null"], "format": "date" },
+        "valid_to": { "type": ["string", "null"], "format": "date" }
+      },
+      "additionalProperties": false
+    },
+    "openingHours": {
+      "type": "object",
+      "required": ["state", "timezone", "periods", "source_refs", "observed_at_utc", "expires_at_utc"],
+      "properties": {
+        "state": { "enum": ["current_verified", "stale", "unknown", "conflict", "not_applicable"] },
+        "timezone": { "const": "Asia/Jerusalem" },
+        "periods": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/openingPeriod" }
+        },
+        "source_refs": { "$ref": "#/definitions/sourceRefList" },
+        "observed_at_utc": { "type": ["string", "null"], "format": "date-time", "pattern": "Z$" },
+        "expires_at_utc": { "type": ["string", "null"], "format": "date-time", "pattern": "Z$" }
+      },
+      "additionalProperties": false
+    },
+    "operations": {
+      "type": "object",
+      "required": ["operating_state", "operating_source_refs", "opening_hours"],
+      "properties": {
+        "operating_state": { "enum": ["open_verified", "closed_verified", "unknown", "conflict"] },
+        "operating_source_refs": { "$ref": "#/definitions/sourceRefList" },
+        "opening_hours": { "$ref": "#/definitions/openingHours" }
+      },
+      "additionalProperties": false
+    },
+    "availability": {
+      "type": "object",
+      "required": ["state", "inventory_scope", "source_ref", "observed_at_utc", "expires_at_utc", "quantity_remaining", "bookable"],
+      "properties": {
+        "state": { "enum": ["unknown", "checking", "available_verified", "limited_verified", "unavailable_verified", "stale"] },
+        "inventory_scope": { "enum": ["property", "unit", "session", "service"] },
+        "source_ref": { "oneOf": [{ "$ref": "#/definitions/sourceRef" }, { "type": "null" }] },
+        "observed_at_utc": { "type": ["string", "null"], "format": "date-time", "pattern": "Z$" },
+        "expires_at_utc": { "type": ["string", "null"], "format": "date-time", "pattern": "Z$" },
+        "quantity_remaining": { "type": ["integer", "null"], "minimum": 0 },
+        "bookable": { "type": "boolean" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "state": { "enum": ["unknown", "checking", "unavailable_verified", "stale"] } } },
+          "then": { "properties": { "bookable": { "const": false } } }
+        },
+        {
+          "if": { "properties": { "state": { "enum": ["available_verified", "limited_verified"] } } },
+          "then": {
+            "properties": {
+              "source_ref": { "$ref": "#/definitions/sourceRef" },
+              "observed_at_utc": { "type": "string", "format": "date-time", "pattern": "Z$" },
+              "expires_at_utc": { "type": "string", "format": "date-time", "pattern": "Z$" }
+            }
+          }
+        }
+      ],
+      "additionalProperties": false
+    },
+    "pricing": {
+      "type": "object",
+      "required": ["state", "currency", "payable_minor", "pay_later_minor", "quote_ref", "source_ref", "quoted_at_utc", "expires_at_utc", "bookable"],
+      "properties": {
+        "state": { "enum": ["not_requested", "checking", "verified_quote", "expired_quote", "unavailable"] },
+        "currency": { "type": ["string", "null"], "pattern": "^[A-Z]{3}$" },
+        "payable_minor": { "type": ["integer", "null"], "minimum": 0 },
+        "pay_later_minor": { "type": ["integer", "null"], "minimum": 0 },
+        "quote_ref": { "type": ["string", "null"], "pattern": "^quote_[a-z0-9]{12,64}$" },
+        "source_ref": { "oneOf": [{ "$ref": "#/definitions/sourceRef" }, { "type": "null" }] },
+        "quoted_at_utc": { "type": ["string", "null"], "format": "date-time", "pattern": "Z$" },
+        "expires_at_utc": { "type": ["string", "null"], "format": "date-time", "pattern": "Z$" },
+        "bookable": { "type": "boolean" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "state": { "const": "verified_quote" } } },
+          "then": {
+            "properties": {
+              "currency": { "type": "string", "pattern": "^[A-Z]{3}$" },
+              "payable_minor": { "type": "integer", "minimum": 0 },
+              "pay_later_minor": { "type": "integer", "minimum": 0 },
+              "quote_ref": { "type": "string", "pattern": "^quote_[a-z0-9]{12,64}$" },
+              "source_ref": { "$ref": "#/definitions/sourceRef" },
+              "quoted_at_utc": { "type": "string", "format": "date-time", "pattern": "Z$" },
+              "expires_at_utc": { "type": "string", "format": "date-time", "pattern": "Z$" }
+            }
+          },
+          "else": {
+            "properties": {
+              "payable_minor": { "type": "null" },
+              "pay_later_minor": { "type": "null" },
+              "bookable": { "const": false }
+            }
+          }
+        }
+      ],
+      "additionalProperties": false
+    },
+    "commercial": {
+      "type": "object",
+      "required": ["availability", "pricing"],
+      "properties": {
+        "availability": { "$ref": "#/definitions/availability" },
+        "pricing": { "$ref": "#/definitions/pricing" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

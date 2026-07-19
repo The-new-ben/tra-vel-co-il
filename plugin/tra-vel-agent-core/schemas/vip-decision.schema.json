@@ -1,0 +1,88 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://tra-vel.co.il/schemas/vip-decision-v1.schema.json",
+  "title": "Tra-Vel VIP decision and authorization packet",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract_version", "decision_ref", "case_ref", "version", "status", "option_refs", "recommended_option_ref", "impact_scopes", "required_approver", "quote_expires_at", "decision_expires_at", "policy_snapshot_digest", "request_digest", "authorization", "created_at", "data_boundary"],
+  "properties": {
+    "contract_version": { "const": "1.0.0" },
+    "decision_ref": { "$ref": "#/definitions/decisionRef" },
+    "case_ref": { "$ref": "#/definitions/caseRef" },
+    "version": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+    "status": { "enum": ["draft", "ready", "authorization_pending", "authorized", "rejected", "expired", "executing", "superseded"] },
+    "option_refs": { "type": "array", "minItems": 1, "maxItems": 100, "uniqueItems": true, "items": { "$ref": "#/definitions/optionRef" } },
+    "recommended_option_ref": { "$ref": "#/definitions/nullableOptionRef" },
+    "impact_scopes": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/definitions/authorityScope" } },
+    "required_approver": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["principal_ref", "role", "authority_scope"],
+      "properties": {
+        "principal_ref": { "$ref": "#/definitions/principalRef" },
+        "role": { "enum": ["account_holder", "traveler", "booker", "payer", "guardian", "beneficiary", "emergency_contact", "operator_delegate", "supplier_passenger"] },
+        "authority_scope": { "$ref": "#/definitions/authorityScope" }
+      }
+    },
+    "quote_expires_at": { "$ref": "#/definitions/dateTime" },
+    "decision_expires_at": { "$ref": "#/definitions/dateTime" },
+    "policy_snapshot_digest": { "$ref": "#/definitions/digest" },
+    "request_digest": { "$ref": "#/definitions/digest" },
+    "authorization": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["authorization_ref", "actor_ref", "authority_evidence_digest", "authorized_scopes", "expected_decision_version", "request_digest", "authorized_at", "expires_at", "step_up"],
+          "properties": {
+            "authorization_ref": { "$ref": "#/definitions/authorizationRef" },
+            "actor_ref": { "$ref": "#/definitions/principalRef" },
+            "authority_evidence_digest": { "$ref": "#/definitions/digest" },
+            "authorized_scopes": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/definitions/authorityScope" } },
+            "expected_decision_version": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+            "request_digest": { "$ref": "#/definitions/digest" },
+            "authorized_at": { "$ref": "#/definitions/dateTime" },
+            "expires_at": { "$ref": "#/definitions/dateTime" },
+            "step_up": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["level", "verified_at", "expires_at", "method_reference_digest"],
+              "properties": {
+                "level": { "enum": ["recent_auth", "strong_reauth", "specialist_review"] },
+                "verified_at": { "$ref": "#/definitions/dateTime" },
+                "expires_at": { "$ref": "#/definitions/dateTime" },
+                "method_reference_digest": { "$ref": "#/definitions/digest" }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "created_at": { "$ref": "#/definitions/dateTime" },
+    "data_boundary": { "$ref": "#/definitions/dataBoundary" }
+  },
+  "definitions": {
+    "decisionRef": { "type": "string", "pattern": "^tv_decision_[A-Za-z0-9_-]{16,96}$" },
+    "caseRef": { "type": "string", "pattern": "^tv_case_[A-Za-z0-9_-]{16,96}$" },
+    "optionRef": { "type": "string", "pattern": "^tv_option_[A-Za-z0-9_-]{16,96}$" },
+    "nullableOptionRef": { "type": ["string", "null"], "pattern": "^tv_option_[A-Za-z0-9_-]{16,96}$" },
+    "principalRef": { "type": "string", "pattern": "^tv_principal_[A-Za-z0-9_-]{16,96}$" },
+    "authorizationRef": { "type": "string", "pattern": "^tv_authorization_[A-Za-z0-9_-]{16,96}$" },
+    "authorityScope": { "enum": ["trip_view_redacted", "incident_report", "ordinary_evidence_add", "safe_contact_update", "case_progress_view", "operator_contact_approve", "decision_view", "service_reserve", "service_change", "service_cancel", "payment_authorize", "refund_destination_change", "identity_change", "guardian_authority_change", "sensitive_evidence_disclose", "recovery_channel_change", "delegate_manage"] },
+    "digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "dateTime": { "type": "string", "format": "date-time", "pattern": "Z$" },
+    "dataBoundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["raw_identity_data_exposed", "raw_payment_data_exposed", "raw_medical_data_exposed", "raw_provider_payload_exposed", "bearer_secret_exposed"],
+      "properties": {
+        "raw_identity_data_exposed": { "const": false },
+        "raw_payment_data_exposed": { "const": false },
+        "raw_medical_data_exposed": { "const": false },
+        "raw_provider_payload_exposed": { "const": false },
+        "bearer_secret_exposed": { "const": false }
+      }
+    }
+  }
+}

@@ -36,7 +36,7 @@ class Tra_Vel_V2_Demo_Supplier_Adapter implements Tra_Vel_V2_Supplier_Adapter {
 	}
 
 	public function get_cache_version() {
-		return TRA_VEL_V2_VERSION . '-contract-1';
+		return TRA_VEL_V2_VERSION . '-discovery-contract-3';
 	}
 
 	public function fetch( $context ) {

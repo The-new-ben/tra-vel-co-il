@@ -59,12 +59,6 @@ $pages = @(
         Excerpt = 'גלובוס אינטראקטיבי להשוואת מחירים, מסלולים, מלונות ועלות כוללת.'
     },
     [pscustomobject]@{
-        Slug = 'thailand'
-        Title = 'תאילנד'
-        Template = 'page-destination.php'
-        Excerpt = 'מדריך תאילנד מחובר למפת מסלול, עונות, טיסות, מלונות ועלויות.'
-    },
-    [pscustomobject]@{
         Slug = 'flights'
         Title = 'טיסות חכמות'
         Template = 'page-experience.php'

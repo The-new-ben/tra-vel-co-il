@@ -1,0 +1,283 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://tra-vel.co.il/schemas/private/post-booking-servicing-snapshot.schema.json",
+  "title": "Tra-Vel private post-booking servicing snapshot",
+  "description": "Closed synthetic server-only evidence snapshot. Reservation, fulfillment, payment, refund, settlement, ticket/EMD, room/no-show/inventory, and delivery states remain independent.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract_version", "environment", "data_mode", "servicing_case_ref", "snapshot_version", "previous_snapshot_digest", "snapshot_digest", "owner_scope_digest", "bindings", "change_class", "affected_scope", "flight_state", "lodging_state", "financial_differentials", "independent_states", "message_delivery", "observed_at", "boundary"],
+  "properties": {
+    "contract_version": {"const": "1.0.0"},
+    "environment": {"const": "sandbox"},
+    "data_mode": {"const": "synthetic_demo"},
+    "servicing_case_ref": {"$ref": "#/definitions/servicingCaseRef"},
+    "snapshot_version": {"type": "integer", "minimum": 1, "maximum": 2147483647},
+    "previous_snapshot_digest": {"$ref": "#/definitions/nullableDigest"},
+    "snapshot_digest": {"$ref": "#/definitions/digest"},
+    "owner_scope_digest": {"$ref": "#/definitions/digest"},
+    "bindings": {"$ref": "#/definitions/bindings"},
+    "change_class": {"enum": ["voluntary_change", "planned_schedule_change", "day_of_travel_disruption", "supplier_initiated_lodging_change", "traveler_lodging_change"]},
+    "affected_scope": {"$ref": "#/definitions/affectedScope"},
+    "flight_state": {"$ref": "#/definitions/flightState"},
+    "lodging_state": {"$ref": "#/definitions/lodgingState"},
+    "financial_differentials": {"type": "array", "maxItems": 128, "items": {"$ref": "#/definitions/financialDifferential"}},
+    "independent_states": {"$ref": "#/definitions/independentStates"},
+    "message_delivery": {"$ref": "#/definitions/messageDelivery"},
+    "observed_at": {"$ref": "#/definitions/utc"},
+    "boundary": {"$ref": "#/definitions/boundary"}
+  },
+  "definitions": {
+    "digest": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "nullableDigest": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"},
+    "utc": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"},
+    "nullableUtc": {"type": ["string", "null"], "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"},
+    "date": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"},
+    "nullableDate": {"type": ["string", "null"], "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"},
+    "servicingCaseRef": {"type": "string", "pattern": "^tv_servicing_case_[A-Za-z0-9_-]{8,96}$"},
+    "tripRef": {"type": "string", "pattern": "^tv_trip_[A-Za-z0-9_-]{8,96}$"},
+    "supplierOrderRef": {"type": "string", "pattern": "^tv_supplier_order_[A-Za-z0-9_-]{8,96}$"},
+    "commerceOrderRef": {"type": "string", "pattern": "^tv_order_[A-Za-z0-9_-]{8,96}$"},
+    "travelerRef": {"type": "string", "pattern": "^tv_traveler_[A-Za-z0-9_-]{8,96}$"},
+    "segmentRef": {"type": "string", "pattern": "^tv_segment_[A-Za-z0-9_-]{8,96}$"},
+    "orderItemRef": {"type": "string", "pattern": "^tv_order_item_[A-Za-z0-9_-]{8,96}$"},
+    "roomRef": {"type": "string", "pattern": "^tv_room_[A-Za-z0-9_-]{8,96}$"},
+    "guestRef": {"type": "string", "pattern": "^tv_guest_[A-Za-z0-9_-]{8,96}$"},
+    "partyRef": {"type": ["string", "null"], "pattern": "^party_[A-Za-z0-9_-]{8,96}$"},
+    "refListTraveler": {"type": "array", "uniqueItems": true, "maxItems": 128, "items": {"$ref": "#/definitions/travelerRef"}},
+    "refListSegment": {"type": "array", "uniqueItems": true, "maxItems": 256, "items": {"$ref": "#/definitions/segmentRef"}},
+    "refListOrderItem": {"type": "array", "uniqueItems": true, "maxItems": 256, "items": {"$ref": "#/definitions/orderItemRef"}},
+    "refListRoom": {"type": "array", "uniqueItems": true, "maxItems": 128, "items": {"$ref": "#/definitions/roomRef"}},
+    "refListGuest": {"type": "array", "uniqueItems": true, "maxItems": 256, "items": {"$ref": "#/definitions/guestRef"}},
+    "bindings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["trip_ref", "trip_digest", "supplier_order_ref", "supplier_order_digest", "commerce_order_ref", "commerce_order_digest"],
+      "properties": {
+        "trip_ref": {"$ref": "#/definitions/tripRef"},
+        "trip_digest": {"$ref": "#/definitions/digest"},
+        "supplier_order_ref": {"$ref": "#/definitions/supplierOrderRef"},
+        "supplier_order_digest": {"$ref": "#/definitions/digest"},
+        "commerce_order_ref": {"$ref": "#/definitions/commerceOrderRef"},
+        "commerce_order_digest": {"$ref": "#/definitions/digest"}
+      }
+    },
+    "affectedScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["all_traveler_refs", "affected_traveler_refs", "all_segment_refs", "affected_segment_refs", "all_order_item_refs", "affected_order_item_refs", "all_room_refs", "affected_room_refs", "all_guest_refs", "affected_guest_refs", "date_scope"],
+      "properties": {
+        "all_traveler_refs": {"$ref": "#/definitions/refListTraveler"},
+        "affected_traveler_refs": {"$ref": "#/definitions/refListTraveler"},
+        "all_segment_refs": {"$ref": "#/definitions/refListSegment"},
+        "affected_segment_refs": {"$ref": "#/definitions/refListSegment"},
+        "all_order_item_refs": {"$ref": "#/definitions/refListOrderItem"},
+        "affected_order_item_refs": {"$ref": "#/definitions/refListOrderItem"},
+        "all_room_refs": {"$ref": "#/definitions/refListRoom"},
+        "affected_room_refs": {"$ref": "#/definitions/refListRoom"},
+        "all_guest_refs": {"$ref": "#/definitions/refListGuest"},
+        "affected_guest_refs": {"$ref": "#/definitions/refListGuest"},
+        "date_scope": {"$ref": "#/definitions/dateScope"}
+      }
+    },
+    "dateScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["check_in_date", "check_out_date"],
+      "properties": {"check_in_date": {"$ref": "#/definitions/nullableDate"}, "check_out_date": {"$ref": "#/definitions/nullableDate"}}
+    },
+    "flightState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["applicable", "reservation", "ticketing", "tickets", "emds"],
+      "properties": {
+        "applicable": {"type": "boolean"},
+        "reservation": {"$ref": "#/definitions/flightReservation"},
+        "ticketing": {"$ref": "#/definitions/ticketing"},
+        "tickets": {"type": "array", "maxItems": 128, "items": {"$ref": "#/definitions/ticket"}},
+        "emds": {"type": "array", "maxItems": 256, "items": {"$ref": "#/definitions/emd"}}
+      }
+    },
+    "flightReservation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "pnr_ref", "airline_order_ref", "ticketing_deadline_utc"],
+      "properties": {
+        "state": {"enum": ["not_applicable", "held", "confirmed", "cancelled", "unknown"]},
+        "pnr_ref": {"type": ["string", "null"], "pattern": "^tv_pnr_[A-Za-z0-9_-]{8,96}$"},
+        "airline_order_ref": {"type": ["string", "null"], "pattern": "^tv_airline_order_[A-Za-z0-9_-]{8,96}$"},
+        "ticketing_deadline_utc": {"$ref": "#/definitions/nullableUtc"}
+      }
+    },
+    "ticketing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["issuance_state", "validating_carrier_ref", "ticket_stock_ref", "consolidator_owner_ref", "servicing_owner_ref", "servicing_channel"],
+      "properties": {
+        "issuance_state": {"enum": ["not_applicable", "not_issued", "queued", "partially_issued", "issued", "voided", "unknown"]},
+        "validating_carrier_ref": {"$ref": "#/definitions/partyRef"},
+        "ticket_stock_ref": {"type": ["string", "null"], "pattern": "^tv_ticket_stock_[A-Za-z0-9_-]{8,96}$"},
+        "consolidator_owner_ref": {"$ref": "#/definitions/partyRef"},
+        "servicing_owner_ref": {"$ref": "#/definitions/partyRef"},
+        "servicing_channel": {"enum": ["none", "airline", "consolidator", "agency", "api"]}
+      }
+    },
+    "ticket": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ticket_ref", "traveler_ref", "document_state", "coupons"],
+      "properties": {
+        "ticket_ref": {"type": "string", "pattern": "^tv_ticket_[A-Za-z0-9_-]{8,96}$"},
+        "traveler_ref": {"$ref": "#/definitions/travelerRef"},
+        "document_state": {"enum": ["issued", "partially_exchanged", "exchanged", "refunded", "void", "unknown"]},
+        "coupons": {"type": "array", "minItems": 1, "maxItems": 32, "items": {"$ref": "#/definitions/coupon"}}
+      }
+    },
+    "coupon": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["coupon_ref", "segment_ref", "state"],
+      "properties": {
+        "coupon_ref": {"type": "string", "pattern": "^tv_coupon_[A-Za-z0-9_-]{8,96}$"},
+        "segment_ref": {"$ref": "#/definitions/segmentRef"},
+        "state": {"enum": ["open", "airport_control", "checked_in", "lifted", "used", "exchanged", "refunded", "void", "suspended", "unknown"]}
+      }
+    },
+    "emd": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["emd_ref", "traveler_ref", "order_item_ref", "service_ref", "document_state"],
+      "properties": {
+        "emd_ref": {"type": "string", "pattern": "^tv_emd_[A-Za-z0-9_-]{8,96}$"},
+        "traveler_ref": {"$ref": "#/definitions/travelerRef"},
+        "order_item_ref": {"$ref": "#/definitions/orderItemRef"},
+        "service_ref": {"type": "string", "pattern": "^tv_service_[A-Za-z0-9_-]{8,96}$"},
+        "document_state": {"enum": ["issued", "partially_used", "used", "exchanged", "refunded", "void", "unknown"]}
+      }
+    },
+    "lodgingState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["applicable", "reservation_ref", "reservation_state", "rooms"],
+      "properties": {
+        "applicable": {"type": "boolean"},
+        "reservation_ref": {"type": ["string", "null"], "pattern": "^tv_lodging_reservation_[A-Za-z0-9_-]{8,96}$"},
+        "reservation_state": {"enum": ["not_applicable", "pending", "confirmed", "cancelled", "stayed", "no_show", "partial_no_show", "unknown"]},
+        "rooms": {"type": "array", "maxItems": 128, "items": {"$ref": "#/definitions/lodgingRoom"}}
+      }
+    },
+    "lodgingRoom": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["room_ref", "guest_refs", "check_in_date", "check_out_date", "adult_count", "child_count", "room_state", "no_show_state", "inventory_restoration_state"],
+      "properties": {
+        "room_ref": {"$ref": "#/definitions/roomRef"},
+        "guest_refs": {"$ref": "#/definitions/refListGuest"},
+        "check_in_date": {"$ref": "#/definitions/date"},
+        "check_out_date": {"$ref": "#/definitions/date"},
+        "adult_count": {"type": "integer", "minimum": 1, "maximum": 64},
+        "child_count": {"type": "integer", "minimum": 0, "maximum": 64},
+        "room_state": {"enum": ["pending", "confirmed", "changed", "cancelled", "stayed", "no_show", "unknown"]},
+        "no_show_state": {"enum": ["none", "partial", "complete", "disputed", "unknown"]},
+        "inventory_restoration_state": {"enum": ["not_applicable", "not_requested", "pending", "restored", "not_restored", "unknown"]}
+      }
+    },
+    "financialDifferential": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["differential_ref", "order_item_ref", "currency", "minor_unit_exponent", "outcome_types", "old_item_amount_minor", "replacement_item_amount_minor", "penalty_minor", "tax_difference_minor", "add_collect_minor", "supplier_refund_minor", "residual_value_minor", "reusable_value_minor", "traveler_repayment_minor", "settlement_adjustment_minor", "states"],
+      "properties": {
+        "differential_ref": {"type": "string", "pattern": "^tv_servicing_diff_[A-Za-z0-9_-]{8,96}$"},
+        "order_item_ref": {"$ref": "#/definitions/orderItemRef"},
+        "currency": {"type": "string", "pattern": "^[A-Z]{3}$"},
+        "minor_unit_exponent": {"type": "integer", "minimum": 0, "maximum": 4},
+        "outcome_types": {"type": "array", "minItems": 1, "maxItems": 5, "uniqueItems": true, "items": {"enum": ["add_collect", "refund", "residual_value", "reusable_value", "even_exchange"]}},
+        "old_item_amount_minor": {"$ref": "#/definitions/money"},
+        "replacement_item_amount_minor": {"$ref": "#/definitions/money"},
+        "penalty_minor": {"$ref": "#/definitions/money"},
+        "tax_difference_minor": {"$ref": "#/definitions/signedMoney"},
+        "add_collect_minor": {"$ref": "#/definitions/money"},
+        "supplier_refund_minor": {"$ref": "#/definitions/money"},
+        "residual_value_minor": {"$ref": "#/definitions/money"},
+        "reusable_value_minor": {"$ref": "#/definitions/money"},
+        "traveler_repayment_minor": {"$ref": "#/definitions/money"},
+        "settlement_adjustment_minor": {"$ref": "#/definitions/signedMoney"},
+        "states": {"$ref": "#/definitions/financialStates"}
+      }
+    },
+    "money": {"type": "integer", "minimum": 0, "maximum": 1000000000000},
+    "signedMoney": {"type": "integer", "minimum": -1000000000000, "maximum": 1000000000000},
+    "financialStates": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["add_collect_state", "supplier_refund_state", "residual_value_state", "reusable_value_state", "traveler_repayment_state", "settlement_state"],
+      "properties": {
+        "add_collect_state": {"enum": ["not_applicable", "proposed", "authorized", "collected", "failed"]},
+        "supplier_refund_state": {"enum": ["not_applicable", "requested", "pending", "received", "failed"]},
+        "residual_value_state": {"enum": ["not_applicable", "proposed", "issued", "used", "expired"]},
+        "reusable_value_state": {"enum": ["not_applicable", "proposed", "issued", "used", "expired"]},
+        "traveler_repayment_state": {"enum": ["not_applicable", "not_started", "pending", "paid", "failed"]},
+        "settlement_state": {"enum": ["not_started", "accrued", "partially_settled", "settled", "disputed"]}
+      }
+    },
+    "independentStates": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["supplier_reservation_state", "supplier_fulfillment_state", "customer_payment_state", "supplier_refund_state", "customer_refund_state", "supplier_settlement_state", "reconciliation_state"],
+      "properties": {
+        "supplier_reservation_state": {"enum": ["pending", "held", "confirmed", "changed", "cancelled", "unknown"]},
+        "supplier_fulfillment_state": {"enum": ["not_started", "queued", "partial", "fulfilled", "failed", "unknown"]},
+        "customer_payment_state": {"enum": ["not_started", "authorized", "partially_captured", "captured", "failed", "disputed", "charged_back", "unknown"]},
+        "supplier_refund_state": {"enum": ["not_applicable", "requested", "pending", "received", "failed", "unknown"]},
+        "customer_refund_state": {"enum": ["not_applicable", "not_started", "pending", "partially_paid", "paid", "failed", "unknown"]},
+        "supplier_settlement_state": {"enum": ["not_started", "accrued", "partially_settled", "settled", "disputed", "unknown"]},
+        "reconciliation_state": {"enum": ["not_started", "pending", "matched", "exception", "unknown"]}
+      }
+    },
+    "messageDelivery": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["webhook_health", "poll_cursor_ref", "authoritative_retrieval_state", "messages"],
+      "properties": {
+        "webhook_health": {"enum": ["healthy", "degraded", "failed", "not_configured", "unknown"]},
+        "poll_cursor_ref": {"type": ["string", "null"], "pattern": "^tv_message_cursor_[A-Za-z0-9_-]{8,96}$"},
+        "authoritative_retrieval_state": {"enum": ["not_requested", "current", "stale", "conflict", "failed"]},
+        "messages": {"type": "array", "maxItems": 256, "items": {"$ref": "#/definitions/supplierMessage"}}
+      }
+    },
+    "supplierMessage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["message_ref", "message_type", "channel", "delivery_state", "acknowledged_at", "authoritative_retrieval_state", "source_digest", "observed_at"],
+      "properties": {
+        "message_ref": {"type": "string", "pattern": "^tv_supplier_message_[A-Za-z0-9_-]{8,96}$"},
+        "message_type": {"enum": ["reservation", "modification", "cancellation", "late_arrival", "no_show", "inventory_update"]},
+        "channel": {"enum": ["webhook", "poll", "fallback_notice", "manual_evidence"]},
+        "delivery_state": {"enum": ["queued", "sent", "delivered", "acknowledged", "failed", "unknown"]},
+        "acknowledged_at": {"$ref": "#/definitions/nullableUtc"},
+        "authoritative_retrieval_state": {"enum": ["not_requested", "current", "stale", "conflict", "failed"]},
+        "source_digest": {"$ref": "#/definitions/digest"},
+        "observed_at": {"$ref": "#/definitions/utc"}
+      }
+    },
+    "boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["server_only", "public_serialization_allowed", "planning_only", "synthetic_demo", "creates_reservation", "issues_ticket_or_emd", "changes_coupon", "changes_lodging_inventory", "creates_payment", "creates_refund", "creates_settlement", "supplier_dispatched", "processor_called"],
+      "properties": {
+        "server_only": {"const": true},
+        "public_serialization_allowed": {"const": false},
+        "planning_only": {"const": true},
+        "synthetic_demo": {"const": true},
+        "creates_reservation": {"const": false},
+        "issues_ticket_or_emd": {"const": false},
+        "changes_coupon": {"const": false},
+        "changes_lodging_inventory": {"const": false},
+        "creates_payment": {"const": false},
+        "creates_refund": {"const": false},
+        "creates_settlement": {"const": false},
+        "supplier_dispatched": {"const": false},
+        "processor_called": {"const": false}
+      }
+    }
+  }
+}

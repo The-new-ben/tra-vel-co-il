@@ -4,6 +4,10 @@
   const DEG = Math.PI / 180;
   const controllers = [];
 
+  function shouldReduceMotion() {
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches || navigator.connection?.saveData === true;
+  }
+
   function multiply4(a, b) {
     const out = new Float32Array(16);
     for (let column = 0; column < 4; column += 1) {
@@ -198,6 +202,58 @@
     return 6371 * 2 * Math.atan2(Math.sqrt(haversine), Math.sqrt(Math.max(0, 1 - haversine)));
   }
 
+  function validGeographicCandidate(candidate) {
+    return candidate && typeof candidate.id === 'string' && candidate.id.length > 0
+      && Number.isFinite(Number(candidate.latitude)) && Number(candidate.latitude) >= -90 && Number(candidate.latitude) <= 90
+      && Number.isFinite(Number(candidate.longitude)) && Number(candidate.longitude) >= -180 && Number(candidate.longitude) <= 180;
+  }
+
+  function resolveGeographicSelection(point, destinations = [], hubs = [], destinationRadiusKm = 100) {
+    if (!point || !Number.isFinite(Number(point.latitude)) || !Number.isFinite(Number(point.longitude))) {
+      return { selectionKind: 'map_point', supported: false, planningAction: 'identify_coordinate' };
+    }
+    const destinationCandidates = destinations
+      .filter(validGeographicCandidate)
+      .map(destination => ({ ...destination, distanceKm: greatCircleDistanceKm(point, destination) }))
+      .sort((first, second) => first.distanceKm - second.distanceKm);
+    const nearestDestination = destinationCandidates[0] || null;
+    const normalizedDestinationRadiusKm = clamp(Number(destinationRadiusKm) || 100, 40, 5000);
+    if (nearestDestination && nearestDestination.distanceKm <= normalizedDestinationRadiusKm) {
+      return {
+        selectionKind: 'destination',
+        supported: true,
+        planningAction: 'open_destination',
+        destination: nearestDestination,
+        distanceKm: nearestDestination.distanceKm,
+        supportedRadiusKm: normalizedDestinationRadiusKm
+      };
+    }
+    const matchingHub = hubs
+      .filter(validGeographicCandidate)
+      .map(hub => ({ ...hub, radiusKm: Number(hub.radiusKm), distanceKm: greatCircleDistanceKm(point, hub) }))
+      .filter(hub => Number.isInteger(hub.radiusKm) && hub.radiusKm >= 40 && hub.radiusKm <= 750 && hub.distanceKm <= hub.radiusKm)
+      .sort((first, second) => first.distanceKm - second.distanceKm || first.radiusKm - second.radiusKm)[0] || null;
+    if (matchingHub) {
+      return {
+        selectionKind: 'exploration_hub',
+        supported: true,
+        planningAction: 'open_hub',
+        hub: matchingHub,
+        distanceKm: matchingHub.distanceKm,
+        supportedRadiusKm: matchingHub.radiusKm,
+        nearestDestination
+      };
+    }
+    return {
+      selectionKind: 'map_point',
+      supported: false,
+      planningAction: 'identify_coordinate',
+      nearestDestination,
+      distanceKm: nearestDestination ? nearestDestination.distanceKm : null,
+      supportedRadiusKm: normalizedDestinationRadiusKm
+    };
+  }
+
   function globePointFromScreen(x, y, width, height, state) {
     if (!(width > 0) || !(height > 0)) return null;
     const field = 1 / Math.tan(40 * DEG / 2);
@@ -267,6 +323,37 @@
     );
   }
 
+  function collisionFreeMarkerPlacement(candidate, placed, width, height) {
+    const halfWidth = candidate.width / 2;
+    const halfHeight = candidate.height / 2;
+    const baseX = clamp(candidate.point.x, halfWidth + 4, Math.max(halfWidth + 4, width - halfWidth - 4));
+    const baseY = clamp(candidate.point.y, halfHeight + 4, Math.max(halfHeight + 4, height - halfHeight - 4));
+    const offsets = [[0, 0]];
+    if (candidate.active || candidate.focused) {
+      const maximumRadius = Math.min(240, Math.max(48, Math.min(width, height) / 2));
+      for (let radius = 48; radius <= maximumRadius; radius += 48) {
+        offsets.push(
+          [0, -radius], [radius, 0], [0, radius], [-radius, 0],
+          [radius, -radius], [radius, radius], [-radius, radius], [-radius, -radius]
+        );
+      }
+    }
+    for (const [offsetX, offsetY] of offsets) {
+      const x = clamp(baseX + offsetX, halfWidth + 4, Math.max(halfWidth + 4, width - halfWidth - 4));
+      const y = clamp(baseY + offsetY, halfHeight + 4, Math.max(halfHeight + 4, height - halfHeight - 4));
+      const box = {
+        left: x - halfWidth,
+        right: x + halfWidth,
+        top: y - halfHeight,
+        bottom: y + halfHeight
+      };
+      if (!placed.some(existing => boxesOverlap(box, existing))) {
+        return { x, y, box, displaced: Math.abs(x - candidate.point.x) > 1 || Math.abs(y - candidate.point.y) > 1 };
+      }
+    }
+    return null;
+  }
+
   function createController(root) {
     const canvas = root.querySelector('[data-globe-canvas]');
     const routePath = root.querySelector('[data-globe-route]');
@@ -283,6 +370,7 @@
     });
     if (!gl) {
       root.classList.add('globe-3d-unavailable');
+      if (liveRegion) liveRegion.textContent = 'תצוגת מפת העולם החלופית פעילה';
       return null;
     }
 
@@ -295,6 +383,7 @@
       texture = createTexture(gl);
     } catch (error) {
       root.classList.add('globe-3d-unavailable');
+      if (liveRegion) liveRegion.textContent = 'תצוגת מפת העולם החלופית פעילה';
       console.warn('Tra-Vel globe could not initialize.', error);
       return null;
     }
@@ -311,14 +400,18 @@
       pitch: 12 * DEG,
       distance: 3.15,
       selected: root.querySelector('.price-pin.is-active')?.dataset.destination || '',
+      selectedHub: root.querySelector('.exploration-hub.is-active')?.dataset.explorationHub || '',
       selectedPoint: null,
       available: new Set(Array.from(root.querySelectorAll('.price-pin[data-destination]'), marker => marker.dataset.destination)),
+      availableHubs: new Set(Array.from(root.querySelectorAll('.exploration-hub[data-exploration-hub]'), marker => marker.dataset.explorationHub)),
       visible: true,
       animation: null,
       frame: 0,
       pointer: null,
       routeTimer: 0,
-      textureReady: false
+      textureReady: false,
+      failed: false,
+      suppressPinActivationUntil: 0
     };
     const origin = {
       latitude: Number(root.dataset.originLatitude || 32.0005),
@@ -332,6 +425,24 @@
 
     function markers() {
       return Array.from(root.querySelectorAll('.price-pin[data-destination]'));
+    }
+
+    function hubMarkers() {
+      return Array.from(root.querySelectorAll('.exploration-hub[data-exploration-hub]'));
+    }
+
+    function activateStaticFallback(error = null) {
+      state.failed = true;
+      state.textureReady = false;
+      state.animation = null;
+      state.pointer = null;
+      if (state.frame) window.cancelAnimationFrame(state.frame);
+      state.frame = 0;
+      root.classList.remove('is-webgl-ready', 'is-dragging', 'is-routing');
+      root.classList.add('globe-3d-unavailable');
+      if (routePath) routePath.setAttribute('d', '');
+      if (liveRegion) liveRegion.textContent = 'תצוגת המפה החלופית פעילה';
+      if (error) console.warn('Tra-Vel globe switched to its static fallback.', error);
     }
 
     function resize() {
@@ -369,6 +480,7 @@
 
     function updateMarkers(width, height) {
       const mobile = window.matchMedia('(max-width: 1000px)').matches;
+      const homeGlobe = Boolean(root.closest('.home-globe-stack'));
       const projected = new Map();
       const candidates = [];
       markers().forEach(marker => {
@@ -389,27 +501,65 @@
           return;
         }
         const active = marker.dataset.destination === state.selected;
+        const focused = document.activeElement === marker;
         const markerWidth = mobile && !active ? 44 : Math.min(112, Math.max(48, marker.textContent.trim().length * 9 + 22));
         const markerHeight = mobile ? 44 : 34;
-        candidates.push({ marker, point, active, width: markerWidth, height: markerHeight });
+        const collisionMarkerHeight = homeGlobe ? 44 : markerHeight;
+        candidates.push({ marker, point, active, focused, width: markerWidth, height: collisionMarkerHeight, kind: 'destination', priority: 3 });
       });
 
-      candidates.sort((a, b) => Number(b.active) - Number(a.active) || b.point.depth - a.point.depth);
+      hubMarkers().forEach(marker => {
+        const hubId = marker.dataset.explorationHub || '';
+        if (!state.availableHubs.has(hubId)) {
+          marker.hidden = true;
+          return;
+        }
+        const latitude = Number(marker.dataset.latitude);
+        const longitude = Number(marker.dataset.longitude);
+        if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+          marker.hidden = true;
+          return;
+        }
+        const point = projectedPoint(latitude, longitude, state, width, height);
+        if (!point.visible) {
+          marker.hidden = true;
+          return;
+        }
+        const active = hubId === state.selectedHub;
+        const focused = document.activeElement === marker;
+        marker.setAttribute('aria-pressed', String(active));
+        const labelLength = String(marker.dataset.city || marker.textContent || '').trim().length;
+        const markerWidth = active || focused ? Math.min(126, Math.max(72, labelLength * 9 + 30)) : 44;
+		const markerHeight = active || focused ? 88 : 44;
+		candidates.push({ marker, point, active, focused, width: markerWidth, height: markerHeight, kind: 'hub', priority: 1 });
+      });
+
+      candidates.sort((a, b) => Number(b.focused) - Number(a.focused) || Number(b.active) - Number(a.active) || b.priority - a.priority || b.point.depth - a.point.depth);
       const placed = [];
       candidates.forEach(candidate => {
-        const box = {
-          left: candidate.point.x - candidate.width / 2,
-          right: candidate.point.x + candidate.width / 2,
-          top: candidate.point.y - candidate.height / 2,
-          bottom: candidate.point.y + candidate.height / 2
-        };
-        const collides = !candidate.active && placed.some(existing => boxesOverlap(box, existing));
-        candidate.marker.hidden = collides;
-        if (collides) return;
-        candidate.marker.style.left = `${candidate.point.x}px`;
-        candidate.marker.style.top = `${candidate.point.y}px`;
-        candidate.marker.style.setProperty('--globe-depth', String(clamp(0.86 + candidate.point.depth * 0.17, 0.82, 1.05)));
-        placed.push(box);
+		let placement = collisionFreeMarkerPlacement(candidate, placed, width, height);
+		if (!placement && (candidate.active || candidate.focused)) {
+			const halfWidth = candidate.width / 2;
+			const halfHeight = candidate.height / 2;
+			const x = clamp(candidate.point.x, halfWidth + 4, Math.max(halfWidth + 4, width - halfWidth - 4));
+			const y = clamp(candidate.point.y, halfHeight + 4, Math.max(halfHeight + 4, height - halfHeight - 4));
+			placement = {
+				x,
+				y,
+				box: { left: x - halfWidth, right: x + halfWidth, top: y - halfHeight, bottom: y + halfHeight },
+				displaced: false,
+				forced: true
+			};
+		}
+		candidate.marker.hidden = !placement;
+		if (!placement) return;
+		candidate.marker.style.left = `${placement.x}px`;
+		candidate.marker.style.top = `${placement.y}px`;
+		candidate.marker.dataset.collisionDisplaced = String(placement.displaced);
+		candidate.marker.dataset.collisionForced = String(Boolean(placement.forced));
+		candidate.marker.style.setProperty('--globe-depth', String(clamp(0.86 + candidate.point.depth * 0.17, 0.82, 1.05)));
+		if (candidate.kind === 'hub') candidate.marker.setAttribute('aria-pressed', String(candidate.active));
+		placed.push(placement.box);
       });
       const originMarker = root.querySelector('[data-globe-origin]');
       if (originMarker) {
@@ -436,49 +586,56 @@
 
     function draw(timestamp) {
       state.frame = 0;
-      if (!state.visible) return;
-      if (state.animation) {
-        const elapsed = timestamp - state.animation.started;
-        const progress = clamp(elapsed / state.animation.duration, 0, 1);
-        const eased = easeOutCubic(progress);
-        state.yaw = normalizeAngle(state.animation.fromYaw + state.animation.deltaYaw * eased);
-        state.pitch = state.animation.fromPitch + (state.animation.toPitch - state.animation.fromPitch) * eased;
-        state.distance = state.animation.fromDistance + (state.animation.toDistance - state.animation.fromDistance) * eased;
-        if (progress >= 1) state.animation = null;
+      if (!state.visible || state.failed) return;
+      try {
+        if (state.animation) {
+          const elapsed = timestamp - state.animation.started;
+          const progress = clamp(elapsed / state.animation.duration, 0, 1);
+          const eased = easeOutCubic(progress);
+          state.yaw = normalizeAngle(state.animation.fromYaw + state.animation.deltaYaw * eased);
+          state.pitch = state.animation.fromPitch + (state.animation.toPitch - state.animation.fromPitch) * eased;
+          state.distance = state.animation.fromDistance + (state.animation.toDistance - state.animation.fromDistance) * eased;
+          if (progress >= 1) state.animation = null;
+        }
+
+        if (gl.isContextLost()) throw new Error('WebGL context is unavailable.');
+        const dimensions = resize();
+        const model = multiply4(rotationX4(state.pitch), rotationY4(state.yaw));
+        const viewModel = multiply4(translation4(-state.distance), model);
+        const projection = perspective4(40 * DEG, canvas.width / canvas.height, 0.1, 20);
+        const mvp = multiply4(projection, viewModel);
+
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        gl.useProgram(program);
+        gl.bindBuffer(gl.ARRAY_BUFFER, sphere.vertexBuffer);
+        gl.enableVertexAttribArray(locations.position);
+        gl.vertexAttribPointer(locations.position, 3, gl.FLOAT, false, 20, 0);
+        gl.enableVertexAttribArray(locations.uv);
+        gl.vertexAttribPointer(locations.uv, 2, gl.FLOAT, false, 20, 12);
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, sphere.indexBuffer);
+        gl.uniformMatrix4fv(locations.model, false, model);
+        gl.uniformMatrix4fv(locations.mvp, false, mvp);
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.uniform1i(locations.texture, 0);
+        gl.drawElements(gl.TRIANGLES, sphere.count, gl.UNSIGNED_SHORT, 0);
+        const renderError = gl.getError();
+        if (renderError !== gl.NO_ERROR) throw new Error(`WebGL render error ${renderError}.`);
+        updateMarkers(dimensions.width, dimensions.height);
+
+        if (state.textureReady) root.classList.add('is-webgl-ready');
+        if (state.animation) requestRender();
+      } catch (error) {
+        activateStaticFallback(error);
       }
-
-      const dimensions = resize();
-      const model = multiply4(rotationX4(state.pitch), rotationY4(state.yaw));
-      const viewModel = multiply4(translation4(-state.distance), model);
-      const projection = perspective4(40 * DEG, canvas.width / canvas.height, 0.1, 20);
-      const mvp = multiply4(projection, viewModel);
-
-      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-      gl.useProgram(program);
-      gl.bindBuffer(gl.ARRAY_BUFFER, sphere.vertexBuffer);
-      gl.enableVertexAttribArray(locations.position);
-      gl.vertexAttribPointer(locations.position, 3, gl.FLOAT, false, 20, 0);
-      gl.enableVertexAttribArray(locations.uv);
-      gl.vertexAttribPointer(locations.uv, 2, gl.FLOAT, false, 20, 12);
-      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, sphere.indexBuffer);
-      gl.uniformMatrix4fv(locations.model, false, model);
-      gl.uniformMatrix4fv(locations.mvp, false, mvp);
-      gl.activeTexture(gl.TEXTURE0);
-      gl.bindTexture(gl.TEXTURE_2D, texture);
-      gl.uniform1i(locations.texture, 0);
-      gl.drawElements(gl.TRIANGLES, sphere.count, gl.UNSIGNED_SHORT, 0);
-      updateMarkers(dimensions.width, dimensions.height);
-
-      if (state.textureReady) root.classList.add('is-webgl-ready');
-      if (state.animation) requestRender();
     }
 
     function requestRender() {
-      if (!state.frame) state.frame = window.requestAnimationFrame(draw);
+      if (!state.failed && !state.frame) state.frame = window.requestAnimationFrame(draw);
     }
 
-    function animateTo(yaw, pitch, distance = state.distance, duration = 680) {
-      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    function animateTo(yaw, pitch, distance = state.distance, duration = 680, rotations = 0) {
+      if (shouldReduceMotion()) {
         state.yaw = normalizeAngle(yaw);
         state.pitch = clamp(pitch, -70 * DEG, 70 * DEG);
         state.distance = clamp(distance, 2.25, 4.8);
@@ -488,7 +645,7 @@
       }
       state.animation = {
         fromYaw: state.yaw,
-        deltaYaw: shortestAngle(state.yaw, yaw),
+        deltaYaw: shortestAngle(state.yaw, yaw) + Math.PI * 2 * clamp(Number(rotations) || 0, -2, 2),
         toPitch: clamp(pitch, -70 * DEG, 70 * DEG),
         fromPitch: state.pitch,
         fromDistance: state.distance,
@@ -502,17 +659,29 @@
     function pulseRoute() {
       root.classList.remove('is-routing');
       if (state.routeTimer) window.clearTimeout(state.routeTimer);
-      if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      if (!shouldReduceMotion()) {
         void root.offsetWidth;
         root.classList.add('is-routing');
         state.routeTimer = window.setTimeout(() => root.classList.remove('is-routing'), 920);
       }
     }
 
+    function cancelMotion() {
+      state.animation = null;
+      if (state.routeTimer) window.clearTimeout(state.routeTimer);
+      state.routeTimer = 0;
+      root.classList.remove('is-routing');
+      requestRender();
+      return true;
+    }
+
     function focusDestination(id, options = true) {
       if (root.classList.contains('globe-3d-unavailable')) return false;
       const animate = typeof options === 'object' ? options.animate !== false : Boolean(options);
       const pulse = typeof options === 'object' ? options.pulse === true : Boolean(options);
+      const announce = typeof options === 'object' ? options.announce !== false : true;
+      const rotations = typeof options === 'object' ? clamp(Number(options.rotations) || 0, -2, 2) : 0;
+      const duration = typeof options === 'object' ? clamp(Number(options.duration) || 680, 180, 3200) : 680;
       const marker = root.querySelector(`.price-pin[data-destination="${CSS.escape(id)}"]`);
       if (!marker) return false;
       const latitude = Number(marker.dataset.latitude);
@@ -520,27 +689,132 @@
       if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return false;
       if (!animate) state.animation = null;
       state.selected = id;
+      state.selectedHub = '';
       if (pulse) pulseRoute();
       markers().forEach(item => {
         const active = item.dataset.destination === id;
         item.classList.toggle('is-active', active);
         item.setAttribute('aria-pressed', String(active));
       });
+      hubMarkers().forEach(item => {
+        item.classList.remove('is-active');
+        item.setAttribute('aria-pressed', 'false');
+      });
       const targetYaw = -longitude * DEG;
       const targetPitch = latitude * DEG;
-      if (animate) animateTo(targetYaw, targetPitch, Math.min(state.distance, 3.05));
+      if (animate) animateTo(targetYaw, targetPitch, Math.min(state.distance, 3.05), duration, rotations);
       else {
         state.yaw = normalizeAngle(targetYaw);
         state.pitch = clamp(targetPitch, -70 * DEG, 70 * DEG);
         requestRender();
       }
-      if (liveRegion) liveRegion.textContent = `${marker.getAttribute('aria-label') || marker.textContent.trim()} במרכז הגלובוס`;
+      if (liveRegion && announce) liveRegion.textContent = `${marker.getAttribute('aria-label') || marker.textContent.trim()} במרכז הגלובוס`;
+      return true;
+    }
+
+    function hubFromMarker(marker) {
+      if (!marker) return null;
+      const id = String(marker.dataset.explorationHub || '');
+      const city = String(marker.dataset.city || '').trim();
+      const country = String(marker.dataset.country || '').trim();
+      const latitude = Number(marker.dataset.latitude);
+      const longitude = Number(marker.dataset.longitude);
+      const radiusKm = Number(marker.dataset.radiusKm);
+      const iataSearchCode = String(marker.dataset.iataSearchCode || '').trim().toUpperCase();
+      const liveSearchScopes = String(marker.dataset.liveSearchScopes || '').split(',').filter(Boolean);
+      if (!/^[a-z0-9-]{2,60}$/.test(id) || !city || !country
+        || !Number.isFinite(latitude) || latitude < -90 || latitude > 90
+        || !Number.isFinite(longitude) || longitude < -180 || longitude > 180
+        || !Number.isInteger(radiusKm) || radiusKm < 40 || radiusKm > 750
+        || (iataSearchCode && !/^[A-Z]{3}$/.test(iataSearchCode))) return null;
+      return { id, city, country, latitude, longitude, radiusKm, iataSearchCode, liveSearchScopes };
+    }
+
+    function publishSelection(detail, announcement) {
+      state.selectedPoint = { latitude: detail.latitude, longitude: detail.longitude };
+      if (selectionMarker) {
+        selectionMarker.hidden = false;
+        selectionMarker.classList.remove('is-new');
+        if (!shouldReduceMotion()) {
+          void selectionMarker.offsetWidth;
+          selectionMarker.classList.add('is-new');
+        }
+      }
+      requestRender();
+      root.dispatchEvent(new CustomEvent('travelglobe:select', { bubbles: true, detail }));
+      if (liveRegion) liveRegion.textContent = announcement;
+      return true;
+    }
+
+    function selectHubMarker(marker, inputType = 'pointer') {
+      const hub = hubFromMarker(marker);
+      if (!hub || !state.availableHubs.has(hub.id)) return false;
+      state.selected = '';
+      state.selectedHub = hub.id;
+      markers().forEach(item => {
+        item.classList.remove('is-active');
+        item.setAttribute('aria-pressed', 'false');
+      });
+      hubMarkers().forEach(item => {
+        const active = item === marker;
+        item.classList.toggle('is-active', active);
+        item.setAttribute('aria-pressed', String(active));
+      });
+      return publishSelection({
+        latitude: Number(hub.latitude.toFixed(4)),
+        longitude: Number(hub.longitude.toFixed(4)),
+        inputType,
+        supported: true,
+        supportedRadiusKm: hub.radiusKm,
+        selectionKind: 'exploration_hub',
+        planningAction: 'open_hub',
+        hubId: hub.id,
+        hubCity: hub.city,
+        hubCountry: hub.country,
+        hubIataSearchCode: hub.iataSearchCode,
+        hubLiveSearchScopes: hub.liveSearchScopes,
+        hubDistanceKm: 0,
+        nearestDestination: '',
+        nearestLabel: '',
+        distanceKm: 0
+      }, `בחרתם את ${hub.city}, ${hub.country}. כל חלקי החופשה נפתחו לחיפוש חי מתחת למפה.`);
+    }
+
+    function focusHub(id, options = true) {
+      const marker = root.querySelector(`.exploration-hub[data-exploration-hub="${CSS.escape(id)}"]`);
+      const hub = hubFromMarker(marker);
+      if (!hub || !state.availableHubs.has(hub.id)) return false;
+      const unavailable = root.classList.contains('globe-3d-unavailable');
+      const animate = !unavailable && (typeof options === 'object' ? options.animate !== false : Boolean(options));
+      const announce = typeof options === 'object' ? options.announce !== false : true;
+      state.selected = '';
+      state.selectedHub = hub.id;
+      state.selectedPoint = { latitude: hub.latitude, longitude: hub.longitude };
+      markers().forEach(item => {
+        item.classList.remove('is-active');
+        item.setAttribute('aria-pressed', 'false');
+      });
+      hubMarkers().forEach(item => {
+        const active = item === marker;
+        item.classList.toggle('is-active', active);
+        item.setAttribute('aria-pressed', String(active));
+      });
+      const targetYaw = -hub.longitude * DEG;
+      const targetPitch = hub.latitude * DEG;
+      if (animate) animateTo(targetYaw, targetPitch, Math.min(state.distance, 3.05), 680);
+      else {
+        state.animation = null;
+        state.yaw = normalizeAngle(targetYaw);
+        state.pitch = clamp(targetPitch, -70 * DEG, 70 * DEG);
+        requestRender();
+      }
+      if (liveRegion && announce) liveRegion.textContent = `${hub.city}, ${hub.country} במרכז הגלובוס`;
       return true;
     }
 
     function selectScreenPoint(clientX, clientY, inputType = 'pointer') {
       if (!root.matches('[data-discovery-globe]')) {
-        if (liveRegion) liveRegion.textContent = 'בחירת נקודה חופשית זמינה במסך המפה המלא.';
+        if (liveRegion) liveRegion.textContent = 'לבחירת נקודה חופשית, פתחו את מפת החופשות המלאה.';
         return false;
       }
       const rectangle = root.getBoundingClientRect();
@@ -549,7 +823,7 @@
         if (liveRegion) liveRegion.textContent = 'הנקודה מחוץ לכדור הארץ. נסו לבחור בתוך הגלובוס.';
         return false;
       }
-      const candidates = markers()
+      const destinationCandidates = markers()
         .filter(marker => state.available.has(marker.dataset.destination))
         .map(marker => ({
           id: marker.dataset.destination,
@@ -557,37 +831,64 @@
           latitude: Number(marker.dataset.latitude),
           longitude: Number(marker.dataset.longitude)
         }))
-        .filter(marker => Number.isFinite(marker.latitude) && Number.isFinite(marker.longitude))
-        .map(marker => ({ ...marker, distanceKm: greatCircleDistanceKm(point, marker) }))
-        .sort((first, second) => first.distanceKm - second.distanceKm);
-      const nearest = candidates[0] || null;
+        .filter(marker => Number.isFinite(marker.latitude) && Number.isFinite(marker.longitude));
+      const explorationCandidates = hubMarkers()
+        .filter(marker => state.availableHubs.has(marker.dataset.explorationHub))
+        .map(hubFromMarker)
+        .filter(Boolean);
       const supportedRadiusKm = clamp(Number(root.dataset.supportedRadiusKm || 100), 100, 5000);
-      const supported = Boolean(nearest && nearest.distanceKm <= supportedRadiusKm);
+      const resolution = resolveGeographicSelection(point, destinationCandidates, explorationCandidates, supportedRadiusKm);
+      const nearest = resolution.destination || resolution.nearestDestination || null;
+      const hub = resolution.hub || null;
+      const supported = resolution.supported;
       const detail = {
         latitude: Number(point.latitude.toFixed(4)),
         longitude: Number(point.longitude.toFixed(4)),
         inputType,
         supported,
-        supportedRadiusKm,
-        nearestDestination: nearest?.id || '',
-        nearestLabel: nearest?.label || '',
-        distanceKm: nearest ? Math.round(nearest.distanceKm) : null
+        supportedRadiusKm: resolution.supportedRadiusKm,
+        selectionKind: resolution.selectionKind,
+        planningAction: resolution.planningAction,
+        nearestDestination: resolution.selectionKind === 'destination' ? (nearest?.id || '') : '',
+        nearestLabel: resolution.selectionKind === 'destination' ? (nearest?.label || '') : '',
+        distanceKm: Number.isFinite(resolution.distanceKm) ? Math.round(resolution.distanceKm) : null,
+        hubId: hub?.id || '',
+        hubCity: hub?.city || '',
+        hubCountry: hub?.country || '',
+        hubIataSearchCode: hub?.iataSearchCode || '',
+        hubLiveSearchScopes: hub?.liveSearchScopes || [],
+        hubDistanceKm: hub ? Math.round(hub.distanceKm) : null
       };
+      state.selected = resolution.selectionKind === 'destination' ? (nearest?.id || '') : '';
+      state.selectedHub = resolution.selectionKind === 'exploration_hub' ? (hub?.id || '') : '';
+      markers().forEach(item => {
+        const active = detail.nearestDestination && item.dataset.destination === detail.nearestDestination;
+        item.classList.toggle('is-active', Boolean(active));
+        item.setAttribute('aria-pressed', String(Boolean(active)));
+      });
+      hubMarkers().forEach(item => {
+        const active = detail.hubId && item.dataset.explorationHub === detail.hubId;
+        item.classList.toggle('is-active', Boolean(active));
+        item.setAttribute('aria-pressed', String(Boolean(active)));
+      });
       state.selectedPoint = { latitude: detail.latitude, longitude: detail.longitude };
       if (selectionMarker) {
         selectionMarker.hidden = false;
         selectionMarker.classList.remove('is-new');
-        if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        if (!shouldReduceMotion()) {
           void selectionMarker.offsetWidth;
           selectionMarker.classList.add('is-new');
         }
       }
       requestRender();
       root.dispatchEvent(new CustomEvent('travelglobe:select', { bubbles: true, detail }));
-      if (liveRegion) {
+      if (liveRegion && resolution.selectionKind === 'exploration_hub') {
+        liveRegion.textContent = `האזור זוהה כ${hub.city}, ${hub.country}. תוכנית 360 מעלות נפתחה לחיפוש חי מתחת למפה.`;
+      }
+      if (liveRegion && resolution.selectionKind !== 'exploration_hub') {
         liveRegion.textContent = supported
-          ? `${nearest.label} נבחרה. תוכנית 360 מעלות מתעדכנת מתחת למפה.`
-          : `הנקודה נבחרה. אין עדיין כיסוי מובנה באזור הזה, והסוכן יכול להמשיך ממנה.`;
+          ? `בחרתם ב${nearest.label}. פרטי היעד מופיעים מתחת למפה.`
+          : 'הנקודה נשמרה. אפשר לזהות את האזור ולפתוח ממנו תכנון חופשה מלא.';
       }
       return true;
     }
@@ -617,11 +918,30 @@
       requestRender();
     }
 
+    function setExplorationHubs(data) {
+      state.availableHubs = new Set(Object.keys(data || {}));
+      hubMarkers().forEach(marker => {
+        const item = data?.[marker.dataset.explorationHub];
+        marker.hidden = !item;
+        if (!item) return;
+        if (Number.isFinite(Number(item.latitude))) marker.dataset.latitude = String(item.latitude);
+        if (Number.isFinite(Number(item.longitude))) marker.dataset.longitude = String(item.longitude);
+        if (Number.isInteger(Number(item.radiusKm))) marker.dataset.radiusKm = String(item.radiusKm);
+      });
+      if (state.selectedHub && !state.availableHubs.has(state.selectedHub)) clearSelection({ preservePoint: true });
+      requestRender();
+    }
+
     function clearSelection({ preservePoint = false } = {}) {
       state.selected = '';
+      state.selectedHub = '';
       state.animation = null;
       if (!preservePoint) state.selectedPoint = null;
       markers().forEach(marker => {
+        marker.classList.remove('is-active');
+        marker.setAttribute('aria-pressed', 'false');
+      });
+      hubMarkers().forEach(marker => {
         marker.classList.remove('is-active');
         marker.setAttribute('aria-pressed', 'false');
       });
@@ -636,26 +956,41 @@
     const image = new Image();
     image.decoding = 'async';
     image.addEventListener('load', () => {
-      gl.bindTexture(gl.TEXTURE_2D, texture);
-      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-      gl.generateMipmap(gl.TEXTURE_2D);
-      state.textureReady = true;
-      requestRender();
-      root.dispatchEvent(new CustomEvent('travelglobe:ready', { bubbles: true }));
+      if (state.failed) return;
+      try {
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.generateMipmap(gl.TEXTURE_2D);
+        const textureError = gl.getError();
+        if (textureError !== gl.NO_ERROR) throw new Error(`WebGL texture error ${textureError}.`);
+        state.textureReady = true;
+        requestRender();
+        root.dispatchEvent(new CustomEvent('travelglobe:ready', { bubbles: true }));
+      } catch (error) {
+        activateStaticFallback(error);
+      }
     }, { once: true });
     image.addEventListener('error', () => {
-      root.classList.add('globe-3d-unavailable');
-      if (liveRegion) liveRegion.textContent = 'תצוגת המפה החלופית פעילה';
+      activateStaticFallback(new Error('Earth texture failed to load.'));
     }, { once: true });
     image.src = root.dataset.texture;
 
+    markers().forEach(marker => {
+      marker.addEventListener('focus', requestRender);
+      marker.addEventListener('blur', requestRender);
+    });
+    hubMarkers().forEach(marker => {
+      marker.addEventListener('focus', requestRender);
+      marker.addEventListener('blur', requestRender);
+    });
+
     root.addEventListener('pointerdown', event => {
-      if (!event.isPrimary || event.button !== 0 || event.target.closest('.price-pin')) return;
+      if (!event.isPrimary || event.button !== 0) return;
       state.visible = document.visibilityState !== 'hidden';
       state.pointer = {
         id: event.pointerId,
@@ -666,11 +1001,24 @@
         startY: event.clientY,
         mode: 'pending',
         moved: false,
+        startedOnPin: Boolean(event.target.closest('.price-pin')),
+        startedOnHub: Boolean(event.target.closest('[data-exploration-hub]')),
         startedAt: performance.now()
       };
     });
     root.addEventListener('click', event => {
-      if (!event.target.closest('.price-pin')) return;
+      const pin = event.target.closest('.price-pin');
+      const hub = event.target.closest('[data-exploration-hub]');
+      if (!pin && !hub) return;
+      if (performance.now() < state.suppressPinActivationUntil) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        return;
+      }
+      if (hub) {
+        if (selectHubMarker(hub, event.detail === 0 ? 'keyboard' : 'pointer')) event.preventDefault();
+        return;
+      }
       state.selectedPoint = null;
       if (selectionMarker) {
         selectionMarker.hidden = true;
@@ -682,13 +1030,17 @@
       const totalX = event.clientX - state.pointer.startX;
       const totalY = event.clientY - state.pointer.startY;
       const distance = Math.hypot(totalX, totalY);
-      if (state.pointer.mode === 'pending' && distance <= 8) return;
+      if (state.pointer.mode === 'pending' && distance < 8) return;
       if (state.pointer.mode === 'pending') {
         state.pointer.moved = true;
-        const verticalTouchGesture = state.pointer.type === 'touch' && Math.abs(totalY) > Math.abs(totalX) * 1.15;
-        if (verticalTouchGesture) {
-          state.pointer.mode = 'scroll';
-          return;
+        if (state.pointer.type === 'touch') {
+          const absoluteX = Math.abs(totalX);
+          const absoluteY = Math.abs(totalY);
+          if (absoluteY >= absoluteX) {
+            state.pointer.mode = 'scroll';
+            return;
+          }
+          if (absoluteX < absoluteY * 1.25) return;
         }
         state.pointer.mode = 'drag';
         state.animation = null;
@@ -710,7 +1062,9 @@
       state.pointer = null;
       root.classList.remove('is-dragging');
       if (root.hasPointerCapture(event.pointerId)) root.releasePointerCapture(event.pointerId);
-      if (event.type === 'pointerup' && !pointer.moved && performance.now() - pointer.startedAt < 700) {
+      if (pointer.moved && pointer.startedOnPin) state.suppressPinActivationUntil = performance.now() + 500;
+      if (pointer.moved && pointer.startedOnHub) state.suppressPinActivationUntil = performance.now() + 500;
+      if (event.type === 'pointerup' && !pointer.moved && !pointer.startedOnPin && !pointer.startedOnHub && performance.now() - pointer.startedAt < 700) {
         selectScreenPoint(event.clientX, event.clientY, 'pointer');
       }
     };
@@ -718,7 +1072,7 @@
     root.addEventListener('pointercancel', endPointer);
     root.addEventListener('lostpointercapture', endPointer);
     root.addEventListener('keydown', event => {
-      if (event.target.closest('.price-pin')) return;
+      if (event.target.closest('.price-pin,[data-exploration-hub]')) return;
       state.visible = document.visibilityState !== 'hidden';
       const step = event.shiftKey ? 18 * DEG : 8 * DEG;
       if (event.key === 'ArrowLeft') {
@@ -748,9 +1102,11 @@
 
     canvas.addEventListener('webglcontextlost', event => {
       event.preventDefault();
-      root.classList.remove('is-webgl-ready');
-      root.classList.add('globe-3d-unavailable');
-      if (liveRegion) liveRegion.textContent = 'תצוגת המפה החלופית פעילה';
+      activateStaticFallback();
+    });
+    canvas.addEventListener('webglcontextrestored', () => {
+      // Once a context has been lost, keep the known static Earth rather than reusing invalid GPU resources.
+      activateStaticFallback();
     });
 
     const observer = new IntersectionObserver(entries => {
@@ -766,8 +1122,15 @@
       if (state.visible) requestRender();
     });
 
+    const contextualDestination = String(root.closest('[data-destination-map-state]')?.dataset.destinationMapState || '')
+      .toLowerCase()
+      .replace(/[^a-z0-9-]/g, '')
+      .slice(0, 60);
+    if (contextualDestination && state.available.has(contextualDestination)) {
+      focusDestination(contextualDestination, { animate: false, pulse: false, announce: false });
+    }
     requestRender();
-    return { focusDestination, zoom, setDestinations, clearSelection, pulseRoute, requestRender };
+    return { root, focusDestination, focusHub, zoom, setDestinations, setExplorationHubs, clearSelection, pulseRoute, cancelMotion, requestRender };
   }
 
   function initialize() {
@@ -779,24 +1142,54 @@
 
   window.traVelGlobe3D = {
     focusDestination(id, options = true) {
-      controllers.forEach(controller => controller.focusDestination(id, options));
+      const targetRoot = typeof options === 'object' ? options.root : null;
+      controllers.forEach(controller => {
+        if (!targetRoot || controller.root === targetRoot) controller.focusDestination(id, options);
+      });
     },
     setDestinations(data) {
       controllers.forEach(controller => controller.setDestinations(data));
     },
-    clearSelection(options = {}) {
-      controllers.forEach(controller => controller.clearSelection(options));
+    setExplorationHubs(data) {
+      controllers.forEach(controller => controller.setExplorationHubs(data));
     },
-    zoom(direction) {
+    focusHub(id, options = true) {
+      const targetRoot = typeof options === 'object' ? options.root : null;
+      controllers.forEach(controller => {
+        if (!targetRoot || controller.root === targetRoot) controller.focusHub(id, options);
+      });
+    },
+    clearSelection(options = {}) {
+      const targetRoot = typeof options === 'object' ? options.root : null;
+      controllers.forEach(controller => {
+        if (!targetRoot || controller.root === targetRoot) controller.clearSelection(options);
+      });
+    },
+    zoom(direction, options = {}) {
+      const targetRoot = typeof options === 'object' ? options.root : null;
       let handled = false;
-      controllers.forEach(controller => { handled = controller.zoom(direction) || handled; });
+      controllers.forEach(controller => {
+        if (!targetRoot || controller.root === targetRoot) handled = controller.zoom(direction) || handled;
+      });
       return handled;
     },
-    pulseRoute() {
-      controllers.forEach(controller => controller.pulseRoute());
+    pulseRoute(targetRoot = null) {
+      controllers.forEach(controller => {
+        if (!targetRoot || controller.root === targetRoot) controller.pulseRoute();
+      });
+    },
+    cancelMotion(targetRoot = null) {
+      let handled = false;
+      controllers.forEach(controller => {
+        if (!targetRoot || controller.root === targetRoot) handled = controller.cancelMotion() || handled;
+      });
+      return handled;
     },
     requestRender() {
       controllers.forEach(controller => controller.requestRender());
+    },
+    resolveSelection(point, destinations = [], hubs = [], destinationRadiusKm = 100) {
+      return resolveGeographicSelection(point, destinations, hubs, destinationRadiusKm);
     }
   };
 

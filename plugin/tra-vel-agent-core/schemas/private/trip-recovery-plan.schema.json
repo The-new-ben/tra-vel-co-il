@@ -1,0 +1,223 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://tra-vel.co.il/schemas/private/trip-recovery-plan.schema.json",
+  "title": "Tra-Vel private immutable trip recovery plan",
+  "description": "Side-effect-free recovery assessment bound to an exact itinerary graph and digest-only incident evidence.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract_version", "environment", "recovery_ref", "recovery_version", "previous_recovery_digest", "recovery_digest", "graph_binding", "event_ledger", "impact", "triage", "gates", "candidates", "selected_candidate_ref", "plan_state", "completion", "created_at", "updated_at", "private_boundary"],
+  "properties": {
+    "contract_version": {"const": "1.0.0"},
+    "environment": {"const": "sandbox"},
+    "recovery_ref": {"$ref": "#/definitions/recoveryRef"},
+    "recovery_version": {"type": "integer", "minimum": 1, "maximum": 2147483647},
+    "previous_recovery_digest": {"$ref": "#/definitions/nullableDigest"},
+    "recovery_digest": {"$ref": "#/definitions/digest"},
+    "graph_binding": {"$ref": "#/definitions/graphBinding"},
+    "event_ledger": {"$ref": "#/definitions/eventLedger"},
+    "impact": {"$ref": "#/definitions/impact"},
+    "triage": {"$ref": "#/definitions/triage"},
+    "gates": {"type": "array", "minItems": 7, "maxItems": 7, "items": {"$ref": "#/definitions/gate"}},
+    "candidates": {"type": "array", "minItems": 1, "maxItems": 32, "items": {"$ref": "#/definitions/candidate"}},
+    "selected_candidate_ref": {"anyOf": [{"type": "null"}, {"$ref": "#/definitions/candidateRef"}]},
+    "plan_state": {"enum": ["proposed", "blocked", "ready_for_authorization", "authorized", "execution_observed", "verification_pending", "verified", "closed_with_loss"]},
+    "completion": {"$ref": "#/definitions/completion"},
+    "created_at": {"$ref": "#/definitions/dateTime"},
+    "updated_at": {"$ref": "#/definitions/dateTime"},
+    "private_boundary": {"$ref": "#/definitions/privateBoundary"}
+  },
+  "definitions": {
+    "digest": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "nullableDigest": {"anyOf": [{"type": "null"}, {"$ref": "#/definitions/digest"}]},
+    "dateTime": {"type": "string", "pattern": "^[0-9]{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12][0-9]|3[01])T(?:[01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]Z$"},
+    "recoveryRef": {"type": "string", "pattern": "^tv_recovery_[A-Za-z0-9_-]{16,96}$"},
+    "graphRef": {"type": "string", "pattern": "^tv_graph_[A-Za-z0-9_-]{16,96}$"},
+    "tripRef": {"type": "string", "pattern": "^tv_trip_[A-Za-z0-9_-]{16,96}$"},
+    "eventRef": {"type": "string", "pattern": "^tv_trip_event_[A-Za-z0-9_-]{16,96}$"},
+    "nodeRef": {"type": "string", "pattern": "^tv_node_[A-Za-z0-9_-]{16,96}$"},
+    "deadlineRef": {"type": "string", "pattern": "^tv_deadline_[A-Za-z0-9_-]{16,96}$"},
+    "candidateRef": {"type": "string", "pattern": "^tv_candidate_[A-Za-z0-9_-]{16,96}$"},
+    "vertical": {"enum": ["flight", "accommodation", "package", "transfer", "activity", "dining", "insurance", "connectivity", "equipment"]},
+    "refList": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/definitions/nodeRef"}},
+    "graphBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["graph_ref", "graph_version", "graph_digest", "trip_ref"],
+      "properties": {
+        "graph_ref": {"$ref": "#/definitions/graphRef"},
+        "graph_version": {"type": "integer", "minimum": 1, "maximum": 2147483647},
+        "graph_digest": {"$ref": "#/definitions/digest"},
+        "trip_ref": {"$ref": "#/definitions/tripRef"}
+      }
+    },
+    "eventLedger": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["events", "ledger_digest", "duplicate_count", "out_of_order_event_refs", "stale_response_event_refs"],
+      "properties": {
+        "events": {"type": "array", "minItems": 1, "maxItems": 64, "items": {"$ref": "#/definitions/event"}},
+        "ledger_digest": {"$ref": "#/definitions/digest"},
+        "duplicate_count": {"type": "integer", "minimum": 0, "maximum": 2147483647},
+        "out_of_order_event_refs": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/definitions/eventRef"}},
+        "stale_response_event_refs": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/definitions/eventRef"}}
+      }
+    },
+    "event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contract_version", "event_ref", "sequence", "occurred_at", "observed_at", "type", "source", "affected_node_refs", "idempotency_digest", "supersedes_event_ref", "financial_state", "data_boundary"],
+      "properties": {
+        "contract_version": {"const": "1.0.0"},
+        "event_ref": {"$ref": "#/definitions/eventRef"},
+        "sequence": {"type": "integer", "minimum": 1, "maximum": 2147483647},
+        "occurred_at": {"$ref": "#/definitions/dateTime"},
+        "observed_at": {"$ref": "#/definitions/dateTime"},
+        "type": {"enum": ["flight.cancelled", "flight.delayed_connection_at_risk", "flight.missed_connection", "accommodation.overbooked", "accommodation.late_arrival_risk", "transfer.failed", "activity.weather_closed", "dining.closed", "insurance.incident_reported", "connectivity.outage", "equipment.lost", "local_tourism.official_closure", "traveler.document_changed", "traveler.authority_changed", "traveler.accessibility_ack_lost", "financial.partial_refund_observed", "financial.payment_state_uncertain", "supplier.response_stale"]},
+        "source": {"$ref": "#/definitions/eventSource"},
+        "affected_node_refs": {"type": "array", "minItems": 1, "maxItems": 128, "uniqueItems": true, "items": {"$ref": "#/definitions/nodeRef"}},
+        "idempotency_digest": {"$ref": "#/definitions/digest"},
+        "supersedes_event_ref": {"anyOf": [{"type": "null"}, {"$ref": "#/definitions/eventRef"}]},
+        "financial_state": {"$ref": "#/definitions/eventFinancial"},
+        "data_boundary": {"$ref": "#/definitions/eventBoundary"}
+      }
+    },
+    "eventSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "truth_state", "evidence_digest", "response_expires_at"],
+      "properties": {
+        "kind": {"enum": ["signed_supplier_event", "provider_authorized_api", "official_live_feed", "operator_observation", "customer_report", "synthetic_test"]},
+        "truth_state": {"enum": ["observed_unverified", "verified_current", "stale", "conflict", "rejected"]},
+        "evidence_digest": {"$ref": "#/definitions/nullableDigest"},
+        "response_expires_at": {"anyOf": [{"type": "null"}, {"$ref": "#/definitions/dateTime"}]}
+      }
+    },
+    "eventFinancial": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "evidence_digest"],
+      "properties": {
+        "state": {"enum": ["no_impact", "pending", "partial_refund_observed", "uncertain", "disputed", "balanced"]},
+        "evidence_digest": {"$ref": "#/definitions/nullableDigest"}
+      }
+    },
+    "eventBoundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["raw_message_stored", "raw_identity_data_stored", "raw_payment_data_stored", "raw_medical_data_stored", "raw_supplier_payload_stored", "bearer_secret_stored", "authorization_effect", "supplier_action_claimed"],
+      "properties": {
+        "raw_message_stored": {"const": false},
+        "raw_identity_data_stored": {"const": false},
+        "raw_payment_data_stored": {"const": false},
+        "raw_medical_data_stored": {"const": false},
+        "raw_supplier_payload_stored": {"const": false},
+        "bearer_secret_stored": {"const": false},
+        "authorization_effect": {"const": "none"},
+        "supplier_action_claimed": {"const": false}
+      }
+    },
+    "impact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["direct_node_refs", "transitive_node_refs", "unaffected_node_refs", "affected_verticals", "critical_deadline_refs", "blast_radius_count"],
+      "properties": {
+        "direct_node_refs": {"type": "array", "minItems": 1, "maxItems": 128, "uniqueItems": true, "items": {"$ref": "#/definitions/nodeRef"}},
+        "transitive_node_refs": {"$ref": "#/definitions/refList"},
+        "unaffected_node_refs": {"$ref": "#/definitions/refList"},
+        "affected_verticals": {"type": "array", "minItems": 1, "maxItems": 9, "uniqueItems": true, "items": {"$ref": "#/definitions/vertical"}},
+        "critical_deadline_refs": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/definitions/deadlineRef"}},
+        "blast_radius_count": {"type": "integer", "minimum": 1, "maximum": 128}
+      }
+    },
+    "triage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["severity", "state", "reason_codes", "human_escalation_required", "safety_handoff_required", "next_review_at"],
+      "properties": {
+        "severity": {"enum": ["P0", "P1", "P2", "P3"]},
+        "state": {"enum": ["assessed", "evidence_needed", "human_review_required", "safety_handoff_required"]},
+        "reason_codes": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "pattern": "^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$", "maxLength": 96}},
+        "human_escalation_required": {"type": "boolean"},
+        "safety_handoff_required": {"type": "boolean"},
+        "next_review_at": {"$ref": "#/definitions/dateTime"}
+      }
+    },
+    "gate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "state", "evidence_digest", "verified_at"],
+      "properties": {
+        "code": {"$ref": "#/definitions/gateCode"},
+        "state": {"enum": ["not_applicable", "required", "satisfied", "stale", "conflict", "blocked"]},
+        "evidence_digest": {"$ref": "#/definitions/nullableDigest"},
+        "verified_at": {"anyOf": [{"type": "null"}, {"$ref": "#/definitions/dateTime"}]}
+      }
+    },
+    "gateCode": {"enum": ["customer_consent", "financial_authority", "document_admissibility", "guardian_or_dependent_authority", "accessibility_supplier_ack", "supplier_truth", "human_operator_review"]},
+    "candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["candidate_ref", "strategy", "state", "restores_node_refs", "changes_node_refs", "required_gate_codes", "risk_codes", "planning_evidence_digest", "evidence_valid_until", "financial_effect", "authorization_effect", "supplier_action_claimed"],
+      "properties": {
+        "candidate_ref": {"$ref": "#/definitions/candidateRef"},
+        "strategy": {"enum": ["protected_flight_rebook", "route_resequence_with_buffer", "preserve_unaffected_components", "replacement_stay_with_arrival_protection", "late_arrival_reconfirmation", "replacement_transfer", "reschedule_weather_window", "replacement_activity_or_local_option", "replacement_dining", "emergency_assistance_handoff", "coverage_preauthorization_review", "alternate_connectivity_with_offline_pack", "emergency_equipment_replacement", "loss_or_damage_claim_review", "local_closure_reroute", "document_and_itinerary_recheck", "authority_reverification", "accessibility_preserving_replan", "financial_reconciliation", "supplier_reverification", "safe_hold_and_human_review"]},
+        "state": {"enum": ["eligible_for_review", "blocked", "stale", "rejected"]},
+        "restores_node_refs": {"type": "array", "minItems": 1, "maxItems": 128, "uniqueItems": true, "items": {"$ref": "#/definitions/nodeRef"}},
+        "changes_node_refs": {"type": "array", "minItems": 1, "maxItems": 128, "uniqueItems": true, "items": {"$ref": "#/definitions/nodeRef"}},
+        "required_gate_codes": {"type": "array", "minItems": 1, "maxItems": 7, "uniqueItems": true, "items": {"$ref": "#/definitions/gateCode"}},
+        "risk_codes": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "pattern": "^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$", "maxLength": 96}},
+        "planning_evidence_digest": {"$ref": "#/definitions/digest"},
+        "evidence_valid_until": {"$ref": "#/definitions/dateTime"},
+        "financial_effect": {"$ref": "#/definitions/financialEffect"},
+        "authorization_effect": {"const": "none"},
+        "supplier_action_claimed": {"const": false}
+      }
+    },
+    "financialEffect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "evidence_digest"],
+      "properties": {
+        "state": {"enum": ["not_required", "pending", "balanced", "uncertain", "disputed", "closed_with_loss"]},
+        "evidence_digest": {"$ref": "#/definitions/nullableDigest"}
+      }
+    },
+    "completion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "restored_node_refs", "closed_loss_node_refs", "supplier_verification_digest", "itinerary_revalidation_digest", "deadline_outcomes_digest", "financial_state", "financial_evidence_digest", "customer_notification_digest", "verified_at", "authorization_effect", "supplier_action_claimed"],
+      "properties": {
+        "state": {"enum": ["not_started", "in_progress", "pending_verification", "verified", "failed", "closed_with_loss"]},
+        "restored_node_refs": {"$ref": "#/definitions/refList"},
+        "closed_loss_node_refs": {"$ref": "#/definitions/refList"},
+        "supplier_verification_digest": {"$ref": "#/definitions/nullableDigest"},
+        "itinerary_revalidation_digest": {"$ref": "#/definitions/nullableDigest"},
+        "deadline_outcomes_digest": {"$ref": "#/definitions/nullableDigest"},
+        "financial_state": {"enum": ["not_required", "pending", "balanced", "uncertain", "disputed", "closed_with_loss"]},
+        "financial_evidence_digest": {"$ref": "#/definitions/nullableDigest"},
+        "customer_notification_digest": {"$ref": "#/definitions/nullableDigest"},
+        "verified_at": {"anyOf": [{"type": "null"}, {"$ref": "#/definitions/dateTime"}]},
+        "authorization_effect": {"const": "none"},
+        "supplier_action_claimed": {"const": false}
+      }
+    },
+    "privateBoundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["server_only", "public_serialization_allowed", "planning_only", "execution_dispatched", "processor_called", "raw_identity_data_stored", "raw_payment_data_stored", "raw_medical_data_stored", "raw_supplier_payload_stored", "bearer_secret_stored", "supplier_action_claimed"],
+      "properties": {
+        "server_only": {"const": true},
+        "public_serialization_allowed": {"const": false},
+        "planning_only": {"const": true},
+        "execution_dispatched": {"const": false},
+        "processor_called": {"const": false},
+        "raw_identity_data_stored": {"const": false},
+        "raw_payment_data_stored": {"const": false},
+        "raw_medical_data_stored": {"const": false},
+        "raw_supplier_payload_stored": {"const": false},
+        "bearer_secret_stored": {"const": false},
+        "supplier_action_claimed": {"const": false}
+      }
+    }
+  }
+}

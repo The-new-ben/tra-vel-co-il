@@ -42,12 +42,31 @@ class Tra_Vel_Agent_Controller extends WP_REST_Controller {
 		);
 		register_rest_route(
 			$this->namespace,
+			'/schema/agent-run-summary',
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'get_run_summary_schema' ),
+				'permission_callback' => '__return_true',
+			)
+		);
+		register_rest_route(
+			$this->namespace,
 			'/' . $this->rest_base,
 			array(
-				'methods'             => WP_REST_Server::CREATABLE,
-				'callback'            => array( $this, 'create_run' ),
-				'permission_callback' => array( $this, 'can_create_run' ),
-				'args'                => $this->create_run_args(),
+				array(
+					'methods'             => WP_REST_Server::READABLE,
+					'callback'            => array( $this, 'list_runs' ),
+					'permission_callback' => array( $this, 'can_list_runs' ),
+					'args'                => array(
+						'limit' => array( 'type' => 'integer', 'default' => 12, 'minimum' => 1, 'maximum' => 20, 'sanitize_callback' => 'absint', 'validate_callback' => 'rest_validate_request_arg' ),
+					),
+				),
+				array(
+					'methods'             => WP_REST_Server::CREATABLE,
+					'callback'            => array( $this, 'create_run' ),
+					'permission_callback' => array( $this, 'can_create_run' ),
+					'args'                => $this->create_run_args(),
+				),
 			)
 		);
 		register_rest_route(
@@ -176,7 +195,7 @@ class Tra_Vel_Agent_Controller extends WP_REST_Controller {
 			}
 
 			$this->store->append_event( $created['id'], $this->event( 'run.created', 'intake', 'completed', 'system', 'הבקשה התקבלה ונפתחה סביבת תכנון פרטית.', array( 'mode' => $mode, 'planning_context_kind' => $planning_context['kind'], 'selection_id' => $planning_context['selection_id'] ) ) );
-			$this->store->append_event( $created['id'], $this->event( 'request.interpretation.started', 'understanding', 'running', 'system', 'מפרשים את הבקשה ומאתרים פרטים שחסרים להחלטה.', array() ) );
+			$this->store->append_event( $created['id'], $this->event( 'request.interpretation.started', 'understanding', 'running', 'system', 'מסדרים את הפרטים ובודקים מה חסר.', array() ) );
 
 			$interpreted = $this->provider->interpret( $prompt, $mode, $locale );
 			if ( is_wp_error( $interpreted ) ) {
@@ -206,13 +225,13 @@ class Tra_Vel_Agent_Controller extends WP_REST_Controller {
 			$needs_clarification = 'needs_clarification' === $trip_request['readiness']['status'];
 			$status              = $needs_clarification ? 'needs_clarification' : 'request_ready';
 			$this->store->update_run( $created['id'], array( 'status' => $status, 'trip_request' => $trip_request, 'provider_state' => $interpreted['provider'] ) );
-			$this->store->append_event( $created['id'], $this->event( 'request.interpreted', 'understanding', 'completed', 'model', 'הבקשה הומרה לתוכנית חיפוש מובנית.', array( 'request_id' => $trip_request['request_id'], 'confidence' => $trip_request['confidence'] ) ) );
+			$this->store->append_event( $created['id'], $this->event( 'request.interpreted', 'understanding', 'completed', 'model', 'פרטי החופשה סודרו לתוכנית שאפשר לבדוק ולעדכן.', array( 'request_id' => $trip_request['request_id'], 'confidence' => $trip_request['confidence'] ) ) );
 
 			if ( $needs_clarification ) {
-				$this->store->append_event( $created['id'], $this->event( 'clarification.required', 'clarification', 'waiting', 'system', 'נדרשת תשובה קצרה לפני שאפשר להתחיל חיפוש אמין.', array( 'question_ids' => $trip_request['readiness']['blockers'] ) ) );
+				$this->store->append_event( $created['id'], $this->event( 'clarification.required', 'clarification', 'waiting', 'system', 'חסר פרט אחד שמשפיע על האפשרויות. אפשר לענות במשפט חופשי.', array( 'question_ids' => $trip_request['readiness']['blockers'] ) ) );
 			} else {
-				$this->store->append_event( $created['id'], $this->event( 'request.ready', 'clarification', 'completed', 'system', 'הבקשה מוכנה לחיפוש ספקים.', array( 'request_id' => $trip_request['request_id'] ) ) );
-				$this->store->append_event( $created['id'], $this->event( 'supplier.search.not_started', 'supplier_search', 'waiting', 'system', 'חיפוש ספקים עדיין לא התחיל. יוצגו מחירים רק לאחר חיבור וביצוע חיפוש חי מתועד.', array( 'provider_connected' => false, 'provider_bookable' => false, 'data_mode' => 'not_connected' ) ) );
+				$this->store->append_event( $created['id'], $this->event( 'request.ready', 'clarification', 'completed', 'system', 'הבקשה מוכנה לבדיקה. עדיין לא בוצע חיפוש מחיר.', array( 'request_id' => $trip_request['request_id'] ) ) );
+				$this->store->append_event( $created['id'], $this->event( 'supplier.search.not_started', 'supplier_search', 'waiting', 'system', 'בדיקת ספקים עדיין לא התחילה. מחירים יוצגו רק לאחר חיבור מקור וקבלת תוצאה מתועדת.', array( 'provider_connected' => false, 'provider_bookable' => false, 'data_mode' => 'not_connected' ) ) );
 			}
 
 			$run      = $this->store->get_run_by_uuid( $created['run_uuid'] );
@@ -313,7 +332,7 @@ class Tra_Vel_Agent_Controller extends WP_REST_Controller {
 					array( 'revision' => $next_revision, 'input_kind' => $input_kind, 'input_sha256' => $message_hash )
 				)
 			);
-			$this->store->append_event( $run['id'], $this->event( 'request.revision.started', 'understanding', 'running', 'system', 'בודקים אילו פרטים השתנו ומה עדיין חסר לפני חיפוש.', array( 'revision' => $next_revision ) ) );
+			$this->store->append_event( $run['id'], $this->event( 'request.revision.started', 'understanding', 'running', 'system', 'מעדכנים את הפרטים ובודקים מה עדיין חסר.', array( 'revision' => $next_revision ) ) );
 
 			$interpreted = $this->provider->revise( $run['trip_request'], $message, $run['mode'], $locale );
 			if ( is_wp_error( $interpreted ) ) {
@@ -366,8 +385,8 @@ class Tra_Vel_Agent_Controller extends WP_REST_Controller {
 			if ( $needs_clarification ) {
 				$this->store->append_event( $run['id'], $this->event( 'clarification.required', 'clarification', 'waiting', 'system', 'עדיין חסר פרט שמשפיע על החיפוש. אפשר לענות במשפט חופשי נוסף.', array( 'revision' => $trip_request['revision'], 'question_ids' => $trip_request['readiness']['blockers'] ) ) );
 			} else {
-				$this->store->append_event( $run['id'], $this->event( 'request.ready', 'clarification', 'completed', 'system', 'הבקשה המעודכנת מוכנה לחיפוש ספקים.', array( 'request_id' => $trip_request['request_id'], 'revision' => $trip_request['revision'] ) ) );
-				$this->store->append_event( $run['id'], $this->event( 'supplier.search.not_started', 'supplier_search', 'waiting', 'system', 'חיפוש ספקים עדיין לא התחיל. יוצגו מחירים רק לאחר חיבור וביצוע חיפוש חי מתועד.', array( 'provider_connected' => false, 'provider_bookable' => false, 'data_mode' => 'not_connected' ) ) );
+				$this->store->append_event( $run['id'], $this->event( 'request.ready', 'clarification', 'completed', 'system', 'הבקשה המעודכנת מוכנה לבדיקה. עדיין לא בוצע חיפוש מחיר.', array( 'request_id' => $trip_request['request_id'], 'revision' => $trip_request['revision'] ) ) );
+				$this->store->append_event( $run['id'], $this->event( 'supplier.search.not_started', 'supplier_search', 'waiting', 'system', 'בדיקת ספקים עדיין לא התחילה. מחירים יוצגו רק לאחר חיבור מקור וקבלת תוצאה מתועדת.', array( 'provider_connected' => false, 'provider_bookable' => false, 'data_mode' => 'not_connected' ) ) );
 			}
 
 			$updated_run = $this->store->get_run_by_uuid( $run['run_uuid'] );
@@ -404,6 +423,41 @@ class Tra_Vel_Agent_Controller extends WP_REST_Controller {
 			return new WP_Error( 'tra_vel_agent_https_required', 'Agent requests require HTTPS.', array( 'status' => 403 ) );
 		}
 		return true;
+	}
+
+	/**
+	 * Account plan history is never available to guests or by supplied owner ID.
+	 *
+	 * @return true|WP_Error
+	 */
+	public function can_list_runs() {
+		$ready = $this->can_use_store();
+		if ( true !== $ready ) {
+			return $ready;
+		}
+		if ( get_current_user_id() < 1 || ! current_user_can( 'read' ) ) {
+			return new WP_Error( 'tra_vel_agent_login_required', 'Sign in to view saved travel plans.', array( 'status' => 401 ) );
+		}
+		return true;
+	}
+
+	public function list_runs( WP_REST_Request $request ) {
+		$allowed = $this->can_list_runs();
+		if ( true !== $allowed ) {
+			return $allowed;
+		}
+		$user_id    = get_current_user_id();
+		$limit      = min( 20, max( 1, absint( $request->get_param( 'limit' ) ?: 12 ) ) );
+		$read_error = '';
+		$runs       = $this->store->list_owned_runs( $user_id, $limit, $read_error );
+		if ( '' !== $read_error ) {
+			return new WP_Error( 'tra_vel_agent_runs_read_failed', 'Saved travel plans are temporarily unavailable.', array( 'status' => 503 ) );
+		}
+		return $this->private_response(
+			array(
+				'runs' => array_map( array( $this, 'public_run_summary' ), is_array( $runs ) ? $runs : array() ),
+			)
+		);
 	}
 
 	public function get_run( WP_REST_Request $request ) {
@@ -480,14 +534,72 @@ class Tra_Vel_Agent_Controller extends WP_REST_Controller {
 		if ( is_wp_error( $decision ) ) {
 			return $decision;
 		}
-		$this->store->append_event( $run['id'], $this->event( 'approval.decided', 'approval', 'completed', 'human', 'החלטת האישור נשמרה. פעולה חיצונית תתבצע רק דרך כלי מוגן ומתועד.', array( 'approval_id' => $approval['approval_uuid'], 'decision' => $request->get_param( 'decision' ) ) ) );
+		$this->store->append_event( $run['id'], $this->event( 'approval.decided', 'approval', 'completed', 'human', 'האישור נשמר. עדיין לא נשלחה הוראה לספק ולא בוצעו חיוב או הזמנה.', array( 'approval_id' => $approval['approval_uuid'], 'decision' => $request->get_param( 'decision' ) ) ) );
 		return $this->private_response( array( 'approval' => $this->public_approval( $decision ), 'side_effect_executed' => false ) );
 	}
 
 	public function get_health() {
-		$daily_limit = max( 1, (int) apply_filters( 'tra_vel_agent_daily_request_limit', 20 ) );
-		$visitor_limit = max( 1, (int) apply_filters( 'tra_vel_agent_visitor_request_limit', 5 ) );
+		$daily_limit      = max( 1, (int) apply_filters( 'tra_vel_agent_daily_request_limit', 20 ) );
+		$visitor_limit    = max( 1, (int) apply_filters( 'tra_vel_agent_visitor_request_limit', 5 ) );
 		$concurrency_limit = min( 5, max( 1, (int) apply_filters( 'tra_vel_agent_provider_concurrency_limit', 2 ) ) );
+		$proposal_store_loaded = class_exists( 'Tra_Vel_Assisted_Proposal_Store' );
+		$proposal_store_health = $proposal_store_loaded
+			? Tra_Vel_Assisted_Proposal_Store::schema_health()
+			: array(
+				'schema_version'             => null,
+				'installed_schema_version'   => null,
+				'idempotency_days'            => 7,
+				'max_proposals_per_case'      => 12,
+				'max_revisions_per_proposal' => 20,
+				'max_snapshot_bytes'          => 524288,
+				'expected_tables'            => 5,
+				'ready_tables'               => 0,
+				'transactional_tables'       => 0,
+				'required_indexes'           => 9,
+				'ready_indexes'              => 0,
+				'required_indexes_ready'     => false,
+				'inspection_errors'          => array( 'class_unavailable' ),
+				'tables_ready'               => false,
+			);
+		$proposal_store_ready = $proposal_store_loaded && Tra_Vel_Assisted_Proposal_Store::is_ready();
+		$proposal_contract_ready = $proposal_store_ready
+			&& class_exists( 'Tra_Vel_Assisted_Proposal_Policy' )
+			&& class_exists( 'Tra_Vel_Assisted_Proposal_Controller' );
+		$vip_intake_store_health = class_exists( 'Tra_Vel_VIP_Intake_Store' )
+			? Tra_Vel_VIP_Intake_Store::schema_health()
+			: array(
+				'schema_version'           => null,
+				'installed_schema_version' => null,
+				'expected_tables'          => 4,
+				'ready_tables'             => 0,
+				'tables_ready'             => false,
+			);
+		$vip_intake_ready = class_exists( 'Tra_Vel_VIP_Intake_Controller' )
+			&& ! empty( $vip_intake_store_health['tables_ready'] );
+		$vip_capability_store_health = class_exists( 'Tra_Vel_VIP_Capability_Session_Store' )
+			? Tra_Vel_VIP_Capability_Session_Store::schema_health()
+			: array(
+				'schema_version'           => null,
+				'installed_schema_version' => null,
+				'expected_tables'          => 4,
+				'ready_tables'             => 0,
+				'tables_ready'             => false,
+			);
+		$vip_capability_ready = class_exists( 'Tra_Vel_VIP_Capability_Session_Controller' )
+			&& class_exists( 'Tra_Vel_VIP_Capability_Session_Store' )
+			&& Tra_Vel_VIP_Capability_Session_Store::is_ready();
+		$customer_cockpit_store_health = class_exists( 'Tra_Vel_Customer_Trip_Cockpit_Store' )
+			? Tra_Vel_Customer_Trip_Cockpit_Store::schema_health()
+			: array(
+				'schema_version'           => null,
+				'installed_schema_version' => null,
+				'expected_tables'          => 3,
+				'ready_tables'             => 0,
+				'tables_ready'             => false,
+			);
+		$customer_cockpit_ready = class_exists( 'Tra_Vel_Customer_Trip_Cockpit_Controller' )
+			&& class_exists( 'Tra_Vel_Customer_Trip_Cockpit_Store' )
+			&& Tra_Vel_Customer_Trip_Cockpit_Store::is_ready();
 		return rest_ensure_response(
 			array(
 				'ok'               => true,
@@ -497,11 +609,24 @@ class Tra_Vel_Agent_Controller extends WP_REST_Controller {
 				'capabilities'     => array(
 					'request_interpretation' => $this->provider->health()['configured'],
 					'request_revision'       => $this->provider->health()['configured'],
+					'account_plan_history'   => true,
 					'assisted_quote_cases'   => class_exists( 'Tra_Vel_Quote_Case_Store' ),
 					'operator_queue'         => class_exists( 'Tra_Vel_Quote_Case_Controller' ),
+					'commercial_intents'     => class_exists( 'Tra_Vel_Commercial_Intent_Store' ),
+					'durable_commercial_handoffs' => class_exists( 'Tra_Vel_Commercial_Intent_Controller' ),
+					'sourced_assisted_proposals' => $proposal_contract_ready,
+					'audited_proposal_actions' => $proposal_contract_ready && class_exists( 'Tra_Vel_Quote_Case_Capabilities' ) && defined( 'Tra_Vel_Quote_Case_Capabilities::PUBLISH_PROPOSALS' ),
+					'attested_trip_care_receipts' => $vip_intake_ready,
+					'no_login_scoped_sessions' => $vip_capability_ready,
+					'customer_trip_cockpit'     => $customer_cockpit_ready,
+					'raw_trip_care_intake'     => false,
 					'supplier_search'        => false,
+					'supplier_dispatch'      => false,
 					'proposal_generation'    => false,
+					'payment_execution'      => false,
 					'booking_execution'      => false,
+					'reservation_execution'  => false,
+					'ticket_issuance'        => false,
 				),
 				'limits'           => array(
 					'per_visitor_requests'     => $visitor_limit,
@@ -533,6 +658,21 @@ class Tra_Vel_Agent_Controller extends WP_REST_Controller {
 						'active_days'              => 0,
 						'retention_days'           => 0,
 					),
+				'commercial_intent_store' => class_exists( 'Tra_Vel_Commercial_Intent_Store' )
+					? Tra_Vel_Commercial_Intent_Store::schema_health()
+					: array(
+						'schema_version'           => null,
+						'installed_schema_version' => null,
+						'expected_tables'          => 3,
+						'ready_tables'             => 0,
+						'tables_ready'             => false,
+						'active_days'              => 0,
+						'retention_days'           => 0,
+					),
+				'assisted_proposal_store' => $proposal_store_health,
+				'vip_intake_store' => $vip_intake_store_health,
+				'vip_capability_session_store' => $vip_capability_store_health,
+				'customer_trip_cockpit_store' => $customer_cockpit_store_health,
 			)
 		);
 	}
@@ -544,6 +684,15 @@ class Tra_Vel_Agent_Controller extends WP_REST_Controller {
 		}
 		$schema = json_decode( (string) file_get_contents( $path ), true );
 		return is_array( $schema ) ? rest_ensure_response( $schema ) : new WP_Error( 'tra_vel_agent_schema_invalid', 'TripRequest schema is invalid.', array( 'status' => 500 ) );
+	}
+
+	public function get_run_summary_schema() {
+		$path = TRA_VEL_AGENT_PATH . '/schemas/agent-run-summary.schema.json';
+		if ( ! is_readable( $path ) ) {
+			return new WP_Error( 'tra_vel_agent_schema_missing', 'AgentRun summary schema is unavailable.', array( 'status' => 503 ) );
+		}
+		$schema = json_decode( (string) file_get_contents( $path ), true );
+		return is_array( $schema ) ? rest_ensure_response( $schema ) : new WP_Error( 'tra_vel_agent_schema_invalid', 'AgentRun summary schema is invalid.', array( 'status' => 500 ) );
 	}
 
 	public function store_credential( WP_REST_Request $request ) {
@@ -588,6 +737,63 @@ class Tra_Vel_Agent_Controller extends WP_REST_Controller {
 			'expires_at'       => gmdate( 'c', strtotime( $run['expires_at'] . ' UTC' ) ),
 		);
 		return $data;
+	}
+
+	public function public_run_summary( $run ) {
+		$trip_request = isset( $run['trip_request'] ) && is_array( $run['trip_request'] ) ? $run['trip_request'] : array();
+		$proposals    = isset( $run['proposals'] ) && is_array( $run['proposals'] ) ? $run['proposals'] : array();
+		$readiness    = isset( $trip_request['readiness'] ) && is_array( $trip_request['readiness'] ) ? $trip_request['readiness'] : array();
+		$status       = isset( $readiness['status'] ) && in_array( $readiness['status'], array( 'needs_clarification', 'ready_for_search', 'unsupported' ), true ) ? $readiness['status'] : 'unsupported';
+		$blockers     = isset( $readiness['blockers'] ) && is_array( $readiness['blockers'] ) ? $readiness['blockers'] : array();
+		$blockers     = array_values(
+			array_filter(
+				array_slice(
+					array_map(
+						function ( $blocker ) {
+							return $this->bounded_public_text( $blocker, 200 );
+						},
+						$blockers
+					),
+					0,
+					20
+				)
+			)
+		);
+		return array(
+			'run_id'            => (string) $run['run_uuid'],
+			'status'            => (string) $run['status'],
+			'mode'              => (string) $run['mode'],
+			'locale'            => (string) $run['locale'],
+			'summary'           => $this->bounded_public_text( $trip_request['summary'] ?? '', 500 ),
+			'planning_context'  => $this->normalize_planning_context( $trip_request['planning_context'] ?? array() ),
+			'readiness'         => array( 'status' => $status, 'blockers' => $blockers ),
+			'request_revision'  => absint( $trip_request['revision'] ?? 0 ),
+			'proposal_count'    => count( $proposals ),
+			'created_at'        => gmdate( 'c', strtotime( $run['created_at'] . ' UTC' ) ),
+			'updated_at'        => gmdate( 'c', strtotime( $run['updated_at'] . ' UTC' ) ),
+			'expires_at'        => gmdate( 'c', strtotime( $run['expires_at'] . ' UTC' ) ),
+			'resume_available'  => strtotime( $run['expires_at'] . ' UTC' ) >= time(),
+		);
+	}
+
+	/**
+	 * Bound traveler-visible text without splitting a UTF-8 code point.
+	 *
+	 * @param mixed $value  Stored scalar value.
+	 * @param int   $length Maximum Unicode characters.
+	 * @return string
+	 */
+	private function bounded_public_text( $value, $length ) {
+		$value  = sanitize_text_field( is_scalar( $value ) ? (string) $value : '' );
+		$length = max( 0, absint( $length ) );
+		if ( function_exists( 'mb_substr' ) ) {
+			return mb_substr( $value, 0, $length );
+		}
+		$bounded = substr( $value, 0, $length );
+		while ( '' !== $bounded && 1 !== preg_match( '//u', $bounded ) ) {
+			$bounded = substr( $bounded, 0, -1 );
+		}
+		return $bounded;
 	}
 
 	private function attach_run_cookie( WP_REST_Response $response, $run_uuid, $run_token ) {

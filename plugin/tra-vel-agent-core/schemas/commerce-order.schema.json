@@ -1,0 +1,357 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://tra-vel.co.il/schemas/commerce-order-v1.schema.json",
+  "title": "Tra-Vel commerce sandbox order",
+  "description": "A versioned sandbox aggregate with independent checkout, payment, fulfillment, and settlement projections.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "environment",
+    "order_ref",
+    "version",
+    "owner_scope_digest",
+    "idempotency_key_digest",
+    "order_digest",
+    "selection",
+    "overall_state",
+    "checkout",
+    "payment",
+    "fulfillment",
+    "settlement",
+    "approval",
+    "pricing",
+    "last_event_sequence",
+    "created_at",
+    "updated_at",
+    "expires_at",
+    "sandbox_truth",
+    "data_boundary"
+  ],
+  "properties": {
+    "contract_version": { "const": "1.0.0" },
+    "environment": { "const": "sandbox" },
+    "order_ref": { "$ref": "#/definitions/orderRef" },
+    "version": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+    "owner_scope_digest": { "$ref": "#/definitions/digest" },
+    "idempotency_key_digest": { "$ref": "#/definitions/digest" },
+    "order_digest": { "$ref": "#/definitions/digest" },
+    "selection": {
+      "oneOf": [
+        { "$ref": "#/definitions/offerSelection" },
+        { "$ref": "#/definitions/packageSelection" }
+      ]
+    },
+    "overall_state": {
+      "enum": [
+        "planning",
+        "awaiting_approval",
+        "processing",
+        "confirmed",
+        "change_in_progress",
+        "cancellation_in_progress",
+        "cancelled",
+        "refund_in_progress",
+        "refunded",
+        "needs_attention",
+        "expired",
+        "abandoned"
+      ]
+    },
+    "checkout": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "quote_digest", "quoted_at", "expires_at"],
+      "properties": {
+        "state": { "enum": ["draft", "quoted", "awaiting_approval", "ready", "expired", "abandoned"] },
+        "quote_digest": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" },
+        "quoted_at": { "$ref": "#/definitions/nullableDateTime" },
+        "expires_at": { "$ref": "#/definitions/nullableDateTime" }
+      }
+    },
+    "payment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "state",
+        "payment_intent_ref",
+        "currency",
+        "authorized_amount_minor",
+        "captured_amount_minor",
+        "refunded_amount_minor",
+        "receipt_digest"
+      ],
+      "properties": {
+        "state": { "enum": ["not_started", "pending", "requires_action", "authorized", "captured", "failed", "voided", "partially_refunded", "refunded"] },
+        "payment_intent_ref": { "$ref": "#/definitions/nullablePaymentRef" },
+        "currency": { "type": "string", "pattern": "^[A-Z]{3}$" },
+        "authorized_amount_minor": { "type": "integer", "minimum": 0, "maximum": 1000000000000 },
+        "captured_amount_minor": { "type": "integer", "minimum": 0, "maximum": 1000000000000 },
+        "refunded_amount_minor": { "type": "integer", "minimum": 0, "maximum": 1000000000000 },
+        "receipt_digest": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" }
+      }
+    },
+    "fulfillment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["summary_state", "items"],
+      "properties": {
+        "summary_state": { "$ref": "#/definitions/fulfillmentState" },
+        "items": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "order_item_ref",
+              "component_ref",
+              "role",
+              "required",
+              "sequence",
+              "vertical",
+              "provider_id",
+              "provider_reference_digest",
+              "offer_ref",
+              "offer_version",
+              "offer_digest",
+              "state",
+              "latest_operation_ref",
+              "receipt_digest"
+            ],
+            "properties": {
+              "order_item_ref": { "$ref": "#/definitions/orderItemRef" },
+              "component_ref": { "$ref": "#/definitions/componentRef" },
+              "role": { "type": "string", "pattern": "^[a-z][a-z0-9_]{1,47}$", "maxLength": 48 },
+              "required": { "type": "boolean" },
+              "sequence": { "type": "integer", "minimum": 1, "maximum": 64 },
+              "vertical": { "$ref": "#/definitions/vertical" },
+              "provider_id": { "type": "string", "pattern": "^[a-z][a-z0-9_]{2,63}$", "maxLength": 64 },
+              "provider_reference_digest": { "$ref": "#/definitions/digest" },
+              "offer_ref": { "$ref": "#/definitions/offerRef" },
+              "offer_version": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+              "offer_digest": { "$ref": "#/definitions/digest" },
+              "state": { "$ref": "#/definitions/fulfillmentState" },
+              "latest_operation_ref": { "$ref": "#/definitions/nullableOperationRef" },
+              "receipt_digest": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" }
+            }
+          }
+        }
+      }
+    },
+    "settlement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "settlement_refs"],
+      "properties": {
+        "state": { "$ref": "#/definitions/settlementState" },
+        "settlement_refs": {
+          "type": "array",
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": { "$ref": "#/definitions/settlementRef" }
+        }
+      }
+    },
+    "approval": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "approval_ref", "scope_digest", "decision_digest", "expires_at"],
+      "properties": {
+        "status": { "enum": ["not_required", "pending", "approved", "rejected", "expired"] },
+        "approval_ref": { "$ref": "#/definitions/nullableApprovalRef" },
+        "scope_digest": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" },
+        "decision_digest": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" },
+        "expires_at": { "$ref": "#/definitions/nullableDateTime" }
+      }
+    },
+    "pricing": { "$ref": "#/definitions/moneyLedger" },
+    "last_event_sequence": { "type": "integer", "minimum": 0, "maximum": 2147483647 },
+    "created_at": { "$ref": "#/definitions/dateTime" },
+    "updated_at": { "$ref": "#/definitions/dateTime" },
+    "expires_at": { "$ref": "#/definitions/dateTime" },
+    "sandbox_truth": { "$ref": "#/definitions/sandboxTruth" },
+    "data_boundary": { "$ref": "#/definitions/dataBoundary" }
+  },
+  "definitions": {
+    "vertical": {
+      "enum": ["flight", "accommodation", "package", "transfer", "activity", "dining", "insurance", "connectivity", "equipment"]
+    },
+    "componentVertical": {
+      "enum": ["flight", "accommodation", "transfer", "activity", "dining", "insurance", "connectivity", "equipment"]
+    },
+    "orderRef": {
+      "type": "string",
+      "pattern": "^tv_order_[A-Za-z0-9_-]{16,96}$",
+      "maxLength": 120
+    },
+    "orderItemRef": {
+      "type": "string",
+      "pattern": "^tv_order_item_[A-Za-z0-9_-]{16,96}$",
+      "maxLength": 120
+    },
+    "componentRef": {
+      "type": "string",
+      "pattern": "^tv_component_[A-Za-z0-9_-]{16,96}$",
+      "maxLength": 120
+    },
+    "sessionRef": {
+      "type": "string",
+      "pattern": "^tv_session_[A-Za-z0-9_-]{16,96}$",
+      "maxLength": 120
+    },
+    "offerRef": {
+      "type": "string",
+      "pattern": "^tv_offer_[A-Za-z0-9_-]{16,96}$",
+      "maxLength": 120
+    },
+    "packageRef": {
+      "type": "string",
+      "pattern": "^tv_package_[A-Za-z0-9_-]{16,96}$",
+      "maxLength": 120
+    },
+    "settlementRef": {
+      "type": "string",
+      "pattern": "^tv_settlement_[A-Za-z0-9_-]{16,96}$",
+      "maxLength": 120
+    },
+    "nullablePaymentRef": {
+      "type": ["string", "null"],
+      "pattern": "^tv_payment_[A-Za-z0-9_-]{16,96}$",
+      "maxLength": 120
+    },
+    "nullableOperationRef": {
+      "type": ["string", "null"],
+      "pattern": "^tv_operation_[A-Za-z0-9_-]{16,96}$",
+      "maxLength": 120
+    },
+    "nullableApprovalRef": {
+      "type": ["string", "null"],
+      "pattern": "^tv_approval_[A-Za-z0-9_-]{16,96}$",
+      "maxLength": 120
+    },
+    "pricingSourceRef": {
+      "type": "string",
+      "pattern": "^tv_(?:offer|package|component|order_item|payment|operation)_[A-Za-z0-9_-]{16,96}$",
+      "maxLength": 120
+    },
+    "digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "dateTime": { "type": "string", "format": "date-time", "pattern": "Z$" },
+    "nullableDateTime": { "type": ["string", "null"], "format": "date-time", "pattern": "Z$" },
+    "offerSelection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "search_session_ref", "offers"],
+      "properties": {
+        "kind": { "const": "offers" },
+        "search_session_ref": { "$ref": "#/definitions/sessionRef" },
+        "offers": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["offer_ref", "offer_version", "offer_digest", "vertical"],
+            "properties": {
+              "offer_ref": { "$ref": "#/definitions/offerRef" },
+              "offer_version": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+              "offer_digest": { "$ref": "#/definitions/digest" },
+              "vertical": { "$ref": "#/definitions/componentVertical" }
+            }
+          }
+        }
+      }
+    },
+    "packageSelection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "package_ref", "package_version", "package_digest"],
+      "properties": {
+        "kind": { "const": "package" },
+        "package_ref": { "$ref": "#/definitions/packageRef" },
+        "package_version": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+        "package_digest": { "$ref": "#/definitions/digest" }
+      }
+    },
+    "fulfillmentState": {
+      "enum": ["selected", "hold_pending", "held", "confirmation_pending", "confirmed", "fulfillment_pending", "fulfilled", "change_pending", "changed", "cancellation_pending", "cancelled", "failed", "reconciliation_required"]
+    },
+    "settlementState": {
+      "enum": ["not_applicable", "click_recorded", "conversion_reported", "eligible", "payable", "paid", "reversed", "disputed"]
+    },
+    "moneyLedger": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "currency",
+        "minor_unit",
+        "price_scope",
+        "line_items",
+        "subtotal_amount_minor",
+        "tax_amount_minor",
+        "fee_amount_minor",
+        "credit_amount_minor",
+        "total_amount_minor",
+        "tax_state",
+        "fee_state"
+      ],
+      "properties": {
+        "currency": { "type": "string", "pattern": "^[A-Z]{3}$" },
+        "minor_unit": { "type": "integer", "minimum": 0, "maximum": 3 },
+        "price_scope": { "enum": ["order_total", "package_total"] },
+        "line_items": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 128,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["code", "label", "kind", "direction", "amount_minor", "source_ref", "evidence_digest"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[a-z0-9]+(?:_[a-z0-9]+)*$", "maxLength": 60 },
+              "label": { "type": "string", "minLength": 1, "maxLength": 100 },
+              "kind": { "enum": ["base", "tax", "fee", "addon", "credit", "refund"] },
+              "direction": { "enum": ["debit", "credit"] },
+              "amount_minor": { "type": "integer", "minimum": 0, "maximum": 1000000000000 },
+              "source_ref": { "$ref": "#/definitions/pricingSourceRef" },
+              "evidence_digest": { "$ref": "#/definitions/digest" }
+            }
+          }
+        },
+        "subtotal_amount_minor": { "type": "integer", "minimum": 0, "maximum": 1000000000000 },
+        "tax_amount_minor": { "type": "integer", "minimum": 0, "maximum": 1000000000000 },
+        "fee_amount_minor": { "type": "integer", "minimum": 0, "maximum": 1000000000000 },
+        "credit_amount_minor": { "type": "integer", "minimum": 0, "maximum": 1000000000000 },
+        "total_amount_minor": { "type": "integer", "minimum": 0, "maximum": 1000000000000 },
+        "tax_state": { "enum": ["included", "excluded", "unknown"] },
+        "fee_state": { "enum": ["included", "excluded", "unknown"] }
+      }
+    },
+    "sandboxTruth": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["simulated_inventory", "real_supplier_request", "real_inventory_hold", "real_charge", "real_booking", "real_policy_issuance", "real_settlement"],
+      "properties": {
+        "simulated_inventory": { "const": true },
+        "real_supplier_request": { "const": false },
+        "real_inventory_hold": { "const": false },
+        "real_charge": { "const": false },
+        "real_booking": { "const": false },
+        "real_policy_issuance": { "const": false },
+        "real_settlement": { "const": false }
+      }
+    },
+    "dataBoundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["raw_supplier_reference_exposed", "raw_payment_data_exposed", "medical_data_exposed"],
+      "properties": {
+        "raw_supplier_reference_exposed": { "const": false },
+        "raw_payment_data_exposed": { "const": false },
+        "medical_data_exposed": { "const": false }
+      }
+    }
+  }
+}

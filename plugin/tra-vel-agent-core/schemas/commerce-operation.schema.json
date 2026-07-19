@@ -1,0 +1,182 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://tra-vel.co.il/schemas/commerce-operation-v1.schema.json",
+  "title": "Tra-Vel idempotent commerce sandbox operation",
+  "description": "A version-bound command and normalized reconciliation record.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "environment",
+    "operation_ref",
+    "order_ref",
+    "expected_order_version",
+    "type",
+    "vertical",
+    "provider_id",
+    "target",
+    "state",
+    "idempotency_key_digest",
+    "request_digest",
+    "scope_digest",
+    "approval",
+    "attempt",
+    "result",
+    "created_at",
+    "updated_at",
+    "dispatched_at",
+    "completed_at",
+    "sandbox_truth",
+    "data_boundary"
+  ],
+  "properties": {
+    "contract_version": { "const": "1.0.0" },
+    "environment": { "const": "sandbox" },
+    "operation_ref": { "$ref": "#/definitions/operationRef" },
+    "order_ref": { "$ref": "#/definitions/orderRef" },
+    "expected_order_version": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+    "type": {
+      "enum": [
+        "revalidate",
+        "prepare_checkout",
+        "reserve",
+        "confirm",
+        "fulfill",
+        "change",
+        "cancel",
+        "authorize_payment",
+        "capture_payment",
+        "void_payment",
+        "refund",
+        "record_affiliate_click",
+        "report_conversion",
+        "ingest_webhook",
+        "reconcile_settlement",
+        "reconcile"
+      ]
+    },
+    "vertical": {
+      "enum": ["flight", "accommodation", "package", "transfer", "activity", "dining", "insurance", "connectivity", "equipment"]
+    },
+    "provider_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:[-_][a-z0-9]+)*$",
+      "maxLength": 64
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "ref", "version", "target_digest"],
+      "properties": {
+        "kind": { "enum": ["offer", "package", "order", "order_item", "payment_intent", "settlement"] },
+        "ref": { "$ref": "#/definitions/operationTargetRef" },
+        "version": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+        "target_digest": { "$ref": "#/definitions/digest" }
+      }
+    },
+    "state": { "enum": ["queued", "started", "succeeded", "failed", "uncertain", "reconciled"] },
+    "idempotency_key_digest": { "$ref": "#/definitions/digest" },
+    "request_digest": { "$ref": "#/definitions/digest" },
+    "scope_digest": { "$ref": "#/definitions/digest" },
+    "approval": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["required", "approval_ref", "approval_digest", "status"],
+      "properties": {
+        "required": { "type": "boolean" },
+        "approval_ref": { "$ref": "#/definitions/nullableApprovalRef" },
+        "approval_digest": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" },
+        "status": { "enum": ["not_required", "pending", "approved", "rejected", "expired"] }
+      }
+    },
+    "attempt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["number", "maximum", "reconciliation_count"],
+      "properties": {
+        "number": { "type": "integer", "minimum": 0, "maximum": 20 },
+        "maximum": { "type": "integer", "minimum": 1, "maximum": 20 },
+        "reconciliation_count": { "type": "integer", "minimum": 0, "maximum": 20 }
+      }
+    },
+    "result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "receipt_digest",
+        "error_code",
+        "retryable",
+        "simulated_side_effect_executed",
+        "real_side_effect_executed",
+        "reconciled"
+      ],
+      "properties": {
+        "receipt_digest": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" },
+        "error_code": {
+          "type": ["string", "null"],
+          "pattern": "^[a-z0-9]+(?:[._-][a-z0-9]+)*$",
+          "maxLength": 80
+        },
+        "retryable": { "type": "boolean" },
+        "simulated_side_effect_executed": { "type": "boolean" },
+        "real_side_effect_executed": { "const": false },
+        "reconciled": { "type": "boolean" }
+      }
+    },
+    "created_at": { "$ref": "#/definitions/dateTime" },
+    "updated_at": { "$ref": "#/definitions/dateTime" },
+    "dispatched_at": { "$ref": "#/definitions/nullableDateTime" },
+    "completed_at": { "$ref": "#/definitions/nullableDateTime" },
+    "sandbox_truth": { "$ref": "#/definitions/sandboxTruth" },
+    "data_boundary": { "$ref": "#/definitions/dataBoundary" }
+  },
+  "definitions": {
+    "operationRef": {
+      "type": "string",
+      "pattern": "^tv_operation_[A-Za-z0-9_-]{16,96}$",
+      "maxLength": 120
+    },
+    "orderRef": {
+      "type": "string",
+      "pattern": "^tv_order_[A-Za-z0-9_-]{16,96}$",
+      "maxLength": 120
+    },
+    "operationTargetRef": {
+      "type": "string",
+      "pattern": "^tv_(?:offer|package|order|order_item|payment|settlement)_[A-Za-z0-9_-]{16,96}$",
+      "maxLength": 120
+    },
+    "nullableApprovalRef": {
+      "type": ["string", "null"],
+      "pattern": "^tv_approval_[A-Za-z0-9_-]{16,96}$",
+      "maxLength": 120
+    },
+    "digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "dateTime": { "type": "string", "format": "date-time", "pattern": "Z$" },
+    "nullableDateTime": { "type": ["string", "null"], "format": "date-time", "pattern": "Z$" },
+    "sandboxTruth": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["simulated_inventory", "real_supplier_request", "real_inventory_hold", "real_charge", "real_booking", "real_policy_issuance", "real_settlement"],
+      "properties": {
+        "simulated_inventory": { "const": true },
+        "real_supplier_request": { "const": false },
+        "real_inventory_hold": { "const": false },
+        "real_charge": { "const": false },
+        "real_booking": { "const": false },
+        "real_policy_issuance": { "const": false },
+        "real_settlement": { "const": false }
+      }
+    },
+    "dataBoundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["raw_supplier_reference_exposed", "raw_payment_data_exposed", "medical_data_exposed"],
+      "properties": {
+        "raw_supplier_reference_exposed": { "const": false },
+        "raw_payment_data_exposed": { "const": false },
+        "medical_data_exposed": { "const": false }
+      }
+    }
+  }
+}

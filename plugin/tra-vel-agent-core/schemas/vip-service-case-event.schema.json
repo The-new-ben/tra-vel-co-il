@@ -1,0 +1,98 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://tra-vel.co.il/schemas/vip-service-case-event-v1.schema.json",
+  "title": "Tra-Vel append-only VIP service-case event",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract_version", "event_ref", "case_ref", "sequence", "expected_case_version", "new_case_version", "type", "lifecycle_before", "lifecycle_after", "lifecycle_command", "severity_before", "severity_after", "outcome_change", "actor", "correlation_ref", "causation_ref", "operation_ref", "payload_digest", "evidence_digests", "redaction_classification", "occurred_at", "received_at", "data_boundary"],
+  "properties": {
+    "contract_version": { "const": "1.0.0" },
+    "event_ref": { "$ref": "#/definitions/eventRef" },
+    "case_ref": { "$ref": "#/definitions/caseRef" },
+    "sequence": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+    "expected_case_version": { "type": "integer", "minimum": 1, "maximum": 2147483646 },
+    "new_case_version": { "type": "integer", "minimum": 2, "maximum": 2147483647 },
+    "type": {
+      "enum": [
+        "case.received", "case.verified", "case.triaged", "case.lifecycle_changed", "case.severity_changed", "case.escalated", "case.reopened", "case.resolved", "case.closed",
+        "deadline.scheduled", "deadline.satisfied", "deadline.missed", "decision.prepared", "decision.authorization_recorded", "decision.expired",
+        "operation.started", "operation.succeeded", "operation.failed", "operation.uncertain", "operation.reconciled", "supplier.status_observed",
+        "evidence.requested", "evidence.received", "evidence.restricted", "communication.queued", "communication.delivered", "communication.failed",
+        "safety.handoff_started", "safety.handoff_verified"
+      ]
+    },
+    "lifecycle_before": { "$ref": "#/definitions/lifecycle" },
+    "lifecycle_after": { "$ref": "#/definitions/lifecycle" },
+    "lifecycle_command": { "type": ["string", "null"], "pattern": "^[a-z][a-z0-9_]{0,63}$" },
+    "severity_before": { "$ref": "#/definitions/severity" },
+    "severity_after": { "$ref": "#/definitions/severity" },
+    "outcome_change": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["axis", "from_state", "to_state", "command"],
+          "properties": {
+            "axis": { "enum": ["safety", "continuity", "supplier", "financial", "evidence", "communication"] },
+            "from_state": { "type": "string", "pattern": "^[a-z][a-z0-9_]{0,47}$" },
+            "to_state": { "type": "string", "pattern": "^[a-z][a-z0-9_]{0,47}$" },
+            "command": { "type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$" }
+          }
+        }
+      ]
+    },
+    "actor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "principal_ref", "authority_scope", "authority_evidence_digest"],
+      "properties": {
+        "type": { "enum": ["system", "traveler", "operator", "provider_adapter", "payment_adapter", "insurer_assistance", "emergency_authority"] },
+        "principal_ref": { "$ref": "#/definitions/nullablePrincipalRef" },
+        "authority_scope": { "$ref": "#/definitions/nullableAuthorityScope" },
+        "authority_evidence_digest": { "$ref": "#/definitions/nullableDigest" }
+      }
+    },
+    "correlation_ref": { "$ref": "#/definitions/correlationRef" },
+    "causation_ref": { "$ref": "#/definitions/nullableEventRef" },
+    "operation_ref": { "$ref": "#/definitions/nullableOperationRef" },
+    "payload_digest": { "$ref": "#/definitions/digest" },
+    "evidence_digests": { "type": "array", "maxItems": 100, "uniqueItems": true, "items": { "$ref": "#/definitions/digest" } },
+    "redaction_classification": { "enum": ["public", "operator", "restricted", "security"] },
+    "occurred_at": { "$ref": "#/definitions/dateTime" },
+    "received_at": { "$ref": "#/definitions/dateTime" },
+    "data_boundary": { "$ref": "#/definitions/dataBoundary" }
+  },
+  "definitions": {
+    "eventRef": { "type": "string", "pattern": "^tv_event_[A-Za-z0-9_-]{16,96}$" },
+    "caseRef": { "type": "string", "pattern": "^tv_case_[A-Za-z0-9_-]{16,96}$" },
+    "correlationRef": { "type": "string", "pattern": "^tv_correlation_[A-Za-z0-9_-]{16,96}$" },
+    "nullableEventRef": { "type": ["string", "null"], "pattern": "^tv_event_[A-Za-z0-9_-]{16,96}$" },
+    "nullableOperationRef": { "type": ["string", "null"], "pattern": "^tv_operation_[A-Za-z0-9_-]{16,96}$" },
+    "nullablePrincipalRef": { "type": ["string", "null"], "pattern": "^tv_principal_[A-Za-z0-9_-]{16,96}$" },
+    "lifecycle": { "enum": ["received", "verified", "triaged", "plan_building", "approval_needed", "executing", "supplier_pending", "uncertain", "monitoring", "evidence_needed", "traveler_pending", "escalated", "safety_handoff", "resolved", "closed", "reopened", "closed_with_loss"] },
+    "severity": { "enum": ["P0", "P1", "P2", "P3", "P4"] },
+    "authorityScope": { "enum": ["trip_view_redacted", "incident_report", "ordinary_evidence_add", "safe_contact_update", "case_progress_view", "operator_contact_approve", "decision_view", "service_reserve", "service_change", "service_cancel", "payment_authorize", "refund_destination_change", "identity_change", "guardian_authority_change", "sensitive_evidence_disclose", "recovery_channel_change", "delegate_manage"] },
+    "nullableAuthorityScope": {
+      "anyOf": [
+        { "$ref": "#/definitions/authorityScope" },
+        { "type": "null" }
+      ]
+    },
+    "digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "nullableDigest": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" },
+    "dateTime": { "type": "string", "format": "date-time", "pattern": "Z$" },
+    "dataBoundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["raw_identity_data_exposed", "raw_payment_data_exposed", "raw_medical_data_exposed", "raw_provider_payload_exposed", "bearer_secret_exposed"],
+      "properties": {
+        "raw_identity_data_exposed": { "const": false },
+        "raw_payment_data_exposed": { "const": false },
+        "raw_medical_data_exposed": { "const": false },
+        "raw_provider_payload_exposed": { "const": false },
+        "bearer_secret_exposed": { "const": false }
+      }
+    }
+  }
+}

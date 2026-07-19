@@ -7,6 +7,8 @@
 
 defined( 'ABSPATH' ) || exit;
 
+require_once dirname( __DIR__ ) . '/class-commercial-provenance.php';
+
 class Tra_Vel_V2_Hotel_Search_Registry {
 	/** @var Tra_Vel_V2_Hotel_Search_Adapter[] */
 	private $adapters = array();
@@ -72,8 +74,18 @@ class Tra_Vel_V2_Hotel_Search_Registry {
 			} catch ( Throwable $error ) {
 				$result = new WP_Error( 'tra_vel_hotel_adapter_exception', 'Hotel adapter failed safely.' );
 			}
-			if ( is_wp_error( $result ) || empty( $result['properties'] ) ) {
-				$report['error_code'] = is_wp_error( $result ) ? $result->get_error_code() : 'invalid_contract';
+			$validation = is_wp_error( $result ) ? $result : Tra_Vel_V2_Commercial_Provenance::validate(
+				$result,
+				$id,
+				'properties',
+				array( 'pricing', 'total_stay' ),
+				'booking',
+				'bookable',
+				isset( $query['currency'] ) ? $query['currency'] : '',
+				'whole_stay'
+			);
+			if ( is_wp_error( $validation ) ) {
+				$report['error_code'] = $validation->get_error_code();
 				$reports[ $id ]       = $report;
 				$failed_live[]        = $id;
 				continue;
@@ -81,7 +93,6 @@ class Tra_Vel_V2_Hotel_Search_Registry {
 			$report['healthy'] = true;
 			$report['used']    = true;
 			$reports[ $id ]    = $report;
-			$result['data_mode'] = 'live';
 			return array(
 				'data'            => $result,
 				'reports'         => $reports,

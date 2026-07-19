@@ -1,5 +1,5 @@
 {
-  "contract_version": "1.1.0",
+  "contract_version": "1.3.0",
   "data_mode": "demo",
   "currency": "USD",
   "origin": {
@@ -7,15 +7,83 @@
     "name": "Ben Gurion Airport",
     "city": "Tel Aviv",
     "country": "Israel",
-    "latitude": 32.0005,
-    "longitude": 34.8708
+    "latitude": 32.0114,
+    "longitude": 34.8867
+  },
+  "airport_registry": {
+    "TLV": { "code": "TLV", "name": "Ben Gurion Airport", "destination_id": null, "latitude": 32.0114, "longitude": 34.8867 },
+    "BUD": { "code": "BUD", "name": "Budapest Ferenc Liszt International Airport", "destination_id": "budapest", "latitude": 47.4369, "longitude": 19.2556 },
+    "PRG": { "code": "PRG", "name": "Václav Havel Airport Prague", "destination_id": "prague", "latitude": 50.1008, "longitude": 14.26 },
+    "VIE": { "code": "VIE", "name": "Vienna International Airport", "destination_id": "vienna", "latitude": 48.1103, "longitude": 16.5697 },
+    "BTS": { "code": "BTS", "name": "M. R. Štefánik Airport", "destination_id": null, "latitude": 48.1702, "longitude": 17.2127 },
+    "ATH": { "code": "ATH", "name": "Athens International Airport", "destination_id": "athens", "latitude": 37.9364, "longitude": 23.9445 },
+    "LCA": { "code": "LCA", "name": "Larnaca International Airport", "destination_id": null, "latitude": 34.8751, "longitude": 33.6249 },
+    "DXB": { "code": "DXB", "name": "Dubai International Airport", "destination_id": "dubai", "latitude": 25.2532, "longitude": 55.3657 },
+    "AMM": { "code": "AMM", "name": "Queen Alia International Airport", "destination_id": null, "latitude": 31.7226, "longitude": 35.9932 },
+    "BKK": { "code": "BKK", "name": "Suvarnabhumi Airport", "destination_id": "bangkok", "latitude": 13.69, "longitude": 100.7501 },
+    "HND": { "code": "HND", "name": "Tokyo Haneda Airport", "destination_id": "tokyo", "latitude": 35.5494, "longitude": 139.7798 },
+    "ICN": { "code": "ICN", "name": "Incheon International Airport", "destination_id": null, "latitude": 37.4602, "longitude": 126.4407 },
+    "LIS": { "code": "LIS", "name": "Humberto Delgado Airport", "destination_id": "lisbon", "latitude": 38.7742, "longitude": -9.1342 },
+    "FCO": { "code": "FCO", "name": "Rome Fiumicino Airport", "destination_id": null, "latitude": 41.8003, "longitude": 12.2389 },
+    "MAD": { "code": "MAD", "name": "Adolfo Suárez Madrid-Barajas Airport", "destination_id": null, "latitude": 40.4983, "longitude": -3.5676 }
   },
   "provider_status": {
-    "flights": { "connected": false, "adapter": "amadeus_or_duffel", "readiness": "contract_ready" },
-    "hotels": { "connected": false, "adapter": "booking_or_expedia_rapid", "readiness": "contract_ready" },
-    "insurance": { "connected": false, "adapter": "israeli_broker_or_insurer", "readiness": "contract_ready" },
-    "weather": { "connected": false, "adapter": "weather_provider", "readiness": "contract_ready" }
+    "flights": { "connected": false, "adapter": "demo_flight_provider_placeholder", "readiness": "contract_ready" },
+    "hotels": { "connected": false, "adapter": "demo_hotel_provider_placeholder", "readiness": "contract_ready" },
+    "insurance": { "connected": false, "adapter": "demo_insurance_provider_placeholder", "readiness": "contract_ready" },
+    "weather": { "connected": false, "adapter": "demo_weather_provider_placeholder", "readiness": "contract_ready" }
   },
+  "exploration_hubs": [
+    { "id": "jerusalem", "city": "ירושלים", "country": "ישראל", "geo": { "latitude": 31.7683, "longitude": 35.2137 }, "radius_km": 55, "live_search_scopes": ["route", "stay", "activities", "insurance", "connectivity", "equipment"] },
+    { "id": "eilat", "city": "אילת", "country": "ישראל", "geo": { "latitude": 29.5577, "longitude": 34.9519 }, "radius_km": 65, "iata_search_code": "ETM", "live_search_scopes": ["route", "stay", "activities", "insurance", "connectivity", "equipment"] },
+    { "id": "larnaca", "city": "לרנקה", "country": "קפריסין", "geo": { "latitude": 34.9003, "longitude": 33.6232 }, "radius_km": 90, "iata_search_code": "LCA", "live_search_scopes": ["route", "stay", "activities", "insurance", "connectivity", "equipment"] },
+    { "id": "istanbul", "city": "איסטנבול", "country": "טורקיה", "geo": { "latitude": 41.0082, "longitude": 28.9784 }, "radius_km": 140, "iata_search_code": "IST", "live_search_scopes": ["route", "stay", "activities", "insurance", "connectivity", "equipment"] },
+    { "id": "rome", "city": "רומא", "country": "איטליה", "geo": { "latitude": 41.9028, "longitude": 12.4964 }, "radius_km": 140, "iata_search_code": "FCO", "live_search_scopes": ["route", "stay", "activities", "insurance", "connectivity", "equipment"] },
+    { "id": "barcelona", "city": "ברצלונה", "country": "ספרד", "geo": { "latitude": 41.3874, "longitude": 2.1686 }, "radius_km": 150, "iata_search_code": "BCN", "live_search_scopes": ["route", "stay", "activities", "insurance", "connectivity", "equipment"] },
+    { "id": "madrid", "city": "מדריד", "country": "ספרד", "geo": { "latitude": 40.4168, "longitude": -3.7038 }, "radius_km": 150, "iata_search_code": "MAD", "live_search_scopes": ["route", "stay", "activities", "insurance", "connectivity", "equipment"] },
+    { "id": "paris", "city": "פריז", "country": "צרפת", "geo": { "latitude": 48.8566, "longitude": 2.3522 }, "radius_km": 150, "iata_search_code": "CDG", "live_search_scopes": ["route", "stay", "activities", "insurance", "connectivity", "equipment"] },
+    { "id": "london", "city": "לונדון", "country": "בריטניה", "geo": { "latitude": 51.5072, "longitude": -0.1276 }, "radius_km": 160, "iata_search_code": "LHR", "live_search_scopes": ["route", "stay", "activities", "insurance", "connectivity", "equipment"] },
+    { "id": "amsterdam", "city": "אמסטרדם", "country": "הולנד", "geo": { "latitude": 52.3676, "longitude": 4.9041 }, "radius_km": 130, "iata_search_code": "AMS", "live_search_scopes": ["route", "stay", "activities", "insurance", "connectivity", "equipment"] },
+    { "id": "berlin", "city": "ברלין", "country": "גרמניה", "geo": { "latitude": 52.52, "longitude": 13.405 }, "radius_km": 150, "iata_search_code": "BER", "live_search_scopes": ["route", "stay", "activities", "insurance", "connectivity", "equipment"] },
+    { "id": "copenhagen", "city": "קופנהגן", "country": "דנמרק", "geo": { "latitude": 55.6761, "longitude": 12.5683 }, "radius_km": 140, "iata_search_code": "CPH", "live_search_scopes": ["route", "stay", "activities", "insurance", "connectivity", "equipment"] },
+    { "id": "zurich", "city": "ציריך", "country": "שווייץ", "geo": { "latitude": 47.3769, "longitude": 8.5417 }, "radius_km": 130, "iata_search_code": "ZRH", "live_search_scopes": ["route", "stay", "activities", "insurance", "connectivity", "equipment"] },
+    { "id": "reykjavik", "city": "רייקיאוויק", "country": "איסלנד", "geo": { "latitude": 64.1466, "longitude": -21.9426 }, "radius_km": 240, "iata_search_code": "KEF", "live_search_scopes": ["route", "stay", "activities", "insurance", "connectivity", "equipment"] },
+    { "id": "cairo", "city": "קהיר", "country": "מצרים", "geo": { "latitude": 30.0444, "longitude": 31.2357 }, "radius_km": 170, "iata_search_code": "CAI", "live_search_scopes": ["route", "stay", "activities", "insurance", "connectivity", "equipment"] },
+    { "id": "marrakech", "city": "מרקש", "country": "מרוקו", "geo": { "latitude": 31.6295, "longitude": -7.9811 }, "radius_km": 200, "iata_search_code": "RAK", "live_search_scopes": ["route", "stay", "activities", "insurance", "connectivity", "equipment"] },
+    { "id": "nairobi", "city": "ניירובי", "country": "קניה", "geo": { "latitude": -1.2921, "longitude": 36.8219 }, "radius_km": 240, "iata_search_code": "NBO", "live_search_scopes": ["route", "stay", "activities", "insurance", "connectivity", "equipment"] },
+    { "id": "zanzibar", "city": "זנזיבר", "country": "טנזניה", "geo": { "latitude": -6.1659, "longitude": 39.2026 }, "radius_km": 180, "iata_search_code": "ZNZ", "live_search_scopes": ["route", "stay", "activities", "insurance", "connectivity", "equipment"] },
+    { "id": "cape-town", "city": "קייפטאון", "country": "דרום אפריקה", "geo": { "latitude": -33.9249, "longitude": 18.4241 }, "radius_km": 260, "iata_search_code": "CPT", "live_search_scopes": ["route", "stay", "activities", "insurance", "connectivity", "equipment"] },
+    { "id": "doha", "city": "דוחה", "country": "קטאר", "geo": { "latitude": 25.2854, "longitude": 51.531 }, "radius_km": 130, "iata_search_code": "DOH", "live_search_scopes": ["route", "stay", "activities", "insurance", "connectivity", "equipment"] },
+    { "id": "delhi", "city": "דלהי", "country": "הודו", "geo": { "latitude": 28.6139, "longitude": 77.209 }, "radius_km": 220, "iata_search_code": "DEL", "live_search_scopes": ["route", "stay", "activities", "insurance", "connectivity", "equipment"] },
+    { "id": "mumbai", "city": "מומבאי", "country": "הודו", "geo": { "latitude": 19.076, "longitude": 72.8777 }, "radius_km": 190, "iata_search_code": "BOM", "live_search_scopes": ["route", "stay", "activities", "insurance", "connectivity", "equipment"] },
+    { "id": "kathmandu", "city": "קטמנדו", "country": "נפאל", "geo": { "latitude": 27.7172, "longitude": 85.324 }, "radius_km": 180, "iata_search_code": "KTM", "live_search_scopes": ["route", "stay", "activities", "insurance", "connectivity", "equipment"] },
+    { "id": "singapore", "city": "סינגפור", "country": "סינגפור", "geo": { "latitude": 1.3521, "longitude": 103.8198 }, "radius_km": 140, "iata_search_code": "SIN", "live_search_scopes": ["route", "stay", "activities", "insurance", "connectivity", "equipment"] },
+    { "id": "denpasar", "city": "דנפסאר", "country": "אינדונזיה", "geo": { "latitude": -8.6705, "longitude": 115.2126 }, "radius_km": 170, "iata_search_code": "DPS", "live_search_scopes": ["route", "stay", "activities", "insurance", "connectivity", "equipment"] },
+    { "id": "hanoi", "city": "האנוי", "country": "וייטנאם", "geo": { "latitude": 21.0278, "longitude": 105.8342 }, "radius_km": 180, "iata_search_code": "HAN", "live_search_scopes": ["route", "stay", "activities", "insurance", "connectivity", "equipment"] },
+    { "id": "ho-chi-minh-city", "city": "הו צ'י מין סיטי", "country": "וייטנאם", "geo": { "latitude": 10.8231, "longitude": 106.6297 }, "radius_km": 180, "iata_search_code": "SGN", "live_search_scopes": ["route", "stay", "activities", "insurance", "connectivity", "equipment"] },
+    { "id": "seoul", "city": "סיאול", "country": "קוריאה הדרומית", "geo": { "latitude": 37.5665, "longitude": 126.978 }, "radius_km": 180, "iata_search_code": "ICN", "live_search_scopes": ["route", "stay", "activities", "insurance", "connectivity", "equipment"] },
+    { "id": "hong-kong", "city": "הונג קונג", "country": "הונג קונג", "geo": { "latitude": 22.3193, "longitude": 114.1694 }, "radius_km": 150, "iata_search_code": "HKG", "live_search_scopes": ["route", "stay", "activities", "insurance", "connectivity", "equipment"] },
+    { "id": "beijing", "city": "בייג'ינג", "country": "סין", "geo": { "latitude": 39.9042, "longitude": 116.4074 }, "radius_km": 220, "iata_search_code": "PEK", "live_search_scopes": ["route", "stay", "activities", "insurance", "connectivity", "equipment"] },
+    { "id": "shanghai", "city": "שנגחאי", "country": "סין", "geo": { "latitude": 31.2304, "longitude": 121.4737 }, "radius_km": 200, "iata_search_code": "PVG", "live_search_scopes": ["route", "stay", "activities", "insurance", "connectivity", "equipment"] },
+    { "id": "manila", "city": "מנילה", "country": "הפיליפינים", "geo": { "latitude": 14.5995, "longitude": 120.9842 }, "radius_km": 190, "iata_search_code": "MNL", "live_search_scopes": ["route", "stay", "activities", "insurance", "connectivity", "equipment"] },
+    { "id": "kuala-lumpur", "city": "קואלה לומפור", "country": "מלזיה", "geo": { "latitude": 3.139, "longitude": 101.6869 }, "radius_km": 170, "iata_search_code": "KUL", "live_search_scopes": ["route", "stay", "activities", "insurance", "connectivity", "equipment"] },
+    { "id": "new-york", "city": "ניו יורק", "country": "ארצות הברית", "geo": { "latitude": 40.7128, "longitude": -74.006 }, "radius_km": 200, "iata_search_code": "JFK", "live_search_scopes": ["route", "stay", "activities", "insurance", "connectivity", "equipment"] },
+    { "id": "miami", "city": "מיאמי", "country": "ארצות הברית", "geo": { "latitude": 25.7617, "longitude": -80.1918 }, "radius_km": 180, "iata_search_code": "MIA", "live_search_scopes": ["route", "stay", "activities", "insurance", "connectivity", "equipment"] },
+    { "id": "toronto", "city": "טורונטו", "country": "קנדה", "geo": { "latitude": 43.6532, "longitude": -79.3832 }, "radius_km": 200, "iata_search_code": "YYZ", "live_search_scopes": ["route", "stay", "activities", "insurance", "connectivity", "equipment"] },
+    { "id": "mexico-city", "city": "מקסיקו סיטי", "country": "מקסיקו", "geo": { "latitude": 19.4326, "longitude": -99.1332 }, "radius_km": 220, "iata_search_code": "MEX", "live_search_scopes": ["route", "stay", "activities", "insurance", "connectivity", "equipment"] },
+    { "id": "cancun", "city": "קנקון", "country": "מקסיקו", "geo": { "latitude": 21.1619, "longitude": -86.8515 }, "radius_km": 170, "iata_search_code": "CUN", "live_search_scopes": ["route", "stay", "activities", "insurance", "connectivity", "equipment"] },
+    { "id": "rio-de-janeiro", "city": "ריו דה ז'ניירו", "country": "ברזיל", "geo": { "latitude": -22.9068, "longitude": -43.1729 }, "radius_km": 220, "iata_search_code": "GIG", "live_search_scopes": ["route", "stay", "activities", "insurance", "connectivity", "equipment"] },
+    { "id": "sao-paulo", "city": "סאו פאולו", "country": "ברזיל", "geo": { "latitude": -23.5505, "longitude": -46.6333 }, "radius_km": 220, "iata_search_code": "GRU", "live_search_scopes": ["route", "stay", "activities", "insurance", "connectivity", "equipment"] },
+    { "id": "buenos-aires", "city": "בואנוס איירס", "country": "ארגנטינה", "geo": { "latitude": -34.6037, "longitude": -58.3816 }, "radius_km": 230, "iata_search_code": "EZE", "live_search_scopes": ["route", "stay", "activities", "insurance", "connectivity", "equipment"] },
+    { "id": "lima", "city": "לימה", "country": "פרו", "geo": { "latitude": -12.0464, "longitude": -77.0428 }, "radius_km": 210, "iata_search_code": "LIM", "live_search_scopes": ["route", "stay", "activities", "insurance", "connectivity", "equipment"] },
+    { "id": "santiago", "city": "סנטיאגו", "country": "צ'ילה", "geo": { "latitude": -33.4489, "longitude": -70.6693 }, "radius_km": 220, "iata_search_code": "SCL", "live_search_scopes": ["route", "stay", "activities", "insurance", "connectivity", "equipment"] },
+    { "id": "vancouver", "city": "ונקובר", "country": "קנדה", "geo": { "latitude": 49.2827, "longitude": -123.1207 }, "radius_km": 210, "iata_search_code": "YVR", "live_search_scopes": ["route", "stay", "activities", "insurance", "connectivity", "equipment"] },
+    { "id": "los-angeles", "city": "לוס אנג'לס", "country": "ארצות הברית", "geo": { "latitude": 34.0522, "longitude": -118.2437 }, "radius_km": 220, "iata_search_code": "LAX", "live_search_scopes": ["route", "stay", "activities", "insurance", "connectivity", "equipment"] },
+    { "id": "sydney", "city": "סידני", "country": "אוסטרליה", "geo": { "latitude": -33.8688, "longitude": 151.2093 }, "radius_km": 230, "iata_search_code": "SYD", "live_search_scopes": ["route", "stay", "activities", "insurance", "connectivity", "equipment"] },
+    { "id": "melbourne", "city": "מלבורן", "country": "אוסטרליה", "geo": { "latitude": -37.8136, "longitude": 144.9631 }, "radius_km": 230, "iata_search_code": "MEL", "live_search_scopes": ["route", "stay", "activities", "insurance", "connectivity", "equipment"] },
+    { "id": "auckland", "city": "אוקלנד", "country": "ניו זילנד", "geo": { "latitude": -36.8509, "longitude": 174.7645 }, "radius_km": 240, "iata_search_code": "AKL", "live_search_scopes": ["route", "stay", "activities", "insurance", "connectivity", "equipment"] },
+    { "id": "honolulu", "city": "הונולולו", "country": "ארצות הברית", "geo": { "latitude": 21.3099, "longitude": -157.8581 }, "radius_km": 190, "iata_search_code": "HNL", "live_search_scopes": ["route", "stay", "activities", "insurance", "connectivity", "equipment"] }
+  ],
   "destinations": [
     {
       "id": "budapest",
@@ -24,8 +92,8 @@
       "geo": { "latitude": 47.4979, "longitude": 19.0402 },
       "position": { "x": 43, "y": 32 },
       "airport": { "code": "BUD", "name": "Budapest Ferenc Liszt", "direct": true, "flight_minutes": 210, "transfer_minutes": 35 },
-      "deal": { "headline_price": 214, "total_per_person": 596, "currency": "USD", "trend_pct": -14, "nights": 4, "total_scope": "destination_deal", "insight": "מלון 4★ במרכז והעברות כלולים בחישוב", "bookable": false },
-      "hotel": { "name": "Danube Central Hotel", "area": "District V", "rating": 4.4, "nightly": 130, "nights": 4, "room_total": 520, "per_person_total": 260, "currency": "USD", "tour_ready": false },
+      "deal": { "headline_price": 214, "total_per_person": 596, "currency": "USD", "trend_pct": 0, "nights": 4, "total_scope": "destination_deal", "insight": "מלון 4★ במרכז והעברות כלולים בחישוב", "bookable": false },
+      "hotel": { "name": "דוגמת לינה במרכז בודפשט", "area": "District V", "rating": 4.4, "nightly": 130, "nights": 4, "room_total": 520, "per_person_total": 260, "currency": "USD", "tour_ready": false },
       "weather": { "temperature_c": 17, "condition": "נעים", "season_fit": "טוב" },
       "planning": {
         "reviewed_on": "2026-07-17",
@@ -44,14 +112,66 @@
       "image": "city-budapest.webp"
     },
     {
+      "id": "prague",
+      "city": "פראג",
+      "country": "צ׳כיה",
+      "geo": { "latitude": 50.0755, "longitude": 14.4378 },
+      "position": { "x": 39, "y": 29 },
+      "airport": { "code": "PRG", "name": "Václav Havel Airport Prague", "direct": true, "flight_minutes": 245, "transfer_minutes": 35 },
+      "deal": { "headline_price": 229, "total_per_person": 586, "currency": "USD", "trend_pct": 0, "nights": 4, "total_scope": "destination_deal", "insight": "מרכז היסטורי, תחבורה והעברה נכללים בתכנון", "bookable": false },
+      "hotel": { "name": "דוגמת לינה בעיר העתיקה בפראג", "area": "Prague 1", "rating": 4.3, "nightly": 118, "nights": 4, "room_total": 472, "per_person_total": 236, "currency": "USD", "tour_ready": false },
+      "weather": { "temperature_c": 16, "condition": "קריר ונעים", "season_fit": "טוב" },
+      "planning": {
+        "reviewed_on": "2026-07-18",
+        "source_label": "Tra-Vel editorial planning profile",
+        "modules": {
+          "mobility": { "state": "editorial", "headline": "מהשדה למרכז ומעבר בין אזורי העיר", "detail": "זמן העברה בסיסי של 35 דקות נבדק מחדש לפי שעת הנחיתה, אזור המלון, כבודה ונגישות; משווים תחבורה ציבורית, הסעה ומונית.", "next_action": "השוו העברות" },
+          "dining": { "state": "needs_details", "headline": "אוכל, כשרות והזמנות לפי המסלול", "detail": "מגדירים כשרות, אלרגיות, ילדים ותקציב כדי לחבר מסעדות לאזורי הטיול בלי נסיעות מיותרות.", "next_action": "הוסיפו העדפות אוכל" },
+          "entry": { "state": "needs_details", "headline": "בדיקת כניסה לפי דרכון ותאריך", "detail": "מאמתים אזרחות, תוקף דרכון, תנאי כניסה וכללי קונקשן מול מקור רשמי לפני רכישה.", "next_action": "בדקו תנאי כניסה" },
+          "connectivity": { "state": "editorial", "headline": "eSIM, נדידה וניווט בעיר", "detail": "משווים נפח גלישה, שיתוף אינטרנט וכיסוי לפי ארבעה ימי שימוש וטיולי היום המתוכננים.", "next_action": "השוו חיבור" },
+          "accessibility": { "state": "needs_details", "headline": "אבנים, עליות, תחנות והרכב הנוסעים", "detail": "מגבלת הליכה, עגלה, מעלית וכבודה משפיעות על אזור הלינה, התחבורה וקצב היום.", "next_action": "התאימו צרכים" },
+          "equipment": { "state": "needs_details", "headline": "ציוד עונתי, כבודה ונעליים", "detail": "מחברים תחזית, הליכה, פעילויות ותנאי כבודה לרשימה אחת לפני היציאה.", "next_action": "בנו רשימת ציוד" }
+        },
+        "cost_scope": { "state": "partial", "categories": ["flight", "baggage", "stay", "taxes", "transfers", "local_transport", "activities", "dining", "insurance", "connectivity", "equipment", "entry"] }
+      },
+      "tags": ["טיסה ישירה", "4 לילות", "מרכז היסטורי"],
+      "image": "city-prague.webp"
+    },
+    {
+      "id": "vienna",
+      "city": "וינה",
+      "country": "אוסטריה",
+      "geo": { "latitude": 48.2082, "longitude": 16.3738 },
+      "position": { "x": 41, "y": 30 },
+      "airport": { "code": "VIE", "name": "Vienna International Airport", "direct": true, "flight_minutes": 225, "transfer_minutes": 25 },
+      "deal": { "headline_price": 239, "total_per_person": 612, "currency": "USD", "trend_pct": 0, "nights": 4, "total_scope": "destination_deal", "insight": "לינה, כבודה, העברה וביטוח ממופים לתכנון; מחיר וזמינות מאומתים רק בהצעה", "bookable": false },
+      "hotel": { "name": "דוגמת לינה ליד הרינג בווינה", "area": "Innere Stadt", "rating": 4.2, "nightly": 126, "nights": 4, "room_total": 504, "per_person_total": 252, "currency": "USD", "tour_ready": false },
+      "weather": { "temperature_c": 17, "condition": "נעים וקריר", "season_fit": "טוב" },
+      "planning": {
+        "reviewed_on": "2026-07-18",
+        "source_label": "Tra-Vel editorial planning profile",
+        "modules": {
+          "mobility": { "state": "editorial", "headline": "מהשדה למרכז ומעבר בין טבעות העיר", "detail": "זמן העברה בסיסי של 25 דקות נבדק מחדש לפי שעת הנחיתה, אזור הלינה, כבודה ונגישות; משווים רכבת, הסעה ומונית.", "next_action": "השוו העברות" },
+          "dining": { "state": "needs_details", "headline": "אוכל, כשרות והזמנות ליד המסלול", "detail": "מגדירים כשרות, אלרגיות, ילדים ותקציב כדי לחבר מסעדות לאזורי הביקור בלי מעברים מיותרים.", "next_action": "הוסיפו העדפות אוכל" },
+          "entry": { "state": "needs_details", "headline": "בדיקת כניסה לפי דרכון ותאריך", "detail": "מאמתים אזרחות, תוקף דרכון, תנאי כניסה וכללי מעבר מול מקור רשמי לפני רכישה.", "next_action": "בדקו תנאי כניסה" },
+          "connectivity": { "state": "editorial", "headline": "eSIM, נדידה וניווט בעיר", "detail": "משווים נפח גלישה, שיתוף אינטרנט וכיסוי לפי ארבעה ימי שימוש וטיולי היום המתוכננים.", "next_action": "השוו חיבור" },
+          "accessibility": { "state": "needs_details", "headline": "הליכה, תחנות, מעליות והרכב הנוסעים", "detail": "מגבלת הליכה, עגלה, מעלית וכבודה משפיעות על אזור הלינה, התחבורה וקצב היום.", "next_action": "התאימו צרכים" },
+          "equipment": { "state": "needs_details", "headline": "ציוד עונתי, כבודה ונעליים", "detail": "מחברים תחזית, הליכה, פעילויות ותנאי כבודה לרשימה אחת לפני היציאה.", "next_action": "בנו רשימת ציוד" }
+        },
+        "cost_scope": { "state": "partial", "categories": ["flight", "baggage", "stay", "taxes", "transfers", "local_transport", "activities", "dining", "insurance", "connectivity", "equipment", "entry"] }
+      },
+      "tags": ["טיסה ישירה", "4 לילות", "תרבות ומשפחות"],
+      "image": "city-vienna.webp"
+    },
+    {
       "id": "athens",
       "city": "אתונה",
       "country": "יוון",
       "geo": { "latitude": 37.9838, "longitude": 23.7275 },
       "position": { "x": 48, "y": 43 },
       "airport": { "code": "ATH", "name": "Athens International", "direct": true, "flight_minutes": 135, "transfer_minutes": 40 },
-      "deal": { "headline_price": 189, "total_per_person": 534, "currency": "USD", "trend_pct": -7, "nights": 3, "total_scope": "destination_deal", "insight": "אפשרות תכנון לחופשה קצרה של שלושה לילות", "bookable": false },
-      "hotel": { "name": "Plaka View", "area": "Plaka", "rating": 4.2, "nightly": 145, "nights": 3, "room_total": 435, "per_person_total": 218, "currency": "USD", "tour_ready": false },
+      "deal": { "headline_price": 189, "total_per_person": 534, "currency": "USD", "trend_pct": 0, "nights": 3, "total_scope": "destination_deal", "insight": "אפשרות תכנון לחופשה קצרה של שלושה לילות", "bookable": false },
+      "hotel": { "name": "דוגמת לינה בפלאקה", "area": "Plaka", "rating": 4.2, "nightly": 145, "nights": 3, "room_total": 435, "per_person_total": 218, "currency": "USD", "tour_ready": false },
       "weather": { "temperature_c": 23, "condition": "שמשי", "season_fit": "מצוין" },
       "planning": {
         "reviewed_on": "2026-07-17",
@@ -76,8 +196,8 @@
       "geo": { "latitude": 25.2048, "longitude": 55.2708 },
       "position": { "x": 59, "y": 53 },
       "airport": { "code": "DXB", "name": "Dubai International", "direct": true, "flight_minutes": 205, "transfer_minutes": 25 },
-      "deal": { "headline_price": 236, "total_per_person": 690, "currency": "USD", "trend_pct": -11, "nights": 4, "total_scope": "destination_deal", "insight": "המחיר ירד היום; טרולי והעברה מחושבים", "bookable": false },
-      "hotel": { "name": "Creek Design Hotel", "area": "Dubai Creek", "rating": 4.5, "nightly": 170, "nights": 4, "room_total": 680, "per_person_total": 340, "currency": "USD", "tour_ready": false },
+      "deal": { "headline_price": 236, "total_per_person": 690, "currency": "USD", "trend_pct": 0, "nights": 4, "total_scope": "destination_deal", "insight": "תרחיש הכולל טרולי והעברה להשוואת עלות מלאה", "bookable": false },
+      "hotel": { "name": "דוגמת לינה באזור קריק בדובאי", "area": "Dubai Creek", "rating": 4.5, "nightly": 170, "nights": 4, "room_total": 680, "per_person_total": 340, "currency": "USD", "tour_ready": false },
       "weather": { "temperature_c": 31, "condition": "חם ויבש", "season_fit": "טוב" },
       "planning": {
         "reviewed_on": "2026-07-17",
@@ -102,8 +222,8 @@
       "geo": { "latitude": 13.7563, "longitude": 100.5018 },
       "position": { "x": 72, "y": 61 },
       "airport": { "code": "BKK", "name": "Suvarnabhumi Airport", "direct": true, "flight_minutes": 680, "transfer_minutes": 45 },
-      "deal": { "headline_price": 742, "total_per_person": 1347, "currency": "USD", "trend_pct": -8, "nights": 12, "total_scope": "destination_deal", "insight": "חלופת קונקשן להשוואה מול מסלול ישיר; המחירים להמחשה בלבד", "bookable": false },
-      "hotel": { "name": "Siam Riverside", "area": "Siam", "rating": 4.6, "nightly": 65, "nights": 12, "room_total": 780, "per_person_total": 390, "currency": "USD", "tour_ready": false },
+      "deal": { "headline_price": 742, "total_per_person": 1347, "currency": "USD", "trend_pct": 0, "nights": 12, "total_scope": "destination_deal", "insight": "חלופת קונקשן להשוואה מול מסלול ישיר; המחירים להמחשה בלבד", "bookable": false },
+      "hotel": { "name": "דוגמת לינה בסיאם", "area": "Siam", "rating": 4.6, "nightly": 65, "nights": 12, "room_total": 780, "per_person_total": 390, "currency": "USD", "tour_ready": false },
       "weather": { "temperature_c": 29, "condition": "חם עם ממטרים", "season_fit": "טוב" },
       "planning": {
         "reviewed_on": "2026-07-17",
@@ -128,8 +248,8 @@
       "geo": { "latitude": 35.6762, "longitude": 139.6503 },
       "position": { "x": 84, "y": 39 },
       "airport": { "code": "HND", "name": "Tokyo Haneda", "direct": false, "flight_minutes": 930, "transfer_minutes": 35 },
-      "deal": { "headline_price": 918, "total_per_person": 1810, "currency": "USD", "trend_pct": -4, "nights": 10, "total_scope": "destination_deal", "insight": "חלון מחיר טוב לנובמבר עם עצירה אחת", "bookable": false },
-      "hotel": { "name": "Shinjuku Base", "area": "Shinjuku", "rating": 4.3, "nightly": 148, "nights": 10, "room_total": 1480, "per_person_total": 740, "currency": "USD", "tour_ready": false },
+      "deal": { "headline_price": 918, "total_per_person": 1810, "currency": "USD", "trend_pct": 0, "nights": 10, "total_scope": "destination_deal", "insight": "תרחיש לנובמבר עם עצירה אחת להשוואת זמן ועלות", "bookable": false },
+      "hotel": { "name": "דוגמת לינה בשינג׳וקו", "area": "Shinjuku", "rating": 4.3, "nightly": 148, "nights": 10, "room_total": 1480, "per_person_total": 740, "currency": "USD", "tour_ready": false },
       "weather": { "temperature_c": 18, "condition": "קריר ובהיר", "season_fit": "מצוין" },
       "planning": {
         "reviewed_on": "2026-07-17",
@@ -154,8 +274,8 @@
       "geo": { "latitude": 38.7223, "longitude": -9.1393 },
       "position": { "x": 29, "y": 43 },
       "airport": { "code": "LIS", "name": "Humberto Delgado", "direct": false, "flight_minutes": 470, "transfer_minutes": 25 },
-      "deal": { "headline_price": 327, "total_per_person": 910, "currency": "USD", "trend_pct": -6, "nights": 7, "total_scope": "destination_deal", "insight": "שילוב טיסות חכם דרך רומא עם כרטיס אחד", "bookable": false },
-      "hotel": { "name": "Baixa Story Hotel", "area": "Baixa", "rating": 4.5, "nightly": 132, "nights": 7, "room_total": 924, "per_person_total": 462, "currency": "USD", "tour_ready": false },
+      "deal": { "headline_price": 327, "total_per_person": 910, "currency": "USD", "trend_pct": 0, "nights": 7, "total_scope": "destination_deal", "insight": "תרחיש דרך רומא בכרטיס אחד להשוואת זמן ועלות", "bookable": false },
+      "hotel": { "name": "דוגמת לינה בבאישה", "area": "Baixa", "rating": 4.5, "nightly": 132, "nights": 7, "room_total": 924, "per_person_total": 462, "currency": "USD", "tour_ready": false },
       "weather": { "temperature_c": 21, "condition": "נעים ורוחי", "season_fit": "טוב" },
       "planning": {
         "reviewed_on": "2026-07-17",
@@ -179,7 +299,7 @@
       {
         "id": "budapest-direct",
         "currency": "USD",
-        "label": "טיסה ישירה לבודפשט",
+        "label": "תרחיש ישיר לבודפשט",
         "badge": "הכי פשוט",
         "duration_minutes": 210,
         "stops": 0,
@@ -195,7 +315,7 @@
       {
         "id": "budapest-vienna",
         "currency": "USD",
-        "label": "דרך וינה והמשך יבשתי",
+        "label": "תרחיש דרך וינה והמשך יבשתי",
         "badge": "חלופה גמישה",
         "duration_minutes": 360,
         "stops": 1,
@@ -209,11 +329,79 @@
         "cons": ["שני מקטעים נפרדים", "זמן דרך ארוך יותר"]
       }
     ],
+    "prague": [
+      {
+        "id": "prague-direct",
+        "currency": "USD",
+        "label": "תרחיש ישיר לפראג",
+        "badge": "המסלול הפשוט",
+        "duration_minutes": 245,
+        "stops": 0,
+        "via": null,
+        "ticket_mode": "single",
+        "risk": "low",
+        "emissions_kg": 660,
+        "score": 92,
+        "costs": { "flight": 229, "baggage": 45, "hotel": 236, "transfers": 38, "insurance": 38, "overnight": 0, "total": 586 },
+        "pros": ["ללא החלפת מטוס", "זמן דרך קצר", "כרטיס אחד"],
+        "cons": ["זמינות משתנה לפי תאריך", "יש לאמת כבודה ותנאי שינוי"]
+      },
+      {
+        "id": "prague-vienna",
+        "currency": "USD",
+        "label": "תרחיש דרך וינה והמשך ברכבת",
+        "badge": "חלופה יבשתית",
+        "duration_minutes": 420,
+        "stops": 1,
+        "via": "VIE",
+        "ticket_mode": "separate",
+        "risk": "medium",
+        "emissions_kg": 590,
+        "score": 76,
+        "costs": { "flight": 190, "baggage": 55, "hotel": 236, "transfers": 60, "insurance": 38, "overnight": 0, "total": 579 },
+        "pros": ["חלופה כאשר הישיר אינו מתאים", "אפשר לשלב מקטע רכבת"],
+        "cons": ["שני מקטעים נפרדים", "זמן דרך ארוך יותר"]
+      }
+    ],
+    "vienna": [
+      {
+        "id": "vienna-direct",
+        "currency": "USD",
+        "label": "תרחיש ישיר לווינה",
+        "badge": "המסלול הפשוט",
+        "duration_minutes": 225,
+        "stops": 0,
+        "via": null,
+        "ticket_mode": "single",
+        "risk": "low",
+        "emissions_kg": 620,
+        "score": 91,
+        "costs": { "flight": 239, "baggage": 45, "hotel": 252, "transfers": 38, "insurance": 38, "overnight": 0, "total": 612 },
+        "pros": ["ללא החלפת מטוס", "זמן דרך קצר", "כרטיס אחד"],
+        "cons": ["זמינות משתנה לפי תאריך", "יש לאמת כבודה ותנאי שינוי"]
+      },
+      {
+        "id": "vienna-bratislava",
+        "currency": "USD",
+        "label": "תרחיש דרך ברטיסלבה והמשך יבשתי",
+        "badge": "חלופה אזורית",
+        "duration_minutes": 345,
+        "stops": 1,
+        "via": "BTS",
+        "ticket_mode": "separate",
+        "risk": "medium",
+        "emissions_kg": 560,
+        "score": 75,
+        "costs": { "flight": 205, "baggage": 50, "hotel": 252, "transfers": 70, "insurance": 38, "overnight": 0, "total": 615 },
+        "pros": ["חלופה כאשר הישיר אינו מתאים", "אפשר לשלב מקטע יבשתי"],
+        "cons": ["שני מקטעים נפרדים", "זמן דרך ארוך יותר"]
+      }
+    ],
     "athens": [
       {
         "id": "athens-direct",
         "currency": "USD",
-        "label": "טיסה ישירה לאתונה",
+        "label": "תרחיש ישיר לאתונה",
         "badge": "הכי מהיר",
         "duration_minutes": 135,
         "stops": 0,
@@ -229,7 +417,7 @@
       {
         "id": "athens-larnaca",
         "currency": "USD",
-        "label": "דרך לרנקה",
+        "label": "תרחיש דרך לרנקה",
         "badge": "חלופה בשעות אחרות",
         "duration_minutes": 300,
         "stops": 1,
@@ -247,7 +435,7 @@
       {
         "id": "dubai-direct",
         "currency": "USD",
-        "label": "טיסה ישירה לדובאי",
+        "label": "תרחיש ישיר לדובאי",
         "badge": "הכי נוח",
         "duration_minutes": 205,
         "stops": 0,
@@ -263,7 +451,7 @@
       {
         "id": "dubai-amman",
         "currency": "USD",
-        "label": "דרך עמאן",
+        "label": "תרחיש דרך עמאן",
         "badge": "חלופת קונקשן",
         "duration_minutes": 390,
         "stops": 1,
@@ -281,7 +469,7 @@
       {
         "id": "bangkok-direct",
         "currency": "USD",
-        "label": "ישיר עם EL AL",
+        "label": "תרחיש ישיר לבנגקוק",
         "badge": "הכי נוח",
         "duration_minutes": 680,
         "stops": 0,
@@ -297,7 +485,7 @@
       {
         "id": "bangkok-dubai",
         "currency": "USD",
-        "label": "דרך דובאי",
+        "label": "תרחיש דרך דובאי",
         "badge": "הבחירה החכמה",
         "duration_minutes": 840,
         "stops": 1,
@@ -313,7 +501,7 @@
       {
         "id": "bangkok-athens",
         "currency": "USD",
-        "label": "עצירת לילה באתונה",
+        "label": "תרחיש עם עצירת לילה באתונה",
         "badge": "עצירה ארוכה",
         "duration_minutes": 1470,
         "stops": 1,
@@ -331,7 +519,7 @@
       {
         "id": "tokyo-dubai",
         "currency": "USD",
-        "label": "דרך דובאי להנדה",
+        "label": "תרחיש דרך דובאי להנדה",
         "badge": "כרטיס אחד",
         "duration_minutes": 930,
         "stops": 1,
@@ -347,7 +535,7 @@
       {
         "id": "tokyo-bangkok",
         "currency": "USD",
-        "label": "דרך בנגקוק עם עצירת לילה",
+        "label": "תרחיש דרך בנגקוק עם עצירת לילה",
         "badge": "מסלול משולב",
         "duration_minutes": 1740,
         "stops": 1,
@@ -363,7 +551,7 @@
       {
         "id": "tokyo-seoul",
         "currency": "USD",
-        "label": "דרך סיאול לנריטה",
+        "label": "תרחיש דרך סיאול לנריטה",
         "badge": "חלופה ללא לינת ביניים",
         "duration_minutes": 1050,
         "stops": 1,
@@ -381,7 +569,7 @@
       {
         "id": "lisbon-rome",
         "currency": "USD",
-        "label": "דרך רומא בכרטיס אחד",
+        "label": "תרחיש דרך רומא בכרטיס אחד",
         "badge": "האיזון החכם",
         "duration_minutes": 470,
         "stops": 1,
@@ -397,7 +585,7 @@
       {
         "id": "lisbon-athens",
         "currency": "USD",
-        "label": "דרך אתונה עם עצירת לילה",
+        "label": "תרחיש דרך אתונה עם עצירת לילה",
         "badge": "חלופה גמישה",
         "duration_minutes": 1180,
         "stops": 1,
@@ -413,7 +601,7 @@
       {
         "id": "lisbon-madrid",
         "currency": "USD",
-        "label": "דרך מדריד בכרטיס אחד",
+        "label": "תרחיש דרך מדריד בכרטיס אחד",
         "badge": "חלופה ללא לינת ביניים",
         "duration_minutes": 520,
         "stops": 1,

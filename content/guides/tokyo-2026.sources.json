@@ -1,0 +1,789 @@
+{
+  "schemaVersion": 1,
+  "id": "tokyo-2026",
+  "locale": "he-IL",
+  "title": "טוקיו",
+  "excerpt": "מדריך טוקיו לישראלים שיסדר את החלטות הכניסה, הביטחון, הבחירה בין HND ל-NRT, התחבורה, אזור הלינה, העונה, המשפחה, הנגישות, התרופות, המכס והקישוריות על בסיס מקורות רשמיים ואימות עדכני לפני נסיעה.",
+  "author": "מערכת Tra-Vel",
+  "reviewer": "טרם מונה עורך מזוהה",
+  "primaryTopic": "Tokyo travel guide for Israeli travelers",
+  "canonicalPath": "/destinations/tokyo/",
+  "status": "editorial-review",
+  "contentPath": "content/guides/tokyo-2026.he.html",
+  "wordTargetMin": 5000,
+  "checkedAt": "2026-07-18",
+  "mapState": "tokyo",
+  "reviewMethod": "Complete editorial-review article awaiting a named editor. Reopen every Japanese, Israeli, airport, operator and Tokyo authority at publication time and recheck every entry, warning, terminal, route, ticket, accessibility, weather, medicine, customs, accommodation, insurance and connectivity claim before any publication decision.",
+  "sections": [
+    "Decision summary and trip fit for Israeli travelers",
+    "Israeli passport and short-stay visa recheck",
+    "Landing permission and border-examination boundary",
+    "Live Israeli security warning and consular contacts",
+    "Visit Japan Web and offline arrival-document fallback",
+    "Haneda versus Narita airport decision",
+    "Terminal-aware arrival and baggage sequence",
+    "Haneda airport-to-city options",
+    "Narita airport-to-city options",
+    "Haneda to Narita transfer and separate-ticket risk",
+    "Narita Express, Skyliner, bus and taxi comparison",
+    "Tokyo Monorail and Keikyu decision from Haneda",
+    "Tokyo Metro, JR and private-operator network logic",
+    "IC cards, local tickets and pass break-even framework",
+    "Station exits, transfers, luggage and last-mile walking",
+    "Area-first accommodation selection",
+    "Shinjuku stay and route tradeoffs",
+    "Shibuya stay and route tradeoffs",
+    "Asakusa stay and route tradeoffs",
+    "Tokyo Station and Marunouchi stay tradeoffs",
+    "Odaiba stay and day-trip tradeoffs",
+    "Hotels, ryokan, hostels and lawful private lodging",
+    "Season, weather and indoor-outdoor pacing",
+    "Heat, heavy rain, typhoon and live-warning response",
+    "Earthquake preparedness and emergency information",
+    "End-to-end accessibility chain",
+    "Family planning by age, crowds and recovery time",
+    "Two, three, four, five and seven-day itinerary patterns",
+    "Dietary, allergy and kosher verification decisions",
+    "Customs declaration and restricted-goods checks",
+    "Personal medicines and controlled-substance permissions",
+    "Food and animal-product quarantine boundaries",
+    "Local laws, manners, identification and photography",
+    "Connectivity, SIM, Wi-Fi and offline navigation",
+    "Insurance, medical-care and emergency-contact decisions",
+    "Budget architecture without fabricated current prices",
+    "Booking sequence and supplier revalidation",
+    "Frequently asked traveler questions",
+    "Source log, freshness and named-editor blocker"
+  ],
+  "sources": [
+    {
+      "id": "japan-embassy-israel-consular",
+      "title": "Consular Section and visa information",
+      "publisher": "Embassy of Japan in Israel",
+      "url": "https://www.israel.emb-japan.go.jp/itpr_en/visa.html",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["Israeli traveler visa-recheck channel", "temporary-visitor guidance link", "embassy visa contact boundary"]
+    },
+    {
+      "id": "japan-mofa-visa-exemption",
+      "title": "Exemption of Visa for Short-Term Stay",
+      "publisher": "Ministry of Foreign Affairs of Japan",
+      "url": "https://www.mofa.go.jp/j_info/visit/visa/short/novisa.html",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["Israel on short-stay visa-exemption list", "temporary-visitor period framework", "nationality and passport-condition recheck"]
+    },
+    {
+      "id": "japan-mofa-visa-faq",
+      "title": "Japan visa frequently asked questions",
+      "publisher": "Ministry of Foreign Affairs of Japan",
+      "url": "https://www.mofa.go.jp/j_info/visit/visa/faq.html",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["short-stay and no-income boundary", "visa does not guarantee landing", "passport and circumstance recheck"]
+    },
+    {
+      "id": "japan-immigration-landing",
+      "title": "Landing procedures for foreign nationals",
+      "publisher": "Immigration Services Agency of Japan",
+      "url": "https://www.moj.go.jp/isa/applications/procedures/zyouriku_00001.html",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["landing examination", "valid passport and visa as applicable", "biometric and declared-purpose examination"]
+    },
+    {
+      "id": "visit-japan-web",
+      "title": "Visit Japan Web",
+      "publisher": "Digital Agency of Japan",
+      "url": "https://services.digital.go.jp/en/visit-japan-web/",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["digital immigration and customs procedure", "arrival QR-code workflow", "official-service and fake-app boundary"]
+    },
+    {
+      "id": "israel-nsc-live-warnings",
+      "title": "Live travel-warning collector",
+      "publisher": "Israel National Security Council",
+      "url": "https://www.gov.il/he/Departments/DynamicCollectors/travel-warnings-nsc",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["current Japan warning lookup", "publication-time and pre-departure security recheck"]
+    },
+    {
+      "id": "israel-tokyo-contacts",
+      "title": "Contact the Embassy of Israel in Tokyo",
+      "publisher": "Ministry of Foreign Affairs of Israel",
+      "url": "https://embassies.gov.il/japan/en/contacts",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["Israeli consular contact channel in Tokyo", "lost-document and emergency-reference planning"]
+    },
+    {
+      "id": "haneda-access",
+      "title": "Haneda Airport access",
+      "publisher": "Haneda Airport Passenger Terminal",
+      "url": "https://tokyo-haneda.com/en/access/index.html",
+      "type": "primary",
+      "checkedAt": "2026-07-18",
+      "supports": ["train, monorail, bus and taxi access categories", "terminal-aware route search", "reserved-taxi pickup distinction"]
+    },
+    {
+      "id": "haneda-terminal-transfer",
+      "title": "Travel between Haneda terminals",
+      "publisher": "Haneda Airport Passenger Terminal",
+      "url": "https://tokyo-haneda.com/en/access/travel_between_terminals/index.html",
+      "type": "primary",
+      "checkedAt": "2026-07-18",
+      "supports": ["Haneda terminal-transfer modes", "airside and landside transfer distinctions", "terminal-transfer recheck"]
+    },
+    {
+      "id": "haneda-assistance",
+      "title": "Haneda special assistance reservation",
+      "publisher": "Haneda Airport Passenger Terminal",
+      "url": "https://tokyo-haneda.com/en/service/facilities/assist.html",
+      "type": "primary",
+      "checkedAt": "2026-07-18",
+      "supports": ["airport special-assistance request and reservation channel", "advance coordination", "need-specific confirmation"]
+    },
+    {
+      "id": "haneda-assistance-terms",
+      "title": "Haneda special assistance reservation and service rules",
+      "publisher": "Haneda Airport Passenger Terminal",
+      "url": "https://tokyo-haneda.com/en/service/facilities/terms_of_use.html",
+      "type": "primary",
+      "checkedAt": "2026-07-18",
+      "supports": ["defined terminal and parking assistance scope", "gate-area exclusion", "reservation completion and service-availability boundary"]
+    },
+    {
+      "id": "narita-access",
+      "title": "Narita Airport access",
+      "publisher": "Narita International Airport",
+      "url": "https://www.narita-airport.jp/en/access/",
+      "type": "primary",
+      "checkedAt": "2026-07-18",
+      "supports": ["rail, bus, taxi, car and terminal-transfer categories", "route search by terminal and destination"]
+    },
+    {
+      "id": "narita-rail",
+      "title": "Rail access at Narita Airport",
+      "publisher": "Narita International Airport",
+      "url": "https://www.narita-airport.jp/en/access/train/",
+      "type": "primary",
+      "checkedAt": "2026-07-18",
+      "supports": ["JR and Keisei airport rail options", "terminal-to-station mapping", "assistance link for rail users"]
+    },
+    {
+      "id": "narita-assistance",
+      "title": "Narita special assistance and intercom services",
+      "publisher": "Narita International Airport",
+      "url": "https://www.narita-airport.jp/en/service/ud/intercom/",
+      "type": "primary",
+      "checkedAt": "2026-07-18",
+      "supports": ["advance special-assistance arrangements", "airport-staff and airline handoff", "communication-support touchpoints"]
+    },
+    {
+      "id": "narita-transport-accessibility",
+      "title": "Narita rail, bus and taxi accessibility",
+      "publisher": "Narita International Airport",
+      "url": "https://www.narita-airport.jp/en/service/ud/bus-train/",
+      "type": "primary",
+      "checkedAt": "2026-07-18",
+      "supports": ["accessible rail-station information", "bus and taxi accessibility channels", "need-specific operator confirmation"]
+    },
+    {
+      "id": "jr-east-nex",
+      "title": "Narita Express",
+      "publisher": "JR East",
+      "url": "https://www.jreast.co.jp/en/multi/nex/",
+      "type": "primary",
+      "checkedAt": "2026-07-18",
+      "supports": ["Narita Express service-area architecture", "reserved-seat and luggage facilities", "operator recheck for schedules and products"]
+    },
+    {
+      "id": "keisei-skyliner",
+      "title": "Skyliner overview",
+      "publisher": "Keisei Electric Railway",
+      "url": "https://www.keisei.co.jp/keisei/tetudou/skyliner/us/skyliner/",
+      "type": "primary",
+      "checkedAt": "2026-07-18",
+      "supports": ["Skyliner route architecture to Nippori and Ueno", "reserved seating and luggage facilities", "operator recheck for fares and schedules"]
+    },
+    {
+      "id": "tokyo-monorail",
+      "title": "Access to Haneda Airport by Tokyo Monorail",
+      "publisher": "Tokyo Monorail",
+      "url": "https://www.tokyo-monorail.co.jp/english/",
+      "type": "primary",
+      "checkedAt": "2026-07-18",
+      "supports": ["Haneda-to-Hamamatsucho route architecture", "terminal-station information", "operator timetable and ticket recheck"]
+    },
+    {
+      "id": "keikyu-haneda-access",
+      "title": "Haneda Airport Access Guide",
+      "publisher": "Keikyu Corporation",
+      "url": "https://www.haneda-tokyo-access.com/en/",
+      "type": "primary",
+      "checkedAt": "2026-07-18",
+      "supports": ["Keikyu Haneda rail architecture", "terminal-station and transfer search", "live operator-status recheck"]
+    },
+    {
+      "id": "tokyo-metro-tickets",
+      "title": "Tokyo Metro tickets",
+      "publisher": "Tokyo Metro",
+      "url": "https://www.tokyometro.jp/en/ticket/index.html",
+      "type": "primary",
+      "checkedAt": "2026-07-18",
+      "supports": ["local ticket, IC-card and visitor-pass categories", "fare and transfer search", "product eligibility recheck"]
+    },
+    {
+      "id": "jr-east-welcome-suica",
+      "title": "Welcome Suica",
+      "publisher": "JR East",
+      "url": "https://www.jreast.co.jp/en/multi/welcomesuica/welcomesuica.html",
+      "type": "primary",
+      "checkedAt": "2026-07-18",
+      "supports": ["visitor IC-card travel and payment uses", "covered-area and limited-express boundary", "availability and validity recheck"]
+    },
+    {
+      "id": "tokyo-metro-accessibility",
+      "title": "Search stations by barrier-free facility",
+      "publisher": "Tokyo Metro",
+      "url": "https://www.tokyometro.jp/lang_en/station/search_accessibility/index.html",
+      "type": "primary",
+      "checkedAt": "2026-07-18",
+      "supports": ["station-specific barrier-free route search", "elevator, toilet and mobility-scooter filters", "exit-level accessibility planning"]
+    },
+    {
+      "id": "jma-multilingual",
+      "title": "Multilingual information on disaster risk reduction",
+      "publisher": "Japan Meteorological Agency",
+      "url": "https://www.jma.go.jp/jma/kokusai/multi.html",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["live multilingual weather information", "heavy-rain, heat, earthquake, tsunami and volcano information"]
+    },
+    {
+      "id": "japan-heat-wbgt",
+      "title": "Heat Illness Prevention Information",
+      "publisher": "Ministry of the Environment, Government of Japan",
+      "url": "https://www.wbgt.env.go.jp/en/",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["live heat-stroke alerts", "current WBGT monitoring and forecast", "heat-risk pacing"]
+    },
+    {
+      "id": "jnto-weather",
+      "title": "Weather and geography in Japan",
+      "publisher": "Japan National Tourism Organization",
+      "url": "https://www.japan.travel/en/plan/weather/",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["seasonal weather architecture", "regional forecast recheck", "heat, typhoon and earthquake preparedness context"]
+    },
+    {
+      "id": "gotokyo-emergency",
+      "title": "Useful disaster and emergency information",
+      "publisher": "GO TOKYO, Tokyo Convention and Visitors Bureau",
+      "url": "https://www.gotokyo.org/en/plan/health-safety/index.html",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["multilingual emergency resources", "transport-disruption sources", "medical and embassy-response architecture"]
+    },
+    {
+      "id": "tokyo-metropolitan-disaster-guide",
+      "title": "Disaster preparedness guide for foreign residents and visitors",
+      "publisher": "Tokyo Metropolitan Government",
+      "url": "https://www.bousai.metro.tokyo.lg.jp/content/e_book_03/guide-english/pdf/guide-english.pdf",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["earthquake immediate-safety actions", "do-not-rush-outside guidance", "safe-location and official-information response"]
+    },
+    {
+      "id": "jnto-travel-insurance",
+      "title": "Travel insurance in Japan",
+      "publisher": "Japan National Tourism Organization",
+      "url": "https://www.japan.travel/en/plan/travel-insurance-in-japan/",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["travel-insurance decision", "coverage and payment-method questions", "medical and activity declaration"]
+    },
+    {
+      "id": "israel-insurance-license-directory",
+      "title": "Insurance agents and pension advisers licence search",
+      "publisher": "Israel Capital Market, Insurance and Savings Authority",
+      "url": "https://www.gov.il/he/service/agents_and_consultants_search",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["Israeli insurance intermediary licence verification", "name and licence-role check before purchase"]
+    },
+    {
+      "id": "gotokyo-accessibility",
+      "title": "Accessibility in Tokyo",
+      "publisher": "GO TOKYO, Tokyo Convention and Visitors Bureau",
+      "url": "https://www.gotokyo.org/en/plan/accessibility/index.html",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["advance accessibility planning", "accommodation-specific communication", "crowd and family pacing"]
+    },
+    {
+      "id": "gotokyo-area-guide",
+      "title": "Tokyo area guide",
+      "publisher": "GO TOKYO, Tokyo Convention and Visitors Bureau",
+      "url": "https://www.gotokyo.org/en/destinations/index.html",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["official neighborhood inventory", "area-first itinerary and accommodation selection"]
+    },
+    {
+      "id": "gotokyo-shinjuku",
+      "title": "Shinjuku area guide",
+      "publisher": "GO TOKYO, Tokyo Convention and Visitors Bureau",
+      "url": "https://www.gotokyo.org/en/destinations/western-tokyo/shinjuku/index.html",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["Shinjuku transport-hub character", "west and east side tradeoffs", "shopping, dining and nightlife context"]
+    },
+    {
+      "id": "gotokyo-shibuya",
+      "title": "Shibuya area guide",
+      "publisher": "GO TOKYO, Tokyo Convention and Visitors Bureau",
+      "url": "https://www.gotokyo.org/en/destinations/western-tokyo/shibuya/index.html",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["Shibuya youth-culture, fashion and arts character", "multi-operator station context", "crowd and area-fit tradeoffs"]
+    },
+    {
+      "id": "gotokyo-asakusa",
+      "title": "Asakusa area guide",
+      "publisher": "GO TOKYO, Tokyo Convention and Visitors Bureau",
+      "url": "https://www.gotokyo.org/en/destinations/eastern-tokyo/asakusa/",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["Asakusa tradition, river and craft character", "rail-line context", "east-side area-fit decision"]
+    },
+    {
+      "id": "gotokyo-tokyo-station",
+      "title": "Tokyo Station and Marunouchi area guide",
+      "publisher": "GO TOKYO, Tokyo Convention and Visitors Bureau",
+      "url": "https://www.gotokyo.org/en/destinations/central-tokyo/tokyo-station-and-marunouchi/index.html",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["Tokyo Station hub character", "Marunouchi business and architecture context", "airport and onward-rail planning"]
+    },
+    {
+      "id": "gotokyo-odaiba",
+      "title": "Odaiba area guide",
+      "publisher": "GO TOKYO, Tokyo Convention and Visitors Bureau",
+      "url": "https://www.gotokyo.org/en/destinations/southern-tokyo/odaiba/index.html",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["Odaiba waterfront and family character", "distinct transport-chain decision", "indoor-outdoor day architecture"]
+    },
+    {
+      "id": "gotokyo-family",
+      "title": "Sightseeing spots for the family",
+      "publisher": "GO TOKYO, Tokyo Convention and Visitors Bureau",
+      "url": "https://www.gotokyo.org/en/story/guide/sightseeing-spots-for-the-family/index.html",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["family crowd and heat planning", "indoor and outdoor activity mix", "age-specific transit recheck"]
+    },
+    {
+      "id": "gotokyo-accommodation",
+      "title": "Accommodations and accommodation tax",
+      "publisher": "GO TOKYO, Tokyo Convention and Visitors Bureau",
+      "url": "https://www.gotokyo.org/en/plan/accommodations/index.html",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["accommodation-type inventory", "lawful private-lodging permit check", "property-condition and tax recheck"]
+    },
+    {
+      "id": "jnto-local-laws",
+      "title": "Local laws in Japan",
+      "publisher": "Japan National Tourism Organization",
+      "url": "https://www.japan.travel/en/plan/local-laws/",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["passport-identification reminder", "smoking and venue-rule awareness", "strict drug-law boundary"]
+    },
+    {
+      "id": "japan-customs-passenger",
+      "title": "Japan Customs passenger procedures",
+      "publisher": "Japan Customs",
+      "url": "https://www.customs.go.jp/english/passenger/",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["passenger customs declaration", "prohibited and restricted article recheck", "electronic declaration link"]
+    },
+    {
+      "id": "japan-mhlw-personal-medicine",
+      "title": "Bringing medicines for personal use into Japan",
+      "publisher": "Ministry of Health, Labour and Welfare of Japan",
+      "url": "https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/kenkou_iryou/iyakuhin/kojinyunyu/topics/tp010401-1_00001.html",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["personal-medicine import-confirmation thresholds", "prescription and medical-device categories", "prohibited and controlled-drug boundary"]
+    },
+    {
+      "id": "japan-mhlw-travel-medicine-containers",
+      "title": "Common precautions when traveling internationally with medicines",
+      "publisher": "Ministry of Health, Labour and Welfare of Japan",
+      "url": "https://www.yakubutsu.mhlw.go.jp/individualimport/purchase/index.html",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["medicine explanation documents", "original-container guidance", "necessary-quantity and destination-rule checks"]
+    },
+    {
+      "id": "japan-ncd-controlled-medicine",
+      "title": "Controlled-medicine application guidance for travelers",
+      "publisher": "Narcotics Control Department, Ministry of Health, Labour and Welfare",
+      "url": "https://www.ncd.mhlw.go.jp/en/application2.html",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["traveler permission process for controlled substances", "medicine and airport-specific application", "prohibited-substance boundary"]
+    },
+    {
+      "id": "japan-animal-quarantine",
+      "title": "Bringing animal products into Japan",
+      "publisher": "Animal Quarantine Service, Ministry of Agriculture, Forestry and Fisheries",
+      "url": "https://www.maff.go.jp/aqs/english/product/import.html",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["meat and animal-product quarantine", "inspection-certificate boundary", "food-item declaration and inspection decision"]
+    },
+    {
+      "id": "jnto-connectivity",
+      "title": "Wi-Fi and connectivity in Japan",
+      "publisher": "Japan National Tourism Organization",
+      "url": "https://www.japan.travel/en/plan/wifi-and-connectivity/",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["airport Wi-Fi, SIM and pocket-Wi-Fi categories", "device-compatibility recheck", "offline fallback planning"]
+    }
+  ],
+  "facts": [
+    {
+      "id": "israeli-short-stay-visa-exemption",
+      "claim": "Japan's current visa-exemption list includes Israel for short temporary visits, but nationality, passport type, purpose and current bilateral conditions must be reopened before publication and departure.",
+      "sourceIds": ["japan-embassy-israel-consular", "japan-mofa-visa-exemption", "japan-mofa-visa-faq"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "temporary-visitor-purpose-boundary",
+      "claim": "The short-stay exemption is a temporary-visitor framework and does not authorize income-earning activity, so work, study and non-tourism purposes require separate confirmation.",
+      "sourceIds": ["japan-mofa-visa-exemption", "japan-mofa-visa-faq", "japan-immigration-landing"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "landing-permission-not-guaranteed",
+      "claim": "A visa or visa exemption does not itself guarantee entry; the traveler remains subject to landing examination and must be able to explain the intended activities and stay.",
+      "sourceIds": ["japan-mofa-visa-faq", "japan-immigration-landing"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "passport-and-document-recheck",
+      "claim": "Travelers need a valid passport and any visa required for their circumstances, and unusual travel documents or passport conditions require direct embassy and immigration confirmation.",
+      "sourceIds": ["japan-embassy-israel-consular", "japan-mofa-visa-faq", "japan-immigration-landing"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "visit-japan-web-arrival-flow",
+      "claim": "Visit Japan Web is the official digital service for advance immigration and customs information and arrival codes, but travelers need a current official account flow and an offline document fallback.",
+      "sourceIds": ["visit-japan-web", "japan-customs-passenger"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "live-israeli-security-check",
+      "claim": "The live National Security Council collector is the authority for the current Japan travel-warning level and must be checked at publication time, booking time and immediately before travel.",
+      "sourceIds": ["israel-nsc-live-warnings"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "israeli-consular-contact",
+      "claim": "The Israeli Embassy in Tokyo publishes the official consular contact channel for Israeli travelers, and the current contact details and availability must be saved and rechecked before departure.",
+      "sourceIds": ["israel-tokyo-contacts"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "haneda-access-categories",
+      "claim": "Haneda provides train, monorail, bus and taxi access choices whose suitability depends on the arrival terminal, destination address, luggage, arrival time and mobility needs.",
+      "sourceIds": ["haneda-access", "tokyo-monorail", "keikyu-haneda-access"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "haneda-terminal-transfer-chain",
+      "claim": "Haneda has multiple terminal-transfer methods and eligibility distinctions, so a connection plan must use the actual arriving and departing terminals rather than a generic HND assumption.",
+      "sourceIds": ["haneda-terminal-transfer", "keikyu-haneda-access"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "haneda-assistance-handoff",
+      "claim": "Haneda offers requestable and reservable assistance in defined terminal and parking areas, while its published terms exclude boarding-pass-only gate areas; terminal assistance alone therefore does not prove coverage for the aircraft and every handoff requires separate confirmation.",
+      "sourceIds": ["haneda-assistance", "haneda-assistance-terms"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "narita-access-categories",
+      "claim": "Narita provides rail, bus, taxi, car and terminal-transfer choices, and the correct option depends on terminal, Tokyo area, transfer burden, luggage and service status.",
+      "sourceIds": ["narita-access", "narita-rail"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "narita-station-terminal-mapping",
+      "claim": "Narita rail access uses terminal-specific stations and walking routes, so the traveler must match the airline terminal to the correct station and allow for the terminal route.",
+      "sourceIds": ["narita-rail"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "narita-assistance-handoff",
+      "claim": "Narita accepts advance assistance arrangements and separates airport, railway and airline touchpoints, requiring a need-specific confirmation for every handoff.",
+      "sourceIds": ["narita-assistance", "narita-transport-accessibility"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "haneda-versus-narita-decision",
+      "claim": "HND and NRT must be compared by the full door-to-door chain, including terminal, Tokyo neighborhood, departure hour, transfer count and luggage, not by airport name or headline journey time alone.",
+      "sourceIds": ["haneda-access", "narita-access", "narita-rail"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "airport-switch-risk",
+      "claim": "Haneda and Narita are distinct airports with separate access systems, so an airport change or separate-ticket connection requires a ground-transfer plan and a conservative recheckable buffer.",
+      "sourceIds": ["haneda-access", "narita-access", "keikyu-haneda-access"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "narita-express-route-fit",
+      "claim": "JR East presents Narita Express as a reserved airport train serving several major Tokyo areas with luggage facilities, making final-area fit more important than a universal best claim.",
+      "sourceIds": ["jr-east-nex", "narita-rail"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "skyliner-route-fit",
+      "claim": "Keisei presents Skyliner as a reserved airport train oriented to Nippori and Ueno with luggage facilities, so its value depends on the onward route to the selected area.",
+      "sourceIds": ["keisei-skyliner", "narita-rail"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "haneda-monorail-route-fit",
+      "claim": "Tokyo Monorail connects Haneda terminals with the Hamamatsucho interchange, and the decision must include the onward operator, transfer path and final address.",
+      "sourceIds": ["tokyo-monorail", "haneda-access"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "haneda-keikyu-route-fit",
+      "claim": "Keikyu provides a separate Haneda rail architecture with terminal stations and onward connections, so it must be compared against the monorail using the actual final area.",
+      "sourceIds": ["keikyu-haneda-access", "haneda-access"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "tokyo-ticket-product-choice",
+      "claim": "Tokyo Metro distinguishes local tickets, IC-card use and visitor products with different eligibility and coverage, so the article must teach a route-led break-even method without freezing fares.",
+      "sourceIds": ["tokyo-metro-tickets", "jr-east-welcome-suica"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "ic-card-boundaries",
+      "claim": "Welcome Suica can support everyday transit and payments but has area, product, validity and limited-express boundaries that must be rechecked before recommending it.",
+      "sourceIds": ["jr-east-welcome-suica"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "station-specific-accessibility",
+      "claim": "Tokyo Metro exposes station-specific barrier-free route, elevator, toilet and mobility filters, so accessible planning must use the exact station and exit rather than a network-wide promise.",
+      "sourceIds": ["tokyo-metro-accessibility", "gotokyo-accessibility"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "live-multilingual-weather-source",
+      "claim": "The Japan Meteorological Agency provides multilingual weather and disaster-risk information for weather, heavy rain, heat, earthquakes, tsunami and volcanoes and must be treated as a live source.",
+      "sourceIds": ["jma-multilingual", "gotokyo-emergency"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "live-heat-risk-source",
+      "claim": "Japan's Ministry of the Environment publishes current heat alerts and WBGT information, so summer pacing must be based on live conditions rather than seasonal averages alone.",
+      "sourceIds": ["japan-heat-wbgt", "jnto-weather"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "tokyo-seasonal-weather",
+      "claim": "Official tourism guidance distinguishes seasonal heat, humidity, rain, typhoon and cooler-weather patterns, but itinerary decisions require a Tokyo-specific forecast close to travel.",
+      "sourceIds": ["jnto-weather", "jma-multilingual"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "emergency-preparedness-chain",
+      "claim": "Tokyo's official emergency sources support a pre-downloaded response plan, following local instructions, avoiding an uninformed rush outside after an earthquake, and remaining in a safe place while checking authoritative disaster and transport information.",
+      "sourceIds": ["gotokyo-emergency", "tokyo-metropolitan-disaster-guide", "jma-multilingual", "israel-tokyo-contacts"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "insurance-coverage-decision",
+      "claim": "JNTO recommends travel insurance and highlights coverage, medical-payment method, chronic-condition and planned-activity questions that must be answered by the policy provider; Israeli travelers can separately verify an intermediary's licence and role in the official authority directory.",
+      "sourceIds": ["jnto-travel-insurance", "israel-insurance-license-directory"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "end-to-end-accessibility",
+      "claim": "Official Tokyo guidance supports advance accessibility planning and detailed communication with accommodations, while airport and station sources require every travel-chain segment to be verified separately.",
+      "sourceIds": ["gotokyo-accessibility", "haneda-assistance", "narita-assistance", "tokyo-metro-accessibility"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "tokyo-neighborhood-inventory",
+      "claim": "GO TOKYO describes Tokyo as a patchwork of neighborhoods with distinct characters, supporting area-first planning instead of treating the city as one compact center.",
+      "sourceIds": ["gotokyo-area-guide"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "shinjuku-area-fit",
+      "claim": "Official Tokyo guidance characterizes Shinjuku as a major multi-operator hub with different east, west and nightlife contexts, requiring station-exit and noise tradeoffs in a stay decision.",
+      "sourceIds": ["gotokyo-shinjuku", "gotokyo-area-guide"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "shibuya-area-fit",
+      "claim": "Official Tokyo guidance characterizes Shibuya through fashion, arts, dining, crowds and multiple operators, making crowd tolerance and the exact station side part of the stay decision.",
+      "sourceIds": ["gotokyo-shibuya", "gotokyo-area-guide"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "asakusa-area-fit",
+      "claim": "Official Tokyo guidance characterizes Asakusa through tradition, crafts and the river with several rail links, supporting an east-side heritage choice whose western-city transfers still need testing.",
+      "sourceIds": ["gotokyo-asakusa", "gotokyo-area-guide"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "tokyo-station-area-fit",
+      "claim": "Official Tokyo guidance characterizes Tokyo Station and Marunouchi as a major rail, business and architecture hub, useful for onward travel and central routing but not automatically closest to every interest.",
+      "sourceIds": ["gotokyo-tokyo-station", "gotokyo-area-guide"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "odaiba-area-fit",
+      "claim": "Official Tokyo guidance characterizes Odaiba as a waterfront entertainment and family area with a distinct transport chain, making it a deliberate stay or full-day decision rather than an automatic add-on.",
+      "sourceIds": ["gotokyo-odaiba", "gotokyo-family"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "family-crowd-and-heat-planning",
+      "claim": "Official family guidance recommends planning around crowds, heat, indoor and outdoor options and recovery needs, while all venue ages, tickets and operating details remain supplier-specific.",
+      "sourceIds": ["gotokyo-family", "gotokyo-accessibility", "japan-heat-wbgt"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "accommodation-type-and-legality",
+      "claim": "Tokyo's official accommodation guidance distinguishes several lodging types and requires travelers considering private lodging to verify current registration or permit information and property conditions.",
+      "sourceIds": ["gotokyo-accommodation"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "local-law-and-identification-boundary",
+      "claim": "JNTO's local-law guidance addresses identification, smoking rules, venue restrictions and strict drug controls, all of which require current official confirmation for the traveler's circumstances.",
+      "sourceIds": ["jnto-local-laws", "japan-ncd-controlled-medicine"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "customs-declaration-boundary",
+      "claim": "Japan Customs requires passenger declaration procedures and distinguishes prohibited and restricted goods, so item-specific checks must happen before packing and again before arrival.",
+      "sourceIds": ["japan-customs-passenger", "visit-japan-web"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "personal-medicine-import-check",
+      "claim": "Japan's health authority sets medicine, prescription, injection and medical-device import-confirmation boundaries and separately advises travelers to carry explanatory documents and medicines in their original containers, requiring a check of the exact substance, form, quantity and arrival plan.",
+      "sourceIds": ["japan-mhlw-personal-medicine", "japan-mhlw-travel-medicine-containers", "japan-customs-passenger"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "controlled-medicine-permission-check",
+      "claim": "The Narcotics Control Department maintains substance-specific permission and prohibition rules and an airport-linked application process, so a foreign prescription alone is not sufficient evidence of permission.",
+      "sourceIds": ["japan-ncd-controlled-medicine", "japan-mhlw-personal-medicine"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "animal-product-quarantine-check",
+      "claim": "Japan's Animal Quarantine Service applies restrictions and inspection-certificate rules to meat and other animal products, including some personal food, gifts and packaged items.",
+      "sourceIds": ["japan-animal-quarantine", "japan-customs-passenger"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "connectivity-option-check",
+      "claim": "Official tourism guidance distinguishes airport Wi-Fi, SIM and pocket-Wi-Fi options, but device compatibility, provider inventory and package terms require live verification and offline navigation backup.",
+      "sourceIds": ["jnto-connectivity", "visit-japan-web"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "luggage-last-mile-decision",
+      "claim": "Airport and city transport choices must include luggage space, station exits, transfer paths and walking at the final address, not only the headline rail segment.",
+      "sourceIds": ["haneda-access", "narita-rail", "jr-east-nex", "keisei-skyliner", "tokyo-metro-accessibility"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "budget-without-fabricated-prices",
+      "claim": "A Tokyo budget can be structured around flight, airport transfer, area, accommodation type, city transport, activities, food and insurance without publishing any current commercial amount before a validated response.",
+      "sourceIds": ["gotokyo-accommodation", "tokyo-metro-tickets", "haneda-access", "narita-access", "jnto-travel-insurance"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "itinerary-by-geographic-clusters",
+      "claim": "Tokyo itinerary patterns should cluster neighborhoods and use one major area or compatible pair per day, with the official area inventory providing the structure and live operator information governing the route.",
+      "sourceIds": ["gotokyo-area-guide", "tokyo-metro-tickets", "jr-east-welcome-suica"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "booking-sequence-and-revalidation",
+      "claim": "The booking sequence should resolve entry, security, airport, area, accessibility and medicine constraints before non-refundable components, then revalidate every schedule, fare, property, ticket and policy at purchase time.",
+      "sourceIds": ["japan-mofa-visa-exemption", "israel-nsc-live-warnings", "haneda-access", "narita-access", "gotokyo-accommodation", "jnto-travel-insurance", "japan-mhlw-personal-medicine"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    }
+  ]
+}

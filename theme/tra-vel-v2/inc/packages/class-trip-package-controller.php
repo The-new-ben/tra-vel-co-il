@@ -141,7 +141,7 @@ class Tra_Vel_V2_Trip_Package_Controller extends WP_REST_Controller {
 		$response->header( 'X-Tra-Vel-Cache', $resolved['runtime']['cache_state'] );
 		$response->add_link( 'self', rest_url( $this->namespace . '/' . $this->rest_base ) );
 		$response->add_link( 'https://tra-vel.co.il/rels/map', home_url( '/travel-map/?layer=deals&destination=budapest' ) );
-		$response->add_link( 'https://tra-vel.co.il/rels/destination', home_url( '/budapest/' ) );
+		$response->add_link( 'https://tra-vel.co.il/rels/destination', home_url( '/destinations/budapest/' ) );
 		return $response;
 	}
 

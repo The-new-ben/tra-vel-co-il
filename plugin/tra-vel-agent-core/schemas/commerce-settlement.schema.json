@@ -1,0 +1,140 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://tra-vel.co.il/schemas/commerce-settlement-v1.schema.json",
+  "title": "Tra-Vel commerce sandbox affiliate settlement",
+  "description": "An evidence-bound simulated affiliate commission lifecycle. It contains no raw partner booking or payout reference.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "environment",
+    "settlement_ref",
+    "version",
+    "order_ref",
+    "order_item_ref",
+    "provider_id",
+    "relationship",
+    "vertical",
+    "attribution_ref",
+    "conversion_reference_digest",
+    "state",
+    "currency",
+    "minor_unit",
+    "reported_gross_amount_minor",
+    "commission_bps",
+    "commission_amount_minor",
+    "paid_amount_minor",
+    "reversed_amount_minor",
+    "payout_lag_days",
+    "evidence",
+    "latest_operation_ref",
+    "created_at",
+    "updated_at",
+    "reported_at",
+    "paid_at",
+    "sandbox_truth",
+    "data_boundary"
+  ],
+  "properties": {
+    "contract_version": { "const": "1.0.0" },
+    "environment": { "const": "sandbox" },
+    "settlement_ref": { "$ref": "#/definitions/settlementRef" },
+    "version": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+    "order_ref": { "$ref": "#/definitions/orderRef" },
+    "order_item_ref": { "$ref": "#/definitions/orderItemRef" },
+    "provider_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:[-_][a-z0-9]+)*$",
+      "maxLength": 64
+    },
+    "relationship": { "const": "affiliate" },
+    "vertical": {
+      "enum": ["flight", "accommodation", "package", "transfer", "activity", "dining", "insurance", "connectivity", "equipment"]
+    },
+    "attribution_ref": { "$ref": "#/definitions/attributionRef" },
+    "conversion_reference_digest": { "$ref": "#/definitions/nullableDigest" },
+    "state": { "enum": ["click_recorded", "conversion_reported", "eligible", "payable", "paid", "reversed", "disputed"] },
+    "currency": { "type": "string", "pattern": "^[A-Z]{3}$" },
+    "minor_unit": { "type": "integer", "minimum": 0, "maximum": 3 },
+    "reported_gross_amount_minor": { "type": "integer", "minimum": 0, "maximum": 1000000000000 },
+    "commission_bps": { "type": "integer", "minimum": 0, "maximum": 10000 },
+    "commission_amount_minor": { "type": "integer", "minimum": 0, "maximum": 1000000000000 },
+    "paid_amount_minor": { "type": "integer", "minimum": 0, "maximum": 1000000000000 },
+    "reversed_amount_minor": { "type": "integer", "minimum": 0, "maximum": 1000000000000 },
+    "payout_lag_days": { "type": "integer", "minimum": 0, "maximum": 365 },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["click_digest", "conversion_report_digest", "eligibility_digest", "payout_report_digest", "observed_at"],
+      "properties": {
+        "click_digest": { "$ref": "#/definitions/digest" },
+        "conversion_report_digest": { "$ref": "#/definitions/nullableDigest" },
+        "eligibility_digest": { "$ref": "#/definitions/nullableDigest" },
+        "payout_report_digest": { "$ref": "#/definitions/nullableDigest" },
+        "observed_at": { "$ref": "#/definitions/nullableDateTime" }
+      }
+    },
+    "latest_operation_ref": { "$ref": "#/definitions/nullableOperationRef" },
+    "created_at": { "$ref": "#/definitions/dateTime" },
+    "updated_at": { "$ref": "#/definitions/dateTime" },
+    "reported_at": { "$ref": "#/definitions/nullableDateTime" },
+    "paid_at": { "$ref": "#/definitions/nullableDateTime" },
+    "sandbox_truth": { "$ref": "#/definitions/sandboxTruth" },
+    "data_boundary": { "$ref": "#/definitions/dataBoundary" }
+  },
+  "definitions": {
+    "settlementRef": {
+      "type": "string",
+      "pattern": "^tv_settlement_[A-Za-z0-9_-]{16,96}$",
+      "maxLength": 120
+    },
+    "orderRef": {
+      "type": "string",
+      "pattern": "^tv_order_[A-Za-z0-9_-]{16,96}$",
+      "maxLength": 120
+    },
+    "orderItemRef": {
+      "type": "string",
+      "pattern": "^tv_order_item_[A-Za-z0-9_-]{16,96}$",
+      "maxLength": 120
+    },
+    "attributionRef": {
+      "type": "string",
+      "pattern": "^tv_attribution_[A-Za-z0-9_-]{16,96}$",
+      "maxLength": 120
+    },
+    "nullableOperationRef": {
+      "type": ["string", "null"],
+      "pattern": "^tv_operation_[A-Za-z0-9_-]{16,96}$",
+      "maxLength": 120
+    },
+    "digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "nullableDigest": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" },
+    "dateTime": { "type": "string", "format": "date-time", "pattern": "Z$" },
+    "nullableDateTime": { "type": ["string", "null"], "format": "date-time", "pattern": "Z$" },
+    "sandboxTruth": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["simulated_inventory", "real_supplier_request", "real_inventory_hold", "real_charge", "real_booking", "real_policy_issuance", "real_settlement"],
+      "properties": {
+        "simulated_inventory": { "const": true },
+        "real_supplier_request": { "const": false },
+        "real_inventory_hold": { "const": false },
+        "real_charge": { "const": false },
+        "real_booking": { "const": false },
+        "real_policy_issuance": { "const": false },
+        "real_settlement": { "const": false }
+      }
+    },
+    "dataBoundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["raw_supplier_reference_exposed", "raw_payment_data_exposed", "medical_data_exposed"],
+      "properties": {
+        "raw_supplier_reference_exposed": { "const": false },
+        "raw_payment_data_exposed": { "const": false },
+        "medical_data_exposed": { "const": false }
+      }
+    }
+  }
+}

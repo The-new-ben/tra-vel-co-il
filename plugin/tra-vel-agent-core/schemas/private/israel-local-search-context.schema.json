@@ -1,0 +1,128 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://tra-vel.co.il/schemas/private/israel-local-search-context-v1.0.0.json",
+  "title": "Tra-Vel private Israel local search context",
+  "description": "Exact local dates, party allocation, geography, mobility, fit needs, product intent, and benefit filter axes. It creates no eligibility, availability, or price truth.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract_version", "environment", "data_mode", "context_ref", "context_version", "previous_context_digest", "context_digest", "created_at", "dates", "party", "room_allocations", "geography", "transport_modes", "requirements", "product_intents", "benefit_filters", "boundary"],
+  "properties": {
+    "contract_version": {"const": "1.0.0"},
+    "environment": {"const": "sandbox"},
+    "data_mode": {"const": "synthetic_demo"},
+    "context_ref": {"type": "string", "pattern": "^tv_local_search_[A-Za-z0-9_-]{16,96}$"},
+    "context_version": {"type": "integer", "minimum": 1, "maximum": 2147483647},
+    "previous_context_digest": {"$ref": "#/definitions/nullableDigest"},
+    "context_digest": {"$ref": "#/definitions/digest"},
+    "created_at": {"$ref": "#/definitions/dateTime"},
+    "dates": {"$ref": "#/definitions/dates"},
+    "party": {"$ref": "#/definitions/party"},
+    "room_allocations": {"type": "array", "minItems": 1, "maxItems": 16, "items": {"$ref": "#/definitions/roomAllocation"}},
+    "geography": {"$ref": "#/definitions/geography"},
+    "transport_modes": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["walk", "private_car", "rental_car", "taxi", "bus", "rail", "domestic_flight", "mixed"]}},
+    "requirements": {"$ref": "#/definitions/requirements"},
+    "product_intents": {"$ref": "#/definitions/productIntents"},
+    "benefit_filters": {"$ref": "#/definitions/benefitFilters"},
+    "boundary": {"$ref": "#/definitions/boundary"}
+  },
+  "allOf": [
+    {"if": {"properties": {"context_version": {"const": 1}}}, "then": {"properties": {"previous_context_digest": {"type": "null"}}}},
+    {"if": {"properties": {"context_version": {"minimum": 2}}}, "then": {"properties": {"previous_context_digest": {"$ref": "#/definitions/digest"}}}}
+  ],
+  "definitions": {
+    "digest": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "nullableDigest": {"anyOf": [{"type": "null"}, {"$ref": "#/definitions/digest"}]},
+    "dateTime": {"type": "string", "format": "date-time", "pattern": "Z$"},
+    "date": {"type": "string", "format": "date", "pattern": "^[0-9]{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12][0-9]|3[01])$"},
+    "dates": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["start_date", "end_date", "timezone"],
+      "properties": {"start_date": {"$ref": "#/definitions/date"}, "end_date": {"$ref": "#/definitions/date"}, "timezone": {"const": "Asia/Jerusalem"}}
+    },
+    "party": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["adult_count", "child_ages"],
+      "properties": {
+        "adult_count": {"type": "integer", "minimum": 1, "maximum": 32},
+        "child_ages": {"type": "array", "maxItems": 32, "items": {"type": "integer", "minimum": 0, "maximum": 17}}
+      }
+    },
+    "roomAllocation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["allocation_ref", "adult_count", "child_age_indexes"],
+      "properties": {
+        "allocation_ref": {"type": "string", "pattern": "^tv_room_allocation_[A-Za-z0-9_-]{16,96}$"},
+        "adult_count": {"type": "integer", "minimum": 1, "maximum": 32},
+        "child_age_indexes": {"type": "array", "maxItems": 32, "uniqueItems": true, "items": {"type": "integer", "minimum": 0, "maximum": 31}}
+      }
+    },
+    "geography": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["corridor", "origin_geo_ref", "destination_geo_refs", "drive_time_limit_minutes"],
+      "properties": {
+        "corridor": {"enum": ["jerusalem_corridor", "eilat_corridor"]},
+        "origin_geo_ref": {"type": ["string", "null"], "pattern": "^tv_geo_[A-Za-z0-9_-]{16,96}$"},
+        "destination_geo_refs": {"type": "array", "minItems": 1, "maxItems": 32, "uniqueItems": true, "items": {"type": "string", "pattern": "^tv_geo_[A-Za-z0-9_-]{16,96}$"}},
+        "drive_time_limit_minutes": {"type": ["integer", "null"], "minimum": 1, "maximum": 1440}
+      }
+    },
+    "requirements": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kosher", "shabbat", "accessibility", "parking"],
+      "properties": {
+        "kosher": {"type": "array", "uniqueItems": true, "items": {"enum": ["kosher_certificate", "certificate_scope", "food_classification", "passover_operation"]}},
+        "shabbat": {"type": "array", "uniqueItems": true, "items": {"enum": ["shabbat_check_in", "shabbat_checkout", "manual_key", "shabbat_elevator", "walking_access", "urn", "hotplate", "prearranged_meals", "holiday_operation"]}},
+        "accessibility": {"type": "array", "uniqueItems": true, "items": {"enum": ["step_free_arrival", "accessible_entrance", "internal_route", "lift", "accessible_unit", "accessible_bathroom", "accessible_shower", "bed_transfer_clearance", "accessible_parking_route", "accessible_transport", "hearing_support", "visual_alarm", "tactile_information", "sensory_support", "service_animal", "medical_refrigeration", "equipment_charging", "emergency_evacuation"]}},
+        "parking": {"type": "array", "uniqueItems": true, "items": {"enum": ["on_site", "off_site", "accessible_bay", "reservation_required", "ev_charging", "vehicle_height_limit"]}}
+      }
+    },
+    "productIntents": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["activities", "dining", "equipment"],
+      "properties": {
+        "activities": {"type": "array", "uniqueItems": true, "items": {"enum": ["private_guide", "licensed_guide", "small_group", "family_session", "accessible_route", "weather_fallback", "equipment_included"]}},
+        "dining": {"type": "array", "uniqueItems": true, "items": {"enum": ["reservation", "private_room", "allergen_protocol", "children_menu", "late_service", "certificate_current"]}},
+        "equipment": {"type": "array", "uniqueItems": true, "items": {"enum": ["child_seat", "mobility_aid", "diving_gear", "snorkel_gear", "hiking_gear", "medical_refrigeration", "charging_adapter"]}}
+      }
+    },
+    "benefitFilters": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["filter_mode", "airline_inventory_ids", "program_ids", "credential_product_ids", "campaign_revisions"],
+      "properties": {
+        "filter_mode": {"enum": ["all", "any"]},
+        "airline_inventory_ids": {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "^airline_[a-z0-9][a-z0-9_]{2,55}$"}},
+        "program_ids": {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "^program_[a-z0-9][a-z0-9_]{2,55}$"}},
+        "credential_product_ids": {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "^credential_[a-z0-9][a-z0-9_]{2,51}$"}},
+        "campaign_revisions": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/definitions/campaignRevision"}}
+      }
+    },
+    "campaignRevision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["campaign_id", "version"],
+      "properties": {"campaign_id": {"type": "string", "pattern": "^campaign_[a-z0-9][a-z0-9_]{2,53}$"}, "version": {"type": "integer", "minimum": 1, "maximum": 2147483647}}
+    },
+    "boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["server_only", "public_serialization_allowed", "contains_raw_identity_data", "contains_card_number", "contains_loyalty_credentials", "creates_eligibility", "creates_availability", "creates_price"],
+      "properties": {
+        "server_only": {"const": true},
+        "public_serialization_allowed": {"const": false},
+        "contains_raw_identity_data": {"const": false},
+        "contains_card_number": {"const": false},
+        "contains_loyalty_credentials": {"const": false},
+        "creates_eligibility": {"const": false},
+        "creates_availability": {"const": false},
+        "creates_price": {"const": false}
+      }
+    }
+  }
+}

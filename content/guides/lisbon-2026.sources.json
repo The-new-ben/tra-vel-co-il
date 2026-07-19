@@ -1,0 +1,675 @@
+{
+  "schemaVersion": 1,
+  "id": "lisbon-2026",
+  "locale": "he-IL",
+  "title": "ליסבון",
+  "excerpt": "מדריך ליסבון לישראלים שיסדר את החלטות הכניסה, הביטחון, ההגעה דרך LIS, התחבורה, אזור הלינה, הגבעות, המשפחה, הנגישות, סינטרה והחוף, התרופות, המכס והקישוריות על בסיס מקורות רשמיים ובדיקה עדכנית לפני הנסיעה.",
+  "author": "מערכת Tra-Vel",
+  "reviewer": "טרם מונה עורך מזוהה",
+  "primaryTopic": "Lisbon travel guide for Israeli travelers",
+  "canonicalPath": "/destinations/lisbon/",
+  "status": "editorial-review",
+  "wordTargetMin": 5000,
+  "checkedAt": "2026-07-18",
+  "mapState": "lisbon",
+  "reviewMethod": "Long-form Hebrew guide drafted from the complete official and primary source packet, with source-link coverage and automated structural validation completed; awaiting a named editor. Reopen every Portuguese, European, Israeli, airport, transport, civil-protection, weather, tourism, customs and medicine source before publication, then recheck every volatile decision without presenting an unvalidated warning level, fare, schedule, supplier, property, score, saving, attraction status or commercial amount.",
+  "contentPath": "content/guides/lisbon-2026.he.html",
+  "sections": [
+    "Decision summary and trip fit for Israeli travelers",
+    "Israeli passport and Schengen entry recheck",
+    "Border permission and supporting-document boundary",
+    "Minors, consent and family-document decisions",
+    "Live Israeli security warning and Lisbon consular contacts",
+    "Pre-departure decision order and offline evidence pack",
+    "Flight-route comparison without frozen schedules or fares",
+    "LIS arrival, baggage and terminal handoff sequence",
+    "LIS airport-to-address transport decision",
+    "Licensed taxi and app-based pickup verification",
+    "Airport reduced-mobility assistance and airline handoffs",
+    "Airport connectivity and disruption fallback",
+    "Metro route, map, ticket and validation framework",
+    "Bus, tram, funicular and elevator network decisions",
+    "Live service, line and lift-status recheck",
+    "Urban rail for Lisbon, Sintra and the coast",
+    "Area-first accommodation decision",
+    "Lower-city, hill-area and transport-hub tradeoffs",
+    "Hills, paving, luggage and last-mile walking",
+    "Family planning by age, stroller needs and recovery time",
+    "End-to-end accessibility chain",
+    "Season, forecast and indoor-outdoor pacing",
+    "Heat exposure and daily pacing decisions",
+    "Rain, wind and coastal-condition recheck",
+    "Rural-fire danger and official restriction response",
+    "Civil-protection alerts and offline fallback",
+    "Sintra day-trip versus split-stay decision",
+    "Sintra access, circulation and timed-entry recheck",
+    "Cascais and coast decision",
+    "Personal medicines, prescriptions and packing evidence",
+    "Customs channels, restricted goods and declaration decisions",
+    "Cash-declaration recheck without a frozen threshold",
+    "Connectivity, Wi-Fi, SIM and eSIM planning",
+    "Insurance, health and emergency-response decisions",
+    "Budget architecture without fabricated current prices",
+    "Two, three, four, five and seven-day itinerary patterns",
+    "Booking sequence and supplier revalidation",
+    "Frequently asked traveler questions",
+    "Source log, freshness and named-editor blocker"
+  ],
+  "sources": [
+    {
+      "id": "portugal-travel-guide",
+      "title": "Travel to Portugal",
+      "publisher": "Government of Portugal",
+      "url": "https://www.gov.pt/guias/viajar-para-portugal",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["travel-document decision for entry from outside the Schengen area", "minor-travel documentation", "lost or expired document guidance channel"]
+    },
+    {
+      "id": "eu-non-eu-entry",
+      "title": "Travel documents for non-EU nationals",
+      "publisher": "European Union",
+      "url": "https://europa.eu/youreurope/citizens/travel/entry-exit/non-eu-nationals/index_en.htm",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["Schengen travel-document framework", "visa and supporting-document recheck", "border-entry permission boundary"]
+    },
+    {
+      "id": "israel-nsc-live-warnings",
+      "title": "Live travel-warning collector",
+      "publisher": "Israel National Security Council",
+      "url": "https://www.gov.il/he/Departments/DynamicCollectors/travel-warnings-nsc",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["current Portugal warning lookup", "publication-time and pre-departure security recheck"]
+    },
+    {
+      "id": "israel-lisbon-consular",
+      "title": "Contact the Embassy of Israel in Portugal",
+      "publisher": "Ministry of Foreign Affairs of Israel",
+      "url": "https://embassies.gov.il/portugal/he/contacts",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["Israeli consular contact channel in Lisbon", "lost-document and emergency-reference planning"]
+    },
+    {
+      "id": "lis-airport-public-transport",
+      "title": "Public transportation to and from Lisbon Airport",
+      "publisher": "Lisbon Airport",
+      "url": "https://www.lisbonairport.pt/en/lis/access-parking/getting-to-and-from-the-airport/public-transportation",
+      "type": "primary",
+      "checkedAt": "2026-07-18",
+      "supports": ["airport metro, bus, taxi and app-based pickup categories", "airport-to-rail connection architecture", "licensed pickup safety boundary"]
+    },
+    {
+      "id": "lis-airport-reduced-mobility",
+      "title": "Reduced mobility services at Lisbon Airport",
+      "publisher": "Lisbon Airport",
+      "url": "https://www.lisbonairport.pt/en/lis/services-shopping/essential-services/reduced-mobility",
+      "type": "primary",
+      "checkedAt": "2026-07-18",
+      "supports": ["MyWay airport assistance", "airport and airline handoff", "advance assistance request"]
+    },
+    {
+      "id": "lis-airport-wifi",
+      "title": "Free Wi-Fi at Lisbon Airport",
+      "publisher": "Lisbon Airport",
+      "url": "https://www.lisbonairport.pt/en/lis/services-shopping/essential-services/free-wifi",
+      "type": "primary",
+      "checkedAt": "2026-07-18",
+      "supports": ["airport connectivity fallback", "arrival communication and navigation preparation"]
+    },
+    {
+      "id": "lis-airport-passenger-rights",
+      "title": "Passenger rights at Lisbon Airport",
+      "publisher": "Lisbon Airport",
+      "url": "https://www.lisbonairport.pt/en/lis/passenger-guide/what-you-need-to-know/passenger-rights",
+      "type": "primary",
+      "checkedAt": "2026-07-18",
+      "supports": ["flight disruption response channel", "airline and airport responsibility boundary", "passenger-rights recheck"]
+    },
+    {
+      "id": "metro-using",
+      "title": "Using the Lisbon Metro",
+      "publisher": "Metropolitano de Lisboa",
+      "url": "https://www.metrolisboa.pt/en/travel/using-the-metro/",
+      "type": "primary",
+      "checkedAt": "2026-07-18",
+      "supports": ["metro entry and validation workflow", "ticket and passenger-rule recheck", "reduced-mobility travel planning"]
+    },
+    {
+      "id": "metro-maps",
+      "title": "Lisbon Metro diagrams and maps",
+      "publisher": "Metropolitano de Lisboa",
+      "url": "https://www.metrolisboa.pt/en/travel/diagrams-and-maps/",
+      "type": "primary",
+      "checkedAt": "2026-07-18",
+      "supports": ["current metro network diagram", "station and accessibility map planning"]
+    },
+    {
+      "id": "metro-line-lift-status",
+      "title": "Lisbon Metro line and lift status",
+      "publisher": "Metropolitano de Lisboa",
+      "url": "https://www.metrolisboa.pt/en/travel/line-and-lift-status/",
+      "type": "primary",
+      "checkedAt": "2026-07-18",
+      "supports": ["live line status", "live lift status", "station-specific access recheck"]
+    },
+    {
+      "id": "carris-routes",
+      "title": "CARRIS routes",
+      "publisher": "CARRIS",
+      "url": "https://www.carris.pt/en/travel/carreiras/",
+      "type": "primary",
+      "checkedAt": "2026-07-18",
+      "supports": ["bus, tram, funicular and elevator route inventory", "mode and stop planning"]
+    },
+    {
+      "id": "carris-service-changes",
+      "title": "CARRIS service changes",
+      "publisher": "CARRIS",
+      "url": "https://carris.pt/en/travel/alteracoes-de-servico/",
+      "type": "primary",
+      "checkedAt": "2026-07-18",
+      "supports": ["live public-transport service changes", "route disruption recheck"]
+    },
+    {
+      "id": "carris-reduced-mobility",
+      "title": "CARRIS reduced mobility",
+      "publisher": "CARRIS",
+      "url": "https://www.carris.pt/en/travel/reduced-mobility/",
+      "type": "primary",
+      "checkedAt": "2026-07-18",
+      "supports": ["adapted public-transport planning", "vehicle and route accessibility recheck", "specialized mobility service channel"]
+    },
+    {
+      "id": "carrisway",
+      "title": "CARRISway",
+      "publisher": "CARRIS",
+      "url": "https://www.carris.pt/en/buy/services/carrisway/",
+      "type": "primary",
+      "checkedAt": "2026-07-18",
+      "supports": ["live map and stop information", "route and arrival information", "digital ticket-management recheck"]
+    },
+    {
+      "id": "cp-lisbon-urban",
+      "title": "Lisbon urban trains",
+      "publisher": "Comboios de Portugal",
+      "url": "https://cp.pt/info/en/lisbon",
+      "type": "primary",
+      "checkedAt": "2026-07-18",
+      "supports": ["Lisbon urban rail network", "Sintra and Cascais rail corridors", "intermodal route planning"]
+    },
+    {
+      "id": "cp-specific-needs",
+      "title": "Special needs passengers",
+      "publisher": "Comboios de Portugal",
+      "url": "https://www.cp.pt/info/en/w/snp",
+      "type": "primary",
+      "checkedAt": "2026-07-18",
+      "supports": ["rail assistance service", "station and train accessibility variability", "advance confirmation boundary"]
+    },
+    {
+      "id": "cp-sintra",
+      "title": "Discover Sintra by train",
+      "publisher": "Comboios de Portugal",
+      "url": "https://www.cp.pt/info/en/w/discover-sintra",
+      "type": "primary",
+      "checkedAt": "2026-07-18",
+      "supports": ["Lisbon-to-Sintra rail decision", "operator route-planning channel", "current product and condition recheck"]
+    },
+    {
+      "id": "anepc-live-warnings",
+      "title": "Warnings to the population",
+      "publisher": "National Emergency and Civil Protection Authority",
+      "url": "https://prociv.gov.pt/en/warnings-to-the-population/",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["live Portuguese civil-protection warnings", "weather, fire and flood response channel"]
+    },
+    {
+      "id": "anepc-text-alerts",
+      "title": "Text warning to the public",
+      "publisher": "National Emergency and Civil Protection Authority",
+      "url": "https://prociv.gov.pt/en/prevention-and-preparedness/warning-to-the-public/text-warning-to-the-public/",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["geographically targeted public-warning messages", "visitor and roaming-phone alert planning", "official sender and response guidance"]
+    },
+    {
+      "id": "ipma-lisbon-warnings",
+      "title": "Lisbon district weather warnings",
+      "publisher": "Portuguese Institute for Sea and Atmosphere",
+      "url": "https://www.ipma.pt/en/otempo/prev-sam/timeline.jsp?reg=LRA",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["live Lisbon district weather warnings", "hazard and validity-window recheck"]
+    },
+    {
+      "id": "ipma-fire-danger",
+      "title": "Mainland rural fire danger",
+      "publisher": "Portuguese Institute for Sea and Atmosphere",
+      "url": "https://www.ipma.pt/en/riscoincendio/rcm.pt/?print=true",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["live municipality fire-danger lookup", "official restriction and outdoor-plan recheck"]
+    },
+    {
+      "id": "visitlisboa-stay-plan",
+      "title": "Stay and plan Lisbon",
+      "publisher": "Visit Lisboa",
+      "url": "https://www.visitlisboa.com/en/p/stay-plan",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["where-to-stay decision architecture", "Lisbon area and transport planning categories"]
+    },
+    {
+      "id": "visitlisboa-lisbon",
+      "title": "Lisbon region",
+      "publisher": "Visit Lisboa",
+      "url": "https://www.visitlisboa.com/en/regions/lisbon",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["Lisbon city and region orientation", "area-first activity clustering"]
+    },
+    {
+      "id": "visitlisboa-family",
+      "title": "Family places in the Lisbon region",
+      "publisher": "Visit Lisboa",
+      "url": "https://www.visitlisboa.com/en/places?q%5Bcategories_id_in%5D%5B%5D=76",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["family-oriented place discovery", "age, access and operator-level verification boundary"]
+    },
+    {
+      "id": "visitlisboa-traveller-info",
+      "title": "Traveller information",
+      "publisher": "Visit Lisboa",
+      "url": "https://www.visitlisboa.com/en/traveller-information",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["first-trip orientation", "transport and authority contact channels", "live-information recheck boundary"]
+    },
+    {
+      "id": "visitportugal-accessible-lisbon",
+      "title": "Accessible tour of Lisbon",
+      "publisher": "Visit Portugal",
+      "url": "https://www.visitportugal.com/en/destinos/lisboa-regi%C3%A3o/315757",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["Lisbon hill and surface-access context", "area-based accessible route planning", "segment-level transport recheck"]
+    },
+    {
+      "id": "visitportugal-accessible-tourism",
+      "title": "Accessible tourism in Portugal",
+      "publisher": "Visit Portugal",
+      "url": "https://www.visitportugal.com/en/experiencias/turismo-acessivel",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["accessibility planning categories", "transport, accommodation and route verification", "need-specific planning boundary"]
+    },
+    {
+      "id": "parques-sintra-plan",
+      "title": "Plan your visit to Parques de Sintra",
+      "publisher": "Parques de Sintra",
+      "url": "https://www.parquesdesintra.pt/en/plan-your-visit/",
+      "type": "primary",
+      "checkedAt": "2026-07-18",
+      "supports": ["Sintra access and circulation planning", "timed-entry and visitor-notice recheck", "official attraction-operator channel"]
+    },
+    {
+      "id": "parques-sintra-accessibility",
+      "title": "Accessibility at Parques de Sintra",
+      "publisher": "Parques de Sintra",
+      "url": "https://www.parquesdesintra.pt/en/plan-your-visit/accessibility/",
+      "type": "primary",
+      "checkedAt": "2026-07-18",
+      "supports": ["property-specific Sintra accessibility", "advance arrangement and route-selection boundary"]
+    },
+    {
+      "id": "visitlisboa-sintra",
+      "title": "Sintra region",
+      "publisher": "Visit Lisboa",
+      "url": "https://www.visitlisboa.com/en/regions/sintra",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["Sintra area scope", "city, landscape and coast clustering", "day-trip versus split-stay decision"]
+    },
+    {
+      "id": "visitlisboa-cascais",
+      "title": "Cascais region",
+      "publisher": "Visit Lisboa",
+      "url": "https://www.visitlisboa.com/en/regions/cascais",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["Cascais and coast area scope", "coastal itinerary clustering", "condition-dependent outdoor planning"]
+    },
+    {
+      "id": "portugal-customs-travellers",
+      "title": "Customs allowances, goods and limits for travellers",
+      "publisher": "Portuguese Tax and Customs Authority",
+      "url": "https://info.portaldasfinancas.gov.pt/en/tax-information/travellers-and-customs/customs-allowances-goods-limits/Pages/default.aspx",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["customs declaration channels", "restricted and prohibited goods categories", "traveller-luggage inspection boundary"]
+    },
+    {
+      "id": "portugal-cash-declaration",
+      "title": "Declare cash when entering or leaving Portugal",
+      "publisher": "Portuguese Tax and Customs Authority",
+      "url": "https://info.portaldasfinancas.gov.pt/en/tax-information/travellers-and-customs/declare-cash-when-entering-or-leaving-portugal/Pages/default.aspx",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["cash-declaration decision", "current declaration process and threshold recheck"]
+    },
+    {
+      "id": "infarmed-human-medicines",
+      "title": "Human medicines",
+      "publisher": "INFARMED",
+      "url": "https://www.infarmed.pt/web/infarmed-en/human-medicines",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["Portuguese medicine-authority channel", "medicine authorization and availability categories"]
+    },
+    {
+      "id": "infarmed-medicine-faq",
+      "title": "Frequently asked questions about human medicines",
+      "publisher": "INFARMED",
+      "url": "https://www.infarmed.pt/web/infarmed/perguntas-frequentes-area-transversal/medicamentos_uso_humano",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["prescription and non-prescription medicine distinctions", "Portuguese dispensing and authorization recheck"]
+    },
+    {
+      "id": "visitportugal-communications",
+      "title": "Communications in Portugal",
+      "publisher": "Visit Portugal",
+      "url": "https://www.visitportugal.com/en/node/195700",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["Wi-Fi and mobile-connectivity categories", "SIM, eSIM and roaming decision framework"]
+    }
+  ],
+  "facts": [
+    {
+      "id": "entry-document-recheck",
+      "claim": "An Israeli traveler should verify the passport, Schengen entry and supporting-document rules against the Portuguese and European authority pages before booking and again before departure, rather than treating a guide summary as permission to enter.",
+      "sourceIds": ["portugal-travel-guide", "eu-non-eu-entry"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "visa-eligibility-not-frozen",
+      "claim": "The guide may explain the current decision path for an Israeli passport, but it must not freeze visa eligibility, stay conditions or passport-validity rules because nationality, document and policy conditions can change.",
+      "sourceIds": ["portugal-travel-guide", "eu-non-eu-entry"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "border-permission-boundary",
+      "claim": "Possessing the expected travel documents does not replace border examination, so the traveler should keep purpose, accommodation, onward-travel and means-of-support evidence available in the form required at the time of travel.",
+      "sourceIds": ["eu-non-eu-entry"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "minor-travel-documents",
+      "claim": "A family itinerary must include a separate recheck of the travel-document and consent requirements for every minor, especially when the accompanying adults, surnames or custody circumstances differ.",
+      "sourceIds": ["portugal-travel-guide", "eu-non-eu-entry"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "live-israeli-security-check",
+      "claim": "The security section must send the traveler to the Israeli National Security Council live Portugal lookup before publication, purchase and departure, without reproducing a warning level as a durable fact.",
+      "sourceIds": ["israel-nsc-live-warnings"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "consular-contact-pack",
+      "claim": "The offline trip pack should include the current Israeli mission contact channel and a separate lost-document response plan, with all contact details reopened before publication and departure.",
+      "sourceIds": ["israel-lisbon-consular", "portugal-travel-guide"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "flight-comparison-boundary",
+      "claim": "Flight guidance should compare total journey burden, connection risk, baggage rules and disruption resilience only after a validated provider response, never by publishing an unsourced airline, fare or schedule.",
+      "sourceIds": ["lis-airport-passenger-rights", "lis-airport-public-transport"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "lis-arrival-sequence",
+      "claim": "The arrival plan should connect baggage collection, connectivity, mobility assistance, chosen ground transport and the final address into one verified sequence, with live airport and operator checks governing each handoff.",
+      "sourceIds": ["lis-airport-public-transport", "lis-airport-reduced-mobility", "lis-airport-wifi"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "airport-ground-transport-choices",
+      "claim": "Lisbon Airport exposes public-transport, taxi and app-based pickup categories, but the best choice depends on the current arrival conditions, luggage, mobility needs, address and operator status rather than a universal winner.",
+      "sourceIds": ["lis-airport-public-transport", "metro-line-lift-status", "carris-service-changes"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "licensed-pickup-check",
+      "claim": "A ground-transfer recommendation must preserve the airport's licensed pickup and designated pickup-point guidance and recheck the live process before showing a traveler where to meet a driver.",
+      "sourceIds": ["lis-airport-public-transport"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "airport-assistance-handoff",
+      "claim": "Reduced-mobility planning must distinguish the airport assistance service from the airline's responsibilities, request support through the current channel and confirm every handoff before travel.",
+      "sourceIds": ["lis-airport-reduced-mobility"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "airport-connectivity-fallback",
+      "claim": "The arrival plan should store the address, booking evidence and transport fallback offline, using airport Wi-Fi only as a rechecked connectivity option rather than the sole path to the first transfer.",
+      "sourceIds": ["lis-airport-wifi", "visitportugal-communications"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "disruption-response-boundary",
+      "claim": "When a flight is disrupted, the guide should route the traveler to the current airline, airport and applicable passenger-rights channels without promising an outcome, eligibility condition or payment.",
+      "sourceIds": ["lis-airport-passenger-rights"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "metro-map-first",
+      "claim": "A metro decision should start with the current network and accessibility diagrams, then match the station, interchange, exit and last-mile route to the travel party before any ticket choice is suggested.",
+      "sourceIds": ["metro-maps", "metro-using", "visitportugal-accessible-lisbon"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "metro-validation-recheck",
+      "claim": "Metro ticket, validation and passenger rules must be reopened on the operator page at publication and use time, with no fare, validity window or age rule frozen in the guide.",
+      "sourceIds": ["metro-using"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "live-line-lift-status",
+      "claim": "A route that depends on a particular line, lift or accessible exit is only usable after checking the operator's live status and preserving a step-free or lower-strain fallback.",
+      "sourceIds": ["metro-line-lift-status", "metro-maps", "carris-reduced-mobility"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "carris-mode-network",
+      "claim": "Lisbon surface transport includes several mode categories, so the itinerary should select a current route by destination, walking burden, crowd tolerance and access needs rather than treating every historic vehicle as an attraction or a guaranteed service.",
+      "sourceIds": ["carris-routes", "carris-service-changes"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "carris-live-recheck",
+      "claim": "Every bus, tram, funicular or elevator recommendation must be checked against current route and service-change information immediately before the relevant journey.",
+      "sourceIds": ["carris-routes", "carris-service-changes", "carrisway"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "surface-accessibility-variable",
+      "claim": "Adapted vehicles and specialized services do not establish end-to-end accessibility, so the exact vehicle, stop, boarding process, pavement and destination entrance must be confirmed for the traveler's needs.",
+      "sourceIds": ["carris-reduced-mobility", "visitportugal-accessible-lisbon", "visitportugal-accessible-tourism"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "rail-corridor-decision",
+      "claim": "Lisbon urban rail is a decision path for Sintra and Cascais, but the itinerary must recheck the current station, service, transfer, ticket and last-mile conditions before committing the day plan.",
+      "sourceIds": ["cp-lisbon-urban", "cp-sintra", "visitlisboa-sintra", "visitlisboa-cascais"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "rail-assistance-confirmation",
+      "claim": "A traveler who needs rail assistance should use the current operator assistance channel and verify the relevant station and train, because support and accessible infrastructure can vary by journey.",
+      "sourceIds": ["cp-specific-needs", "cp-lisbon-urban"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "area-first-stay-selection",
+      "claim": "Accommodation should be chosen only after the traveler selects an area by likely daily clusters, airport and rail access, hills, evening return, family rhythm and mobility burden; property facts require a separate live provider response.",
+      "sourceIds": ["visitlisboa-stay-plan", "visitlisboa-lisbon", "metro-maps", "carris-routes"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "area-inventory-boundary",
+      "claim": "Official tourism area inventories can support orientation and clustering, but they do not validate a supplier, property, opening status, quality score or commercial offer.",
+      "sourceIds": ["visitlisboa-stay-plan", "visitlisboa-lisbon", "visitlisboa-family"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "hills-last-mile",
+      "claim": "Lisbon's hills and variable surfaces make the final segment a first-class decision, so every day and accommodation route should disclose elevation, paving, luggage, stroller, rest and accessible-fallback implications after a current map and operator check.",
+      "sourceIds": ["visitportugal-accessible-lisbon", "visitportugal-accessible-tourism", "metro-line-lift-status", "carris-reduced-mobility"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "family-plan-by-needs",
+      "claim": "Family recommendations should be filtered by each child's age, stroller or carrying needs, weather exposure, queue tolerance, food and rest rhythm, then revalidated with the actual operator before booking.",
+      "sourceIds": ["visitlisboa-family", "visitlisboa-traveller-info", "ipma-lisbon-warnings"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "accessibility-chain",
+      "claim": "Accessibility must be evaluated as one chain from aircraft and airport assistance through vehicles, stations, lifts, pavements, entrances, rooms and return travel, with no city-wide accessibility promise inferred from one adapted segment.",
+      "sourceIds": ["lis-airport-reduced-mobility", "metro-line-lift-status", "carris-reduced-mobility", "cp-specific-needs", "visitportugal-accessible-lisbon", "parques-sintra-accessibility"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "weather-governs-pacing",
+      "claim": "The itinerary should be rebuilt around the current official Lisbon forecast and warnings, with indoor and low-exposure alternatives preserved rather than treating a seasonal description as a travel-day forecast.",
+      "sourceIds": ["ipma-lisbon-warnings", "anepc-live-warnings"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "heat-exposure-decision",
+      "claim": "Heat-sensitive travel should place exposed hills, queues and long transfers into cooler or lower-strain windows only after checking the current official warning, while preserving hydration, shade, indoor and transport alternatives.",
+      "sourceIds": ["ipma-lisbon-warnings", "visitportugal-accessible-lisbon", "carris-routes"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "coast-condition-recheck",
+      "claim": "A coastal day around Cascais must remain editable until the current weather, wind, civil-protection information, rail service and activity operator conditions have been checked.",
+      "sourceIds": ["visitlisboa-cascais", "ipma-lisbon-warnings", "anepc-live-warnings", "cp-lisbon-urban"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "fire-danger-response",
+      "claim": "Outdoor plans beyond the dense city must consult the live municipality fire-danger and civil-protection channels and obey the current restrictions, without reproducing a danger level or restriction as a permanent statement.",
+      "sourceIds": ["ipma-fire-danger", "anepc-live-warnings"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "civil-alert-fallback",
+      "claim": "The safety plan should explain how to recognize and act on geographically targeted official alerts, while keeping offline contacts, meeting points and transport fallbacks in case connectivity or normal routing fails.",
+      "sourceIds": ["anepc-text-alerts", "anepc-live-warnings", "visitportugal-communications"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "sintra-day-or-split",
+      "claim": "The Sintra decision should compare a day trip with a split stay using current rail access, desired clusters, hill and circulation burden, timed-entry constraints, weather and the needs of the party rather than a fixed attraction checklist.",
+      "sourceIds": ["visitlisboa-sintra", "cp-sintra", "parques-sintra-plan", "parques-sintra-accessibility", "ipma-lisbon-warnings"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "sintra-operator-recheck",
+      "claim": "Any Sintra venue suggestion requires a fresh operator check for access, circulation, timed entry, notices and need-specific accessibility before it can become part of a bookable itinerary.",
+      "sourceIds": ["parques-sintra-plan", "parques-sintra-accessibility"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "customs-declaration-decision",
+      "claim": "The packing flow should ask about restricted or prohibited goods and route uncertain items to the Portuguese customs authority before travel, preserving the current declaration-channel decision without freezing allowances or limits.",
+      "sourceIds": ["portugal-customs-travellers"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "cash-declaration-recheck",
+      "claim": "Travelers carrying cash or equivalent instruments should check the current declaration rule and process directly with Portuguese customs before departure, with no threshold reproduced as a durable guide fact.",
+      "sourceIds": ["portugal-cash-declaration"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "medicine-evidence-pack",
+      "claim": "A traveler carrying medicine should verify the exact product, active substance, amount, packaging, documentation, import rule and Portuguese availability before departure; possession of a foreign prescription alone must not be presented as guaranteed permission or dispensing.",
+      "sourceIds": ["portugal-customs-travellers", "infarmed-human-medicines", "infarmed-medicine-faq"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "connectivity-layering",
+      "claim": "Connectivity planning should layer roaming, SIM or eSIM, official Wi-Fi and offline maps according to the traveler's device and account, while avoiding any unvalidated provider, product, coverage or price claim.",
+      "sourceIds": ["visitportugal-communications", "lis-airport-wifi"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "budget-without-prices",
+      "claim": "The budget section should organize transport, accommodation, food, activities, insurance, connectivity, accessibility and contingency costs, but display a price or saving only after a validated provider response with clear scope and freshness.",
+      "sourceIds": ["lis-airport-public-transport", "metro-using", "carris-routes", "cp-lisbon-urban", "visitlisboa-stay-plan"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "itinerary-cluster-logic",
+      "claim": "Multi-day itinerary patterns should cluster compatible areas and reserve buffers for hills, weather, transfers, family recovery and access constraints, then reroute from current transport and warning sources on each travel day.",
+      "sourceIds": ["visitlisboa-lisbon", "visitlisboa-sintra", "visitlisboa-cascais", "metro-maps", "carris-service-changes", "ipma-lisbon-warnings"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "booking-sequence-and-revalidation",
+      "claim": "The booking sequence should resolve entry, security, medicine, airport, area, accessibility and weather constraints before non-refundable components, then revalidate every provider, route, availability, policy and commercial fact at purchase time.",
+      "sourceIds": ["eu-non-eu-entry", "israel-nsc-live-warnings", "infarmed-human-medicines", "lis-airport-public-transport", "visitlisboa-stay-plan", "visitportugal-accessible-tourism", "ipma-lisbon-warnings"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    }
+  ]
+}

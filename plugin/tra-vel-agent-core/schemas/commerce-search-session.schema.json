@@ -1,0 +1,198 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://tra-vel.co.il/schemas/commerce-search-session-v1.schema.json",
+  "title": "Tra-Vel commerce sandbox search session",
+  "description": "An owner-bound, deterministic supplier fan-out and ranking projection.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "environment",
+    "session_ref",
+    "version",
+    "owner_scope_digest",
+    "request_ref",
+    "request_digest",
+    "provider_network_digest",
+    "catalog_digest",
+    "verticals",
+    "status",
+    "ranking_version",
+    "selection_seed_digest",
+    "provider_runs",
+    "ranked_offers",
+    "counts",
+    "created_at",
+    "updated_at",
+    "expires_at",
+    "sandbox_truth",
+    "data_boundary"
+  ],
+  "properties": {
+    "contract_version": { "const": "1.0.0" },
+    "environment": { "const": "sandbox" },
+    "session_ref": { "$ref": "#/definitions/sessionRef" },
+    "version": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+    "owner_scope_digest": { "$ref": "#/definitions/digest" },
+    "request_ref": { "$ref": "#/definitions/requestRef" },
+    "request_digest": { "$ref": "#/definitions/digest" },
+    "provider_network_digest": { "$ref": "#/definitions/digest" },
+    "catalog_digest": { "$ref": "#/definitions/digest" },
+    "verticals": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 9,
+      "uniqueItems": true,
+      "items": { "$ref": "#/definitions/vertical" }
+    },
+    "status": { "enum": ["accepted", "searching", "complete", "partial", "failed", "expired"] },
+    "ranking_version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "selection_seed_digest": { "$ref": "#/definitions/digest" },
+    "provider_runs": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "provider_run_ref",
+          "provider_id",
+          "vertical",
+          "status",
+          "result_count",
+          "error_code",
+          "started_at",
+          "completed_at"
+        ],
+        "properties": {
+          "provider_run_ref": { "$ref": "#/definitions/providerRunRef" },
+          "provider_id": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(?:[-_][a-z0-9]+)*$",
+            "maxLength": 64
+          },
+          "vertical": { "$ref": "#/definitions/vertical" },
+          "status": { "enum": ["queued", "running", "succeeded", "failed", "skipped"] },
+          "result_count": { "type": "integer", "minimum": 0, "maximum": 10000 },
+          "error_code": {
+            "type": ["string", "null"],
+            "pattern": "^[a-z0-9]+(?:[._-][a-z0-9]+)*$",
+            "maxLength": 80
+          },
+          "started_at": { "$ref": "#/definitions/nullableDateTime" },
+          "completed_at": { "$ref": "#/definitions/nullableDateTime" }
+        }
+      }
+    },
+    "ranked_offers": {
+      "type": "array",
+      "maxItems": 500,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["offer_ref", "offer_version", "vertical", "currency", "price_scope", "rank", "score_bps", "reasons"],
+        "properties": {
+          "offer_ref": { "$ref": "#/definitions/offerRef" },
+          "offer_version": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+          "vertical": { "$ref": "#/definitions/vertical" },
+          "currency": { "type": "string", "pattern": "^[A-Z]{3}$" },
+          "price_scope": { "$ref": "#/definitions/priceScope" },
+          "rank": { "type": "integer", "minimum": 1, "maximum": 500 },
+          "score_bps": { "type": "integer", "minimum": 0, "maximum": 10000 },
+          "reasons": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 8,
+            "uniqueItems": true,
+            "items": {
+              "enum": ["lowest_total", "shorter_duration", "higher_flexibility", "better_location", "lower_friction", "family_fit", "vibe_fit", "seeded_surprise"]
+            }
+          }
+        }
+      }
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["providers_considered", "providers_succeeded", "providers_failed", "offers_validated", "offers_rejected"],
+      "properties": {
+        "providers_considered": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "providers_succeeded": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "providers_failed": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "offers_validated": { "type": "integer", "minimum": 0, "maximum": 10000 },
+        "offers_rejected": { "type": "integer", "minimum": 0, "maximum": 10000 }
+      }
+    },
+    "created_at": { "$ref": "#/definitions/dateTime" },
+    "updated_at": { "$ref": "#/definitions/dateTime" },
+    "expires_at": { "$ref": "#/definitions/dateTime" },
+    "sandbox_truth": { "$ref": "#/definitions/sandboxTruth" },
+    "data_boundary": { "$ref": "#/definitions/dataBoundary" }
+  },
+  "definitions": {
+    "vertical": {
+      "enum": ["flight", "accommodation", "package", "transfer", "activity", "dining", "insurance", "connectivity", "equipment"]
+    },
+    "priceScope": {
+      "enum": ["person_round_trip", "whole_party_round_trip", "stay_total", "package_total", "transfer_total", "activity_total", "meal_total", "policy_period", "connectivity_period", "item_total"]
+    },
+    "sessionRef": {
+      "type": "string",
+      "pattern": "^tv_session_[A-Za-z0-9_-]{16,96}$",
+      "maxLength": 120
+    },
+    "requestRef": {
+      "type": "string",
+      "pattern": "^tv_request_[A-Za-z0-9_-]{16,96}$",
+      "maxLength": 120
+    },
+    "providerRunRef": {
+      "type": "string",
+      "pattern": "^tv_run_[A-Za-z0-9_-]{16,96}$",
+      "maxLength": 120
+    },
+    "offerRef": {
+      "type": "string",
+      "pattern": "^tv_offer_[A-Za-z0-9_-]{16,96}$",
+      "maxLength": 120
+    },
+    "digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "dateTime": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$"
+    },
+    "nullableDateTime": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "pattern": "Z$"
+    },
+    "sandboxTruth": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["simulated_inventory", "real_supplier_request", "real_inventory_hold", "real_charge", "real_booking", "real_policy_issuance", "real_settlement"],
+      "properties": {
+        "simulated_inventory": { "const": true },
+        "real_supplier_request": { "const": false },
+        "real_inventory_hold": { "const": false },
+        "real_charge": { "const": false },
+        "real_booking": { "const": false },
+        "real_policy_issuance": { "const": false },
+        "real_settlement": { "const": false }
+      }
+    },
+    "dataBoundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["raw_supplier_reference_exposed", "raw_payment_data_exposed", "medical_data_exposed"],
+      "properties": {
+        "raw_supplier_reference_exposed": { "const": false },
+        "raw_payment_data_exposed": { "const": false },
+        "medical_data_exposed": { "const": false }
+      }
+    }
+  }
+}

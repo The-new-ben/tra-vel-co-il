@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The production globe is a progressively enhanced travel-discovery surface. It uses a native WebGL sphere when the browser supports WebGL and preserves the existing Earth image as a fallback. Destination details, route comparisons, filters, and commercial actions remain outside the globe so map movement is never obstructed.
+The production globe is a progressively enhanced travel-discovery surface. It uses a native WebGL sphere when the browser supports WebGL and preserves the existing Earth image only as a failure fallback. The fallback is not painted beneath a working WebGL canvas, so the live Earth never sits on top of a second poster. Destination details, route comparisons, filters, and commercial actions remain outside the globe so map movement is never obstructed.
 
 ## Runtime architecture
 
@@ -12,7 +12,7 @@ The production globe is a progressively enhanced travel-discovery surface. It us
 - Device pixel ratio is capped at 1.75 to control mobile GPU memory and fill rate.
 - Rendering is event driven. The globe redraws after interaction, resize, selection, or focus animation instead of running a permanent animation loop.
 - Intersection and document-visibility observers stop rendering work when the globe is outside the active view.
-- WebGL context loss or initialization failure leaves the static Earth fallback visible.
+- WebGL context loss or initialization failure switches to the static Earth fallback. A successful WebGL initialization keeps that image absent rather than hidden under the model.
 
 ## Interaction contract
 
@@ -34,6 +34,8 @@ Tap and drag are separated by an eight-pixel movement threshold and a 700 ms tap
 ## Selected Area 360 kernel
 
 Every Earth selection opens a normal-flow decision cockpit below the globe. The discovery response owns a `selected_plan` with twelve areas: route, stay, mobility, activities, dining, weather, entry, connectivity, accessibility, insurance, equipment, and total cost. Each module declares `live`, `editorial`, `needs_details`, `needs_search`, `unknown`, or `unavailable` state plus provenance and a next action. Outside reviewed coverage, all twelve areas remain available for planning but visibly contain zero live-verified results until context resolution and connected searches occur.
+
+Every second-level information marker also participates in that kernel. A traveler click creates a stable `map_point` selection from the typed entity id and coordinates, locks the canonical destination, marks the relevant route, stay, activity, or total-cost module as selected and editable, carries the identity into URL history and downstream product links, and gives the saved workspace item an entity-specific identity. Hotel-area actions additionally retain the selected area; flight, hotel, and package actions use the destination airport code expected by their search contracts. The confirmation says that the point was added to the plan, never that inventory was held or booked. Merely rendering the first marker does not commit a traveler choice.
 
 The coverage meter describes mapped decision areas, not booking completion. The cost ledger always lists the complete in-scope category set and exposes an amount only when destination-scoped, component-level supplier provenance owns that value and currency. Route totals remain hidden unless the supplier explicitly owns the total scope. Savings remain hidden until a server contract proves an equivalent comparison cohort, comparator identity, dates, travelers, inclusions, taxes, currency, and retrieval time. Route selection updates the shared cockpit, save context, AI context, and cost ledger.
 

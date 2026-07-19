@@ -1,0 +1,4190 @@
+{
+    "contract_version": "1.1.0",
+    "environment": "sandbox",
+    "data_mode": "synthetic_demo",
+    "registry_ref": "rg_syn_993b07a9a025bdbf9f0274cd80db7a01",
+    "registry_revision": 1,
+    "family_count": 17,
+    "scenario_count": 34,
+    "families": [
+        {
+            "family_ref": "fm_syn_55ac3c83df942002b8bca40b6cf60a01",
+            "service_family": "air_transport",
+            "canonical_vertical": "flight",
+            "family_subtypes": [
+                "scheduled_flight",
+                "charter_flight",
+                "domestic_flight"
+            ],
+            "crosswalk": {
+                "canonical_taxonomy": "commerce_core_v1",
+                "mapping_kind": "orchestration_bucket_only",
+                "operation_routing": "dedicated_service_family_adapter",
+                "orchestration_adapter": "air_transport_orchestration_adapter_v1",
+                "equivalence_claimed": false,
+                "subtype_preserved": true
+            },
+            "lifecycle": {
+                "search": "required",
+                "revalidate": "required",
+                "hold_reserve": "conditional",
+                "confirm": "required",
+                "fulfill": "required",
+                "change": "required",
+                "cancel": "required",
+                "refund": "conditional",
+                "incident": "required",
+                "reconciliation": "required",
+                "settlement": "required",
+                "post_service_evidence": "required"
+            },
+            "critical_facts": [
+                "origin_destination_airport_codes",
+                "operating_marketing_carrier_roles",
+                "segment_and_traveler_status",
+                "fare_brand_and_baggage_rules",
+                "ticket_coupon_and_emd_status",
+                "special_service_request_status",
+                "connection_and_minimum_time"
+            ],
+            "critical_deadlines": [
+                "offer_expiry_utc",
+                "ticketing_deadline_utc",
+                "check_in_cutoff_utc",
+                "change_cancel_deadline_utc"
+            ],
+            "required_handoffs": [
+                "airline_order_servicing_handoff",
+                "ticketing_consolidator_handoff",
+                "airport_disruption_desk_handoff"
+            ],
+            "israel_local": {
+                "applicable": true,
+                "scope": "domestic_and_outbound",
+                "required_fact_codes": [
+                    "israel_airport_terminal",
+                    "domestic_airport_pair",
+                    "departure_security_buffer",
+                    "holiday_operating_schedule"
+                ]
+            },
+            "map": {
+                "overview_zoom": 2,
+                "decision_zoom": 6,
+                "operational_zoom": 14,
+                "cluster_until_zoom": 5,
+                "geometry": "route",
+                "resolution_path": [
+                    "overview",
+                    "decision",
+                    "operational"
+                ],
+                "detail_surface": "attached_non_occluding_context_panel",
+                "operational_anchor_codes": [
+                    "route_origin_anchor",
+                    "route_destination_anchor",
+                    "route_connection_anchor"
+                ],
+                "selection_to_plan_required": true,
+                "viewport_padding_required": true,
+                "rtl_mobile_safe_area_required": true,
+                "source_freshness_required": true,
+                "reduced_motion_alternative_required": true
+            }
+        },
+        {
+            "family_ref": "fm_syn_b5af036e08ddc544b9b7bc79499bfc79",
+            "service_family": "lodging",
+            "canonical_vertical": "accommodation",
+            "family_subtypes": [
+                "city_business_hotel",
+                "resort_hotel",
+                "boutique_hotel",
+                "vacation_apartment_short_term_rental",
+                "villa",
+                "hostel",
+                "rural_bnb_zimmer",
+                "kibbutz_holiday_village_guest_accommodation",
+                "campground_glamping"
+            ],
+            "crosswalk": {
+                "canonical_taxonomy": "commerce_core_v1",
+                "mapping_kind": "orchestration_bucket_only",
+                "operation_routing": "dedicated_service_family_adapter",
+                "orchestration_adapter": "lodging_orchestration_adapter_v1",
+                "equivalence_claimed": false,
+                "subtype_preserved": true
+            },
+            "lifecycle": {
+                "search": "required",
+                "revalidate": "required",
+                "hold_reserve": "conditional",
+                "confirm": "required",
+                "fulfill": "required",
+                "change": "required",
+                "cancel": "required",
+                "refund": "conditional",
+                "incident": "required",
+                "reconciliation": "required",
+                "settlement": "required",
+                "post_service_evidence": "required"
+            },
+            "critical_facts": [
+                "property_and_unit_geography",
+                "occupancy_and_child_age_rules",
+                "room_allocation_and_bedding",
+                "check_in_and_key_handoff",
+                "meal_board_and_kosher_scope",
+                "accessibility_route_and_unit",
+                "tax_deposit_and_damage_terms",
+                "city_business_arrival_and_workday_fit",
+                "resort_facility_schedule_and_fee_scope",
+                "boutique_unit_variance_and_staffing",
+                "short_term_rental_host_key_and_registration_state",
+                "villa_occupancy_pool_and_whole_property_scope",
+                "hostel_bed_dorm_locker_and_age_rules",
+                "rural_zimmer_access_shelter_and_host_handoff",
+                "kibbutz_guest_unit_gate_dining_and_holiday_access",
+                "campground_pitch_utility_weather_and_fire_rules"
+            ],
+            "critical_deadlines": [
+                "cancellation_deadline_utc",
+                "payment_schedule_deadline_utc",
+                "arrival_notice_deadline_utc",
+                "check_in_cutoff_local",
+                "business_hotel_late_arrival_deadline_local",
+                "resort_facility_reservation_deadline_local",
+                "boutique_staffed_check_in_deadline_local",
+                "short_term_rental_key_release_deadline_local",
+                "villa_guest_manifest_deadline_utc",
+                "hostel_late_arrival_deadline_local",
+                "rural_zimmer_host_reconfirmation_deadline_local",
+                "kibbutz_gate_access_deadline_local",
+                "campground_arrival_weather_decision_deadline_local"
+            ],
+            "required_handoffs": [
+                "property_reservations_handoff",
+                "property_after_hours_handoff",
+                "local_lodging_recovery_handoff",
+                "city_hotel_front_desk_handoff",
+                "resort_guest_services_handoff",
+                "boutique_on_call_host_handoff",
+                "short_term_rental_host_and_platform_handoff",
+                "villa_property_manager_handoff",
+                "hostel_reception_handoff",
+                "rural_zimmer_host_handoff",
+                "kibbutz_guest_house_handoff",
+                "campground_operator_or_ranger_handoff"
+            ],
+            "israel_local": {
+                "applicable": true,
+                "scope": "domestic_and_outbound",
+                "required_fact_codes": [
+                    "local_tax_treatment",
+                    "local_key_handoff",
+                    "shabbat_holiday_operation",
+                    "kosher_evidence_scope"
+                ]
+            },
+            "map": {
+                "overview_zoom": 4,
+                "decision_zoom": 11,
+                "operational_zoom": 18,
+                "cluster_until_zoom": 10,
+                "geometry": "point",
+                "resolution_path": [
+                    "overview",
+                    "decision",
+                    "operational"
+                ],
+                "detail_surface": "attached_non_occluding_context_panel",
+                "operational_anchor_codes": [
+                    "location_centroid_anchor",
+                    "public_entrance_anchor",
+                    "arrival_handoff_anchor",
+                    "city_hotel_public_transport_anchor",
+                    "resort_reception_and_facility_anchor",
+                    "boutique_hotel_entrance_anchor",
+                    "short_term_rental_key_handoff_anchor",
+                    "villa_gate_and_safety_anchor",
+                    "hostel_reception_and_bed_anchor",
+                    "rural_zimmer_access_and_shelter_anchor",
+                    "kibbutz_gate_and_guest_unit_anchor",
+                    "campground_pitch_and_emergency_anchor"
+                ],
+                "selection_to_plan_required": true,
+                "viewport_padding_required": true,
+                "rtl_mobile_safe_area_required": true,
+                "source_freshness_required": true,
+                "reduced_motion_alternative_required": true
+            }
+        },
+        {
+            "family_ref": "fm_syn_8356807595fa0267a74937b782422d4d",
+            "service_family": "dynamic_package",
+            "canonical_vertical": "package",
+            "family_subtypes": [
+                "flight_lodging_package",
+                "lodging_activity_package",
+                "custom_multi_component_package"
+            ],
+            "crosswalk": {
+                "canonical_taxonomy": "commerce_core_v1",
+                "mapping_kind": "orchestration_bucket_only",
+                "operation_routing": "dedicated_service_family_adapter",
+                "orchestration_adapter": "dynamic_package_orchestration_adapter_v1",
+                "equivalence_claimed": false,
+                "subtype_preserved": true
+            },
+            "lifecycle": {
+                "search": "required",
+                "revalidate": "required",
+                "hold_reserve": "conditional",
+                "confirm": "required",
+                "fulfill": "required",
+                "change": "required",
+                "cancel": "required",
+                "refund": "conditional",
+                "incident": "required",
+                "reconciliation": "required",
+                "settlement": "required",
+                "post_service_evidence": "required"
+            },
+            "critical_facts": [
+                "component_dependency_graph",
+                "package_organizer_and_merchant_roles",
+                "atomic_price_and_availability_window",
+                "traveler_and_room_allocation",
+                "component_terms_and_protections",
+                "transfer_and_connection_feasibility",
+                "component_fulfillment_evidence"
+            ],
+            "critical_deadlines": [
+                "atomic_revalidation_deadline_utc",
+                "earliest_component_cancellation_utc",
+                "package_balance_due_utc",
+                "customer_approval_expiry_utc"
+            ],
+            "required_handoffs": [
+                "package_orchestrator_handoff",
+                "component_supplier_handoff",
+                "cross_component_recovery_handoff"
+            ],
+            "israel_local": {
+                "applicable": true,
+                "scope": "domestic_and_outbound",
+                "required_fact_codes": [
+                    "domestic_component_scope",
+                    "local_transfer_feasibility",
+                    "local_holiday_constraints"
+                ]
+            },
+            "map": {
+                "overview_zoom": 2,
+                "decision_zoom": 8,
+                "operational_zoom": 17,
+                "cluster_until_zoom": 7,
+                "geometry": "multi_point",
+                "resolution_path": [
+                    "overview",
+                    "decision",
+                    "operational"
+                ],
+                "detail_surface": "attached_non_occluding_context_panel",
+                "operational_anchor_codes": [
+                    "component_origin_anchor",
+                    "component_sequence_anchor",
+                    "component_recovery_anchor"
+                ],
+                "selection_to_plan_required": true,
+                "viewport_padding_required": true,
+                "rtl_mobile_safe_area_required": true,
+                "source_freshness_required": true,
+                "reduced_motion_alternative_required": true
+            }
+        },
+        {
+            "family_ref": "fm_syn_f7e20c7240f42cbe10827a8b952b8dfe",
+            "service_family": "organized_tour",
+            "canonical_vertical": "package",
+            "family_subtypes": [
+                "guided_group_tour",
+                "private_group_tour",
+                "series_departure_tour"
+            ],
+            "crosswalk": {
+                "canonical_taxonomy": "commerce_core_v1",
+                "mapping_kind": "orchestration_bucket_only",
+                "operation_routing": "dedicated_service_family_adapter",
+                "orchestration_adapter": "organized_tour_orchestration_adapter_v1",
+                "equivalence_claimed": false,
+                "subtype_preserved": true
+            },
+            "lifecycle": {
+                "search": "required",
+                "revalidate": "required",
+                "hold_reserve": "conditional",
+                "confirm": "required",
+                "fulfill": "required",
+                "change": "required",
+                "cancel": "required",
+                "refund": "conditional",
+                "incident": "required",
+                "reconciliation": "required",
+                "settlement": "required",
+                "post_service_evidence": "required"
+            },
+            "critical_facts": [
+                "departure_and_minimum_group_status",
+                "meeting_points_and_daily_sequence",
+                "guide_language_and_license_scope",
+                "included_excluded_services",
+                "rooming_and_transport_manifest",
+                "mobility_and_accessibility_fit",
+                "operator_contingency_plan"
+            ],
+            "critical_deadlines": [
+                "minimum_group_decision_utc",
+                "final_manifest_deadline_utc",
+                "balance_due_utc",
+                "tour_cancellation_deadline_utc"
+            ],
+            "required_handoffs": [
+                "tour_operator_handoff",
+                "guide_and_ground_team_handoff",
+                "tour_emergency_handoff"
+            ],
+            "israel_local": {
+                "applicable": true,
+                "scope": "domestic_and_outbound",
+                "required_fact_codes": [
+                    "licensed_israel_guide_scope",
+                    "domestic_pickup_points",
+                    "local_accessibility_route"
+                ]
+            },
+            "map": {
+                "overview_zoom": 3,
+                "decision_zoom": 9,
+                "operational_zoom": 17,
+                "cluster_until_zoom": 8,
+                "geometry": "corridor",
+                "resolution_path": [
+                    "overview",
+                    "decision",
+                    "operational"
+                ],
+                "detail_surface": "attached_non_occluding_context_panel",
+                "operational_anchor_codes": [
+                    "corridor_origin_anchor",
+                    "corridor_waypoint_anchor",
+                    "corridor_destination_anchor"
+                ],
+                "selection_to_plan_required": true,
+                "viewport_padding_required": true,
+                "rtl_mobile_safe_area_required": true,
+                "source_freshness_required": true,
+                "reduced_motion_alternative_required": true
+            }
+        },
+        {
+            "family_ref": "fm_syn_eeb1b22d0b8f77b47fdb37e1def0a887",
+            "service_family": "cruise",
+            "canonical_vertical": "package",
+            "family_subtypes": [
+                "ocean_cruise",
+                "river_cruise",
+                "expedition_cruise"
+            ],
+            "crosswalk": {
+                "canonical_taxonomy": "commerce_core_v1",
+                "mapping_kind": "orchestration_bucket_only",
+                "operation_routing": "dedicated_service_family_adapter",
+                "orchestration_adapter": "cruise_orchestration_adapter_v1",
+                "equivalence_claimed": false,
+                "subtype_preserved": true
+            },
+            "lifecycle": {
+                "search": "required",
+                "revalidate": "required",
+                "hold_reserve": "conditional",
+                "confirm": "required",
+                "fulfill": "required",
+                "change": "required",
+                "cancel": "required",
+                "refund": "conditional",
+                "incident": "required",
+                "reconciliation": "required",
+                "settlement": "required",
+                "post_service_evidence": "required"
+            },
+            "critical_facts": [
+                "embarkation_and_disembarkation_ports",
+                "ship_sailing_and_cabin_category",
+                "passenger_manifest_status",
+                "entry_health_and_document_requirements",
+                "port_call_and_shore_sequence",
+                "dining_and_accessibility_requests",
+                "cruise_inclusions_and_gratuity_terms"
+            ],
+            "critical_deadlines": [
+                "final_payment_deadline_utc",
+                "manifest_deadline_utc",
+                "online_check_in_deadline_utc",
+                "shore_service_cancellation_utc"
+            ],
+            "required_handoffs": [
+                "cruise_operator_handoff",
+                "port_agent_handoff",
+                "shipboard_guest_care_handoff"
+            ],
+            "israel_local": {
+                "applicable": true,
+                "scope": "outbound_gateway",
+                "required_fact_codes": [
+                    "israel_embarkation_port",
+                    "israel_port_access",
+                    "outbound_document_buffer"
+                ]
+            },
+            "map": {
+                "overview_zoom": 2,
+                "decision_zoom": 7,
+                "operational_zoom": 15,
+                "cluster_until_zoom": 6,
+                "geometry": "route",
+                "resolution_path": [
+                    "overview",
+                    "decision",
+                    "operational"
+                ],
+                "detail_surface": "attached_non_occluding_context_panel",
+                "operational_anchor_codes": [
+                    "route_origin_anchor",
+                    "route_destination_anchor",
+                    "route_connection_anchor"
+                ],
+                "selection_to_plan_required": true,
+                "viewport_padding_required": true,
+                "rtl_mobile_safe_area_required": true,
+                "source_freshness_required": true,
+                "reduced_motion_alternative_required": true
+            }
+        },
+        {
+            "family_ref": "fm_syn_6b97e0a7de6a6468bb53a61f199c3df6",
+            "service_family": "ferry",
+            "canonical_vertical": "transfer",
+            "family_subtypes": [
+                "ferry",
+                "passenger_ferry",
+                "vehicle_ferry",
+                "overnight_ferry"
+            ],
+            "crosswalk": {
+                "canonical_taxonomy": "commerce_core_v1",
+                "mapping_kind": "orchestration_bucket_only",
+                "operation_routing": "dedicated_service_family_adapter",
+                "orchestration_adapter": "ferry_orchestration_adapter_v1",
+                "equivalence_claimed": false,
+                "subtype_preserved": true
+            },
+            "lifecycle": {
+                "search": "required",
+                "revalidate": "required",
+                "hold_reserve": "conditional",
+                "confirm": "required",
+                "fulfill": "required",
+                "change": "required",
+                "cancel": "required",
+                "refund": "conditional",
+                "incident": "required",
+                "reconciliation": "required",
+                "settlement": "required",
+                "post_service_evidence": "required"
+            },
+            "critical_facts": [
+                "departure_arrival_port_and_terminal",
+                "vessel_and_sailing_identity",
+                "passenger_and_vehicle_manifest",
+                "boarding_accessibility_and_assistance",
+                "baggage_vehicle_and_pet_rules",
+                "cabin_or_seat_allocation",
+                "border_document_requirements"
+            ],
+            "critical_deadlines": [
+                "passenger_check_in_cutoff_utc",
+                "vehicle_check_in_cutoff_utc",
+                "manifest_submission_deadline_utc",
+                "ferry_cancellation_deadline_utc"
+            ],
+            "required_handoffs": [
+                "ferry_operator_handoff",
+                "port_terminal_handoff",
+                "onward_ground_recovery_handoff"
+            ],
+            "israel_local": {
+                "applicable": true,
+                "scope": "cross_border_gateway",
+                "required_fact_codes": [
+                    "israel_port_terminal",
+                    "border_control_buffer",
+                    "onward_local_transport"
+                ]
+            },
+            "map": {
+                "overview_zoom": 5,
+                "decision_zoom": 10,
+                "operational_zoom": 16,
+                "cluster_until_zoom": 9,
+                "geometry": "route",
+                "resolution_path": [
+                    "overview",
+                    "decision",
+                    "operational"
+                ],
+                "detail_surface": "attached_non_occluding_context_panel",
+                "operational_anchor_codes": [
+                    "route_origin_anchor",
+                    "route_destination_anchor",
+                    "route_connection_anchor"
+                ],
+                "selection_to_plan_required": true,
+                "viewport_padding_required": true,
+                "rtl_mobile_safe_area_required": true,
+                "source_freshness_required": true,
+                "reduced_motion_alternative_required": true
+            }
+        },
+        {
+            "family_ref": "fm_syn_9bca69222b267c8e46db2ad5d0e3b648",
+            "service_family": "rail",
+            "canonical_vertical": "transfer",
+            "family_subtypes": [
+                "rail",
+                "intercity_rail",
+                "airport_rail",
+                "sleeper_rail",
+                "urban_rail"
+            ],
+            "crosswalk": {
+                "canonical_taxonomy": "commerce_core_v1",
+                "mapping_kind": "orchestration_bucket_only",
+                "operation_routing": "dedicated_service_family_adapter",
+                "orchestration_adapter": "rail_orchestration_adapter_v1",
+                "equivalence_claimed": false,
+                "subtype_preserved": true
+            },
+            "lifecycle": {
+                "search": "required",
+                "revalidate": "required",
+                "hold_reserve": "conditional",
+                "confirm": "required",
+                "fulfill": "required",
+                "change": "required",
+                "cancel": "required",
+                "refund": "conditional",
+                "incident": "required",
+                "reconciliation": "required",
+                "settlement": "conditional",
+                "post_service_evidence": "required"
+            },
+            "critical_facts": [
+                "station_and_service_identifiers",
+                "departure_arrival_and_platform_state",
+                "seat_or_berth_reservation",
+                "fare_and_exchange_rules",
+                "accessibility_and_station_assistance",
+                "baggage_bicycle_and_child_rules",
+                "connection_and_disruption_state"
+            ],
+            "critical_deadlines": [
+                "ticketing_deadline_utc",
+                "seat_release_deadline_utc",
+                "boarding_cutoff_utc",
+                "rail_cancellation_deadline_utc"
+            ],
+            "required_handoffs": [
+                "rail_inventory_handoff",
+                "station_assistance_handoff",
+                "alternate_transport_handoff"
+            ],
+            "israel_local": {
+                "applicable": true,
+                "scope": "domestic_and_outbound",
+                "required_fact_codes": [
+                    "israel_station_access",
+                    "local_service_alert",
+                    "holiday_schedule_revision"
+                ]
+            },
+            "map": {
+                "overview_zoom": 5,
+                "decision_zoom": 11,
+                "operational_zoom": 17,
+                "cluster_until_zoom": 10,
+                "geometry": "route",
+                "resolution_path": [
+                    "overview",
+                    "decision",
+                    "operational"
+                ],
+                "detail_surface": "attached_non_occluding_context_panel",
+                "operational_anchor_codes": [
+                    "route_origin_anchor",
+                    "route_destination_anchor",
+                    "route_connection_anchor"
+                ],
+                "selection_to_plan_required": true,
+                "viewport_padding_required": true,
+                "rtl_mobile_safe_area_required": true,
+                "source_freshness_required": true,
+                "reduced_motion_alternative_required": true
+            }
+        },
+        {
+            "family_ref": "fm_syn_80df6bcd9c1159a37176451db008d575",
+            "service_family": "coach_bus",
+            "canonical_vertical": "transfer",
+            "family_subtypes": [
+                "coach",
+                "scheduled_coach",
+                "airport_bus",
+                "tour_coach",
+                "cross_border_bus"
+            ],
+            "crosswalk": {
+                "canonical_taxonomy": "commerce_core_v1",
+                "mapping_kind": "orchestration_bucket_only",
+                "operation_routing": "dedicated_service_family_adapter",
+                "orchestration_adapter": "coach_bus_orchestration_adapter_v1",
+                "equivalence_claimed": false,
+                "subtype_preserved": true
+            },
+            "lifecycle": {
+                "search": "required",
+                "revalidate": "required",
+                "hold_reserve": "conditional",
+                "confirm": "required",
+                "fulfill": "required",
+                "change": "required",
+                "cancel": "required",
+                "refund": "conditional",
+                "incident": "required",
+                "reconciliation": "required",
+                "settlement": "conditional",
+                "post_service_evidence": "required"
+            },
+            "critical_facts": [
+                "operator_service_and_stop_identifiers",
+                "pickup_dropoff_coordinates",
+                "seat_and_passenger_manifest",
+                "baggage_and_equipment_rules",
+                "border_and_document_scope",
+                "accessibility_and_child_seat_fit",
+                "service_alert_and_vehicle_state"
+            ],
+            "critical_deadlines": [
+                "boarding_cutoff_utc",
+                "baggage_check_deadline_utc",
+                "coach_cancellation_deadline_utc",
+                "manifest_submission_deadline_utc"
+            ],
+            "required_handoffs": [
+                "coach_operator_handoff",
+                "stop_or_terminal_handoff",
+                "border_and_local_recovery_handoff"
+            ],
+            "israel_local": {
+                "applicable": true,
+                "scope": "domestic_and_outbound",
+                "required_fact_codes": [
+                    "israel_stop_geometry",
+                    "domestic_road_alert",
+                    "holiday_service_pattern"
+                ]
+            },
+            "map": {
+                "overview_zoom": 6,
+                "decision_zoom": 12,
+                "operational_zoom": 17,
+                "cluster_until_zoom": 11,
+                "geometry": "route",
+                "resolution_path": [
+                    "overview",
+                    "decision",
+                    "operational"
+                ],
+                "detail_surface": "attached_non_occluding_context_panel",
+                "operational_anchor_codes": [
+                    "route_origin_anchor",
+                    "route_destination_anchor",
+                    "route_connection_anchor"
+                ],
+                "selection_to_plan_required": true,
+                "viewport_padding_required": true,
+                "rtl_mobile_safe_area_required": true,
+                "source_freshness_required": true,
+                "reduced_motion_alternative_required": true
+            }
+        },
+        {
+            "family_ref": "fm_syn_07bc68aa07f17e1af19ae21c47f25f82",
+            "service_family": "ground_transfer",
+            "canonical_vertical": "transfer",
+            "family_subtypes": [
+                "airport_private_transfer",
+                "taxi_ride",
+                "shared_shuttle",
+                "private_driver",
+                "public_local_transit"
+            ],
+            "crosswalk": {
+                "canonical_taxonomy": "commerce_core_v1",
+                "mapping_kind": "orchestration_bucket_only",
+                "operation_routing": "dedicated_service_family_adapter",
+                "orchestration_adapter": "ground_transfer_orchestration_adapter_v1",
+                "equivalence_claimed": false,
+                "subtype_preserved": true
+            },
+            "lifecycle": {
+                "search": "required",
+                "revalidate": "required",
+                "hold_reserve": "conditional",
+                "confirm": "required",
+                "fulfill": "required",
+                "change": "required",
+                "cancel": "required",
+                "refund": "conditional",
+                "incident": "required",
+                "reconciliation": "required",
+                "settlement": "required",
+                "post_service_evidence": "required"
+            },
+            "critical_facts": [
+                "pickup_dropoff_and_meeting_geometry",
+                "flight_tracking_binding",
+                "vehicle_occupancy_and_luggage_fit",
+                "child_seat_and_accessibility_fit",
+                "driver_assignment_and_contact_relay",
+                "waiting_grace_and_no_show_terms",
+                "toll_parking_and_route_scope",
+                "taxi_license_meter_fare_basis_and_pickup_zone",
+                "taxi_vehicle_driver_assignment_and_accessibility_fit",
+                "private_driver_identity_vehicle_duty_and_multistop_scope",
+                "private_driver_waiting_parking_and_route_revision",
+                "public_transit_agency_route_trip_and_service_calendar",
+                "public_transit_realtime_freshness_fare_and_accessibility"
+            ],
+            "critical_deadlines": [
+                "free_cancellation_deadline_utc",
+                "pickup_reconfirmation_deadline_utc",
+                "driver_assignment_deadline_utc",
+                "no_show_decision_deadline_utc",
+                "taxi_dispatch_acceptance_deadline_utc",
+                "private_driver_itinerary_reconfirmation_deadline_utc",
+                "public_transit_last_service_decision_deadline_local"
+            ],
+            "required_handoffs": [
+                "transfer_dispatch_handoff",
+                "driver_contact_relay_handoff",
+                "airport_meet_and_greet_handoff",
+                "licensed_taxi_dispatch_handoff",
+                "private_driver_operations_handoff",
+                "public_transit_operations_handoff"
+            ],
+            "israel_local": {
+                "applicable": true,
+                "scope": "domestic_and_outbound",
+                "required_fact_codes": [
+                    "israel_pickup_zone",
+                    "local_child_seat_rule",
+                    "domestic_road_condition"
+                ]
+            },
+            "map": {
+                "overview_zoom": 8,
+                "decision_zoom": 14,
+                "operational_zoom": 19,
+                "cluster_until_zoom": 13,
+                "geometry": "route",
+                "resolution_path": [
+                    "overview",
+                    "decision",
+                    "operational"
+                ],
+                "detail_surface": "attached_non_occluding_context_panel",
+                "operational_anchor_codes": [
+                    "route_origin_anchor",
+                    "route_destination_anchor",
+                    "route_connection_anchor",
+                    "licensed_taxi_pickup_zone_anchor",
+                    "private_driver_meeting_point_anchor",
+                    "public_transit_boarding_platform_anchor"
+                ],
+                "selection_to_plan_required": true,
+                "viewport_padding_required": true,
+                "rtl_mobile_safe_area_required": true,
+                "source_freshness_required": true,
+                "reduced_motion_alternative_required": true
+            }
+        },
+        {
+            "family_ref": "fm_syn_48a1100d4bf63aaaaa875a149f577792",
+            "service_family": "car_rental",
+            "canonical_vertical": "transfer",
+            "family_subtypes": [
+                "rental_car",
+                "airport_car_rental",
+                "city_car_rental",
+                "one_way_car_rental"
+            ],
+            "crosswalk": {
+                "canonical_taxonomy": "commerce_core_v1",
+                "mapping_kind": "orchestration_bucket_only",
+                "operation_routing": "dedicated_service_family_adapter",
+                "orchestration_adapter": "car_rental_orchestration_adapter_v1",
+                "equivalence_claimed": false,
+                "subtype_preserved": true
+            },
+            "lifecycle": {
+                "search": "required",
+                "revalidate": "required",
+                "hold_reserve": "conditional",
+                "confirm": "required",
+                "fulfill": "required",
+                "change": "required",
+                "cancel": "required",
+                "refund": "conditional",
+                "incident": "required",
+                "reconciliation": "required",
+                "settlement": "required",
+                "post_service_evidence": "required"
+            },
+            "critical_facts": [
+                "driver_eligibility_and_license_rules",
+                "vehicle_category_not_model_guarantee",
+                "pickup_dropoff_office_and_hours",
+                "deposit_and_payment_instrument_rules",
+                "fuel_mileage_and_cross_border_rules",
+                "child_seat_and_accessibility_fit",
+                "damage_excess_and_roadside_scope"
+            ],
+            "critical_deadlines": [
+                "free_cancellation_deadline_utc",
+                "pickup_hold_deadline_utc",
+                "license_evidence_deadline_utc",
+                "vehicle_return_deadline_local"
+            ],
+            "required_handoffs": [
+                "rental_desk_handoff",
+                "rental_inventory_and_desk_servicing_handoff",
+                "roadside_assistance_handoff",
+                "damage_and_return_handoff"
+            ],
+            "israel_local": {
+                "applicable": true,
+                "scope": "domestic_and_outbound",
+                "required_fact_codes": [
+                    "israel_driver_eligibility",
+                    "local_toll_and_parking_rules",
+                    "domestic_roadside_route"
+                ]
+            },
+            "map": {
+                "overview_zoom": 7,
+                "decision_zoom": 13,
+                "operational_zoom": 18,
+                "cluster_until_zoom": 12,
+                "geometry": "corridor",
+                "resolution_path": [
+                    "overview",
+                    "decision",
+                    "operational"
+                ],
+                "detail_surface": "attached_non_occluding_context_panel",
+                "operational_anchor_codes": [
+                    "corridor_origin_anchor",
+                    "corridor_waypoint_anchor",
+                    "corridor_destination_anchor"
+                ],
+                "selection_to_plan_required": true,
+                "viewport_padding_required": true,
+                "rtl_mobile_safe_area_required": true,
+                "source_freshness_required": true,
+                "reduced_motion_alternative_required": true
+            }
+        },
+        {
+            "family_ref": "fm_syn_288d8e82be76a1c5b2b0ccbe274cef00",
+            "service_family": "airport_ancillary",
+            "canonical_vertical": "activity",
+            "family_subtypes": [
+                "airport_lounge",
+                "fast_track",
+                "airport_parking",
+                "baggage_storage"
+            ],
+            "crosswalk": {
+                "canonical_taxonomy": "commerce_core_v1",
+                "mapping_kind": "orchestration_bucket_only",
+                "operation_routing": "dedicated_service_family_adapter",
+                "orchestration_adapter": "airport_ancillary_orchestration_adapter_v1",
+                "equivalence_claimed": false,
+                "subtype_preserved": true
+            },
+            "lifecycle": {
+                "search": "required",
+                "revalidate": "required",
+                "hold_reserve": "conditional",
+                "confirm": "required",
+                "fulfill": "required",
+                "change": "conditional",
+                "cancel": "required",
+                "refund": "conditional",
+                "incident": "required",
+                "reconciliation": "required",
+                "settlement": "conditional",
+                "post_service_evidence": "required"
+            },
+            "critical_facts": [
+                "airport_terminal_and_access_zone",
+                "service_date_time_and_duration",
+                "traveler_guest_and_vehicle_scope",
+                "operating_hours_and_capacity_state",
+                "accessibility_and_admission_rules",
+                "baggage_vehicle_and_security_restrictions",
+                "voucher_or_access_evidence"
+            ],
+            "critical_deadlines": [
+                "reservation_cancellation_deadline_utc",
+                "terminal_arrival_deadline_utc",
+                "parking_entry_deadline_utc",
+                "storage_collection_deadline_utc"
+            ],
+            "required_handoffs": [
+                "airport_service_admission_handoff",
+                "terminal_operations_handoff",
+                "parking_or_storage_recovery_handoff"
+            ],
+            "israel_local": {
+                "applicable": true,
+                "scope": "outbound_gateway",
+                "required_fact_codes": [
+                    "israel_terminal_zone",
+                    "airport_security_access_rule",
+                    "local_parking_access"
+                ]
+            },
+            "map": {
+                "overview_zoom": 10,
+                "decision_zoom": 16,
+                "operational_zoom": 20,
+                "cluster_until_zoom": 15,
+                "geometry": "terminal",
+                "resolution_path": [
+                    "overview",
+                    "decision",
+                    "operational"
+                ],
+                "detail_surface": "attached_non_occluding_context_panel",
+                "operational_anchor_codes": [
+                    "terminal_entry_anchor",
+                    "service_zone_anchor",
+                    "recovery_desk_anchor"
+                ],
+                "selection_to_plan_required": true,
+                "viewport_padding_required": true,
+                "rtl_mobile_safe_area_required": true,
+                "source_freshness_required": true,
+                "reduced_motion_alternative_required": true
+            }
+        },
+        {
+            "family_ref": "fm_syn_4c5f469fb2ee9f367a16a964c3a75a70",
+            "service_family": "experience",
+            "canonical_vertical": "activity",
+            "family_subtypes": [
+                "local_guide_tour",
+                "attraction",
+                "museum",
+                "nature_reserve_park",
+                "beach",
+                "spa_wellness",
+                "event"
+            ],
+            "crosswalk": {
+                "canonical_taxonomy": "commerce_core_v1",
+                "mapping_kind": "orchestration_bucket_only",
+                "operation_routing": "dedicated_service_family_adapter",
+                "orchestration_adapter": "experience_orchestration_adapter_v1",
+                "equivalence_claimed": false,
+                "subtype_preserved": true
+            },
+            "lifecycle": {
+                "search": "required",
+                "revalidate": "required",
+                "hold_reserve": "conditional",
+                "confirm": "required",
+                "fulfill": "required",
+                "change": "required",
+                "cancel": "required",
+                "refund": "conditional",
+                "incident": "required",
+                "reconciliation": "required",
+                "settlement": "conditional",
+                "post_service_evidence": "required"
+            },
+            "critical_facts": [
+                "venue_meeting_point_and_geometry",
+                "start_time_duration_and_timezone",
+                "participant_age_and_capacity_rules",
+                "accessibility_and_mobility_fit",
+                "weather_and_safety_constraints",
+                "admission_type_and_fulfillment_method",
+                "guide_language_and_inclusion_scope",
+                "licensed_local_guide_identity_language_and_route",
+                "attraction_timed_entry_capacity_and_height_rules",
+                "museum_gallery_hours_ticket_and_accessibility_route",
+                "nature_reserve_permit_trail_weather_and_closure_state",
+                "beach_lifeguard_water_condition_and_access_route",
+                "spa_treatment_slot_health_and_accessibility_fit",
+                "event_seat_entry_gate_and_cancellation_state"
+            ],
+            "critical_deadlines": [
+                "activity_cancellation_deadline_utc",
+                "meeting_time_deadline_utc",
+                "ticket_claim_deadline_utc",
+                "weather_decision_deadline_utc",
+                "guide_meeting_point_reconfirmation_deadline_local",
+                "attraction_timed_entry_deadline_local",
+                "museum_last_admission_deadline_local",
+                "nature_reserve_entry_and_weather_decision_deadline_local",
+                "beach_lifeguard_service_window_deadline_local",
+                "spa_treatment_change_deadline_local",
+                "event_gate_and_ticket_claim_deadline_local"
+            ],
+            "required_handoffs": [
+                "activity_operator_handoff",
+                "venue_ticketing_handoff",
+                "local_safety_and_recovery_handoff",
+                "licensed_local_guide_handoff",
+                "attraction_admission_handoff",
+                "museum_visitor_services_handoff",
+                "nature_reserve_ranger_handoff",
+                "beach_safety_operator_handoff",
+                "spa_reception_and_therapist_handoff",
+                "event_box_office_and_security_handoff"
+            ],
+            "israel_local": {
+                "applicable": true,
+                "scope": "destination_and_domestic",
+                "required_fact_codes": [
+                    "israel_venue_license_scope",
+                    "local_weather_and_security_state",
+                    "domestic_accessibility_route"
+                ]
+            },
+            "map": {
+                "overview_zoom": 6,
+                "decision_zoom": 13,
+                "operational_zoom": 19,
+                "cluster_until_zoom": 12,
+                "geometry": "venue",
+                "resolution_path": [
+                    "overview",
+                    "decision",
+                    "operational"
+                ],
+                "detail_surface": "attached_non_occluding_context_panel",
+                "operational_anchor_codes": [
+                    "venue_entrance_anchor",
+                    "meeting_point_anchor",
+                    "accessible_exit_anchor",
+                    "guide_meeting_point_anchor",
+                    "attraction_admission_gate_anchor",
+                    "museum_accessible_entrance_anchor",
+                    "nature_reserve_trailhead_and_exit_anchor",
+                    "beach_lifeguard_and_access_anchor",
+                    "spa_reception_and_treatment_anchor",
+                    "event_gate_seat_and_exit_anchor"
+                ],
+                "selection_to_plan_required": true,
+                "viewport_padding_required": true,
+                "rtl_mobile_safe_area_required": true,
+                "source_freshness_required": true,
+                "reduced_motion_alternative_required": true
+            }
+        },
+        {
+            "family_ref": "fm_syn_95f6d0da0219f684ad116a66c87294f1",
+            "service_family": "dining",
+            "canonical_vertical": "dining",
+            "family_subtypes": [
+                "restaurant_booking",
+                "private_dining",
+                "meal_delivery"
+            ],
+            "crosswalk": {
+                "canonical_taxonomy": "commerce_core_v1",
+                "mapping_kind": "orchestration_bucket_only",
+                "operation_routing": "dedicated_service_family_adapter",
+                "orchestration_adapter": "dining_orchestration_adapter_v1",
+                "equivalence_claimed": false,
+                "subtype_preserved": true
+            },
+            "lifecycle": {
+                "search": "required",
+                "revalidate": "required",
+                "hold_reserve": "conditional",
+                "confirm": "required",
+                "fulfill": "required",
+                "change": "required",
+                "cancel": "required",
+                "refund": "conditional",
+                "incident": "required",
+                "reconciliation": "required",
+                "settlement": "conditional",
+                "post_service_evidence": "required"
+            },
+            "critical_facts": [
+                "venue_and_seating_time",
+                "party_size_and_seating_configuration",
+                "kosher_certificate_and_scope",
+                "allergen_protocol_and_kitchen_acknowledgement",
+                "deposit_minimum_spend_and_no_show_terms",
+                "accessibility_and_children_fit",
+                "late_arrival_and_service_window"
+            ],
+            "critical_deadlines": [
+                "reservation_hold_deadline_utc",
+                "cancellation_no_show_deadline_utc",
+                "menu_confirmation_deadline_utc",
+                "arrival_grace_deadline_utc"
+            ],
+            "required_handoffs": [
+                "dining_reservation_handoff",
+                "kitchen_allergen_handoff",
+                "after_hours_host_handoff"
+            ],
+            "israel_local": {
+                "applicable": true,
+                "scope": "destination_and_domestic",
+                "required_fact_codes": [
+                    "israel_kosher_evidence",
+                    "local_holiday_operation",
+                    "domestic_accessibility_route"
+                ]
+            },
+            "map": {
+                "overview_zoom": 8,
+                "decision_zoom": 15,
+                "operational_zoom": 20,
+                "cluster_until_zoom": 14,
+                "geometry": "venue",
+                "resolution_path": [
+                    "overview",
+                    "decision",
+                    "operational"
+                ],
+                "detail_surface": "attached_non_occluding_context_panel",
+                "operational_anchor_codes": [
+                    "venue_entrance_anchor",
+                    "meeting_point_anchor",
+                    "accessible_exit_anchor"
+                ],
+                "selection_to_plan_required": true,
+                "viewport_padding_required": true,
+                "rtl_mobile_safe_area_required": true,
+                "source_freshness_required": true,
+                "reduced_motion_alternative_required": true
+            }
+        },
+        {
+            "family_ref": "fm_syn_5288d6daea62f1b3dd930095395454cf",
+            "service_family": "travel_protection",
+            "canonical_vertical": "insurance",
+            "family_subtypes": [
+                "travel_insurance",
+                "emergency_assistance",
+                "medical_assistance",
+                "baggage_assistance",
+                "trip_disruption_assistance"
+            ],
+            "crosswalk": {
+                "canonical_taxonomy": "commerce_core_v1",
+                "mapping_kind": "orchestration_bucket_only",
+                "operation_routing": "dedicated_service_family_adapter",
+                "orchestration_adapter": "travel_protection_orchestration_adapter_v1",
+                "equivalence_claimed": false,
+                "subtype_preserved": true
+            },
+            "lifecycle": {
+                "search": "required",
+                "revalidate": "required",
+                "hold_reserve": "not_applicable",
+                "confirm": "required",
+                "fulfill": "required",
+                "change": "required",
+                "cancel": "required",
+                "refund": "conditional",
+                "incident": "required",
+                "reconciliation": "required",
+                "settlement": "required",
+                "post_service_evidence": "required"
+            },
+            "critical_facts": [
+                "policy_jurisdiction_and_purchase_window",
+                "insured_trip_and_party_reference_scope",
+                "coverage_limit_exclusion_evidence",
+                "declaration_and_eligibility_state",
+                "assistance_channel_and_case_reference",
+                "incident_evidence_checklist",
+                "claim_and_payment_status_separation"
+            ],
+            "critical_deadlines": [
+                "purchase_eligibility_deadline_utc",
+                "coverage_start_end_utc",
+                "incident_notification_deadline_utc",
+                "claim_evidence_deadline_utc"
+            ],
+            "required_handoffs": [
+                "licensed_distribution_handoff",
+                "emergency_assistance_handoff",
+                "claims_handler_handoff"
+            ],
+            "israel_local": {
+                "applicable": true,
+                "scope": "nationwide",
+                "required_fact_codes": [
+                    "israel_policy_jurisdiction",
+                    "local_emergency_channel",
+                    "domestic_coverage_scope"
+                ]
+            },
+            "map": {
+                "overview_zoom": 2,
+                "decision_zoom": 6,
+                "operational_zoom": 12,
+                "cluster_until_zoom": 5,
+                "geometry": "polygon",
+                "resolution_path": [
+                    "overview",
+                    "decision",
+                    "operational"
+                ],
+                "detail_surface": "attached_non_occluding_context_panel",
+                "operational_anchor_codes": [
+                    "coverage_boundary_anchor",
+                    "service_entry_anchor",
+                    "exception_region_anchor"
+                ],
+                "selection_to_plan_required": true,
+                "viewport_padding_required": true,
+                "rtl_mobile_safe_area_required": true,
+                "source_freshness_required": true,
+                "reduced_motion_alternative_required": true
+            }
+        },
+        {
+            "family_ref": "fm_syn_26ebe5e218ddbe0bf9e6bfcfc9520bb1",
+            "service_family": "connectivity",
+            "canonical_vertical": "connectivity",
+            "family_subtypes": [
+                "esim",
+                "physical_sim",
+                "pocket_wifi"
+            ],
+            "crosswalk": {
+                "canonical_taxonomy": "commerce_core_v1",
+                "mapping_kind": "orchestration_bucket_only",
+                "operation_routing": "dedicated_service_family_adapter",
+                "orchestration_adapter": "connectivity_orchestration_adapter_v1",
+                "equivalence_claimed": false,
+                "subtype_preserved": true
+            },
+            "lifecycle": {
+                "search": "required",
+                "revalidate": "required",
+                "hold_reserve": "conditional",
+                "confirm": "required",
+                "fulfill": "required",
+                "change": "required",
+                "cancel": "required",
+                "refund": "conditional",
+                "incident": "required",
+                "reconciliation": "required",
+                "settlement": "required",
+                "post_service_evidence": "required"
+            },
+            "critical_facts": [
+                "destination_and_network_coverage",
+                "device_compatibility_and_lock_state",
+                "data_allowance_and_fair_use",
+                "activation_method_and_window",
+                "roaming_and_network_restrictions",
+                "pickup_delivery_and_return_scope",
+                "support_and_outage_state"
+            ],
+            "critical_deadlines": [
+                "activation_deadline_utc",
+                "pickup_delivery_deadline_utc",
+                "connectivity_cancellation_deadline_utc",
+                "device_return_deadline_utc"
+            ],
+            "required_handoffs": [
+                "activation_support_handoff",
+                "carrier_outage_handoff",
+                "device_return_handoff"
+            ],
+            "israel_local": {
+                "applicable": true,
+                "scope": "domestic_and_outbound",
+                "required_fact_codes": [
+                    "israel_activation_channel",
+                    "domestic_network_scope",
+                    "outbound_roaming_origin"
+                ]
+            },
+            "map": {
+                "overview_zoom": 3,
+                "decision_zoom": 9,
+                "operational_zoom": 15,
+                "cluster_until_zoom": 8,
+                "geometry": "polygon",
+                "resolution_path": [
+                    "overview",
+                    "decision",
+                    "operational"
+                ],
+                "detail_surface": "attached_non_occluding_context_panel",
+                "operational_anchor_codes": [
+                    "coverage_boundary_anchor",
+                    "service_entry_anchor",
+                    "exception_region_anchor"
+                ],
+                "selection_to_plan_required": true,
+                "viewport_padding_required": true,
+                "rtl_mobile_safe_area_required": true,
+                "source_freshness_required": true,
+                "reduced_motion_alternative_required": true
+            }
+        },
+        {
+            "family_ref": "fm_syn_6da6a497e0af4706642381d6a16e0448",
+            "service_family": "equipment",
+            "canonical_vertical": "equipment",
+            "family_subtypes": [
+                "equipment_rental",
+                "equipment_sale",
+                "mobility_aid",
+                "child_gear"
+            ],
+            "crosswalk": {
+                "canonical_taxonomy": "commerce_core_v1",
+                "mapping_kind": "orchestration_bucket_only",
+                "operation_routing": "dedicated_service_family_adapter",
+                "orchestration_adapter": "equipment_orchestration_adapter_v1",
+                "equivalence_claimed": false,
+                "subtype_preserved": true
+            },
+            "lifecycle": {
+                "search": "required",
+                "revalidate": "required",
+                "hold_reserve": "conditional",
+                "confirm": "required",
+                "fulfill": "required",
+                "change": "required",
+                "cancel": "required",
+                "refund": "conditional",
+                "incident": "required",
+                "reconciliation": "required",
+                "settlement": "required",
+                "post_service_evidence": "required"
+            },
+            "critical_facts": [
+                "item_specification_size_and_fit",
+                "inventory_revision_and_condition",
+                "safety_certificate_or_recall_state",
+                "pickup_delivery_and_installation",
+                "deposit_damage_and_loss_terms",
+                "sanitation_battery_and_maintenance",
+                "accessibility_and_traveler_fit"
+            ],
+            "critical_deadlines": [
+                "fitting_confirmation_deadline_utc",
+                "delivery_installation_deadline_utc",
+                "equipment_cancellation_deadline_utc",
+                "rental_return_deadline_utc"
+            ],
+            "required_handoffs": [
+                "equipment_vendor_handoff",
+                "fit_or_accessibility_specialist_handoff",
+                "replacement_and_recovery_handoff"
+            ],
+            "israel_local": {
+                "applicable": true,
+                "scope": "destination_and_domestic",
+                "required_fact_codes": [
+                    "israel_delivery_zone",
+                    "local_safety_standard",
+                    "domestic_repair_or_replacement_route"
+                ]
+            },
+            "map": {
+                "overview_zoom": 7,
+                "decision_zoom": 14,
+                "operational_zoom": 20,
+                "cluster_until_zoom": 13,
+                "geometry": "point",
+                "resolution_path": [
+                    "overview",
+                    "decision",
+                    "operational"
+                ],
+                "detail_surface": "attached_non_occluding_context_panel",
+                "operational_anchor_codes": [
+                    "location_centroid_anchor",
+                    "public_entrance_anchor",
+                    "arrival_handoff_anchor"
+                ],
+                "selection_to_plan_required": true,
+                "viewport_padding_required": true,
+                "rtl_mobile_safe_area_required": true,
+                "source_freshness_required": true,
+                "reduced_motion_alternative_required": true
+            }
+        },
+        {
+            "family_ref": "fm_syn_23293fb07628cf221dfe11dc8f95b0be",
+            "service_family": "entry_document_assistance",
+            "canonical_vertical": "activity",
+            "family_subtypes": [
+                "visa_assistance",
+                "eta_assistance",
+                "entry_document_review"
+            ],
+            "crosswalk": {
+                "canonical_taxonomy": "commerce_core_v1",
+                "mapping_kind": "orchestration_bucket_only",
+                "operation_routing": "dedicated_service_family_adapter",
+                "orchestration_adapter": "document_assistance_orchestration_adapter_v1",
+                "equivalence_claimed": false,
+                "subtype_preserved": true
+            },
+            "lifecycle": {
+                "search": "required",
+                "revalidate": "required",
+                "hold_reserve": "not_applicable",
+                "confirm": "required",
+                "fulfill": "required",
+                "change": "required",
+                "cancel": "required",
+                "refund": "conditional",
+                "incident": "required",
+                "reconciliation": "required",
+                "settlement": "conditional",
+                "post_service_evidence": "required"
+            },
+            "critical_facts": [
+                "nationality_residency_scope_reference",
+                "destination_and_transit_rule_scope",
+                "document_type_validity_and_entry_count",
+                "official_authority_source_revision",
+                "application_and_proof_checklist",
+                "appointment_or_biometric_requirement",
+                "assistance_not_issuance_authority"
+            ],
+            "critical_deadlines": [
+                "official_application_deadline_utc",
+                "appointment_or_biometric_deadline_utc",
+                "document_submission_deadline_utc",
+                "departure_safety_buffer_deadline_utc"
+            ],
+            "required_handoffs": [
+                "official_information_source_handoff",
+                "customer_evidence_vault_handoff",
+                "licensed_specialist_or_consulate_referral"
+            ],
+            "israel_local": {
+                "applicable": true,
+                "scope": "outbound_gateway",
+                "required_fact_codes": [
+                    "israel_residency_scope",
+                    "outbound_border_authority_source",
+                    "israel_document_delivery_route"
+                ]
+            },
+            "map": {
+                "overview_zoom": 2,
+                "decision_zoom": 6,
+                "operational_zoom": 13,
+                "cluster_until_zoom": 5,
+                "geometry": "polygon",
+                "resolution_path": [
+                    "overview",
+                    "decision",
+                    "operational"
+                ],
+                "detail_surface": "attached_non_occluding_context_panel",
+                "operational_anchor_codes": [
+                    "coverage_boundary_anchor",
+                    "service_entry_anchor",
+                    "exception_region_anchor"
+                ],
+                "selection_to_plan_required": true,
+                "viewport_padding_required": true,
+                "rtl_mobile_safe_area_required": true,
+                "source_freshness_required": true,
+                "reduced_motion_alternative_required": true
+            }
+        }
+    ],
+    "scenarios": [
+        {
+            "scenario_ref": "sc_syn_da6755b53b9c00a7eb762c9d1b9bf992",
+            "scenario_number": 1,
+            "scenario_slot": 1,
+            "service_family": "air_transport",
+            "family_subtype": "scheduled_flight",
+            "canonical_vertical": "flight",
+            "trigger": "ticketing_deadline_near",
+            "event_state": "stale",
+            "after_hours": {
+                "required": false,
+                "route_ref": "rt_syn_feb76b96241b21040472e8e87d6afa41",
+                "fallback_route_ref": "rt_syn_2b525d0500aec4ab75e20f00bf9ee686",
+                "coverage_state": "within_declared_window",
+                "timezone": "Asia/Jerusalem",
+                "deadline_code": "ticketing_deadline_utc",
+                "primary_handoff_code": "ticketing_consolidator_handoff",
+                "acknowledgement_sla_seconds": 900,
+                "customer_update_sla_seconds": 3600,
+                "fallback_after_seconds": 1800,
+                "escalation_tier": 0,
+                "safety_check_required": false,
+                "evidence_required": true,
+                "escalation_state": "standby",
+                "supplier_dispatched": false
+            },
+            "preservation": {
+                "partition_scope_ref": "sp_syn_68bdc8135808374f822f82d5b94e32f9",
+                "party_scope_refs": [
+                    "pt_syn_08d0d3cf10678b4119be1aa6b494af44"
+                ],
+                "affected_party_refs": [],
+                "unaffected_party_refs": [
+                    "pt_syn_08d0d3cf10678b4119be1aa6b494af44"
+                ],
+                "service_scope_refs": [
+                    "sv_syn_d3bb68ec3c3aff2340256bafb87959dd",
+                    "sv_syn_9fbf432e6f1640d42eb9436a1ebbef6d"
+                ],
+                "affected_service_refs": [
+                    "sv_syn_d3bb68ec3c3aff2340256bafb87959dd"
+                ],
+                "preserved_service_refs": [
+                    "sv_syn_9fbf432e6f1640d42eb9436a1ebbef6d"
+                ],
+                "preserve_unaffected": true,
+                "partition_complete": true
+            },
+            "expected_actions": [
+                "refresh_ticketing_evidence",
+                "protect_ticketing_deadline",
+                "request_customer_approval"
+            ],
+            "required_deadline_code": "ticketing_deadline_utc",
+            "required_handoff_code": "ticketing_consolidator_handoff",
+            "financial_axes": {
+                "payment": "requires_separate_authorization",
+                "refund": "quote_required",
+                "settlement": "reconciliation_required",
+                "netting_prohibited": true,
+                "independent_ledgers_required": true
+            },
+            "expected_outcome": "evidence_required",
+            "boundary": {
+                "planning_only": true,
+                "public_serialization_allowed": false,
+                "supplier_dispatched": false,
+                "processor_called": false,
+                "order_created": false,
+                "payment_created": false,
+                "refund_created": false,
+                "settlement_created": false,
+                "raw_pii_stored": false,
+                "raw_secret_stored": false,
+                "raw_provider_payload_stored": false,
+                "real_commercial_claimed": false
+            }
+        },
+        {
+            "scenario_ref": "sc_syn_c32b8ce4dd9c5603b6505519cfd142ea",
+            "scenario_number": 2,
+            "scenario_slot": 2,
+            "service_family": "air_transport",
+            "family_subtype": "domestic_flight",
+            "canonical_vertical": "flight",
+            "trigger": "schedule_change_event_missed",
+            "event_state": "missed",
+            "after_hours": {
+                "required": true,
+                "route_ref": "rt_syn_cde6d703bfb9e9d5acf7373e68c39749",
+                "fallback_route_ref": "rt_syn_87816c388ff78927808ec948d44f3136",
+                "coverage_state": "outside_declared_window",
+                "timezone": "Asia/Jerusalem",
+                "deadline_code": "check_in_cutoff_utc",
+                "primary_handoff_code": "airport_disruption_desk_handoff",
+                "acknowledgement_sla_seconds": 300,
+                "customer_update_sla_seconds": 900,
+                "fallback_after_seconds": 600,
+                "escalation_tier": 2,
+                "safety_check_required": true,
+                "evidence_required": true,
+                "escalation_state": "planned",
+                "supplier_dispatched": false
+            },
+            "preservation": {
+                "partition_scope_ref": "sp_syn_889c902404210dbb793adbc6e65a4886",
+                "party_scope_refs": [
+                    "pt_syn_ffeebd8aceecf4ad52f0703e302c6045",
+                    "pt_syn_ba551dcb9e965623f4bb6c55c2c59bf6"
+                ],
+                "affected_party_refs": [
+                    "pt_syn_ffeebd8aceecf4ad52f0703e302c6045",
+                    "pt_syn_ba551dcb9e965623f4bb6c55c2c59bf6"
+                ],
+                "unaffected_party_refs": [],
+                "service_scope_refs": [
+                    "sv_syn_3fbcce954eccdf10a847572ef4532a98"
+                ],
+                "affected_service_refs": [
+                    "sv_syn_3fbcce954eccdf10a847572ef4532a98"
+                ],
+                "preserved_service_refs": [],
+                "preserve_unaffected": true,
+                "partition_complete": true
+            },
+            "expected_actions": [
+                "retrieve_authoritative_order",
+                "protect_connection",
+                "escalate_after_hours"
+            ],
+            "required_deadline_code": "check_in_cutoff_utc",
+            "required_handoff_code": "airport_disruption_desk_handoff",
+            "financial_axes": {
+                "payment": "existing_authorization_observed",
+                "refund": "request_planned",
+                "settlement": "accrual_review",
+                "netting_prohibited": true,
+                "independent_ledgers_required": true
+            },
+            "expected_outcome": "after_hours_escalation",
+            "boundary": {
+                "planning_only": true,
+                "public_serialization_allowed": false,
+                "supplier_dispatched": false,
+                "processor_called": false,
+                "order_created": false,
+                "payment_created": false,
+                "refund_created": false,
+                "settlement_created": false,
+                "raw_pii_stored": false,
+                "raw_secret_stored": false,
+                "raw_provider_payload_stored": false,
+                "real_commercial_claimed": false
+            }
+        },
+        {
+            "scenario_ref": "sc_syn_983a5e1b830b69ba28152254e38b36cf",
+            "scenario_number": 3,
+            "scenario_slot": 1,
+            "service_family": "lodging",
+            "family_subtype": "city_business_hotel",
+            "canonical_vertical": "accommodation",
+            "trigger": "room_allocation_revision_stale",
+            "event_state": "stale",
+            "after_hours": {
+                "required": false,
+                "route_ref": "rt_syn_7ed31453b9953bfb2e9760189654e070",
+                "fallback_route_ref": "rt_syn_421b8f8aca756031f62438b845c88858",
+                "coverage_state": "within_declared_window",
+                "timezone": "Asia/Jerusalem",
+                "deadline_code": "cancellation_deadline_utc",
+                "primary_handoff_code": "property_reservations_handoff",
+                "acknowledgement_sla_seconds": 900,
+                "customer_update_sla_seconds": 3600,
+                "fallback_after_seconds": 1800,
+                "escalation_tier": 0,
+                "safety_check_required": false,
+                "evidence_required": true,
+                "escalation_state": "standby",
+                "supplier_dispatched": false
+            },
+            "preservation": {
+                "partition_scope_ref": "sp_syn_58fae40b63c5dc68c8d56ff29d14d842",
+                "party_scope_refs": [
+                    "pt_syn_8bdc10e7c3a7187fe7f7ecbb0c62e583"
+                ],
+                "affected_party_refs": [],
+                "unaffected_party_refs": [
+                    "pt_syn_8bdc10e7c3a7187fe7f7ecbb0c62e583"
+                ],
+                "service_scope_refs": [
+                    "sv_syn_69c1027660d640578a036603fa5ac5c6",
+                    "sv_syn_5748c356c9aef03138599c77452f8747"
+                ],
+                "affected_service_refs": [
+                    "sv_syn_69c1027660d640578a036603fa5ac5c6"
+                ],
+                "preserved_service_refs": [
+                    "sv_syn_5748c356c9aef03138599c77452f8747"
+                ],
+                "preserve_unaffected": true,
+                "partition_complete": true
+            },
+            "expected_actions": [
+                "refresh_room_allocation",
+                "preserve_unaffected_rooms",
+                "request_change_approval"
+            ],
+            "required_deadline_code": "cancellation_deadline_utc",
+            "required_handoff_code": "property_reservations_handoff",
+            "financial_axes": {
+                "payment": "requires_separate_authorization",
+                "refund": "quote_required",
+                "settlement": "reconciliation_required",
+                "netting_prohibited": true,
+                "independent_ledgers_required": true
+            },
+            "expected_outcome": "evidence_required",
+            "boundary": {
+                "planning_only": true,
+                "public_serialization_allowed": false,
+                "supplier_dispatched": false,
+                "processor_called": false,
+                "order_created": false,
+                "payment_created": false,
+                "refund_created": false,
+                "settlement_created": false,
+                "raw_pii_stored": false,
+                "raw_secret_stored": false,
+                "raw_provider_payload_stored": false,
+                "real_commercial_claimed": false
+            }
+        },
+        {
+            "scenario_ref": "sc_syn_fb7cf8af482d1f80079dd722799ffa8d",
+            "scenario_number": 4,
+            "scenario_slot": 2,
+            "service_family": "lodging",
+            "family_subtype": "vacation_apartment_short_term_rental",
+            "canonical_vertical": "accommodation",
+            "trigger": "late_arrival_message_missed",
+            "event_state": "missed",
+            "after_hours": {
+                "required": true,
+                "route_ref": "rt_syn_b7fab956c8743ec7cecc6db1c22719d9",
+                "fallback_route_ref": "rt_syn_0f3030465107ef00de14eb2d67462702",
+                "coverage_state": "outside_declared_window",
+                "timezone": "Asia/Jerusalem",
+                "deadline_code": "arrival_notice_deadline_utc",
+                "primary_handoff_code": "property_after_hours_handoff",
+                "acknowledgement_sla_seconds": 300,
+                "customer_update_sla_seconds": 900,
+                "fallback_after_seconds": 600,
+                "escalation_tier": 2,
+                "safety_check_required": true,
+                "evidence_required": true,
+                "escalation_state": "planned",
+                "supplier_dispatched": false
+            },
+            "preservation": {
+                "partition_scope_ref": "sp_syn_03d4f74c6702d1603bc7090fee3f2b33",
+                "party_scope_refs": [
+                    "pt_syn_87a217edfd6eda85ce4d3a83846a5f71",
+                    "pt_syn_d2bfa76f4974ce33629fd9a7b4a4003c"
+                ],
+                "affected_party_refs": [
+                    "pt_syn_87a217edfd6eda85ce4d3a83846a5f71",
+                    "pt_syn_d2bfa76f4974ce33629fd9a7b4a4003c"
+                ],
+                "unaffected_party_refs": [],
+                "service_scope_refs": [
+                    "sv_syn_ac80bf3d568236eec78a182f67eae2ea"
+                ],
+                "affected_service_refs": [
+                    "sv_syn_ac80bf3d568236eec78a182f67eae2ea"
+                ],
+                "preserved_service_refs": [],
+                "preserve_unaffected": true,
+                "partition_complete": true
+            },
+            "expected_actions": [
+                "retrieve_delivery_status",
+                "protect_key_handoff",
+                "escalate_after_hours"
+            ],
+            "required_deadline_code": "arrival_notice_deadline_utc",
+            "required_handoff_code": "property_after_hours_handoff",
+            "financial_axes": {
+                "payment": "existing_authorization_observed",
+                "refund": "request_planned",
+                "settlement": "accrual_review",
+                "netting_prohibited": true,
+                "independent_ledgers_required": true
+            },
+            "expected_outcome": "after_hours_escalation",
+            "boundary": {
+                "planning_only": true,
+                "public_serialization_allowed": false,
+                "supplier_dispatched": false,
+                "processor_called": false,
+                "order_created": false,
+                "payment_created": false,
+                "refund_created": false,
+                "settlement_created": false,
+                "raw_pii_stored": false,
+                "raw_secret_stored": false,
+                "raw_provider_payload_stored": false,
+                "real_commercial_claimed": false
+            }
+        },
+        {
+            "scenario_ref": "sc_syn_95c0f5cf65f2a94f3397e3a7ed6b1b76",
+            "scenario_number": 5,
+            "scenario_slot": 1,
+            "service_family": "dynamic_package",
+            "family_subtype": "flight_lodging_package",
+            "canonical_vertical": "package",
+            "trigger": "component_revalidation_stale",
+            "event_state": "stale",
+            "after_hours": {
+                "required": false,
+                "route_ref": "rt_syn_481c92e05c76fc73ec6ecd8c7a413a53",
+                "fallback_route_ref": "rt_syn_8d73a8b7aba7a0fb187d41aa312c3629",
+                "coverage_state": "within_declared_window",
+                "timezone": "Asia/Jerusalem",
+                "deadline_code": "atomic_revalidation_deadline_utc",
+                "primary_handoff_code": "package_orchestrator_handoff",
+                "acknowledgement_sla_seconds": 900,
+                "customer_update_sla_seconds": 3600,
+                "fallback_after_seconds": 1800,
+                "escalation_tier": 0,
+                "safety_check_required": false,
+                "evidence_required": true,
+                "escalation_state": "standby",
+                "supplier_dispatched": false
+            },
+            "preservation": {
+                "partition_scope_ref": "sp_syn_ff92b485c6f132e3e8003af71f123487",
+                "party_scope_refs": [
+                    "pt_syn_4594d37dbfd4c0d997d257fc9a831e9a"
+                ],
+                "affected_party_refs": [],
+                "unaffected_party_refs": [
+                    "pt_syn_4594d37dbfd4c0d997d257fc9a831e9a"
+                ],
+                "service_scope_refs": [
+                    "sv_syn_310e578b943b68e7c86e6ed4f081ccbe",
+                    "sv_syn_129d1d4979b669d2b71d9fcbd7586044"
+                ],
+                "affected_service_refs": [
+                    "sv_syn_310e578b943b68e7c86e6ed4f081ccbe"
+                ],
+                "preserved_service_refs": [
+                    "sv_syn_129d1d4979b669d2b71d9fcbd7586044"
+                ],
+                "preserve_unaffected": true,
+                "partition_complete": true
+            },
+            "expected_actions": [
+                "refresh_all_component_evidence",
+                "preserve_unchanged_components",
+                "request_package_approval"
+            ],
+            "required_deadline_code": "atomic_revalidation_deadline_utc",
+            "required_handoff_code": "package_orchestrator_handoff",
+            "financial_axes": {
+                "payment": "requires_separate_authorization",
+                "refund": "quote_required",
+                "settlement": "reconciliation_required",
+                "netting_prohibited": true,
+                "independent_ledgers_required": true
+            },
+            "expected_outcome": "replan_required",
+            "boundary": {
+                "planning_only": true,
+                "public_serialization_allowed": false,
+                "supplier_dispatched": false,
+                "processor_called": false,
+                "order_created": false,
+                "payment_created": false,
+                "refund_created": false,
+                "settlement_created": false,
+                "raw_pii_stored": false,
+                "raw_secret_stored": false,
+                "raw_provider_payload_stored": false,
+                "real_commercial_claimed": false
+            }
+        },
+        {
+            "scenario_ref": "sc_syn_007bc40cd37d4b808722e833b937664a",
+            "scenario_number": 6,
+            "scenario_slot": 2,
+            "service_family": "dynamic_package",
+            "family_subtype": "custom_multi_component_package",
+            "canonical_vertical": "package",
+            "trigger": "component_failure_event_missed",
+            "event_state": "missed",
+            "after_hours": {
+                "required": true,
+                "route_ref": "rt_syn_141d3488636d1cf6c4e242ed0c1fbf32",
+                "fallback_route_ref": "rt_syn_1f35f81c086796f1c01ee0841f35fd24",
+                "coverage_state": "outside_declared_window",
+                "timezone": "Asia/Jerusalem",
+                "deadline_code": "earliest_component_cancellation_utc",
+                "primary_handoff_code": "cross_component_recovery_handoff",
+                "acknowledgement_sla_seconds": 300,
+                "customer_update_sla_seconds": 900,
+                "fallback_after_seconds": 600,
+                "escalation_tier": 2,
+                "safety_check_required": true,
+                "evidence_required": true,
+                "escalation_state": "planned",
+                "supplier_dispatched": false
+            },
+            "preservation": {
+                "partition_scope_ref": "sp_syn_a7fd9429c3a519a16501182939e908a8",
+                "party_scope_refs": [
+                    "pt_syn_1e096c35f1b96e6484b7eab21a0bedde",
+                    "pt_syn_54d8318d261a9877b2c4cc4d350b1991"
+                ],
+                "affected_party_refs": [
+                    "pt_syn_1e096c35f1b96e6484b7eab21a0bedde",
+                    "pt_syn_54d8318d261a9877b2c4cc4d350b1991"
+                ],
+                "unaffected_party_refs": [],
+                "service_scope_refs": [
+                    "sv_syn_e9da5f73b09bfba0e569e18ac925d8ad"
+                ],
+                "affected_service_refs": [
+                    "sv_syn_e9da5f73b09bfba0e569e18ac925d8ad"
+                ],
+                "preserved_service_refs": [],
+                "preserve_unaffected": true,
+                "partition_complete": true
+            },
+            "expected_actions": [
+                "recover_missing_component_event",
+                "recalculate_dependency_impact",
+                "escalate_after_hours"
+            ],
+            "required_deadline_code": "earliest_component_cancellation_utc",
+            "required_handoff_code": "cross_component_recovery_handoff",
+            "financial_axes": {
+                "payment": "existing_authorization_observed",
+                "refund": "request_planned",
+                "settlement": "accrual_review",
+                "netting_prohibited": true,
+                "independent_ledgers_required": true
+            },
+            "expected_outcome": "after_hours_escalation",
+            "boundary": {
+                "planning_only": true,
+                "public_serialization_allowed": false,
+                "supplier_dispatched": false,
+                "processor_called": false,
+                "order_created": false,
+                "payment_created": false,
+                "refund_created": false,
+                "settlement_created": false,
+                "raw_pii_stored": false,
+                "raw_secret_stored": false,
+                "raw_provider_payload_stored": false,
+                "real_commercial_claimed": false
+            }
+        },
+        {
+            "scenario_ref": "sc_syn_e340146fa1994a7cfb72ff5e753f69eb",
+            "scenario_number": 7,
+            "scenario_slot": 1,
+            "service_family": "organized_tour",
+            "family_subtype": "guided_group_tour",
+            "canonical_vertical": "package",
+            "trigger": "minimum_group_status_stale",
+            "event_state": "stale",
+            "after_hours": {
+                "required": false,
+                "route_ref": "rt_syn_1bad8a1fd17e5dc67644f72907444fa4",
+                "fallback_route_ref": "rt_syn_3d9ac0c17e88a0f136d3c172a63c9e74",
+                "coverage_state": "within_declared_window",
+                "timezone": "Asia/Jerusalem",
+                "deadline_code": "minimum_group_decision_utc",
+                "primary_handoff_code": "tour_operator_handoff",
+                "acknowledgement_sla_seconds": 900,
+                "customer_update_sla_seconds": 3600,
+                "fallback_after_seconds": 1800,
+                "escalation_tier": 0,
+                "safety_check_required": false,
+                "evidence_required": true,
+                "escalation_state": "standby",
+                "supplier_dispatched": false
+            },
+            "preservation": {
+                "partition_scope_ref": "sp_syn_ba425a7760d5015ebbe00afbdd54cd4e",
+                "party_scope_refs": [
+                    "pt_syn_d0bb9f237ec4220b68d356dc14fd0caf"
+                ],
+                "affected_party_refs": [],
+                "unaffected_party_refs": [
+                    "pt_syn_d0bb9f237ec4220b68d356dc14fd0caf"
+                ],
+                "service_scope_refs": [
+                    "sv_syn_2e98d920c9b04b7952cbd7c5264b7944",
+                    "sv_syn_656bdb5a84f2a559cb460db77081b35e"
+                ],
+                "affected_service_refs": [
+                    "sv_syn_2e98d920c9b04b7952cbd7c5264b7944"
+                ],
+                "preserved_service_refs": [
+                    "sv_syn_656bdb5a84f2a559cb460db77081b35e"
+                ],
+                "preserve_unaffected": true,
+                "partition_complete": true
+            },
+            "expected_actions": [
+                "refresh_departure_status",
+                "protect_alternative_window",
+                "request_operator_review"
+            ],
+            "required_deadline_code": "minimum_group_decision_utc",
+            "required_handoff_code": "tour_operator_handoff",
+            "financial_axes": {
+                "payment": "requires_separate_authorization",
+                "refund": "quote_required",
+                "settlement": "reconciliation_required",
+                "netting_prohibited": true,
+                "independent_ledgers_required": true
+            },
+            "expected_outcome": "evidence_required",
+            "boundary": {
+                "planning_only": true,
+                "public_serialization_allowed": false,
+                "supplier_dispatched": false,
+                "processor_called": false,
+                "order_created": false,
+                "payment_created": false,
+                "refund_created": false,
+                "settlement_created": false,
+                "raw_pii_stored": false,
+                "raw_secret_stored": false,
+                "raw_provider_payload_stored": false,
+                "real_commercial_claimed": false
+            }
+        },
+        {
+            "scenario_ref": "sc_syn_352e1539be7eaec428d14437951ae1d9",
+            "scenario_number": 8,
+            "scenario_slot": 2,
+            "service_family": "organized_tour",
+            "family_subtype": "private_group_tour",
+            "canonical_vertical": "package",
+            "trigger": "guide_departure_change_missed",
+            "event_state": "missed",
+            "after_hours": {
+                "required": true,
+                "route_ref": "rt_syn_85309381a1b62acb4f4fc87b96ffd24f",
+                "fallback_route_ref": "rt_syn_bf5d7a34394a552d1a08909a0f2d376c",
+                "coverage_state": "outside_declared_window",
+                "timezone": "Asia/Jerusalem",
+                "deadline_code": "final_manifest_deadline_utc",
+                "primary_handoff_code": "guide_and_ground_team_handoff",
+                "acknowledgement_sla_seconds": 300,
+                "customer_update_sla_seconds": 900,
+                "fallback_after_seconds": 600,
+                "escalation_tier": 2,
+                "safety_check_required": true,
+                "evidence_required": true,
+                "escalation_state": "planned",
+                "supplier_dispatched": false
+            },
+            "preservation": {
+                "partition_scope_ref": "sp_syn_b47159fa88fdc9538cddd7cc043dde62",
+                "party_scope_refs": [
+                    "pt_syn_635b8fbe4728c4bb092c8de9472ec74c",
+                    "pt_syn_4a57944b1071e3900fb02a14f49dd459"
+                ],
+                "affected_party_refs": [
+                    "pt_syn_635b8fbe4728c4bb092c8de9472ec74c",
+                    "pt_syn_4a57944b1071e3900fb02a14f49dd459"
+                ],
+                "unaffected_party_refs": [],
+                "service_scope_refs": [
+                    "sv_syn_31b4b402c130aacc048848e6361aaf59"
+                ],
+                "affected_service_refs": [
+                    "sv_syn_31b4b402c130aacc048848e6361aaf59"
+                ],
+                "preserved_service_refs": [],
+                "preserve_unaffected": true,
+                "partition_complete": true
+            },
+            "expected_actions": [
+                "recover_guide_change",
+                "preserve_group_services",
+                "escalate_after_hours"
+            ],
+            "required_deadline_code": "final_manifest_deadline_utc",
+            "required_handoff_code": "guide_and_ground_team_handoff",
+            "financial_axes": {
+                "payment": "existing_authorization_observed",
+                "refund": "request_planned",
+                "settlement": "accrual_review",
+                "netting_prohibited": true,
+                "independent_ledgers_required": true
+            },
+            "expected_outcome": "after_hours_escalation",
+            "boundary": {
+                "planning_only": true,
+                "public_serialization_allowed": false,
+                "supplier_dispatched": false,
+                "processor_called": false,
+                "order_created": false,
+                "payment_created": false,
+                "refund_created": false,
+                "settlement_created": false,
+                "raw_pii_stored": false,
+                "raw_secret_stored": false,
+                "raw_provider_payload_stored": false,
+                "real_commercial_claimed": false
+            }
+        },
+        {
+            "scenario_ref": "sc_syn_dda2db7911294ac0145988154822055e",
+            "scenario_number": 9,
+            "scenario_slot": 1,
+            "service_family": "cruise",
+            "family_subtype": "ocean_cruise",
+            "canonical_vertical": "package",
+            "trigger": "cabin_assignment_stale",
+            "event_state": "stale",
+            "after_hours": {
+                "required": false,
+                "route_ref": "rt_syn_c0babdf5223e836e0aafbf5adde2c674",
+                "fallback_route_ref": "rt_syn_9a386cc084119dc0a4055dbffda20620",
+                "coverage_state": "within_declared_window",
+                "timezone": "Asia/Jerusalem",
+                "deadline_code": "final_payment_deadline_utc",
+                "primary_handoff_code": "cruise_operator_handoff",
+                "acknowledgement_sla_seconds": 900,
+                "customer_update_sla_seconds": 3600,
+                "fallback_after_seconds": 1800,
+                "escalation_tier": 0,
+                "safety_check_required": false,
+                "evidence_required": true,
+                "escalation_state": "standby",
+                "supplier_dispatched": false
+            },
+            "preservation": {
+                "partition_scope_ref": "sp_syn_054c29ff8a4b4397da750b3118dbec4d",
+                "party_scope_refs": [
+                    "pt_syn_a7390184aad43c8140c134563a4809af"
+                ],
+                "affected_party_refs": [],
+                "unaffected_party_refs": [
+                    "pt_syn_a7390184aad43c8140c134563a4809af"
+                ],
+                "service_scope_refs": [
+                    "sv_syn_10b88a424aa09c3273d0aeba543e7cc5",
+                    "sv_syn_52e57c90831e8509949af3f45c56fe1f"
+                ],
+                "affected_service_refs": [
+                    "sv_syn_10b88a424aa09c3273d0aeba543e7cc5"
+                ],
+                "preserved_service_refs": [
+                    "sv_syn_52e57c90831e8509949af3f45c56fe1f"
+                ],
+                "preserve_unaffected": true,
+                "partition_complete": true
+            },
+            "expected_actions": [
+                "refresh_cabin_assignment",
+                "protect_fare_terms",
+                "request_cabin_review"
+            ],
+            "required_deadline_code": "final_payment_deadline_utc",
+            "required_handoff_code": "cruise_operator_handoff",
+            "financial_axes": {
+                "payment": "requires_separate_authorization",
+                "refund": "quote_required",
+                "settlement": "reconciliation_required",
+                "netting_prohibited": true,
+                "independent_ledgers_required": true
+            },
+            "expected_outcome": "evidence_required",
+            "boundary": {
+                "planning_only": true,
+                "public_serialization_allowed": false,
+                "supplier_dispatched": false,
+                "processor_called": false,
+                "order_created": false,
+                "payment_created": false,
+                "refund_created": false,
+                "settlement_created": false,
+                "raw_pii_stored": false,
+                "raw_secret_stored": false,
+                "raw_provider_payload_stored": false,
+                "real_commercial_claimed": false
+            }
+        },
+        {
+            "scenario_ref": "sc_syn_a33fcf6b5407f55d50b7e62b283a5c41",
+            "scenario_number": 10,
+            "scenario_slot": 2,
+            "service_family": "cruise",
+            "family_subtype": "river_cruise",
+            "canonical_vertical": "package",
+            "trigger": "port_call_change_missed",
+            "event_state": "missed",
+            "after_hours": {
+                "required": true,
+                "route_ref": "rt_syn_58ea09b28be6892f65d8521623f64aef",
+                "fallback_route_ref": "rt_syn_e27191a0452562cb56f274752521e4e4",
+                "coverage_state": "outside_declared_window",
+                "timezone": "Asia/Jerusalem",
+                "deadline_code": "manifest_deadline_utc",
+                "primary_handoff_code": "port_agent_handoff",
+                "acknowledgement_sla_seconds": 300,
+                "customer_update_sla_seconds": 900,
+                "fallback_after_seconds": 600,
+                "escalation_tier": 2,
+                "safety_check_required": true,
+                "evidence_required": true,
+                "escalation_state": "planned",
+                "supplier_dispatched": false
+            },
+            "preservation": {
+                "partition_scope_ref": "sp_syn_2338f833c0b8a7cc7e098d8e40a54e11",
+                "party_scope_refs": [
+                    "pt_syn_aae1f5ce422a9584a475aaf5dfb27741",
+                    "pt_syn_563a373122cac892086e485d8fc43150"
+                ],
+                "affected_party_refs": [
+                    "pt_syn_aae1f5ce422a9584a475aaf5dfb27741",
+                    "pt_syn_563a373122cac892086e485d8fc43150"
+                ],
+                "unaffected_party_refs": [],
+                "service_scope_refs": [
+                    "sv_syn_ec40c13147b89d4203c0ec5039281f2c"
+                ],
+                "affected_service_refs": [
+                    "sv_syn_ec40c13147b89d4203c0ec5039281f2c"
+                ],
+                "preserved_service_refs": [],
+                "preserve_unaffected": true,
+                "partition_complete": true
+            },
+            "expected_actions": [
+                "recover_port_event",
+                "revalidate_onward_services",
+                "escalate_after_hours"
+            ],
+            "required_deadline_code": "manifest_deadline_utc",
+            "required_handoff_code": "port_agent_handoff",
+            "financial_axes": {
+                "payment": "existing_authorization_observed",
+                "refund": "request_planned",
+                "settlement": "accrual_review",
+                "netting_prohibited": true,
+                "independent_ledgers_required": true
+            },
+            "expected_outcome": "after_hours_escalation",
+            "boundary": {
+                "planning_only": true,
+                "public_serialization_allowed": false,
+                "supplier_dispatched": false,
+                "processor_called": false,
+                "order_created": false,
+                "payment_created": false,
+                "refund_created": false,
+                "settlement_created": false,
+                "raw_pii_stored": false,
+                "raw_secret_stored": false,
+                "raw_provider_payload_stored": false,
+                "real_commercial_claimed": false
+            }
+        },
+        {
+            "scenario_ref": "sc_syn_f8208b2aac304ba8c4219b04cb20d396",
+            "scenario_number": 11,
+            "scenario_slot": 1,
+            "service_family": "ferry",
+            "family_subtype": "vehicle_ferry",
+            "canonical_vertical": "transfer",
+            "trigger": "vehicle_manifest_stale",
+            "event_state": "stale",
+            "after_hours": {
+                "required": false,
+                "route_ref": "rt_syn_a0527d73b1118d7d3d69070b2cfde9de",
+                "fallback_route_ref": "rt_syn_77326ae06e0d6fe2846bf7e5cb3cd48a",
+                "coverage_state": "within_declared_window",
+                "timezone": "Asia/Jerusalem",
+                "deadline_code": "vehicle_check_in_cutoff_utc",
+                "primary_handoff_code": "ferry_operator_handoff",
+                "acknowledgement_sla_seconds": 900,
+                "customer_update_sla_seconds": 3600,
+                "fallback_after_seconds": 1800,
+                "escalation_tier": 0,
+                "safety_check_required": false,
+                "evidence_required": true,
+                "escalation_state": "standby",
+                "supplier_dispatched": false
+            },
+            "preservation": {
+                "partition_scope_ref": "sp_syn_df71c5b530c91940542cc7b8dc5ce4e7",
+                "party_scope_refs": [
+                    "pt_syn_9266447f857575d073ac6ad5b60df84c"
+                ],
+                "affected_party_refs": [],
+                "unaffected_party_refs": [
+                    "pt_syn_9266447f857575d073ac6ad5b60df84c"
+                ],
+                "service_scope_refs": [
+                    "sv_syn_8f9106ac59a75e801bae5d3dac21077b",
+                    "sv_syn_b84498d0b31dfbd12d6126a9deff7261"
+                ],
+                "affected_service_refs": [
+                    "sv_syn_8f9106ac59a75e801bae5d3dac21077b"
+                ],
+                "preserved_service_refs": [
+                    "sv_syn_b84498d0b31dfbd12d6126a9deff7261"
+                ],
+                "preserve_unaffected": true,
+                "partition_complete": true
+            },
+            "expected_actions": [
+                "refresh_vehicle_manifest",
+                "protect_sailing",
+                "request_manifest_review"
+            ],
+            "required_deadline_code": "vehicle_check_in_cutoff_utc",
+            "required_handoff_code": "ferry_operator_handoff",
+            "financial_axes": {
+                "payment": "requires_separate_authorization",
+                "refund": "quote_required",
+                "settlement": "reconciliation_required",
+                "netting_prohibited": true,
+                "independent_ledgers_required": true
+            },
+            "expected_outcome": "evidence_required",
+            "boundary": {
+                "planning_only": true,
+                "public_serialization_allowed": false,
+                "supplier_dispatched": false,
+                "processor_called": false,
+                "order_created": false,
+                "payment_created": false,
+                "refund_created": false,
+                "settlement_created": false,
+                "raw_pii_stored": false,
+                "raw_secret_stored": false,
+                "raw_provider_payload_stored": false,
+                "real_commercial_claimed": false
+            }
+        },
+        {
+            "scenario_ref": "sc_syn_a9ebdd913f8531336c50410e6d11bcd0",
+            "scenario_number": 12,
+            "scenario_slot": 2,
+            "service_family": "ferry",
+            "family_subtype": "passenger_ferry",
+            "canonical_vertical": "transfer",
+            "trigger": "sailing_disruption_missed",
+            "event_state": "missed",
+            "after_hours": {
+                "required": true,
+                "route_ref": "rt_syn_5439357b8bbae2f30408d0d9cd360c13",
+                "fallback_route_ref": "rt_syn_aceb63f7ea9281dadfcb723e39dbd1df",
+                "coverage_state": "outside_declared_window",
+                "timezone": "Asia/Jerusalem",
+                "deadline_code": "passenger_check_in_cutoff_utc",
+                "primary_handoff_code": "port_terminal_handoff",
+                "acknowledgement_sla_seconds": 300,
+                "customer_update_sla_seconds": 900,
+                "fallback_after_seconds": 600,
+                "escalation_tier": 2,
+                "safety_check_required": true,
+                "evidence_required": true,
+                "escalation_state": "planned",
+                "supplier_dispatched": false
+            },
+            "preservation": {
+                "partition_scope_ref": "sp_syn_ef8b61e48d4db234359ce459b55e78f6",
+                "party_scope_refs": [
+                    "pt_syn_54e8067de75852afc0358ff6302ca91f",
+                    "pt_syn_6eb4816a44aef6e670da6c2f0b2880cb"
+                ],
+                "affected_party_refs": [
+                    "pt_syn_54e8067de75852afc0358ff6302ca91f",
+                    "pt_syn_6eb4816a44aef6e670da6c2f0b2880cb"
+                ],
+                "unaffected_party_refs": [],
+                "service_scope_refs": [
+                    "sv_syn_c7f7191d31b48c313893ead7d6b1b1db"
+                ],
+                "affected_service_refs": [
+                    "sv_syn_c7f7191d31b48c313893ead7d6b1b1db"
+                ],
+                "preserved_service_refs": [],
+                "preserve_unaffected": true,
+                "partition_complete": true
+            },
+            "expected_actions": [
+                "recover_sailing_event",
+                "protect_onward_connection",
+                "escalate_after_hours"
+            ],
+            "required_deadline_code": "passenger_check_in_cutoff_utc",
+            "required_handoff_code": "port_terminal_handoff",
+            "financial_axes": {
+                "payment": "existing_authorization_observed",
+                "refund": "request_planned",
+                "settlement": "accrual_review",
+                "netting_prohibited": true,
+                "independent_ledgers_required": true
+            },
+            "expected_outcome": "after_hours_escalation",
+            "boundary": {
+                "planning_only": true,
+                "public_serialization_allowed": false,
+                "supplier_dispatched": false,
+                "processor_called": false,
+                "order_created": false,
+                "payment_created": false,
+                "refund_created": false,
+                "settlement_created": false,
+                "raw_pii_stored": false,
+                "raw_secret_stored": false,
+                "raw_provider_payload_stored": false,
+                "real_commercial_claimed": false
+            }
+        },
+        {
+            "scenario_ref": "sc_syn_b24b2280179ec92e2fdd057e80ff6803",
+            "scenario_number": 13,
+            "scenario_slot": 1,
+            "service_family": "rail",
+            "family_subtype": "intercity_rail",
+            "canonical_vertical": "transfer",
+            "trigger": "reservation_window_stale",
+            "event_state": "stale",
+            "after_hours": {
+                "required": false,
+                "route_ref": "rt_syn_1e571d415e99407484e6f8c9b8633a89",
+                "fallback_route_ref": "rt_syn_162ab76f0ad43b9bac189b66a1ba6864",
+                "coverage_state": "within_declared_window",
+                "timezone": "Asia/Jerusalem",
+                "deadline_code": "seat_release_deadline_utc",
+                "primary_handoff_code": "rail_inventory_handoff",
+                "acknowledgement_sla_seconds": 900,
+                "customer_update_sla_seconds": 3600,
+                "fallback_after_seconds": 1800,
+                "escalation_tier": 0,
+                "safety_check_required": false,
+                "evidence_required": true,
+                "escalation_state": "standby",
+                "supplier_dispatched": false
+            },
+            "preservation": {
+                "partition_scope_ref": "sp_syn_486cfa2c9367f088fad88091c4d106a5",
+                "party_scope_refs": [
+                    "pt_syn_f5be22ed599477b66d489e3a67c1cf05"
+                ],
+                "affected_party_refs": [],
+                "unaffected_party_refs": [
+                    "pt_syn_f5be22ed599477b66d489e3a67c1cf05"
+                ],
+                "service_scope_refs": [
+                    "sv_syn_dc4ef76eb900f313e685f8b813ec0bb7",
+                    "sv_syn_e1e286a127466c61b5e72347f349959a"
+                ],
+                "affected_service_refs": [
+                    "sv_syn_dc4ef76eb900f313e685f8b813ec0bb7"
+                ],
+                "preserved_service_refs": [
+                    "sv_syn_e1e286a127466c61b5e72347f349959a"
+                ],
+                "preserve_unaffected": true,
+                "partition_complete": true
+            },
+            "expected_actions": [
+                "refresh_seat_evidence",
+                "protect_reservation_window",
+                "request_exchange_review"
+            ],
+            "required_deadline_code": "seat_release_deadline_utc",
+            "required_handoff_code": "rail_inventory_handoff",
+            "financial_axes": {
+                "payment": "requires_separate_authorization",
+                "refund": "quote_required",
+                "settlement": "reconciliation_required",
+                "netting_prohibited": true,
+                "independent_ledgers_required": true
+            },
+            "expected_outcome": "evidence_required",
+            "boundary": {
+                "planning_only": true,
+                "public_serialization_allowed": false,
+                "supplier_dispatched": false,
+                "processor_called": false,
+                "order_created": false,
+                "payment_created": false,
+                "refund_created": false,
+                "settlement_created": false,
+                "raw_pii_stored": false,
+                "raw_secret_stored": false,
+                "raw_provider_payload_stored": false,
+                "real_commercial_claimed": false
+            }
+        },
+        {
+            "scenario_ref": "sc_syn_0cd2768341b3d4c3f40559e86323d360",
+            "scenario_number": 14,
+            "scenario_slot": 2,
+            "service_family": "rail",
+            "family_subtype": "airport_rail",
+            "canonical_vertical": "transfer",
+            "trigger": "platform_change_missed",
+            "event_state": "missed",
+            "after_hours": {
+                "required": true,
+                "route_ref": "rt_syn_ee04bf57ea1b9bd0569497a64e904e8a",
+                "fallback_route_ref": "rt_syn_4dfb9b58a99bb3c388d898703d389737",
+                "coverage_state": "outside_declared_window",
+                "timezone": "Asia/Jerusalem",
+                "deadline_code": "boarding_cutoff_utc",
+                "primary_handoff_code": "station_assistance_handoff",
+                "acknowledgement_sla_seconds": 300,
+                "customer_update_sla_seconds": 900,
+                "fallback_after_seconds": 600,
+                "escalation_tier": 2,
+                "safety_check_required": true,
+                "evidence_required": true,
+                "escalation_state": "planned",
+                "supplier_dispatched": false
+            },
+            "preservation": {
+                "partition_scope_ref": "sp_syn_867ff2036e6cb5b6765839e532a223c9",
+                "party_scope_refs": [
+                    "pt_syn_92530f50999b41f98edd4ade8c9ce65a",
+                    "pt_syn_fdb2723e2f3ab4c4a3bfe09de0fd18c0"
+                ],
+                "affected_party_refs": [
+                    "pt_syn_92530f50999b41f98edd4ade8c9ce65a",
+                    "pt_syn_fdb2723e2f3ab4c4a3bfe09de0fd18c0"
+                ],
+                "unaffected_party_refs": [],
+                "service_scope_refs": [
+                    "sv_syn_cff9da8b6831318ab397af8263dd0f83"
+                ],
+                "affected_service_refs": [
+                    "sv_syn_cff9da8b6831318ab397af8263dd0f83"
+                ],
+                "preserved_service_refs": [],
+                "preserve_unaffected": true,
+                "partition_complete": true
+            },
+            "expected_actions": [
+                "recover_service_alert",
+                "update_station_path",
+                "escalate_after_hours"
+            ],
+            "required_deadline_code": "boarding_cutoff_utc",
+            "required_handoff_code": "station_assistance_handoff",
+            "financial_axes": {
+                "payment": "existing_authorization_observed",
+                "refund": "request_planned",
+                "settlement": "accrual_review",
+                "netting_prohibited": true,
+                "independent_ledgers_required": true
+            },
+            "expected_outcome": "after_hours_escalation",
+            "boundary": {
+                "planning_only": true,
+                "public_serialization_allowed": false,
+                "supplier_dispatched": false,
+                "processor_called": false,
+                "order_created": false,
+                "payment_created": false,
+                "refund_created": false,
+                "settlement_created": false,
+                "raw_pii_stored": false,
+                "raw_secret_stored": false,
+                "raw_provider_payload_stored": false,
+                "real_commercial_claimed": false
+            }
+        },
+        {
+            "scenario_ref": "sc_syn_dd0cf6ac3336b31404cdc5b515998b06",
+            "scenario_number": 15,
+            "scenario_slot": 1,
+            "service_family": "coach_bus",
+            "family_subtype": "scheduled_coach",
+            "canonical_vertical": "transfer",
+            "trigger": "pickup_manifest_stale",
+            "event_state": "stale",
+            "after_hours": {
+                "required": false,
+                "route_ref": "rt_syn_225095123a54ac392e159eb317edc40c",
+                "fallback_route_ref": "rt_syn_86f56644c125c55febdb0aae25938630",
+                "coverage_state": "within_declared_window",
+                "timezone": "Asia/Jerusalem",
+                "deadline_code": "manifest_submission_deadline_utc",
+                "primary_handoff_code": "coach_operator_handoff",
+                "acknowledgement_sla_seconds": 900,
+                "customer_update_sla_seconds": 3600,
+                "fallback_after_seconds": 1800,
+                "escalation_tier": 0,
+                "safety_check_required": false,
+                "evidence_required": true,
+                "escalation_state": "standby",
+                "supplier_dispatched": false
+            },
+            "preservation": {
+                "partition_scope_ref": "sp_syn_286dbd652716b80abc40af45cafa799e",
+                "party_scope_refs": [
+                    "pt_syn_8544e7f5d01917206c7a11067afd546e"
+                ],
+                "affected_party_refs": [],
+                "unaffected_party_refs": [
+                    "pt_syn_8544e7f5d01917206c7a11067afd546e"
+                ],
+                "service_scope_refs": [
+                    "sv_syn_594e658bfec88174ca0034b0e9199020",
+                    "sv_syn_cca013c37b82b32081f10f032a16eaf3"
+                ],
+                "affected_service_refs": [
+                    "sv_syn_594e658bfec88174ca0034b0e9199020"
+                ],
+                "preserved_service_refs": [
+                    "sv_syn_cca013c37b82b32081f10f032a16eaf3"
+                ],
+                "preserve_unaffected": true,
+                "partition_complete": true
+            },
+            "expected_actions": [
+                "refresh_manifest",
+                "preserve_confirmed_seats",
+                "request_operator_review"
+            ],
+            "required_deadline_code": "manifest_submission_deadline_utc",
+            "required_handoff_code": "coach_operator_handoff",
+            "financial_axes": {
+                "payment": "requires_separate_authorization",
+                "refund": "quote_required",
+                "settlement": "reconciliation_required",
+                "netting_prohibited": true,
+                "independent_ledgers_required": true
+            },
+            "expected_outcome": "evidence_required",
+            "boundary": {
+                "planning_only": true,
+                "public_serialization_allowed": false,
+                "supplier_dispatched": false,
+                "processor_called": false,
+                "order_created": false,
+                "payment_created": false,
+                "refund_created": false,
+                "settlement_created": false,
+                "raw_pii_stored": false,
+                "raw_secret_stored": false,
+                "raw_provider_payload_stored": false,
+                "real_commercial_claimed": false
+            }
+        },
+        {
+            "scenario_ref": "sc_syn_c9483e384278fc36106ac49996b7af96",
+            "scenario_number": 16,
+            "scenario_slot": 2,
+            "service_family": "coach_bus",
+            "family_subtype": "airport_bus",
+            "canonical_vertical": "transfer",
+            "trigger": "stop_change_missed",
+            "event_state": "missed",
+            "after_hours": {
+                "required": true,
+                "route_ref": "rt_syn_6ae8a5e7ed691f27eabd5b3b3ab522d9",
+                "fallback_route_ref": "rt_syn_654792d4cd26737bf8b55a42d013a304",
+                "coverage_state": "outside_declared_window",
+                "timezone": "Asia/Jerusalem",
+                "deadline_code": "boarding_cutoff_utc",
+                "primary_handoff_code": "stop_or_terminal_handoff",
+                "acknowledgement_sla_seconds": 300,
+                "customer_update_sla_seconds": 900,
+                "fallback_after_seconds": 600,
+                "escalation_tier": 2,
+                "safety_check_required": true,
+                "evidence_required": true,
+                "escalation_state": "planned",
+                "supplier_dispatched": false
+            },
+            "preservation": {
+                "partition_scope_ref": "sp_syn_137011bdd31fd38933ac50deb1754281",
+                "party_scope_refs": [
+                    "pt_syn_8c6297d9cc227e06cd29e01ca2290a69",
+                    "pt_syn_e83fc796334f35902d48e4fc8076ce4e"
+                ],
+                "affected_party_refs": [
+                    "pt_syn_8c6297d9cc227e06cd29e01ca2290a69",
+                    "pt_syn_e83fc796334f35902d48e4fc8076ce4e"
+                ],
+                "unaffected_party_refs": [],
+                "service_scope_refs": [
+                    "sv_syn_7090ed6afbd056aab87e8ec9d4f88c19"
+                ],
+                "affected_service_refs": [
+                    "sv_syn_7090ed6afbd056aab87e8ec9d4f88c19"
+                ],
+                "preserved_service_refs": [],
+                "preserve_unaffected": true,
+                "partition_complete": true
+            },
+            "expected_actions": [
+                "recover_stop_event",
+                "update_pickup_geometry",
+                "escalate_after_hours"
+            ],
+            "required_deadline_code": "boarding_cutoff_utc",
+            "required_handoff_code": "stop_or_terminal_handoff",
+            "financial_axes": {
+                "payment": "existing_authorization_observed",
+                "refund": "request_planned",
+                "settlement": "accrual_review",
+                "netting_prohibited": true,
+                "independent_ledgers_required": true
+            },
+            "expected_outcome": "after_hours_escalation",
+            "boundary": {
+                "planning_only": true,
+                "public_serialization_allowed": false,
+                "supplier_dispatched": false,
+                "processor_called": false,
+                "order_created": false,
+                "payment_created": false,
+                "refund_created": false,
+                "settlement_created": false,
+                "raw_pii_stored": false,
+                "raw_secret_stored": false,
+                "raw_provider_payload_stored": false,
+                "real_commercial_claimed": false
+            }
+        },
+        {
+            "scenario_ref": "sc_syn_1087d9b5299e045d80a23fe41b38a17b",
+            "scenario_number": 17,
+            "scenario_slot": 1,
+            "service_family": "ground_transfer",
+            "family_subtype": "airport_private_transfer",
+            "canonical_vertical": "transfer",
+            "trigger": "driver_assignment_stale",
+            "event_state": "stale",
+            "after_hours": {
+                "required": false,
+                "route_ref": "rt_syn_979f0aba531b0efaa31841a71fe62826",
+                "fallback_route_ref": "rt_syn_7380e671221916425b66f00747f6987e",
+                "coverage_state": "within_declared_window",
+                "timezone": "Asia/Jerusalem",
+                "deadline_code": "driver_assignment_deadline_utc",
+                "primary_handoff_code": "transfer_dispatch_handoff",
+                "acknowledgement_sla_seconds": 900,
+                "customer_update_sla_seconds": 3600,
+                "fallback_after_seconds": 1800,
+                "escalation_tier": 0,
+                "safety_check_required": false,
+                "evidence_required": true,
+                "escalation_state": "standby",
+                "supplier_dispatched": false
+            },
+            "preservation": {
+                "partition_scope_ref": "sp_syn_a77e543d1c90fdb49ef17ffcd801f61f",
+                "party_scope_refs": [
+                    "pt_syn_2a33a18c76a5f610a27579f4624e5984"
+                ],
+                "affected_party_refs": [],
+                "unaffected_party_refs": [
+                    "pt_syn_2a33a18c76a5f610a27579f4624e5984"
+                ],
+                "service_scope_refs": [
+                    "sv_syn_2d5fdee4f002b789a96020f678ddf54c",
+                    "sv_syn_acd4c5b6c855023284e47ab7d7181a8c"
+                ],
+                "affected_service_refs": [
+                    "sv_syn_2d5fdee4f002b789a96020f678ddf54c"
+                ],
+                "preserved_service_refs": [
+                    "sv_syn_acd4c5b6c855023284e47ab7d7181a8c"
+                ],
+                "preserve_unaffected": true,
+                "partition_complete": true
+            },
+            "expected_actions": [
+                "refresh_driver_assignment",
+                "protect_pickup",
+                "request_dispatch_review"
+            ],
+            "required_deadline_code": "driver_assignment_deadline_utc",
+            "required_handoff_code": "transfer_dispatch_handoff",
+            "financial_axes": {
+                "payment": "requires_separate_authorization",
+                "refund": "quote_required",
+                "settlement": "reconciliation_required",
+                "netting_prohibited": true,
+                "independent_ledgers_required": true
+            },
+            "expected_outcome": "evidence_required",
+            "boundary": {
+                "planning_only": true,
+                "public_serialization_allowed": false,
+                "supplier_dispatched": false,
+                "processor_called": false,
+                "order_created": false,
+                "payment_created": false,
+                "refund_created": false,
+                "settlement_created": false,
+                "raw_pii_stored": false,
+                "raw_secret_stored": false,
+                "raw_provider_payload_stored": false,
+                "real_commercial_claimed": false
+            }
+        },
+        {
+            "scenario_ref": "sc_syn_3a7409d825b3af0d6b08d4d6979ae2f6",
+            "scenario_number": 18,
+            "scenario_slot": 2,
+            "service_family": "ground_transfer",
+            "family_subtype": "shared_shuttle",
+            "canonical_vertical": "transfer",
+            "trigger": "pickup_delay_missed",
+            "event_state": "missed",
+            "after_hours": {
+                "required": true,
+                "route_ref": "rt_syn_a860c4c9c78f1351bd96c4b6ed2ab586",
+                "fallback_route_ref": "rt_syn_a0056b11a424fd37759c14317a4edb14",
+                "coverage_state": "outside_declared_window",
+                "timezone": "Asia/Jerusalem",
+                "deadline_code": "no_show_decision_deadline_utc",
+                "primary_handoff_code": "driver_contact_relay_handoff",
+                "acknowledgement_sla_seconds": 300,
+                "customer_update_sla_seconds": 900,
+                "fallback_after_seconds": 600,
+                "escalation_tier": 2,
+                "safety_check_required": true,
+                "evidence_required": true,
+                "escalation_state": "planned",
+                "supplier_dispatched": false
+            },
+            "preservation": {
+                "partition_scope_ref": "sp_syn_81006db4c73be0de88dfb46dc36c1899",
+                "party_scope_refs": [
+                    "pt_syn_a1af80056c68209b826893eb81419570",
+                    "pt_syn_e52c541d416fc1b2abb31d3c0fc91cc0"
+                ],
+                "affected_party_refs": [
+                    "pt_syn_a1af80056c68209b826893eb81419570",
+                    "pt_syn_e52c541d416fc1b2abb31d3c0fc91cc0"
+                ],
+                "unaffected_party_refs": [],
+                "service_scope_refs": [
+                    "sv_syn_e6def0bae95722b913332ba7d00337f4"
+                ],
+                "affected_service_refs": [
+                    "sv_syn_e6def0bae95722b913332ba7d00337f4"
+                ],
+                "preserved_service_refs": [],
+                "preserve_unaffected": true,
+                "partition_complete": true
+            },
+            "expected_actions": [
+                "recover_driver_event",
+                "protect_no_show_position",
+                "escalate_after_hours"
+            ],
+            "required_deadline_code": "no_show_decision_deadline_utc",
+            "required_handoff_code": "driver_contact_relay_handoff",
+            "financial_axes": {
+                "payment": "existing_authorization_observed",
+                "refund": "request_planned",
+                "settlement": "accrual_review",
+                "netting_prohibited": true,
+                "independent_ledgers_required": true
+            },
+            "expected_outcome": "after_hours_escalation",
+            "boundary": {
+                "planning_only": true,
+                "public_serialization_allowed": false,
+                "supplier_dispatched": false,
+                "processor_called": false,
+                "order_created": false,
+                "payment_created": false,
+                "refund_created": false,
+                "settlement_created": false,
+                "raw_pii_stored": false,
+                "raw_secret_stored": false,
+                "raw_provider_payload_stored": false,
+                "real_commercial_claimed": false
+            }
+        },
+        {
+            "scenario_ref": "sc_syn_ac2137cc33e1d8abbf553ad9d760c6fa",
+            "scenario_number": 19,
+            "scenario_slot": 1,
+            "service_family": "car_rental",
+            "family_subtype": "airport_car_rental",
+            "canonical_vertical": "transfer",
+            "trigger": "driver_eligibility_evidence_stale",
+            "event_state": "stale",
+            "after_hours": {
+                "required": false,
+                "route_ref": "rt_syn_daefc0253b9ec05927b9edb2e37e6d7b",
+                "fallback_route_ref": "rt_syn_caaf29f1ce68adffb3c4792046ced996",
+                "coverage_state": "within_declared_window",
+                "timezone": "Asia/Jerusalem",
+                "deadline_code": "license_evidence_deadline_utc",
+                "primary_handoff_code": "rental_desk_handoff",
+                "acknowledgement_sla_seconds": 900,
+                "customer_update_sla_seconds": 3600,
+                "fallback_after_seconds": 1800,
+                "escalation_tier": 0,
+                "safety_check_required": false,
+                "evidence_required": true,
+                "escalation_state": "standby",
+                "supplier_dispatched": false
+            },
+            "preservation": {
+                "partition_scope_ref": "sp_syn_d7524210b5c9226e4879f0818ea5706a",
+                "party_scope_refs": [
+                    "pt_syn_0bd88bf825c14845d429a1ba130fb753"
+                ],
+                "affected_party_refs": [],
+                "unaffected_party_refs": [
+                    "pt_syn_0bd88bf825c14845d429a1ba130fb753"
+                ],
+                "service_scope_refs": [
+                    "sv_syn_acd906ff2aceddd991484cf84efc171d",
+                    "sv_syn_855a704290d3a105fa2a2bcdc5c4e481"
+                ],
+                "affected_service_refs": [
+                    "sv_syn_acd906ff2aceddd991484cf84efc171d"
+                ],
+                "preserved_service_refs": [
+                    "sv_syn_855a704290d3a105fa2a2bcdc5c4e481"
+                ],
+                "preserve_unaffected": true,
+                "partition_complete": true
+            },
+            "expected_actions": [
+                "refresh_eligibility_evidence",
+                "protect_pickup_hold",
+                "request_rental_review"
+            ],
+            "required_deadline_code": "license_evidence_deadline_utc",
+            "required_handoff_code": "rental_desk_handoff",
+            "financial_axes": {
+                "payment": "requires_separate_authorization",
+                "refund": "quote_required",
+                "settlement": "reconciliation_required",
+                "netting_prohibited": true,
+                "independent_ledgers_required": true
+            },
+            "expected_outcome": "evidence_required",
+            "boundary": {
+                "planning_only": true,
+                "public_serialization_allowed": false,
+                "supplier_dispatched": false,
+                "processor_called": false,
+                "order_created": false,
+                "payment_created": false,
+                "refund_created": false,
+                "settlement_created": false,
+                "raw_pii_stored": false,
+                "raw_secret_stored": false,
+                "raw_provider_payload_stored": false,
+                "real_commercial_claimed": false
+            }
+        },
+        {
+            "scenario_ref": "sc_syn_7babcc15e5c3b7fc7602056657507673",
+            "scenario_number": 20,
+            "scenario_slot": 2,
+            "service_family": "car_rental",
+            "family_subtype": "one_way_car_rental",
+            "canonical_vertical": "transfer",
+            "trigger": "vehicle_substitution_missed",
+            "event_state": "missed",
+            "after_hours": {
+                "required": true,
+                "route_ref": "rt_syn_fcf99fc60acfff0993bc95c30f421bbb",
+                "fallback_route_ref": "rt_syn_18cbfb45b2eb80aea174e82cc7aef5d1",
+                "coverage_state": "outside_declared_window",
+                "timezone": "Asia/Jerusalem",
+                "deadline_code": "pickup_hold_deadline_utc",
+                "primary_handoff_code": "rental_inventory_and_desk_servicing_handoff",
+                "acknowledgement_sla_seconds": 300,
+                "customer_update_sla_seconds": 900,
+                "fallback_after_seconds": 600,
+                "escalation_tier": 2,
+                "safety_check_required": true,
+                "evidence_required": true,
+                "escalation_state": "planned",
+                "supplier_dispatched": false
+            },
+            "preservation": {
+                "partition_scope_ref": "sp_syn_ac1c7e37e66892789bdd297d36a81814",
+                "party_scope_refs": [
+                    "pt_syn_3dd6cd9e5b34222d262ff45cb9e98356",
+                    "pt_syn_ec4d9896f472cdc56c34d51d23ca01ac"
+                ],
+                "affected_party_refs": [
+                    "pt_syn_3dd6cd9e5b34222d262ff45cb9e98356",
+                    "pt_syn_ec4d9896f472cdc56c34d51d23ca01ac"
+                ],
+                "unaffected_party_refs": [],
+                "service_scope_refs": [
+                    "sv_syn_c60c41a24ad68e70e4e8148d30cd3f6a"
+                ],
+                "affected_service_refs": [
+                    "sv_syn_c60c41a24ad68e70e4e8148d30cd3f6a"
+                ],
+                "preserved_service_refs": [],
+                "preserve_unaffected": true,
+                "partition_complete": true
+            },
+            "expected_actions": [
+                "recover_substitution_event",
+                "revalidate_fit_and_terms",
+                "escalate_after_hours"
+            ],
+            "required_deadline_code": "pickup_hold_deadline_utc",
+            "required_handoff_code": "rental_inventory_and_desk_servicing_handoff",
+            "financial_axes": {
+                "payment": "existing_authorization_observed",
+                "refund": "request_planned",
+                "settlement": "accrual_review",
+                "netting_prohibited": true,
+                "independent_ledgers_required": true
+            },
+            "expected_outcome": "after_hours_escalation",
+            "boundary": {
+                "planning_only": true,
+                "public_serialization_allowed": false,
+                "supplier_dispatched": false,
+                "processor_called": false,
+                "order_created": false,
+                "payment_created": false,
+                "refund_created": false,
+                "settlement_created": false,
+                "raw_pii_stored": false,
+                "raw_secret_stored": false,
+                "raw_provider_payload_stored": false,
+                "real_commercial_claimed": false
+            }
+        },
+        {
+            "scenario_ref": "sc_syn_43f3a47b498cf767fbdd61d9ace16abe",
+            "scenario_number": 21,
+            "scenario_slot": 1,
+            "service_family": "airport_ancillary",
+            "family_subtype": "airport_lounge",
+            "canonical_vertical": "activity",
+            "trigger": "terminal_access_revision_stale",
+            "event_state": "stale",
+            "after_hours": {
+                "required": false,
+                "route_ref": "rt_syn_91765ea1e682e5bf8131d6b9a0dea91e",
+                "fallback_route_ref": "rt_syn_31ad5e861f7c1177c1ba4a1b6fcde355",
+                "coverage_state": "within_declared_window",
+                "timezone": "Asia/Jerusalem",
+                "deadline_code": "terminal_arrival_deadline_utc",
+                "primary_handoff_code": "airport_service_admission_handoff",
+                "acknowledgement_sla_seconds": 900,
+                "customer_update_sla_seconds": 3600,
+                "fallback_after_seconds": 1800,
+                "escalation_tier": 0,
+                "safety_check_required": false,
+                "evidence_required": true,
+                "escalation_state": "standby",
+                "supplier_dispatched": false
+            },
+            "preservation": {
+                "partition_scope_ref": "sp_syn_4ebea3b3df275aab4b3cb97df3772356",
+                "party_scope_refs": [
+                    "pt_syn_addd4112d55865545fcb46fbc97a666e"
+                ],
+                "affected_party_refs": [],
+                "unaffected_party_refs": [
+                    "pt_syn_addd4112d55865545fcb46fbc97a666e"
+                ],
+                "service_scope_refs": [
+                    "sv_syn_c54d9c1b62473a471d8dac0497802f3a",
+                    "sv_syn_743e3506a595cc17dc465f4ab1a0dd70"
+                ],
+                "affected_service_refs": [
+                    "sv_syn_c54d9c1b62473a471d8dac0497802f3a"
+                ],
+                "preserved_service_refs": [
+                    "sv_syn_743e3506a595cc17dc465f4ab1a0dd70"
+                ],
+                "preserve_unaffected": true,
+                "partition_complete": true
+            },
+            "expected_actions": [
+                "refresh_terminal_access",
+                "protect_admission",
+                "request_access_review"
+            ],
+            "required_deadline_code": "terminal_arrival_deadline_utc",
+            "required_handoff_code": "airport_service_admission_handoff",
+            "financial_axes": {
+                "payment": "requires_separate_authorization",
+                "refund": "quote_required",
+                "settlement": "reconciliation_required",
+                "netting_prohibited": true,
+                "independent_ledgers_required": true
+            },
+            "expected_outcome": "evidence_required",
+            "boundary": {
+                "planning_only": true,
+                "public_serialization_allowed": false,
+                "supplier_dispatched": false,
+                "processor_called": false,
+                "order_created": false,
+                "payment_created": false,
+                "refund_created": false,
+                "settlement_created": false,
+                "raw_pii_stored": false,
+                "raw_secret_stored": false,
+                "raw_provider_payload_stored": false,
+                "real_commercial_claimed": false
+            }
+        },
+        {
+            "scenario_ref": "sc_syn_55b588479c702840db0d69d8cbd723da",
+            "scenario_number": 22,
+            "scenario_slot": 2,
+            "service_family": "airport_ancillary",
+            "family_subtype": "baggage_storage",
+            "canonical_vertical": "activity",
+            "trigger": "storage_closure_missed",
+            "event_state": "missed",
+            "after_hours": {
+                "required": true,
+                "route_ref": "rt_syn_a2c84c6551982da720f918c7c3780203",
+                "fallback_route_ref": "rt_syn_4e2e9a8e4cacdb0ab7150002adc4cbc8",
+                "coverage_state": "outside_declared_window",
+                "timezone": "Asia/Jerusalem",
+                "deadline_code": "storage_collection_deadline_utc",
+                "primary_handoff_code": "parking_or_storage_recovery_handoff",
+                "acknowledgement_sla_seconds": 300,
+                "customer_update_sla_seconds": 900,
+                "fallback_after_seconds": 600,
+                "escalation_tier": 2,
+                "safety_check_required": true,
+                "evidence_required": true,
+                "escalation_state": "planned",
+                "supplier_dispatched": false
+            },
+            "preservation": {
+                "partition_scope_ref": "sp_syn_a8643c95075d37bf12f47d5d408fe6aa",
+                "party_scope_refs": [
+                    "pt_syn_41993ffcdcdd324cc20effbafdadb39c",
+                    "pt_syn_5a311dc4ca026f60ccece521d1815d4b"
+                ],
+                "affected_party_refs": [
+                    "pt_syn_41993ffcdcdd324cc20effbafdadb39c",
+                    "pt_syn_5a311dc4ca026f60ccece521d1815d4b"
+                ],
+                "unaffected_party_refs": [],
+                "service_scope_refs": [
+                    "sv_syn_e254803341efccbfd0af4969514af563"
+                ],
+                "affected_service_refs": [
+                    "sv_syn_e254803341efccbfd0af4969514af563"
+                ],
+                "preserved_service_refs": [],
+                "preserve_unaffected": true,
+                "partition_complete": true
+            },
+            "expected_actions": [
+                "recover_closure_event",
+                "protect_stored_item_chain",
+                "escalate_after_hours"
+            ],
+            "required_deadline_code": "storage_collection_deadline_utc",
+            "required_handoff_code": "parking_or_storage_recovery_handoff",
+            "financial_axes": {
+                "payment": "existing_authorization_observed",
+                "refund": "request_planned",
+                "settlement": "accrual_review",
+                "netting_prohibited": true,
+                "independent_ledgers_required": true
+            },
+            "expected_outcome": "after_hours_escalation",
+            "boundary": {
+                "planning_only": true,
+                "public_serialization_allowed": false,
+                "supplier_dispatched": false,
+                "processor_called": false,
+                "order_created": false,
+                "payment_created": false,
+                "refund_created": false,
+                "settlement_created": false,
+                "raw_pii_stored": false,
+                "raw_secret_stored": false,
+                "raw_provider_payload_stored": false,
+                "real_commercial_claimed": false
+            }
+        },
+        {
+            "scenario_ref": "sc_syn_4f707fd61843fd1a941218f7d186b1ec",
+            "scenario_number": 23,
+            "scenario_slot": 1,
+            "service_family": "experience",
+            "family_subtype": "local_guide_tour",
+            "canonical_vertical": "activity",
+            "trigger": "admission_slot_stale",
+            "event_state": "stale",
+            "after_hours": {
+                "required": false,
+                "route_ref": "rt_syn_23fd0f4b2927ed1f1a6b81ef07d97aff",
+                "fallback_route_ref": "rt_syn_23ffd5cff407e00c34a5f0d087564e57",
+                "coverage_state": "within_declared_window",
+                "timezone": "Asia/Jerusalem",
+                "deadline_code": "activity_cancellation_deadline_utc",
+                "primary_handoff_code": "activity_operator_handoff",
+                "acknowledgement_sla_seconds": 900,
+                "customer_update_sla_seconds": 3600,
+                "fallback_after_seconds": 1800,
+                "escalation_tier": 0,
+                "safety_check_required": false,
+                "evidence_required": true,
+                "escalation_state": "standby",
+                "supplier_dispatched": false
+            },
+            "preservation": {
+                "partition_scope_ref": "sp_syn_96e20b5649d22165f0aa5da4dc446f2a",
+                "party_scope_refs": [
+                    "pt_syn_e6897706f8dedc0f02b1219351507bbf"
+                ],
+                "affected_party_refs": [],
+                "unaffected_party_refs": [
+                    "pt_syn_e6897706f8dedc0f02b1219351507bbf"
+                ],
+                "service_scope_refs": [
+                    "sv_syn_c61cb402c1879f80626144e7a695a099",
+                    "sv_syn_95541b8ec748e00b67773a62c45b9f11"
+                ],
+                "affected_service_refs": [
+                    "sv_syn_c61cb402c1879f80626144e7a695a099"
+                ],
+                "preserved_service_refs": [
+                    "sv_syn_95541b8ec748e00b67773a62c45b9f11"
+                ],
+                "preserve_unaffected": true,
+                "partition_complete": true
+            },
+            "expected_actions": [
+                "refresh_admission_slot",
+                "protect_party_allocation",
+                "request_activity_review"
+            ],
+            "required_deadline_code": "activity_cancellation_deadline_utc",
+            "required_handoff_code": "activity_operator_handoff",
+            "financial_axes": {
+                "payment": "requires_separate_authorization",
+                "refund": "quote_required",
+                "settlement": "reconciliation_required",
+                "netting_prohibited": true,
+                "independent_ledgers_required": true
+            },
+            "expected_outcome": "evidence_required",
+            "boundary": {
+                "planning_only": true,
+                "public_serialization_allowed": false,
+                "supplier_dispatched": false,
+                "processor_called": false,
+                "order_created": false,
+                "payment_created": false,
+                "refund_created": false,
+                "settlement_created": false,
+                "raw_pii_stored": false,
+                "raw_secret_stored": false,
+                "raw_provider_payload_stored": false,
+                "real_commercial_claimed": false
+            }
+        },
+        {
+            "scenario_ref": "sc_syn_d629cbc05975c21668f4f7d3f797b0ac",
+            "scenario_number": 24,
+            "scenario_slot": 2,
+            "service_family": "experience",
+            "family_subtype": "event",
+            "canonical_vertical": "activity",
+            "trigger": "event_cancellation_missed",
+            "event_state": "missed",
+            "after_hours": {
+                "required": true,
+                "route_ref": "rt_syn_fdbbbb9f7c939b401037ef2d71b2cc57",
+                "fallback_route_ref": "rt_syn_d468bfa00e168085f32eef388e22357a",
+                "coverage_state": "outside_declared_window",
+                "timezone": "Asia/Jerusalem",
+                "deadline_code": "ticket_claim_deadline_utc",
+                "primary_handoff_code": "venue_ticketing_handoff",
+                "acknowledgement_sla_seconds": 300,
+                "customer_update_sla_seconds": 900,
+                "fallback_after_seconds": 600,
+                "escalation_tier": 2,
+                "safety_check_required": true,
+                "evidence_required": true,
+                "escalation_state": "planned",
+                "supplier_dispatched": false
+            },
+            "preservation": {
+                "partition_scope_ref": "sp_syn_ca7947e3d919487223b8da2b223e7f89",
+                "party_scope_refs": [
+                    "pt_syn_b651a53e590fca391d4fe3e89d07f0ac",
+                    "pt_syn_2d5ec942bf9efffc3fa880ba56e94ed0"
+                ],
+                "affected_party_refs": [
+                    "pt_syn_b651a53e590fca391d4fe3e89d07f0ac",
+                    "pt_syn_2d5ec942bf9efffc3fa880ba56e94ed0"
+                ],
+                "unaffected_party_refs": [],
+                "service_scope_refs": [
+                    "sv_syn_51d685936a26f00efe50f6ef73d40b63"
+                ],
+                "affected_service_refs": [
+                    "sv_syn_51d685936a26f00efe50f6ef73d40b63"
+                ],
+                "preserved_service_refs": [],
+                "preserve_unaffected": true,
+                "partition_complete": true
+            },
+            "expected_actions": [
+                "recover_cancellation_event",
+                "preserve_other_activities",
+                "escalate_after_hours"
+            ],
+            "required_deadline_code": "ticket_claim_deadline_utc",
+            "required_handoff_code": "venue_ticketing_handoff",
+            "financial_axes": {
+                "payment": "existing_authorization_observed",
+                "refund": "request_planned",
+                "settlement": "accrual_review",
+                "netting_prohibited": true,
+                "independent_ledgers_required": true
+            },
+            "expected_outcome": "after_hours_escalation",
+            "boundary": {
+                "planning_only": true,
+                "public_serialization_allowed": false,
+                "supplier_dispatched": false,
+                "processor_called": false,
+                "order_created": false,
+                "payment_created": false,
+                "refund_created": false,
+                "settlement_created": false,
+                "raw_pii_stored": false,
+                "raw_secret_stored": false,
+                "raw_provider_payload_stored": false,
+                "real_commercial_claimed": false
+            }
+        },
+        {
+            "scenario_ref": "sc_syn_290044d5f94f273a732a3e7e78635345",
+            "scenario_number": 25,
+            "scenario_slot": 1,
+            "service_family": "dining",
+            "family_subtype": "restaurant_booking",
+            "canonical_vertical": "dining",
+            "trigger": "seating_confirmation_stale",
+            "event_state": "stale",
+            "after_hours": {
+                "required": false,
+                "route_ref": "rt_syn_de3e2389f37515e18fbe492302dfe173",
+                "fallback_route_ref": "rt_syn_10bafb10a83a2af1d2d0fc8e45c34194",
+                "coverage_state": "within_declared_window",
+                "timezone": "Asia/Jerusalem",
+                "deadline_code": "reservation_hold_deadline_utc",
+                "primary_handoff_code": "dining_reservation_handoff",
+                "acknowledgement_sla_seconds": 900,
+                "customer_update_sla_seconds": 3600,
+                "fallback_after_seconds": 1800,
+                "escalation_tier": 0,
+                "safety_check_required": false,
+                "evidence_required": true,
+                "escalation_state": "standby",
+                "supplier_dispatched": false
+            },
+            "preservation": {
+                "partition_scope_ref": "sp_syn_3d650bed8da2ecb24bd49c98d287582e",
+                "party_scope_refs": [
+                    "pt_syn_54f7ea4065193495a0aab8c621ee1fef"
+                ],
+                "affected_party_refs": [],
+                "unaffected_party_refs": [
+                    "pt_syn_54f7ea4065193495a0aab8c621ee1fef"
+                ],
+                "service_scope_refs": [
+                    "sv_syn_652be0af0bf5994edf0c28eb857c0edc",
+                    "sv_syn_9b8fd635cfa93208b0e4b57474219eb8"
+                ],
+                "affected_service_refs": [
+                    "sv_syn_652be0af0bf5994edf0c28eb857c0edc"
+                ],
+                "preserved_service_refs": [
+                    "sv_syn_9b8fd635cfa93208b0e4b57474219eb8"
+                ],
+                "preserve_unaffected": true,
+                "partition_complete": true
+            },
+            "expected_actions": [
+                "refresh_seating_confirmation",
+                "protect_dietary_requirements",
+                "request_dining_review"
+            ],
+            "required_deadline_code": "reservation_hold_deadline_utc",
+            "required_handoff_code": "dining_reservation_handoff",
+            "financial_axes": {
+                "payment": "requires_separate_authorization",
+                "refund": "quote_required",
+                "settlement": "reconciliation_required",
+                "netting_prohibited": true,
+                "independent_ledgers_required": true
+            },
+            "expected_outcome": "evidence_required",
+            "boundary": {
+                "planning_only": true,
+                "public_serialization_allowed": false,
+                "supplier_dispatched": false,
+                "processor_called": false,
+                "order_created": false,
+                "payment_created": false,
+                "refund_created": false,
+                "settlement_created": false,
+                "raw_pii_stored": false,
+                "raw_secret_stored": false,
+                "raw_provider_payload_stored": false,
+                "real_commercial_claimed": false
+            }
+        },
+        {
+            "scenario_ref": "sc_syn_bb1f53fdc1c60c9f6f009063d934fe75",
+            "scenario_number": 26,
+            "scenario_slot": 2,
+            "service_family": "dining",
+            "family_subtype": "meal_delivery",
+            "canonical_vertical": "dining",
+            "trigger": "kitchen_closure_missed",
+            "event_state": "missed",
+            "after_hours": {
+                "required": true,
+                "route_ref": "rt_syn_1a0d495af240bb312b545ce24307e278",
+                "fallback_route_ref": "rt_syn_8a6792a157974fa05772545a54afd1e5",
+                "coverage_state": "outside_declared_window",
+                "timezone": "Asia/Jerusalem",
+                "deadline_code": "arrival_grace_deadline_utc",
+                "primary_handoff_code": "after_hours_host_handoff",
+                "acknowledgement_sla_seconds": 300,
+                "customer_update_sla_seconds": 900,
+                "fallback_after_seconds": 600,
+                "escalation_tier": 2,
+                "safety_check_required": true,
+                "evidence_required": true,
+                "escalation_state": "planned",
+                "supplier_dispatched": false
+            },
+            "preservation": {
+                "partition_scope_ref": "sp_syn_d56975a226b3119ec845a7122d92d01f",
+                "party_scope_refs": [
+                    "pt_syn_482d258739310f2f8895ed6ac7cd7578",
+                    "pt_syn_97b12c19c7627b3c192ff6a3a45fc934"
+                ],
+                "affected_party_refs": [
+                    "pt_syn_482d258739310f2f8895ed6ac7cd7578",
+                    "pt_syn_97b12c19c7627b3c192ff6a3a45fc934"
+                ],
+                "unaffected_party_refs": [],
+                "service_scope_refs": [
+                    "sv_syn_d140ec026b433c45eb4361d19a730014"
+                ],
+                "affected_service_refs": [
+                    "sv_syn_d140ec026b433c45eb4361d19a730014"
+                ],
+                "preserved_service_refs": [],
+                "preserve_unaffected": true,
+                "partition_complete": true
+            },
+            "expected_actions": [
+                "recover_kitchen_event",
+                "protect_meal_continuity",
+                "escalate_after_hours"
+            ],
+            "required_deadline_code": "arrival_grace_deadline_utc",
+            "required_handoff_code": "after_hours_host_handoff",
+            "financial_axes": {
+                "payment": "existing_authorization_observed",
+                "refund": "request_planned",
+                "settlement": "accrual_review",
+                "netting_prohibited": true,
+                "independent_ledgers_required": true
+            },
+            "expected_outcome": "after_hours_escalation",
+            "boundary": {
+                "planning_only": true,
+                "public_serialization_allowed": false,
+                "supplier_dispatched": false,
+                "processor_called": false,
+                "order_created": false,
+                "payment_created": false,
+                "refund_created": false,
+                "settlement_created": false,
+                "raw_pii_stored": false,
+                "raw_secret_stored": false,
+                "raw_provider_payload_stored": false,
+                "real_commercial_claimed": false
+            }
+        },
+        {
+            "scenario_ref": "sc_syn_b4a2fba4d3f0c6dd15746e748dac12bd",
+            "scenario_number": 27,
+            "scenario_slot": 1,
+            "service_family": "travel_protection",
+            "family_subtype": "travel_insurance",
+            "canonical_vertical": "insurance",
+            "trigger": "policy_window_evidence_stale",
+            "event_state": "stale",
+            "after_hours": {
+                "required": false,
+                "route_ref": "rt_syn_46d74be88776e41934126bb8fa56ab6a",
+                "fallback_route_ref": "rt_syn_ce0da77260b3b2adc9fdf73cb39f6656",
+                "coverage_state": "within_declared_window",
+                "timezone": "Asia/Jerusalem",
+                "deadline_code": "purchase_eligibility_deadline_utc",
+                "primary_handoff_code": "licensed_distribution_handoff",
+                "acknowledgement_sla_seconds": 900,
+                "customer_update_sla_seconds": 3600,
+                "fallback_after_seconds": 1800,
+                "escalation_tier": 0,
+                "safety_check_required": false,
+                "evidence_required": true,
+                "escalation_state": "standby",
+                "supplier_dispatched": false
+            },
+            "preservation": {
+                "partition_scope_ref": "sp_syn_b34c450908970068ce0c9e64914f0661",
+                "party_scope_refs": [
+                    "pt_syn_788b49930bf1111e0f057956ebc17c4d"
+                ],
+                "affected_party_refs": [],
+                "unaffected_party_refs": [
+                    "pt_syn_788b49930bf1111e0f057956ebc17c4d"
+                ],
+                "service_scope_refs": [
+                    "sv_syn_adfd7b368bb25635c4ad02d956dc7b2a",
+                    "sv_syn_43b13a7e43e6e35b03e42d29ff85c51b"
+                ],
+                "affected_service_refs": [
+                    "sv_syn_adfd7b368bb25635c4ad02d956dc7b2a"
+                ],
+                "preserved_service_refs": [
+                    "sv_syn_43b13a7e43e6e35b03e42d29ff85c51b"
+                ],
+                "preserve_unaffected": true,
+                "partition_complete": true
+            },
+            "expected_actions": [
+                "refresh_policy_evidence",
+                "protect_purchase_window",
+                "request_licensed_review"
+            ],
+            "required_deadline_code": "purchase_eligibility_deadline_utc",
+            "required_handoff_code": "licensed_distribution_handoff",
+            "financial_axes": {
+                "payment": "requires_separate_authorization",
+                "refund": "quote_required",
+                "settlement": "reconciliation_required",
+                "netting_prohibited": true,
+                "independent_ledgers_required": true
+            },
+            "expected_outcome": "evidence_required",
+            "boundary": {
+                "planning_only": true,
+                "public_serialization_allowed": false,
+                "supplier_dispatched": false,
+                "processor_called": false,
+                "order_created": false,
+                "payment_created": false,
+                "refund_created": false,
+                "settlement_created": false,
+                "raw_pii_stored": false,
+                "raw_secret_stored": false,
+                "raw_provider_payload_stored": false,
+                "real_commercial_claimed": false
+            }
+        },
+        {
+            "scenario_ref": "sc_syn_057639aef6d241f0cd3bec2af53f3779",
+            "scenario_number": 28,
+            "scenario_slot": 2,
+            "service_family": "travel_protection",
+            "family_subtype": "medical_assistance",
+            "canonical_vertical": "insurance",
+            "trigger": "assistance_incident_missed",
+            "event_state": "missed",
+            "after_hours": {
+                "required": true,
+                "route_ref": "rt_syn_ad54cfc4a0d12bc976f5b47ef9d6719a",
+                "fallback_route_ref": "rt_syn_7a4935822dc0600510be3131535b01c5",
+                "coverage_state": "outside_declared_window",
+                "timezone": "Asia/Jerusalem",
+                "deadline_code": "incident_notification_deadline_utc",
+                "primary_handoff_code": "emergency_assistance_handoff",
+                "acknowledgement_sla_seconds": 300,
+                "customer_update_sla_seconds": 900,
+                "fallback_after_seconds": 600,
+                "escalation_tier": 2,
+                "safety_check_required": true,
+                "evidence_required": true,
+                "escalation_state": "planned",
+                "supplier_dispatched": false
+            },
+            "preservation": {
+                "partition_scope_ref": "sp_syn_6660f87b33db11d7d0fd155dc1a6d03f",
+                "party_scope_refs": [
+                    "pt_syn_c1e78335e404c922da34ba3c2623a0f6",
+                    "pt_syn_f1c947ecbf16c78ec7614e47b67a3f8a"
+                ],
+                "affected_party_refs": [
+                    "pt_syn_c1e78335e404c922da34ba3c2623a0f6",
+                    "pt_syn_f1c947ecbf16c78ec7614e47b67a3f8a"
+                ],
+                "unaffected_party_refs": [],
+                "service_scope_refs": [
+                    "sv_syn_6a04fec3eafb93570a97197823c5984a"
+                ],
+                "affected_service_refs": [
+                    "sv_syn_6a04fec3eafb93570a97197823c5984a"
+                ],
+                "preserved_service_refs": [],
+                "preserve_unaffected": true,
+                "partition_complete": true
+            },
+            "expected_actions": [
+                "recover_incident_notice",
+                "protect_safety_and_coverage",
+                "escalate_after_hours"
+            ],
+            "required_deadline_code": "incident_notification_deadline_utc",
+            "required_handoff_code": "emergency_assistance_handoff",
+            "financial_axes": {
+                "payment": "existing_authorization_observed",
+                "refund": "request_planned",
+                "settlement": "accrual_review",
+                "netting_prohibited": true,
+                "independent_ledgers_required": true
+            },
+            "expected_outcome": "safety_escalation",
+            "boundary": {
+                "planning_only": true,
+                "public_serialization_allowed": false,
+                "supplier_dispatched": false,
+                "processor_called": false,
+                "order_created": false,
+                "payment_created": false,
+                "refund_created": false,
+                "settlement_created": false,
+                "raw_pii_stored": false,
+                "raw_secret_stored": false,
+                "raw_provider_payload_stored": false,
+                "real_commercial_claimed": false
+            }
+        },
+        {
+            "scenario_ref": "sc_syn_d0370ad2b698f6dbfeff44b3fb11315d",
+            "scenario_number": 29,
+            "scenario_slot": 1,
+            "service_family": "connectivity",
+            "family_subtype": "esim",
+            "canonical_vertical": "connectivity",
+            "trigger": "activation_window_stale",
+            "event_state": "stale",
+            "after_hours": {
+                "required": false,
+                "route_ref": "rt_syn_c942f7512d4acf553cefe195df6bc228",
+                "fallback_route_ref": "rt_syn_0fa2be56c5d029fd004020a4aa80ed4b",
+                "coverage_state": "within_declared_window",
+                "timezone": "Asia/Jerusalem",
+                "deadline_code": "activation_deadline_utc",
+                "primary_handoff_code": "activation_support_handoff",
+                "acknowledgement_sla_seconds": 900,
+                "customer_update_sla_seconds": 3600,
+                "fallback_after_seconds": 1800,
+                "escalation_tier": 0,
+                "safety_check_required": false,
+                "evidence_required": true,
+                "escalation_state": "standby",
+                "supplier_dispatched": false
+            },
+            "preservation": {
+                "partition_scope_ref": "sp_syn_a78dba1fcd075c46a6c4d60ec3f01b5e",
+                "party_scope_refs": [
+                    "pt_syn_76671738c12565c063d064b0bb09430b"
+                ],
+                "affected_party_refs": [],
+                "unaffected_party_refs": [
+                    "pt_syn_76671738c12565c063d064b0bb09430b"
+                ],
+                "service_scope_refs": [
+                    "sv_syn_9219cde88a7bb5318bb73dc3e6af96af",
+                    "sv_syn_d7c59a4d07eec0199d885fc0f9882f4c"
+                ],
+                "affected_service_refs": [
+                    "sv_syn_9219cde88a7bb5318bb73dc3e6af96af"
+                ],
+                "preserved_service_refs": [
+                    "sv_syn_d7c59a4d07eec0199d885fc0f9882f4c"
+                ],
+                "preserve_unaffected": true,
+                "partition_complete": true
+            },
+            "expected_actions": [
+                "refresh_activation_window",
+                "protect_installation_path",
+                "request_support_review"
+            ],
+            "required_deadline_code": "activation_deadline_utc",
+            "required_handoff_code": "activation_support_handoff",
+            "financial_axes": {
+                "payment": "requires_separate_authorization",
+                "refund": "quote_required",
+                "settlement": "reconciliation_required",
+                "netting_prohibited": true,
+                "independent_ledgers_required": true
+            },
+            "expected_outcome": "evidence_required",
+            "boundary": {
+                "planning_only": true,
+                "public_serialization_allowed": false,
+                "supplier_dispatched": false,
+                "processor_called": false,
+                "order_created": false,
+                "payment_created": false,
+                "refund_created": false,
+                "settlement_created": false,
+                "raw_pii_stored": false,
+                "raw_secret_stored": false,
+                "raw_provider_payload_stored": false,
+                "real_commercial_claimed": false
+            }
+        },
+        {
+            "scenario_ref": "sc_syn_aa6abd85c48204517d9c78d04db7b8c8",
+            "scenario_number": 30,
+            "scenario_slot": 2,
+            "service_family": "connectivity",
+            "family_subtype": "pocket_wifi",
+            "canonical_vertical": "connectivity",
+            "trigger": "service_outage_missed",
+            "event_state": "missed",
+            "after_hours": {
+                "required": true,
+                "route_ref": "rt_syn_f02ff1a61f7a34909eef8c9ba8a6053e",
+                "fallback_route_ref": "rt_syn_997d486c9133085ac1cef90d8ac2742f",
+                "coverage_state": "outside_declared_window",
+                "timezone": "Asia/Jerusalem",
+                "deadline_code": "device_return_deadline_utc",
+                "primary_handoff_code": "carrier_outage_handoff",
+                "acknowledgement_sla_seconds": 300,
+                "customer_update_sla_seconds": 900,
+                "fallback_after_seconds": 600,
+                "escalation_tier": 2,
+                "safety_check_required": true,
+                "evidence_required": true,
+                "escalation_state": "planned",
+                "supplier_dispatched": false
+            },
+            "preservation": {
+                "partition_scope_ref": "sp_syn_d78c991bfefe50231a9781615a26e6af",
+                "party_scope_refs": [
+                    "pt_syn_00b73c5724335e7725f6afdffeeb003f",
+                    "pt_syn_d088383c5c1b33420f2e60cce0e53b1a"
+                ],
+                "affected_party_refs": [
+                    "pt_syn_00b73c5724335e7725f6afdffeeb003f",
+                    "pt_syn_d088383c5c1b33420f2e60cce0e53b1a"
+                ],
+                "unaffected_party_refs": [],
+                "service_scope_refs": [
+                    "sv_syn_049882c670190ee28bf4eaa2e07c62b7"
+                ],
+                "affected_service_refs": [
+                    "sv_syn_049882c670190ee28bf4eaa2e07c62b7"
+                ],
+                "preserved_service_refs": [],
+                "preserve_unaffected": true,
+                "partition_complete": true
+            },
+            "expected_actions": [
+                "recover_outage_event",
+                "protect_connectivity_fallback",
+                "escalate_after_hours"
+            ],
+            "required_deadline_code": "device_return_deadline_utc",
+            "required_handoff_code": "carrier_outage_handoff",
+            "financial_axes": {
+                "payment": "existing_authorization_observed",
+                "refund": "request_planned",
+                "settlement": "accrual_review",
+                "netting_prohibited": true,
+                "independent_ledgers_required": true
+            },
+            "expected_outcome": "after_hours_escalation",
+            "boundary": {
+                "planning_only": true,
+                "public_serialization_allowed": false,
+                "supplier_dispatched": false,
+                "processor_called": false,
+                "order_created": false,
+                "payment_created": false,
+                "refund_created": false,
+                "settlement_created": false,
+                "raw_pii_stored": false,
+                "raw_secret_stored": false,
+                "raw_provider_payload_stored": false,
+                "real_commercial_claimed": false
+            }
+        },
+        {
+            "scenario_ref": "sc_syn_2b8d32499e1ab33adecd7a58a421ce5e",
+            "scenario_number": 31,
+            "scenario_slot": 1,
+            "service_family": "equipment",
+            "family_subtype": "mobility_aid",
+            "canonical_vertical": "equipment",
+            "trigger": "fit_inventory_stale",
+            "event_state": "stale",
+            "after_hours": {
+                "required": false,
+                "route_ref": "rt_syn_55809bcb929853dfaac6f4d92dd22a56",
+                "fallback_route_ref": "rt_syn_93ea9583eba38aaec3583d61286f6f98",
+                "coverage_state": "within_declared_window",
+                "timezone": "Asia/Jerusalem",
+                "deadline_code": "fitting_confirmation_deadline_utc",
+                "primary_handoff_code": "fit_or_accessibility_specialist_handoff",
+                "acknowledgement_sla_seconds": 900,
+                "customer_update_sla_seconds": 3600,
+                "fallback_after_seconds": 1800,
+                "escalation_tier": 0,
+                "safety_check_required": false,
+                "evidence_required": true,
+                "escalation_state": "standby",
+                "supplier_dispatched": false
+            },
+            "preservation": {
+                "partition_scope_ref": "sp_syn_6a4ac67f085b66338705ed11bf0566c5",
+                "party_scope_refs": [
+                    "pt_syn_7facca122e7f0a79fb88b582b92e5e74"
+                ],
+                "affected_party_refs": [],
+                "unaffected_party_refs": [
+                    "pt_syn_7facca122e7f0a79fb88b582b92e5e74"
+                ],
+                "service_scope_refs": [
+                    "sv_syn_5c54ac684000c0f72691ed6e30531fc3",
+                    "sv_syn_92b4dc6c0f85df966a69407e0718724b"
+                ],
+                "affected_service_refs": [
+                    "sv_syn_5c54ac684000c0f72691ed6e30531fc3"
+                ],
+                "preserved_service_refs": [
+                    "sv_syn_92b4dc6c0f85df966a69407e0718724b"
+                ],
+                "preserve_unaffected": true,
+                "partition_complete": true
+            },
+            "expected_actions": [
+                "refresh_fit_and_inventory",
+                "protect_accessibility_need",
+                "request_specialist_review"
+            ],
+            "required_deadline_code": "fitting_confirmation_deadline_utc",
+            "required_handoff_code": "fit_or_accessibility_specialist_handoff",
+            "financial_axes": {
+                "payment": "requires_separate_authorization",
+                "refund": "quote_required",
+                "settlement": "reconciliation_required",
+                "netting_prohibited": true,
+                "independent_ledgers_required": true
+            },
+            "expected_outcome": "evidence_required",
+            "boundary": {
+                "planning_only": true,
+                "public_serialization_allowed": false,
+                "supplier_dispatched": false,
+                "processor_called": false,
+                "order_created": false,
+                "payment_created": false,
+                "refund_created": false,
+                "settlement_created": false,
+                "raw_pii_stored": false,
+                "raw_secret_stored": false,
+                "raw_provider_payload_stored": false,
+                "real_commercial_claimed": false
+            }
+        },
+        {
+            "scenario_ref": "sc_syn_596928164ffb45f3fab2856c4e2ba743",
+            "scenario_number": 32,
+            "scenario_slot": 2,
+            "service_family": "equipment",
+            "family_subtype": "child_gear",
+            "canonical_vertical": "equipment",
+            "trigger": "equipment_recall_missed",
+            "event_state": "missed",
+            "after_hours": {
+                "required": true,
+                "route_ref": "rt_syn_f70874d497bd1327f2936a330f42b2bc",
+                "fallback_route_ref": "rt_syn_1f48d962e6fb25ba1f4b090693e2f56c",
+                "coverage_state": "outside_declared_window",
+                "timezone": "Asia/Jerusalem",
+                "deadline_code": "delivery_installation_deadline_utc",
+                "primary_handoff_code": "replacement_and_recovery_handoff",
+                "acknowledgement_sla_seconds": 300,
+                "customer_update_sla_seconds": 900,
+                "fallback_after_seconds": 600,
+                "escalation_tier": 2,
+                "safety_check_required": true,
+                "evidence_required": true,
+                "escalation_state": "planned",
+                "supplier_dispatched": false
+            },
+            "preservation": {
+                "partition_scope_ref": "sp_syn_66a6846f8573d1864a1beb69f80fb9a5",
+                "party_scope_refs": [
+                    "pt_syn_335c9a83b76684899d4e11a962acaef1",
+                    "pt_syn_e1a0beec0248e917516d453902776100"
+                ],
+                "affected_party_refs": [
+                    "pt_syn_335c9a83b76684899d4e11a962acaef1",
+                    "pt_syn_e1a0beec0248e917516d453902776100"
+                ],
+                "unaffected_party_refs": [],
+                "service_scope_refs": [
+                    "sv_syn_2087f4102f27b620a528d7654c4f5e18"
+                ],
+                "affected_service_refs": [
+                    "sv_syn_2087f4102f27b620a528d7654c4f5e18"
+                ],
+                "preserved_service_refs": [],
+                "preserve_unaffected": true,
+                "partition_complete": true
+            },
+            "expected_actions": [
+                "recover_recall_event",
+                "isolate_affected_item",
+                "escalate_after_hours"
+            ],
+            "required_deadline_code": "delivery_installation_deadline_utc",
+            "required_handoff_code": "replacement_and_recovery_handoff",
+            "financial_axes": {
+                "payment": "existing_authorization_observed",
+                "refund": "request_planned",
+                "settlement": "accrual_review",
+                "netting_prohibited": true,
+                "independent_ledgers_required": true
+            },
+            "expected_outcome": "safety_escalation",
+            "boundary": {
+                "planning_only": true,
+                "public_serialization_allowed": false,
+                "supplier_dispatched": false,
+                "processor_called": false,
+                "order_created": false,
+                "payment_created": false,
+                "refund_created": false,
+                "settlement_created": false,
+                "raw_pii_stored": false,
+                "raw_secret_stored": false,
+                "raw_provider_payload_stored": false,
+                "real_commercial_claimed": false
+            }
+        },
+        {
+            "scenario_ref": "sc_syn_f536f07aca3b47fb4802fe52bb57b0aa",
+            "scenario_number": 33,
+            "scenario_slot": 1,
+            "service_family": "entry_document_assistance",
+            "family_subtype": "visa_assistance",
+            "canonical_vertical": "activity",
+            "trigger": "official_requirement_revision_stale",
+            "event_state": "stale",
+            "after_hours": {
+                "required": false,
+                "route_ref": "rt_syn_1c96e23f4b573aad8f07fd9115fc89b2",
+                "fallback_route_ref": "rt_syn_daa35694030fd79acdfbf9a525f1627e",
+                "coverage_state": "within_declared_window",
+                "timezone": "Asia/Jerusalem",
+                "deadline_code": "official_application_deadline_utc",
+                "primary_handoff_code": "official_information_source_handoff",
+                "acknowledgement_sla_seconds": 900,
+                "customer_update_sla_seconds": 3600,
+                "fallback_after_seconds": 1800,
+                "escalation_tier": 0,
+                "safety_check_required": false,
+                "evidence_required": true,
+                "escalation_state": "standby",
+                "supplier_dispatched": false
+            },
+            "preservation": {
+                "partition_scope_ref": "sp_syn_a3d852a3d0365b06aa881ef2ba5d4ac0",
+                "party_scope_refs": [
+                    "pt_syn_3d24416949b9a6090fa4423d26f5e9e3"
+                ],
+                "affected_party_refs": [],
+                "unaffected_party_refs": [
+                    "pt_syn_3d24416949b9a6090fa4423d26f5e9e3"
+                ],
+                "service_scope_refs": [
+                    "sv_syn_58a8991a89be3f3137145cf33c8b9ca5",
+                    "sv_syn_cae4367c5a0bece9450c087f2795e0a3"
+                ],
+                "affected_service_refs": [
+                    "sv_syn_58a8991a89be3f3137145cf33c8b9ca5"
+                ],
+                "preserved_service_refs": [
+                    "sv_syn_cae4367c5a0bece9450c087f2795e0a3"
+                ],
+                "preserve_unaffected": true,
+                "partition_complete": true
+            },
+            "expected_actions": [
+                "refresh_official_requirement",
+                "protect_application_window",
+                "request_specialist_review"
+            ],
+            "required_deadline_code": "official_application_deadline_utc",
+            "required_handoff_code": "official_information_source_handoff",
+            "financial_axes": {
+                "payment": "requires_separate_authorization",
+                "refund": "quote_required",
+                "settlement": "reconciliation_required",
+                "netting_prohibited": true,
+                "independent_ledgers_required": true
+            },
+            "expected_outcome": "evidence_required",
+            "boundary": {
+                "planning_only": true,
+                "public_serialization_allowed": false,
+                "supplier_dispatched": false,
+                "processor_called": false,
+                "order_created": false,
+                "payment_created": false,
+                "refund_created": false,
+                "settlement_created": false,
+                "raw_pii_stored": false,
+                "raw_secret_stored": false,
+                "raw_provider_payload_stored": false,
+                "real_commercial_claimed": false
+            }
+        },
+        {
+            "scenario_ref": "sc_syn_f16b2472d8ec32c6405f5529da8dbdc9",
+            "scenario_number": 34,
+            "scenario_slot": 2,
+            "service_family": "entry_document_assistance",
+            "family_subtype": "eta_assistance",
+            "canonical_vertical": "activity",
+            "trigger": "authority_update_missed",
+            "event_state": "missed",
+            "after_hours": {
+                "required": true,
+                "route_ref": "rt_syn_2c582f0a8e00cfdbd7b87bf057d6d04f",
+                "fallback_route_ref": "rt_syn_937ee362e8eecd29a6e0b89ad40eca68",
+                "coverage_state": "outside_declared_window",
+                "timezone": "Asia/Jerusalem",
+                "deadline_code": "departure_safety_buffer_deadline_utc",
+                "primary_handoff_code": "licensed_specialist_or_consulate_referral",
+                "acknowledgement_sla_seconds": 300,
+                "customer_update_sla_seconds": 900,
+                "fallback_after_seconds": 600,
+                "escalation_tier": 2,
+                "safety_check_required": true,
+                "evidence_required": true,
+                "escalation_state": "planned",
+                "supplier_dispatched": false
+            },
+            "preservation": {
+                "partition_scope_ref": "sp_syn_743813036da4d2406805a23cd0559da2",
+                "party_scope_refs": [
+                    "pt_syn_3752d23bdba46444351508325b61fd6e",
+                    "pt_syn_fbf5665d1673b6a5dc9eb9d87c3caff2"
+                ],
+                "affected_party_refs": [
+                    "pt_syn_3752d23bdba46444351508325b61fd6e",
+                    "pt_syn_fbf5665d1673b6a5dc9eb9d87c3caff2"
+                ],
+                "unaffected_party_refs": [],
+                "service_scope_refs": [
+                    "sv_syn_37e0b46a95ded73ff95b3bf130151736"
+                ],
+                "affected_service_refs": [
+                    "sv_syn_37e0b46a95ded73ff95b3bf130151736"
+                ],
+                "preserved_service_refs": [],
+                "preserve_unaffected": true,
+                "partition_complete": true
+            },
+            "expected_actions": [
+                "recover_authority_update",
+                "reassess_departure_readiness",
+                "escalate_after_hours"
+            ],
+            "required_deadline_code": "departure_safety_buffer_deadline_utc",
+            "required_handoff_code": "licensed_specialist_or_consulate_referral",
+            "financial_axes": {
+                "payment": "existing_authorization_observed",
+                "refund": "request_planned",
+                "settlement": "accrual_review",
+                "netting_prohibited": true,
+                "independent_ledgers_required": true
+            },
+            "expected_outcome": "after_hours_escalation",
+            "boundary": {
+                "planning_only": true,
+                "public_serialization_allowed": false,
+                "supplier_dispatched": false,
+                "processor_called": false,
+                "order_created": false,
+                "payment_created": false,
+                "refund_created": false,
+                "settlement_created": false,
+                "raw_pii_stored": false,
+                "raw_secret_stored": false,
+                "raw_provider_payload_stored": false,
+                "real_commercial_claimed": false
+            }
+        }
+    ],
+    "truth_boundary": {
+        "private_server_only": true,
+        "synthetic_fixture": true,
+        "live_availability_claimed": false,
+        "real_price_claimed": false,
+        "real_supplier_identity_stored": false,
+        "commercial_authority_granted": false,
+        "dispatch_allowed": false
+    },
+    "fixture_digest": "30fc7f7be9d25fcc84140e660dfa1c57f58d2f6462b2a6bde97ce1165f05d309"
+}

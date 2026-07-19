@@ -42,13 +42,19 @@ curl --fail-with-body --silent --show-error --max-time 180 \
   --data-urlencode "confirmation=${ROLLBACK_CONFIRMATION}" \
   "$ROLLBACK_URL" > "$RESPONSE_FILE"
 
-python3 - "$RESPONSE_FILE" <<'PY'
+python3 - "$RESPONSE_FILE" "$BACKUP_NAME" "$EXPECTED_RESTORED_FINGERPRINT" <<'PY'
 import json
 import re
 import sys
 
 data = json.load(open(sys.argv[1], encoding="utf-8"))
-if data.get("ok") is not True or data.get("restored") is None or not re.fullmatch(r"[a-f0-9]{64}", str(data.get("content_sha256", ""))):
+if data.get("ok") is not True:
     raise SystemExit("WordPress did not confirm Agent Core rollback.")
+if data.get("restored") != sys.argv[2]:
+    raise SystemExit("WordPress did not confirm the exact requested Agent Core backup.")
+if data.get("content_sha256") != sys.argv[3] or not re.fullmatch(r"[a-f0-9]{64}", str(data.get("content_sha256", ""))):
+    raise SystemExit("WordPress did not confirm the expected restored Agent Core fingerprint.")
+if not isinstance(data.get("active"), bool):
+    raise SystemExit("WordPress returned an invalid Agent Core activation state after rollback.")
 print(f"Restored {data['restored']}; version={data.get('version')}; active={str(data.get('active')).lower()}")
 PY

@@ -69,8 +69,8 @@
   "properties": [
     {
       "id": "danube-house-demo",
-      "name": "Danube House Budapest",
-      "badge": "הבחירה החכמה",
+      "name": "דוגמת לינה במרכז הדנובה",
+      "badge": "תרחיש מיקום מרכזי",
       "score": 95,
       "area_id": "district-v",
       "stars": 4,
@@ -88,8 +88,8 @@
     },
     {
       "id": "quarter-social-demo",
-      "name": "Quarter Social Rooms",
-      "badge": "התמורה הטובה",
+      "name": "דוגמת לינה ברובע היהודי",
+      "badge": "תרחיש בעלות נמוכה",
       "score": 89,
       "area_id": "jewish-quarter",
       "stars": 3,
@@ -107,8 +107,8 @@
     },
     {
       "id": "castle-view-demo",
-      "name": "Castle View Residence",
-      "badge": "שקט ונוף",
+      "name": "דוגמת לינה שקטה בבודה",
+      "badge": "תרחיש שקט ונוף",
       "score": 84,
       "area_id": "buda-castle",
       "stars": 4,
@@ -126,8 +126,8 @@
     },
     {
       "id": "park-family-demo",
-      "name": "Park Family Aparthotel",
-      "badge": "הכי מתאים למשפחה",
+      "name": "דוגמת דירת משפחה ליד הפארק",
+      "badge": "תרחיש למשפחה",
       "score": 91,
       "area_id": "city-park",
       "stars": 4,

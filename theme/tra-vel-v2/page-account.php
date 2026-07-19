@@ -10,16 +10,16 @@ get_header();
 $account_url = get_permalink();
 $user        = wp_get_current_user();
 ?>
-<main id="main-content" class="identity-page">
+<main id="main-content" class="identity-page" data-tra-vel-page="account">
 	<section class="identity-hero">
 		<div class="page-width identity-hero-grid">
 			<div class="identity-copy">
-				<span class="eyebrow">Tra-Vel Account</span>
+				<span class="eyebrow"><?php esc_html_e( 'החשבון שלי', 'tra-vel-v2' ); ?></span>
 				<h1><?php esc_html_e( 'הנסיעה שלכם ממשיכה מכל מכשיר', 'tra-vel-v2' ); ?></h1>
 				<p><?php esc_html_e( 'שומרים מסלולים, השוואות והעדפות וממשיכים בדיוק מהנקודה שבה עצרתם.', 'tra-vel-v2' ); ?></p>
 				<div class="identity-benefits">
 					<span><i data-lucide="heart"></i><?php esc_html_e( 'נסיעות שמורות', 'tra-vel-v2' ); ?></span>
-					<span><i data-lucide="bell-ring"></i><?php esc_html_e( 'מעקב מחירים', 'tra-vel-v2' ); ?></span>
+					<span><i data-lucide="badge-dollar-sign"></i><?php esc_html_e( 'מחירי יעד שמורים', 'tra-vel-v2' ); ?></span>
 					<span><i data-lucide="sliders-horizontal"></i><?php esc_html_e( 'העדפות אישיות', 'tra-vel-v2' ); ?></span>
 				</div>
 			</div>
@@ -61,7 +61,7 @@ $user        = wp_get_current_user();
 		</div>
 	</section>
 	<section class="identity-assurance page-width" aria-label="<?php esc_attr_e( 'פרטיות ושליטה', 'tra-vel-v2' ); ?>">
-		<article><i data-lucide="shield-check"></i><div><strong><?php esc_html_e( 'הפרטיות בידיים שלכם', 'tra-vel-v2' ); ?></strong><p><?php esc_html_e( 'החשבון שומר החלטות תכנון. פרטי דרכון, תשלום ומידע רפואי אינם נשמרים כאן.', 'tra-vel-v2' ); ?></p></div></article>
+		<article><i data-lucide="shield-check"></i><div><strong><?php esc_html_e( 'הפרטיות בידיים שלכם', 'tra-vel-v2' ); ?></strong><p><?php esc_html_e( 'פרטים רגישים מתבקשים בצעד מאובטח רק כשצריך אותם, למטרה מוגדרת ועם הרשאה מתאימה.', 'tra-vel-v2' ); ?></p></div></article>
 		<article><i data-lucide="briefcase-business"></i><div><strong><?php esc_html_e( 'ספקים ושותפים', 'tra-vel-v2' ); ?></strong><p><?php esc_html_e( 'לספקים מאומתים יש כניסה נפרדת והרשאות ייעודיות.', 'tra-vel-v2' ); ?><a href="<?php echo esc_url( home_url( '/partners/' ) ); ?>"><?php esc_html_e( ' למרכז השותפים', 'tra-vel-v2' ); ?></a></p></div></article>
 	</section>
 </main>

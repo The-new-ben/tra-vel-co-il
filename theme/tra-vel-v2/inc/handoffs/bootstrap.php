@@ -10,3 +10,4 @@ defined( 'ABSPATH' ) || exit;
 require_once __DIR__ . '/class-whatsapp-sales-handoff-provider.php';
 require_once __DIR__ . '/class-supplier-handoff-controller.php';
 require_once __DIR__ . '/class-agent-quote-case-handoff-bridge.php';
+require_once __DIR__ . '/class-agent-commercial-intent-handoff-bridge.php';

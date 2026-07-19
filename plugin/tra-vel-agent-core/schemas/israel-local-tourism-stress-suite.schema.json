@@ -1,0 +1,112 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://tra-vel.co.il/schemas/israel-local-tourism-stress-suite-v1.0.0.json",
+  "title": "Tra-Vel Israel local-tourism stress suite",
+  "description": "Deterministic recovery expectations for geography, fact, availability, map rendering, accessibility and connectivity failures.",
+  "type": "object",
+  "required": ["contract_version", "suite_ref", "data_mode", "scenarios"],
+  "properties": {
+    "contract_version": { "const": "1.0.0" },
+    "suite_ref": { "type": "string", "pattern": "^local_stress_suite_[a-z0-9]{8,64}$" },
+    "data_mode": { "const": "synthetic_test" },
+    "scenarios": {
+      "type": "array",
+      "minItems": 8,
+      "uniqueItems": true,
+      "items": { "$ref": "#/definitions/scenario" },
+      "allOf": [
+        { "contains": { "required": ["trigger"], "properties": { "trigger": { "const": "missing_geo" } } } },
+        { "contains": { "required": ["trigger"], "properties": { "trigger": { "const": "stale_hours" } } } },
+        { "contains": { "required": ["trigger"], "properties": { "trigger": { "const": "conflicting_accessibility" } } } },
+        { "contains": { "required": ["trigger"], "properties": { "trigger": { "const": "conflicting_kashrut" } } } },
+        { "contains": { "required": ["trigger"], "properties": { "trigger": { "const": "unavailable_property" } } } },
+        { "contains": { "required": ["trigger"], "properties": { "trigger": { "const": "map_tile_failure" } } } },
+        { "contains": { "required": ["trigger"], "properties": { "trigger": { "const": "reduced_motion" } } } },
+        { "contains": { "required": ["trigger"], "properties": { "trigger": { "const": "offline" } } } }
+      ]
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "initialConditions": {
+      "type": "object",
+      "required": ["navigation_state", "render_state", "viewport_class", "reading_direction", "connectivity_state", "motion_preference", "coordinate_state", "hours_state", "accessibility_state", "kashrut_state", "availability_state", "tile_state"],
+      "properties": {
+        "navigation_state": { "enum": ["world_globe", "country_focus", "israel_region_overview", "local_high_res_map", "place_or_route_detail", "itinerary_assembly", "revalidated_proposal"] },
+        "render_state": { "enum": ["globe_ready", "descending", "local_tiles_loading", "local_ready", "degraded_tiles", "offline_cached"] },
+        "viewport_class": { "enum": ["mobile", "desktop"] },
+        "reading_direction": { "enum": ["rtl", "ltr"] },
+        "connectivity_state": { "enum": ["online", "offline"] },
+        "motion_preference": { "enum": ["full", "reduced"] },
+        "coordinate_state": { "enum": ["verified", "approximate", "unknown", "conflict"] },
+        "hours_state": { "enum": ["current_verified", "stale", "unknown", "conflict", "not_applicable"] },
+        "accessibility_state": { "enum": ["verified_true", "verified_false", "unknown", "conflict", "not_applicable"] },
+        "kashrut_state": { "enum": ["verified_true", "verified_false", "unknown", "conflict", "not_applicable"] },
+        "availability_state": { "enum": ["unknown", "checking", "available_verified", "limited_verified", "unavailable_verified", "stale"] },
+        "tile_state": { "enum": ["not_requested", "loading", "ready", "degraded", "offline_cached"] }
+      },
+      "additionalProperties": false
+    },
+    "expectedRecovery": {
+      "type": "object",
+      "required": ["decision", "map_mode", "commerce_action", "required_user_action", "map_controls_available", "trip_context_preserved", "numeric_price_claim_allowed", "customer_message_key", "audit_event_code"],
+      "properties": {
+        "decision": { "enum": ["suppress_exact_marker", "show_stale_and_reverify", "quarantine_accessibility_claim", "quarantine_kashrut_claim", "preserve_trip_and_find_replacement", "degrade_map_keep_controls", "remove_motion_keep_progress", "use_cache_block_commercial_commit"] },
+        "map_mode": { "enum": ["region_or_list_fallback", "preserve_map_context", "show_unavailable_with_alternatives", "degraded_tiles", "instant_transition_with_progress", "offline_cached"] },
+        "commerce_action": { "enum": ["none", "keep_read_only", "revalidate", "block_requirement_match", "replace_item", "block_checkout"] },
+        "required_user_action": { "enum": ["none", "confirm_location", "verify_hours", "resolve_claim", "reselect_item", "retry_tiles", "connect_network"] },
+        "map_controls_available": { "const": true },
+        "trip_context_preserved": { "const": true },
+        "numeric_price_claim_allowed": { "const": false },
+        "customer_message_key": { "type": "string", "pattern": "^local_[a-z0-9_]{4,100}$" },
+        "audit_event_code": { "type": "string", "pattern": "^local_[a-z0-9_]{4,100}$" }
+      },
+      "additionalProperties": false
+    },
+    "scenario": {
+      "type": "object",
+      "required": ["scenario_id", "trigger", "initial_conditions", "expected_recovery"],
+      "properties": {
+        "scenario_id": { "type": "string", "pattern": "^local_stress_[a-z0-9_]{4,100}$" },
+        "trigger": { "enum": ["missing_geo", "stale_hours", "conflicting_accessibility", "conflicting_kashrut", "unavailable_property", "map_tile_failure", "reduced_motion", "offline"] },
+        "initial_conditions": { "$ref": "#/definitions/initialConditions" },
+        "expected_recovery": { "$ref": "#/definitions/expectedRecovery" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "trigger": { "const": "missing_geo" } } },
+          "then": { "properties": { "expected_recovery": { "properties": { "decision": { "const": "suppress_exact_marker" }, "map_mode": { "const": "region_or_list_fallback" }, "required_user_action": { "const": "confirm_location" } } } } }
+        },
+        {
+          "if": { "properties": { "trigger": { "const": "stale_hours" } } },
+          "then": { "properties": { "expected_recovery": { "properties": { "decision": { "const": "show_stale_and_reverify" }, "commerce_action": { "const": "revalidate" }, "required_user_action": { "const": "verify_hours" } } } } }
+        },
+        {
+          "if": { "properties": { "trigger": { "const": "conflicting_accessibility" } } },
+          "then": { "properties": { "expected_recovery": { "properties": { "decision": { "const": "quarantine_accessibility_claim" }, "commerce_action": { "const": "block_requirement_match" }, "required_user_action": { "const": "resolve_claim" } } } } }
+        },
+        {
+          "if": { "properties": { "trigger": { "const": "conflicting_kashrut" } } },
+          "then": { "properties": { "expected_recovery": { "properties": { "decision": { "const": "quarantine_kashrut_claim" }, "commerce_action": { "const": "block_requirement_match" }, "required_user_action": { "const": "resolve_claim" } } } } }
+        },
+        {
+          "if": { "properties": { "trigger": { "const": "unavailable_property" } } },
+          "then": { "properties": { "expected_recovery": { "properties": { "decision": { "const": "preserve_trip_and_find_replacement" }, "commerce_action": { "const": "replace_item" }, "required_user_action": { "const": "reselect_item" } } } } }
+        },
+        {
+          "if": { "properties": { "trigger": { "const": "map_tile_failure" } } },
+          "then": { "properties": { "expected_recovery": { "properties": { "decision": { "const": "degrade_map_keep_controls" }, "map_mode": { "const": "degraded_tiles" }, "required_user_action": { "const": "retry_tiles" } } } } }
+        },
+        {
+          "if": { "properties": { "trigger": { "const": "reduced_motion" } } },
+          "then": { "properties": { "expected_recovery": { "properties": { "decision": { "const": "remove_motion_keep_progress" }, "map_mode": { "const": "instant_transition_with_progress" }, "required_user_action": { "const": "none" } } } } }
+        },
+        {
+          "if": { "properties": { "trigger": { "const": "offline" } } },
+          "then": { "properties": { "expected_recovery": { "properties": { "decision": { "const": "use_cache_block_commercial_commit" }, "map_mode": { "const": "offline_cached" }, "commerce_action": { "const": "block_checkout" }, "required_user_action": { "const": "connect_network" } } } } }
+        }
+      ],
+      "additionalProperties": false
+    }
+  }
+}

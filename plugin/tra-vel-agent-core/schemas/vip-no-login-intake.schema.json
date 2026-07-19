@@ -1,0 +1,220 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://tra-vel.co.il/schemas/vip-no-login-intake.schema.json",
+  "title": "Tra-Vel privacy-minimized no-login VIP intake envelope",
+  "description": "Normalized incident intake projection. Raw messages, PII, attachment bytes, provider payloads, payment data, medical facts, and bearer secrets are never represented; no field in this envelope authorizes a consequential action.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "intake_ref",
+    "public_receipt_ref",
+    "idempotency_digest",
+    "correlation_digest",
+    "content",
+    "source",
+    "access",
+    "trip_match",
+    "classification",
+    "timing",
+    "receipt",
+    "data_boundary"
+  ],
+  "properties": {
+    "contract_version": {"const": "1.0.0"},
+    "intake_ref": {"$ref": "#/definitions/intakeRef"},
+    "public_receipt_ref": {"type": "string", "pattern": "^TVR-[A-Z0-9]{10}$"},
+    "idempotency_digest": {"$ref": "#/definitions/digest"},
+    "correlation_digest": {"$ref": "#/definitions/digest"},
+    "content": {"$ref": "#/definitions/content"},
+    "source": {"$ref": "#/definitions/source"},
+    "access": {"$ref": "#/definitions/access"},
+    "trip_match": {"$ref": "#/definitions/tripMatch"},
+    "classification": {"$ref": "#/definitions/classification"},
+    "timing": {"$ref": "#/definitions/timing"},
+    "receipt": {"$ref": "#/definitions/receipt"},
+    "data_boundary": {"$ref": "#/definitions/dataBoundary"}
+  },
+  "definitions": {
+    "digest": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "utc": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$"},
+    "intakeRef": {"type": "string", "pattern": "^tv_intake_[A-Za-z0-9_-]{16,96}$"},
+    "tripRef": {"type": "string", "pattern": "^tv_trip_[A-Za-z0-9_-]{16,96}$"},
+    "caseRef": {"type": "string", "pattern": "^tv_case_[A-Za-z0-9_-]{16,96}$"},
+    "capabilityRef": {"type": "string", "pattern": "^tv_capability_[A-Za-z0-9_-]{16,96}$"},
+    "vaultRef": {"type": "string", "pattern": "^tv_vault_[A-Za-z0-9_-]{16,96}$"},
+    "attachmentRef": {"type": "string", "pattern": "^tv_attachment_[A-Za-z0-9_-]{16,96}$"},
+    "semanticCode": {"type": "string", "minLength": 1, "maxLength": 96, "pattern": "^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$"},
+    "requestScope": {
+      "type": "string",
+      "enum": [
+        "trip_view_redacted",
+        "incident_report",
+        "ordinary_evidence_add",
+        "safe_contact_update",
+        "case_progress_view",
+        "operator_contact_approve",
+        "decision_view",
+        "service_reserve",
+        "service_change",
+        "service_cancel",
+        "payment_authorize",
+        "refund_destination_change",
+        "identity_change",
+        "guardian_authority_change",
+        "sensitive_evidence_disclose",
+        "recovery_channel_change",
+        "delegate_manage"
+      ]
+    },
+    "reportScope": {
+      "type": "string",
+      "enum": ["incident_report", "ordinary_evidence_add", "safe_contact_update", "case_progress_view"]
+    },
+    "attachment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["attachment_ref", "blob_digest", "vault_ref", "media_class", "scan_status", "sensitivity", "handling"],
+      "properties": {
+        "attachment_ref": {"$ref": "#/definitions/attachmentRef"},
+        "blob_digest": {"$ref": "#/definitions/digest"},
+        "vault_ref": {"$ref": "#/definitions/vaultRef"},
+        "media_class": {"type": "string", "enum": ["image", "document", "audio", "video", "archive", "other"]},
+        "scan_status": {"type": "string", "enum": ["pending", "clean", "malware_detected", "scan_failed"]},
+        "sensitivity": {"type": "string", "enum": ["none", "ordinary", "restricted_identity", "restricted_medical", "restricted_payment", "restricted_legal"]},
+        "handling": {"type": "string", "enum": ["allow_metadata", "quarantine", "restricted_vault"]}
+      }
+    },
+    "content": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["message_digest", "message_vault_ref", "language_tag", "semantic_summary_codes", "attachments"],
+      "properties": {
+        "message_digest": {"$ref": "#/definitions/digest", "description": "Keyed digest of normalized message content; never an unsalted digest used as a substitute for the message."},
+        "message_vault_ref": {"$ref": "#/definitions/vaultRef"},
+        "language_tag": {"type": "string", "pattern": "^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8}){0,3}$"},
+        "semantic_summary_codes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 24,
+          "uniqueItems": true,
+          "items": {"$ref": "#/definitions/semanticCode"}
+        },
+        "attachments": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {"$ref": "#/definitions/attachment"}
+        }
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["channel", "channel_event_digest", "sender_assertion_digest", "sender_trust", "transport_integrity", "device_risk", "scanner_opened"],
+      "properties": {
+        "channel": {"type": "string", "enum": ["web", "whatsapp", "sms", "email", "voice_relay", "operator"]},
+        "channel_event_digest": {"$ref": "#/definitions/digest"},
+        "sender_assertion_digest": {"description": "Keyed assertion digest; never raw contact data or an unsalted contact identifier hash.", "oneOf": [{"type": "null"}, {"$ref": "#/definitions/digest"}]},
+        "sender_trust": {"type": "string", "enum": ["anonymous", "unverified", "verified_channel", "conflicted", "suspected_spoof"]},
+        "transport_integrity": {"type": "string", "enum": ["verified", "unverified", "failed", "not_available"]},
+        "device_risk": {"type": "string", "enum": ["none", "lost_or_stolen", "suspected_compromise", "unknown"]},
+        "scanner_opened": {"type": "boolean"}
+      }
+    },
+    "access": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "capability_ref", "capability_digest", "capability_state", "requested_scopes", "permitted_intake_scopes", "executable_scopes", "authorization_effect", "session_evidence_digest"],
+      "properties": {
+        "mode": {"type": "string", "enum": ["public_safety", "public_incident", "scoped_capability", "verified_session", "operator"]},
+        "capability_ref": {"oneOf": [{"type": "null"}, {"$ref": "#/definitions/capabilityRef"}]},
+        "capability_digest": {"oneOf": [{"type": "null"}, {"$ref": "#/definitions/digest"}]},
+        "capability_state": {"type": "string", "enum": ["absent", "initial_get_unexchanged", "active_scoped_session", "consumed", "expired", "revoked"]},
+        "requested_scopes": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"$ref": "#/definitions/requestScope"}
+        },
+        "permitted_intake_scopes": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"$ref": "#/definitions/reportScope"}
+        },
+        "executable_scopes": {"type": "array", "maxItems": 0},
+        "authorization_effect": {"const": "none"},
+        "session_evidence_digest": {"oneOf": [{"type": "null"}, {"$ref": "#/definitions/digest"}]}
+      }
+    },
+    "tripMatch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "trip_ref", "case_ref", "case_state", "candidate_count", "match_evidence_digest"],
+      "properties": {
+        "status": {"type": "string", "enum": ["not_attempted", "no_trip_claimed", "unique", "ambiguous", "rejected"]},
+        "trip_ref": {"oneOf": [{"type": "null"}, {"$ref": "#/definitions/tripRef"}]},
+        "case_ref": {"oneOf": [{"type": "null"}, {"$ref": "#/definitions/caseRef"}]},
+        "case_state": {"type": "string", "enum": ["none", "open", "closed"]},
+        "candidate_count": {"type": "integer", "minimum": 0, "maximum": 100},
+        "match_evidence_digest": {"oneOf": [{"type": "null"}, {"$ref": "#/definitions/digest"}]}
+      }
+    },
+    "classification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["normalized_intent", "incident_family", "immediate_danger", "ambiguity", "priority", "risk_signals"],
+      "properties": {
+        "normalized_intent": {"type": "string", "enum": ["safety_report", "incident_report", "evidence_submission", "case_progress_request", "safe_contact_update", "high_impact_request", "unclear"]},
+        "incident_family": {"type": "string", "enum": ["immediate_danger", "flight_disruption", "accommodation_problem", "package_problem", "transfer_problem", "activity_problem", "dining_problem", "insurance_assistance", "connectivity_problem", "equipment_problem", "document_problem", "payment_problem", "lost_device", "cross_trip_problem", "unknown"]},
+        "immediate_danger": {"type": "boolean"},
+        "ambiguity": {"type": "string", "enum": ["none", "unclear_intent", "ambiguous_trip", "conflicting_instructions"]},
+        "priority": {"type": "string", "enum": ["P0", "P1", "P2", "P3", "P4"]},
+        "risk_signals": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"type": "string", "enum": ["safety", "stranded", "minor", "vulnerable", "deadline", "fraud", "offline", "none"]}
+        }
+      }
+    },
+    "timing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reported_at", "received_at", "normalized_at", "delay_class", "sla_started_at"],
+      "properties": {
+        "reported_at": {"oneOf": [{"type": "null"}, {"$ref": "#/definitions/utc"}]},
+        "received_at": {"$ref": "#/definitions/utc"},
+        "normalized_at": {"$ref": "#/definitions/utc"},
+        "delay_class": {"type": "string", "enum": ["current", "delayed", "offline_replay", "unknown"]},
+        "sla_started_at": {"$ref": "#/definitions/utc"}
+      }
+    },
+    "receipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "delivery_attempt_digest", "next_retry_at", "calm_receipt", "login_required"],
+      "properties": {
+        "status": {"type": "string", "enum": ["queued", "delivered", "failed", "retry_scheduled"]},
+        "delivery_attempt_digest": {"oneOf": [{"type": "null"}, {"$ref": "#/definitions/digest"}]},
+        "next_retry_at": {"oneOf": [{"type": "null"}, {"$ref": "#/definitions/utc"}]},
+        "calm_receipt": {"const": true},
+        "login_required": {"const": false}
+      }
+    },
+    "dataBoundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["raw_message_exposed", "raw_contact_data_exposed", "raw_attachment_exposed", "raw_identity_data_exposed", "raw_payment_data_exposed", "raw_medical_data_exposed", "raw_provider_payload_exposed", "bearer_secret_exposed"],
+      "properties": {
+        "raw_message_exposed": {"const": false},
+        "raw_contact_data_exposed": {"const": false},
+        "raw_attachment_exposed": {"const": false},
+        "raw_identity_data_exposed": {"const": false},
+        "raw_payment_data_exposed": {"const": false},
+        "raw_medical_data_exposed": {"const": false},
+        "raw_provider_payload_exposed": {"const": false},
+        "bearer_secret_exposed": {"const": false}
+      }
+    }
+  }
+}

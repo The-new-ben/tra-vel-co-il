@@ -1,0 +1,79 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://tra-vel.co.il/schemas/private/israel-local-disruption-event-v1.0.0.json",
+  "title": "Tra-Vel private immutable Israel local disruption event",
+  "description": "Source-bound local operational evidence with exact geometry, chronology, severity, and affected service/trip scope. The event performs no supplier or financial mutation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract_version", "environment", "data_mode", "event_ref", "event_version", "supersedes_event_digest", "event_digest", "trigger", "disruption_type", "severity", "source", "geometry", "issued_at", "effective_at", "expires_at", "affected_service_refs", "affected_trip_node_refs", "boundary"],
+  "properties": {
+    "contract_version": {"const": "1.0.0"},
+    "environment": {"const": "sandbox"},
+    "data_mode": {"const": "synthetic_demo"},
+    "event_ref": {"type": "string", "pattern": "^tv_local_event_[A-Za-z0-9_-]{16,96}$"},
+    "event_version": {"type": "integer", "minimum": 1, "maximum": 2147483647},
+    "supersedes_event_digest": {"$ref": "#/definitions/nullableDigest"},
+    "event_digest": {"$ref": "#/definitions/digest"},
+    "trigger": {"$ref": "#/definitions/trigger"},
+    "disruption_type": {"enum": ["occupancy", "accessibility", "arrival", "commercial_terms", "shabbat", "party_change", "supplier_revision", "financial", "benefit", "weather", "fire", "flood", "security", "evacuation", "road", "rail", "utility", "closure", "certificate_expiry"]},
+    "severity": {"enum": ["P0", "P1", "P2", "P3"]},
+    "source": {"$ref": "#/definitions/source"},
+    "geometry": {"$ref": "#/definitions/geometry"},
+    "issued_at": {"$ref": "#/definitions/dateTime"},
+    "effective_at": {"$ref": "#/definitions/dateTime"},
+    "expires_at": {"$ref": "#/definitions/dateTime"},
+    "affected_service_refs": {"type": "array", "minItems": 1, "maxItems": 128, "uniqueItems": true, "items": {"$ref": "#/definitions/serviceRef"}},
+    "affected_trip_node_refs": {"type": "array", "minItems": 1, "maxItems": 128, "uniqueItems": true, "items": {"$ref": "#/definitions/nodeRef"}},
+    "boundary": {"$ref": "#/definitions/boundary"}
+  },
+  "allOf": [
+    {"if": {"properties": {"event_version": {"const": 1}}}, "then": {"properties": {"supersedes_event_digest": {"type": "null"}}}},
+    {"if": {"properties": {"event_version": {"minimum": 2}}}, "then": {"properties": {"supersedes_event_digest": {"$ref": "#/definitions/digest"}}}}
+  ],
+  "definitions": {
+    "digest": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "nullableDigest": {"anyOf": [{"type": "null"}, {"$ref": "#/definitions/digest"}]},
+    "dateTime": {"type": "string", "format": "date-time", "pattern": "Z$"},
+    "serviceRef": {"type": "string", "pattern": "^tv_local_service_[A-Za-z0-9_-]{16,96}$"},
+    "nodeRef": {"type": "string", "pattern": "^tv_node_[A-Za-z0-9_-]{16,96}$"},
+    "trigger": {"enum": ["occupancy_total_exceeded", "child_age_band_changed", "room_allocation_invalid", "accessible_unit_unavailable", "step_free_route_changed", "late_arrival", "key_handoff_failed", "check_in_window_changed", "check_out_window_changed", "vat_eligibility_changed", "deposit_terms_changed", "cancellation_deadline_near", "shabbat_check_in_conflict", "shabbat_key_conflict", "kosher_certificate_expired", "kosher_scope_conflict", "rail_service_disrupted", "road_corridor_closed", "domestic_flight_disrupted", "extreme_heat", "flash_flood", "wildfire_smoke", "security_restriction", "evacuation_order", "utility_outage", "venue_closed", "parking_unavailable", "ev_charging_unavailable", "accessible_route_blocked", "attraction_group_minimum_changed", "guide_unavailable", "equipment_unavailable", "activity_weather_cancelled", "partial_party_reduced", "partial_party_extended", "supplier_revision_superseded", "supplier_replacement_required", "partial_refund_observed", "replacement_payment_required", "benefit_source_stale", "benefit_eligibility_changed", "benefit_expired", "benefit_reversed"]},
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["authority", "source_ref", "evidence_digest", "observed_at", "fresh_until", "truth_state"],
+      "properties": {
+        "authority": {"enum": ["official_live_feed", "official_registry", "provider_authorized_api", "signed_supplier_event", "operator_confirmation", "customer_report", "synthetic_test"]},
+        "source_ref": {"type": "string", "pattern": "^tv_source_[A-Za-z0-9_-]{16,96}$"},
+        "evidence_digest": {"$ref": "#/definitions/digest"},
+        "observed_at": {"$ref": "#/definitions/dateTime"},
+        "fresh_until": {"$ref": "#/definitions/dateTime"},
+        "truth_state": {"enum": ["verified_current", "observed_unverified", "stale", "conflict"]}
+      }
+    },
+    "geometry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["geometry_type", "geometry_ref", "geometry_digest", "corridor"],
+      "properties": {
+        "geometry_type": {"enum": ["point", "bounds", "route", "corridor", "municipality"]},
+        "geometry_ref": {"type": "string", "pattern": "^tv_geometry_[A-Za-z0-9_-]{16,96}$"},
+        "geometry_digest": {"$ref": "#/definitions/digest"},
+        "corridor": {"enum": ["jerusalem_corridor", "eilat_corridor"]}
+      }
+    },
+    "boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["server_only", "public_serialization_allowed", "planning_only", "supplier_dispatched", "processor_called", "financial_state_changed", "raw_supplier_payload_stored"],
+      "properties": {
+        "server_only": {"const": true},
+        "public_serialization_allowed": {"const": false},
+        "planning_only": {"const": true},
+        "supplier_dispatched": {"const": false},
+        "processor_called": {"const": false},
+        "financial_state_changed": {"const": false},
+        "raw_supplier_payload_stored": {"const": false}
+      }
+    }
+  }
+}

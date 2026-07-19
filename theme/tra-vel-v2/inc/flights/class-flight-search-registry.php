@@ -7,6 +7,8 @@
 
 defined( 'ABSPATH' ) || exit;
 
+require_once dirname( __DIR__ ) . '/class-commercial-provenance.php';
+
 class Tra_Vel_V2_Flight_Search_Registry {
 	/** @var Tra_Vel_V2_Flight_Search_Adapter[] */
 	private $adapters = array();
@@ -74,8 +76,18 @@ class Tra_Vel_V2_Flight_Search_Registry {
 			} catch ( Throwable $error ) {
 				$result = new WP_Error( 'tra_vel_flight_adapter_exception', 'Flight adapter failed safely.' );
 			}
-			if ( is_wp_error( $result ) || empty( $result['offers'] ) ) {
-				$report['error_code'] = is_wp_error( $result ) ? $result->get_error_code() : 'invalid_contract';
+			$validation = is_wp_error( $result ) ? $result : Tra_Vel_V2_Commercial_Provenance::validate(
+				$result,
+				$id,
+				'offers',
+				array( 'trip_total', 'total' ),
+				'booking',
+				'bookable',
+				isset( $query['currency'] ) ? $query['currency'] : '',
+				'whole_party_round_trip'
+			);
+			if ( is_wp_error( $validation ) ) {
+				$report['error_code'] = $validation->get_error_code();
 				$reports[ $id ]       = $report;
 				$failed_live[]        = $id;
 				continue;
@@ -84,7 +96,6 @@ class Tra_Vel_V2_Flight_Search_Registry {
 			$report['healthy'] = true;
 			$report['used']    = true;
 			$reports[ $id ]    = $report;
-			$result['data_mode'] = 'live';
 			return array(
 				'data'            => $result,
 				'reports'         => $reports,

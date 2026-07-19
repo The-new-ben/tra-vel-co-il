@@ -1,0 +1,416 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://tra-vel.co.il/schemas/commerce-search-response-v1.schema.json",
+  "title": "Tra-Vel canonical commerce sandbox search response",
+  "description": "The closed public search envelope: immutable network and catalog evidence, one owner-bound session projection, and grouped normalized offers.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "environment",
+    "provider_network_digest",
+    "catalog_digest",
+    "session",
+    "groups",
+    "sandbox_truth",
+    "data_boundary"
+  ],
+  "properties": {
+    "contract_version": { "const": "1.0.0" },
+    "environment": { "const": "sandbox" },
+    "provider_network_digest": { "$ref": "#/definitions/digest" },
+    "catalog_digest": { "$ref": "#/definitions/digest" },
+    "session": { "$ref": "#/definitions/searchSession" },
+    "groups": {
+      "type": "array",
+      "maxItems": 500,
+      "items": { "$ref": "#/definitions/offerGroup" }
+    },
+    "sandbox_truth": { "$ref": "#/definitions/sandboxTruth" },
+    "data_boundary": { "$ref": "#/definitions/dataBoundary" }
+  },
+  "definitions": {
+    "vertical": {
+      "enum": ["flight", "accommodation", "package", "transfer", "activity", "dining", "insurance", "connectivity", "equipment"]
+    },
+    "priceScope": {
+      "enum": ["person_round_trip", "whole_party_round_trip", "stay_total", "package_total", "transfer_total", "activity_total", "meal_total", "policy_period", "connectivity_period", "item_total"]
+    },
+    "rankingReason": {
+      "enum": ["lowest_total", "shorter_duration", "higher_flexibility", "better_location", "lower_friction", "family_fit", "vibe_fit", "seeded_surprise"]
+    },
+    "requestRef": {
+      "type": "string",
+      "pattern": "^tv_request_[A-Za-z0-9_-]{16,96}$",
+      "maxLength": 120
+    },
+    "sessionRef": {
+      "type": "string",
+      "pattern": "^tv_session_[A-Za-z0-9_-]{16,96}$",
+      "maxLength": 120
+    },
+    "providerRunRef": {
+      "type": "string",
+      "pattern": "^tv_run_[A-Za-z0-9_-]{16,96}$",
+      "maxLength": 120
+    },
+    "offerRef": {
+      "type": "string",
+      "pattern": "^tv_offer_[A-Za-z0-9_-]{16,96}$",
+      "maxLength": 120
+    },
+    "productRef": {
+      "type": "string",
+      "pattern": "^tv_product_[A-Za-z0-9_-]{16,96}$",
+      "maxLength": 120
+    },
+    "placeRef": {
+      "type": "string",
+      "pattern": "^tv_place_[A-Za-z0-9_-]{16,96}$",
+      "maxLength": 120
+    },
+    "segmentRef": {
+      "type": "string",
+      "pattern": "^tv_segment_[A-Za-z0-9_-]{16,96}$",
+      "maxLength": 120
+    },
+    "digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "dateTime": { "type": "string", "format": "date-time", "pattern": "Z$" },
+    "nullableDateTime": { "type": ["string", "null"], "format": "date-time", "pattern": "Z$" },
+    "providerRun": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider_run_ref", "provider_id", "vertical", "status", "result_count", "error_code", "started_at", "completed_at"],
+      "properties": {
+        "provider_run_ref": { "$ref": "#/definitions/providerRunRef" },
+        "provider_id": { "type": "string", "pattern": "^[a-z0-9]+(?:[-_][a-z0-9]+)*$", "maxLength": 64 },
+        "vertical": { "$ref": "#/definitions/vertical" },
+        "status": { "enum": ["queued", "running", "succeeded", "failed", "skipped"] },
+        "result_count": { "type": "integer", "minimum": 0, "maximum": 10000 },
+        "error_code": { "type": ["string", "null"], "pattern": "^[a-z0-9]+(?:[._-][a-z0-9]+)*$", "maxLength": 80 },
+        "started_at": { "$ref": "#/definitions/nullableDateTime" },
+        "completed_at": { "$ref": "#/definitions/nullableDateTime" }
+      }
+    },
+    "rankedOffer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["offer_ref", "offer_version", "vertical", "currency", "price_scope", "rank", "score_bps", "reasons"],
+      "properties": {
+        "offer_ref": { "$ref": "#/definitions/offerRef" },
+        "offer_version": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+        "vertical": { "$ref": "#/definitions/vertical" },
+        "currency": { "type": "string", "pattern": "^[A-Z]{3}$" },
+        "price_scope": { "$ref": "#/definitions/priceScope" },
+        "rank": { "type": "integer", "minimum": 1, "maximum": 500 },
+        "score_bps": { "type": "integer", "minimum": 0, "maximum": 10000 },
+        "reasons": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": { "$ref": "#/definitions/rankingReason" }
+        }
+      }
+    },
+    "searchCounts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["providers_considered", "providers_succeeded", "providers_failed", "offers_validated", "offers_rejected"],
+      "properties": {
+        "providers_considered": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "providers_succeeded": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "providers_failed": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "offers_validated": { "type": "integer", "minimum": 0, "maximum": 10000 },
+        "offers_rejected": { "type": "integer", "minimum": 0, "maximum": 10000 }
+      }
+    },
+    "searchSession": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract_version",
+        "environment",
+        "session_ref",
+        "version",
+        "owner_scope_digest",
+        "request_ref",
+        "request_digest",
+        "provider_network_digest",
+        "catalog_digest",
+        "verticals",
+        "status",
+        "ranking_version",
+        "selection_seed_digest",
+        "provider_runs",
+        "ranked_offers",
+        "counts",
+        "created_at",
+        "updated_at",
+        "expires_at",
+        "sandbox_truth",
+        "data_boundary"
+      ],
+      "properties": {
+        "contract_version": { "const": "1.0.0" },
+        "environment": { "const": "sandbox" },
+        "session_ref": { "$ref": "#/definitions/sessionRef" },
+        "version": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+        "owner_scope_digest": { "$ref": "#/definitions/digest" },
+        "request_ref": { "$ref": "#/definitions/requestRef" },
+        "request_digest": { "$ref": "#/definitions/digest" },
+        "provider_network_digest": { "$ref": "#/definitions/digest" },
+        "catalog_digest": { "$ref": "#/definitions/digest" },
+        "verticals": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 9,
+          "uniqueItems": true,
+          "items": { "$ref": "#/definitions/vertical" }
+        },
+        "status": { "enum": ["accepted", "searching", "complete", "partial", "failed", "expired"] },
+        "ranking_version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+        "selection_seed_digest": { "$ref": "#/definitions/digest" },
+        "provider_runs": {
+          "type": "array",
+          "maxItems": 100,
+          "items": { "$ref": "#/definitions/providerRun" }
+        },
+        "ranked_offers": {
+          "type": "array",
+          "maxItems": 500,
+          "items": { "$ref": "#/definitions/rankedOffer" }
+        },
+        "counts": { "$ref": "#/definitions/searchCounts" },
+        "created_at": { "$ref": "#/definitions/dateTime" },
+        "updated_at": { "$ref": "#/definitions/dateTime" },
+        "expires_at": { "$ref": "#/definitions/dateTime" },
+        "sandbox_truth": { "$ref": "#/definitions/sandboxTruth" },
+        "data_boundary": { "$ref": "#/definitions/dataBoundary" }
+      }
+    },
+    "media": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["asset_ref", "kind", "alt"],
+      "properties": {
+        "asset_ref": { "type": "string", "pattern": "^asset:[A-Za-z0-9._-]{1,100}$" },
+        "kind": { "enum": ["image", "panorama", "model_preview"] },
+        "alt": { "type": "string", "minLength": 1, "maxLength": 180 }
+      }
+    },
+    "fact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["key", "label", "value"],
+      "properties": {
+        "key": { "type": "string", "pattern": "^[a-z0-9]+(?:_[a-z0-9]+)*$", "maxLength": 60 },
+        "label": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "value": { "type": "string", "minLength": 1, "maxLength": 240 }
+      }
+    },
+    "product": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["product_ref", "title", "subtitle", "badges", "media", "facts"],
+      "properties": {
+        "product_ref": { "$ref": "#/definitions/productRef" },
+        "title": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "subtitle": { "type": "string", "maxLength": 240 },
+        "badges": {
+          "type": "array",
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1, "maxLength": 60 }
+        },
+        "media": { "type": "array", "maxItems": 12, "items": { "$ref": "#/definitions/media" } },
+        "facts": { "type": "array", "maxItems": 32, "items": { "$ref": "#/definitions/fact" } }
+      }
+    },
+    "place": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["place_ref", "role", "label", "code", "latitude", "longitude", "sequence"],
+      "properties": {
+        "place_ref": { "$ref": "#/definitions/placeRef" },
+        "role": { "enum": ["origin", "connection", "destination", "property", "meeting_point", "venue", "pickup", "dropoff"] },
+        "label": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "code": { "type": ["string", "null"], "pattern": "^[A-Z0-9-]{2,12}$" },
+        "latitude": { "type": "number", "minimum": -90, "maximum": 90 },
+        "longitude": { "type": "number", "minimum": -180, "maximum": 180 },
+        "sequence": { "type": "integer", "minimum": 1, "maximum": 64 }
+      }
+    },
+    "segment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["segment_ref", "sequence", "mode", "from_place_ref", "to_place_ref", "duration_minutes"],
+      "properties": {
+        "segment_ref": { "$ref": "#/definitions/segmentRef" },
+        "sequence": { "type": "integer", "minimum": 1, "maximum": 64 },
+        "mode": { "enum": ["flight", "rail", "road", "ferry", "walk", "onsite", "digital"] },
+        "from_place_ref": { "$ref": "#/definitions/placeRef" },
+        "to_place_ref": { "$ref": "#/definitions/placeRef" },
+        "duration_minutes": { "type": ["integer", "null"], "minimum": 0, "maximum": 100000 }
+      }
+    },
+    "geometry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["places", "segments"],
+      "properties": {
+        "places": { "type": "array", "maxItems": 64, "items": { "$ref": "#/definitions/place" } },
+        "segments": { "type": "array", "maxItems": 64, "items": { "$ref": "#/definitions/segment" } }
+      }
+    },
+    "moneyLineItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "label", "kind", "direction", "amount_minor", "evidence_digest"],
+      "properties": {
+        "code": { "type": "string", "pattern": "^[a-z0-9]+(?:_[a-z0-9]+)*$", "maxLength": 60 },
+        "label": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "kind": { "enum": ["base", "tax", "fee", "addon", "credit"] },
+        "direction": { "enum": ["debit", "credit"] },
+        "amount_minor": { "type": "integer", "minimum": 0, "maximum": 1000000000000 },
+        "evidence_digest": { "$ref": "#/definitions/digest" }
+      }
+    },
+    "moneyLedger": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["currency", "minor_unit", "price_scope", "line_items", "subtotal_amount_minor", "tax_amount_minor", "fee_amount_minor", "credit_amount_minor", "total_amount_minor", "tax_state", "fee_state"],
+      "properties": {
+        "currency": { "type": "string", "pattern": "^[A-Z]{3}$" },
+        "minor_unit": { "type": "integer", "minimum": 0, "maximum": 3 },
+        "price_scope": { "$ref": "#/definitions/priceScope" },
+        "line_items": { "type": "array", "minItems": 1, "maxItems": 64, "items": { "$ref": "#/definitions/moneyLineItem" } },
+        "subtotal_amount_minor": { "type": "integer", "minimum": 0, "maximum": 1000000000000 },
+        "tax_amount_minor": { "type": "integer", "minimum": 0, "maximum": 1000000000000 },
+        "fee_amount_minor": { "type": "integer", "minimum": 0, "maximum": 1000000000000 },
+        "credit_amount_minor": { "type": "integer", "minimum": 0, "maximum": 1000000000000 },
+        "total_amount_minor": { "type": "integer", "minimum": 0, "maximum": 1000000000000 },
+        "tax_state": { "enum": ["included", "excluded", "unknown"] },
+        "fee_state": { "enum": ["included", "excluded", "unknown"] }
+      }
+    },
+    "availability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "quantity_remaining", "checked_at", "fresh_until"],
+      "properties": {
+        "state": { "enum": ["available", "limited", "unavailable", "expired"] },
+        "quantity_remaining": { "type": ["integer", "null"], "minimum": 0, "maximum": 1000000 },
+        "checked_at": { "$ref": "#/definitions/dateTime" },
+        "fresh_until": { "$ref": "#/definitions/dateTime" }
+      }
+    },
+    "terms": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["terms_digest", "cancellation", "changes", "inclusions", "requires_revalidation"],
+      "properties": {
+        "terms_digest": { "$ref": "#/definitions/digest" },
+        "cancellation": { "type": "string", "minLength": 1, "maxLength": 500 },
+        "changes": { "type": "string", "minLength": 1, "maxLength": 500 },
+        "inclusions": { "type": "string", "minLength": 1, "maxLength": 500 },
+        "requires_revalidation": { "const": true }
+      }
+    },
+    "offerRanking": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ranking_version", "profile", "score_bps", "rank", "reasons"],
+      "properties": {
+        "ranking_version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+        "profile": { "enum": ["value", "fastest", "flexible", "family", "surprise"] },
+        "score_bps": { "type": "integer", "minimum": 0, "maximum": 10000 },
+        "rank": { "type": "integer", "minimum": 1, "maximum": 500 },
+        "reasons": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": { "$ref": "#/definitions/rankingReason" }
+        }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["adapter_version", "evidence_digest", "retrieved_at", "fresh_until"],
+      "properties": {
+        "adapter_version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:[-+][A-Za-z0-9.-]+)?$" },
+        "evidence_digest": { "$ref": "#/definitions/digest" },
+        "retrieved_at": { "$ref": "#/definitions/dateTime" },
+        "fresh_until": { "$ref": "#/definitions/dateTime" }
+      }
+    },
+    "offer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contract_version", "environment", "offer_ref", "version", "search_session_ref", "provider_id", "provider_reference_digest", "vertical", "status", "product", "geometry", "pricing", "availability", "terms", "capabilities", "ranking", "evidence", "sandbox_truth", "data_boundary"],
+      "properties": {
+        "contract_version": { "const": "1.0.0" },
+        "environment": { "const": "sandbox" },
+        "offer_ref": { "$ref": "#/definitions/offerRef" },
+        "version": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+        "search_session_ref": { "$ref": "#/definitions/sessionRef" },
+        "provider_id": { "type": "string", "pattern": "^[a-z0-9]+(?:[-_][a-z0-9]+)*$", "maxLength": 64 },
+        "provider_reference_digest": { "$ref": "#/definitions/digest" },
+        "vertical": { "$ref": "#/definitions/vertical" },
+        "status": { "enum": ["available", "limited", "unavailable", "expired"] },
+        "product": { "$ref": "#/definitions/product" },
+        "geometry": { "$ref": "#/definitions/geometry" },
+        "pricing": { "$ref": "#/definitions/moneyLedger" },
+        "availability": { "$ref": "#/definitions/availability" },
+        "terms": { "$ref": "#/definitions/terms" },
+        "capabilities": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "enum": ["revalidate", "reserve", "confirm", "change", "cancel", "refund", "affiliate_handoff"] }
+        },
+        "ranking": { "$ref": "#/definitions/offerRanking" },
+        "evidence": { "$ref": "#/definitions/evidence" },
+        "sandbox_truth": { "$ref": "#/definitions/sandboxTruth" },
+        "data_boundary": { "$ref": "#/definitions/dataBoundary" }
+      }
+    },
+    "offerGroup": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["vertical", "currency", "price_scope", "offers"],
+      "properties": {
+        "vertical": { "$ref": "#/definitions/vertical" },
+        "currency": { "type": "string", "pattern": "^[A-Z]{3}$" },
+        "price_scope": { "$ref": "#/definitions/priceScope" },
+        "offers": { "type": "array", "minItems": 1, "maxItems": 500, "items": { "$ref": "#/definitions/offer" } }
+      }
+    },
+    "sandboxTruth": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["simulated_inventory", "real_supplier_request", "real_inventory_hold", "real_charge", "real_booking", "real_policy_issuance", "real_settlement"],
+      "properties": {
+        "simulated_inventory": { "const": true },
+        "real_supplier_request": { "const": false },
+        "real_inventory_hold": { "const": false },
+        "real_charge": { "const": false },
+        "real_booking": { "const": false },
+        "real_policy_issuance": { "const": false },
+        "real_settlement": { "const": false }
+      }
+    },
+    "dataBoundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["raw_supplier_reference_exposed", "raw_payment_data_exposed", "medical_data_exposed"],
+      "properties": {
+        "raw_supplier_reference_exposed": { "const": false },
+        "raw_payment_data_exposed": { "const": false },
+        "medical_data_exposed": { "const": false }
+      }
+    }
+  }
+}

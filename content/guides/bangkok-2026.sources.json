@@ -1,0 +1,685 @@
+{
+  "schemaVersion": 1,
+  "id": "bangkok-2026",
+  "locale": "he-IL",
+  "title": "בנגקוק",
+  "excerpt": "מדריך בנגקוק לישראלים שמסדר את בחירת האזור, מספר הלילות, שדות התעופה, התחבורה, מזג האוויר, האתרים, האוכל, הבריאות, הבטיחות והמשך הטיול בתאילנד לפי החלטות מעשיות ומקורות רשמיים שצריך לבדוק שוב סמוך לנסיעה.",
+  "author": "מערכת Tra-Vel",
+  "reviewer": "טרם מונה עורך מזוהה",
+  "primaryTopic": "Bangkok city travel guide for Israeli travelers",
+  "canonicalPath": "/destinations/thailand/bangkok/",
+  "status": "editorial-review",
+  "contentPath": "content/guides/bangkok-2026.he.html",
+  "wordTargetMin": 6500,
+  "checkedAt": "2026-07-18",
+  "mapState": "bangkok",
+  "reviewMethod": "Long-form Hebrew city guide drafted from the complete official and primary Bangkok source packet, with source-link coverage and automated structural validation completed; awaiting a named editor. Before publication, reopen every Thai immigration, consular, customs, medicine, health, airport, transport, attraction, weather, flood, air-quality, tourism, police, exchange-rate and Israeli safety source, then recheck every volatile decision without presenting an unvalidated warning level, fare, schedule, supplier, property, score, saving, availability or commercial amount.",
+  "sections": [
+    "Immediate Bangkok decision and city fit",
+    "Trip length and city role",
+    "Area-first mental map",
+    "Neighborhood choice by traveler intent",
+    "Bangkok airport choice summary",
+    "Airport-to-area transport framework",
+    "BTS, MRT and local transport decisions",
+    "Tickets, contactless payment and operator boundaries",
+    "River boats, buses, taxis and walking",
+    "End-to-end accessibility planning",
+    "Heat, rain, flood and air-quality decisions",
+    "Attraction selection and reservation sequence",
+    "Royal sites, temples and visitor conduct",
+    "Markets, shopping and crowd management",
+    "Food, allergies and dietary planning",
+    "Family and multigenerational pacing",
+    "Safety, provider verification and emergencies",
+    "Money, exchange and payment decisions",
+    "Entry, TDAC, customs and medicine checks",
+    "Health preparation and mosquito protection",
+    "Onward routing through Thailand",
+    "Booking sequence without fabricated live prices",
+    "Frequently asked traveler questions",
+    "Official source log and freshness boundaries"
+  ],
+  "sources": [
+    {
+      "id": "tdac-manual",
+      "title": "Thailand Digital Arrival Card official manual",
+      "publisher": "Thailand Immigration Bureau",
+      "url": "https://tdac.immigration.go.th/manual/en/",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["TDAC purpose and traveler workflow", "individual and group submission fields", "official update workflow"]
+    },
+    {
+      "id": "tdac-faq",
+      "title": "Thailand Digital Arrival Card official FAQ",
+      "publisher": "Thailand Immigration Bureau",
+      "url": "https://tdac.immigration.go.th/manual/en/faq.html",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["TDAC corrections and one-time-use boundary", "visa compatibility", "official frequently asked questions"]
+    },
+    {
+      "id": "thai-mfa-visa-revision-2026",
+      "title": "2026 visa exemption and visa-on-arrival revision notice",
+      "publisher": "Thailand Department of Consular Affairs, Ministry of Foreign Affairs",
+      "url": "https://consular.mfa.go.th/th/content/20-5-69-0000?menu=5d68c88b15e39c160c008174&page=5d68c88b15e39c160c008173",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["active visa-policy change signal", "nationality-specific recheck requirement", "formal effective-process boundary"]
+    },
+    {
+      "id": "thai-evisa",
+      "title": "Official Thai e-Visa portal",
+      "publisher": "Ministry of Foreign Affairs of Thailand",
+      "url": "https://www.thaievisa.go.th/",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["official electronic visa channel", "application scope", "approval boundary"]
+    },
+    {
+      "id": "tat-entry-funds-2026",
+      "title": "Thailand entry reminder on proof of funds for foreign visitors",
+      "publisher": "Tourism Authority of Thailand Newsroom",
+      "url": "https://www.tatnews.org/2026/07/thailand-entry-reminder-on-proof-of-funds-for-foreign-visitors/",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["possible proof-of-funds screening", "supporting-evidence categories", "immigration final-decision boundary"]
+    },
+    {
+      "id": "thai-customs-restricted",
+      "title": "Prohibited and restricted goods",
+      "publisher": "Thai Customs Department",
+      "url": "https://www.customs.go.th/cont_strc_simple.php?ini_content=individual_160426_01&lang=en&left_menu=menu_individual_submenu_03_01",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["prohibited and restricted categories", "permit boundary", "official customs contact"]
+    },
+    {
+      "id": "thai-customs-arrivals",
+      "title": "Guidelines for arriving passengers",
+      "publisher": "Thai Customs Department",
+      "url": "https://www.customs.go.th/list_strc_simple_neted.php?ini_content=individual_160503_03_160905_01&lang=en&left_menu=menu_individual_submenu_01_160421_01",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["red and green customs channels", "accompanied personal belongings", "declaration decisions"]
+    },
+    {
+      "id": "israel-returning-traveler-customs",
+      "title": "Customs guide for the returning traveler",
+      "publisher": "Israel Tax Authority",
+      "url": "https://www.gov.il/BlobFolder/guide/customs-guide-for-returning-traveler/he/Guides_customs_Guides_customsreturningpassanger_new.pdf",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["returning-traveler customs guidance", "Israeli declaration decisions", "allowance and restricted-item recheck"]
+    },
+    {
+      "id": "thai-fda-personal-use",
+      "title": "Guideline of importation for personal use",
+      "publisher": "Thai Food and Drug Administration",
+      "url": "https://en.fda.moph.go.th/guideline-of-importation-for-personal-use/category/bringing-of-health-products-01/",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["personal-use health-product categories", "medicine and medical-device evidence", "quantity and document recheck"]
+    },
+    {
+      "id": "thai-fda-controlled-medicine",
+      "title": "Guidance for travelers carrying narcotic drugs and psychotropic substances",
+      "publisher": "Thai Food and Drug Administration",
+      "url": "https://en.fda.moph.go.th/entrepreneurs-narcotic-drugs-and-psychotropic-substances/guidance-for-travelers-under-treatment-carrying-01/",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["controlled-medicine classification", "permit and prescription requirements", "advance timing boundary"]
+    },
+    {
+      "id": "thai-fda-medication-faq",
+      "title": "Thai FDA medication frequently asked questions",
+      "publisher": "Thai Food and Drug Administration",
+      "url": "https://en.fda.moph.go.th/our-services-new/category/cat2-frequently-asked-questions/",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["traveler medication questions", "original-container and supporting-document recheck", "personal-use medicine boundary"]
+    },
+    {
+      "id": "thai-fda-drug-checker",
+      "title": "Thai FDA active-ingredient checker for travelers",
+      "publisher": "Thai Food and Drug Administration",
+      "url": "https://permitfortraveler.fda.moph.go.th/nct_permit_main/Main/FRM_checkdrug_index",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["active-ingredient lookup", "controlled-substance classification check", "permit-path decision"]
+    },
+    {
+      "id": "thai-ecigarette-law",
+      "title": "Electric and electronic cigarettes are illegal in Thailand",
+      "publisher": "Royal Thai Government",
+      "url": "https://thailand.go.th/public/useful-information-detail/009_130?hl=en",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["electronic-cigarette import warning", "sale and possession warning", "law recheck requirement"]
+    },
+    {
+      "id": "thai-road-safety",
+      "title": "Road safety guidance in Thailand",
+      "publisher": "Royal Thai Government",
+      "url": "https://thailand.go.th/public/issue-focus-detail/001_04_061?hl=en",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["official road-safety guidance", "helmet and lawful-driving recheck", "risk-reduction decisions"]
+    },
+    {
+      "id": "thai-tourist-driving-license",
+      "title": "Tourist driving licence guidance for Thailand",
+      "publisher": "Royal Thai Government",
+      "url": "https://thailand.go.th/public/visit-thailand-detail/001_01_226",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["tourist driving-document guidance", "licence-validity recheck", "rental and enforcement boundary"]
+    },
+    {
+      "id": "thai-ddc-travel-health",
+      "title": "Health advice for travelers",
+      "publisher": "Thailand Department of Disease Control",
+      "url": "https://ddc.moph.go.th/en/details.php?topic=travelling",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["official traveler-health hub", "influenza and rabies advice", "mosquito-disease guidance"]
+    },
+    {
+      "id": "thai-ddc-mosquito",
+      "title": "Dengue and other mosquito-borne diseases advice",
+      "publisher": "Thailand Department of Disease Control",
+      "url": "https://ddc.moph.go.th/uploads/files_en/filedata/Dengue%20and%20other%20Mosquito-borne%20diseases%20%28Thailand%29%208%20June%202018.pdf",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["mosquito-bite prevention", "warning-sign response", "official health-help boundary"]
+    },
+    {
+      "id": "israel-travel-vaccines",
+      "title": "Vaccines for International Travelers",
+      "publisher": "Israel Ministry of Health",
+      "url": "https://www.gov.il/en/service/vaccination_abroad",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["travel-clinic referral", "advance preparation timing", "individual medical-advice boundary"]
+    },
+    {
+      "id": "israel-travel-warnings",
+      "title": "Travel Warning",
+      "publisher": "Israel National Security Council",
+      "url": "https://www.gov.il/en/departments/dynamiccollectors/travel-warnings-nsc",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["live Israeli travel-warning lookup", "official warning guidance", "security hotline channel"]
+    },
+    {
+      "id": "israel-embassy-consular",
+      "title": "Consular information",
+      "publisher": "Embassy of Israel in Thailand",
+      "url": "https://embassies.gov.il/thailand/en/the-embassy/information",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["official consular notices", "disaster-alert guidance", "traveler-support boundary"]
+    },
+    {
+      "id": "israel-embassy-contact",
+      "title": "Contact details and emergency channel",
+      "publisher": "Embassy of Israel in Thailand",
+      "url": "https://embassies.gov.il/thailand/he/contacts",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["embassy contact channel", "emergency contact", "opening-hours recheck"]
+    },
+    {
+      "id": "tat-bangkok",
+      "title": "Bangkok destination overview",
+      "publisher": "Tourism Authority of Thailand",
+      "url": "https://www.tourismthailand.org/Destinations/Provinces/bangkok/219",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["Bangkok destination context", "attraction and market categories", "city orientation"]
+    },
+    {
+      "id": "bma-bangkok-explore",
+      "title": "Visit Bangkok explorer",
+      "publisher": "Bangkok Metropolitan Administration Tourism Division",
+      "url": "https://visit.bangkok.go.th/place",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["Bangkok areas and attraction discovery", "suitability and transport filters", "facility discovery boundary"]
+    },
+    {
+      "id": "grand-palace-practical",
+      "title": "Grand Palace practical information",
+      "publisher": "Bureau of the Royal Household, Thailand",
+      "url": "https://www.royalgrandpalace.th/en/visit/practical-information",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["official ticket channel", "visitor dress code", "live hours and closure recheck"]
+    },
+    {
+      "id": "grand-palace-accessibility",
+      "title": "Grand Palace accessibility",
+      "publisher": "Bureau of the Royal Household, Thailand",
+      "url": "https://www.royalgrandpalace.th/en/visit/accessibility",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["wheelchair and accessible-toilet information", "temporary service-status caveat", "day-of accessibility recheck"]
+    },
+    {
+      "id": "bkk-transport",
+      "title": "Ways to transport to and from Suvarnabhumi Airport",
+      "publisher": "Airports of Thailand, Suvarnabhumi Airport",
+      "url": "https://suvarnabhumi.airportthai.co.th/service/airport-guide/detail/Transportation_BKK",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["BKK ground-transport categories", "pickup and provider lookup", "fare and operating-hour recheck"]
+    },
+    {
+      "id": "bkk-accessibility",
+      "title": "Facilities for persons with disabilities and elderly passengers",
+      "publisher": "Airports of Thailand, Suvarnabhumi Airport",
+      "url": "https://suvarnabhumi.airportthai.co.th/service/airport-guide/detail/Facilities_for_Disabilities_Elderly",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["accessible airport facilities", "wheelchair service points", "airline-assistance handoff boundary"]
+    },
+    {
+      "id": "dmk-arrival",
+      "title": "Don Mueang arrival procedure",
+      "publisher": "Airports of Thailand, Don Mueang Airport",
+      "url": "https://donmueang.airportthai.co.th/service/airport-guide/detail/ArrivalProcedure_DMK",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["DMK arrival sequence", "baggage and customs handoff", "listed ground-transport modes"]
+    },
+    {
+      "id": "dmk-assistance",
+      "title": "Special assistance facilities and services",
+      "publisher": "Airports of Thailand, Don Mueang Airport",
+      "url": "https://donmueang.airportthai.co.th/service/airport-guide/detail/SpecialAssistanceFacilitiesandServices_DMK",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["airline advance-notification requirement", "wheelchair and accessible-transport information", "special-assistance conditions", "free inter-airport shuttle eligibility for connecting-flight passengers"]
+    },
+    {
+      "id": "bkk-dmk-shuttle",
+      "title": "Airport shuttle bus between DMK and BKK",
+      "publisher": "Airports of Thailand",
+      "url": "https://suvarnabhumi.airportthai.co.th/service/transportation/detail/1093",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["inter-airport shuttle category", "pickup and schedule recheck"]
+    },
+    {
+      "id": "bts-route-fare",
+      "title": "BTS routes and fares",
+      "publisher": "Bangkok Mass Transit System Public Company Limited",
+      "url": "https://www.bts.co.th/eng/routemap.html",
+      "type": "primary",
+      "checkedAt": "2026-07-18",
+      "supports": ["BTS route planning", "fare lookup", "dynamic travel-time information"]
+    },
+    {
+      "id": "bts-facilities",
+      "title": "BTS station service and facilities",
+      "publisher": "Bangkok Mass Transit System Public Company Limited",
+      "url": "https://www.bts.co.th/eng/facilities/",
+      "type": "primary",
+      "checkedAt": "2026-07-18",
+      "supports": ["station-specific facilities", "passenger-service information", "end-to-end accessibility recheck"]
+    },
+    {
+      "id": "bts-timetable",
+      "title": "BTS timetable",
+      "publisher": "Bangkok Mass Transit System Public Company Limited",
+      "url": "https://www.bts.co.th/eng/traintime-frequency/",
+      "type": "primary",
+      "checkedAt": "2026-07-18",
+      "supports": ["first and last train lookup", "service frequency", "travel-date schedule recheck"]
+    },
+    {
+      "id": "mrt-route-map",
+      "title": "Bangkok MRT route map",
+      "publisher": "Bangkok Expressway and Metro Public Company Limited",
+      "url": "https://metro.bemplc.co.th/MRT-System-Map",
+      "type": "primary",
+      "checkedAt": "2026-07-18",
+      "supports": ["MRT Blue and Purple line relationship", "station and route map", "service-hour recheck"]
+    },
+    {
+      "id": "mrt-emv",
+      "title": "MRT EMV contactless information",
+      "publisher": "Bangkok Expressway and Metro Public Company Limited",
+      "url": "https://metro.bemplc.co.th/EMV-Contactless",
+      "type": "primary",
+      "checkedAt": "2026-07-18",
+      "supports": ["EMV contactless workflow", "accepted-payment boundary", "operator-specific conditions"]
+    },
+    {
+      "id": "mrt-accessibility",
+      "title": "MRT facilities for passengers with disabilities",
+      "publisher": "Bangkok Expressway and Metro Public Company Limited",
+      "url": "https://metro.bemplc.co.th/Facilities?line_route_ID=9999",
+      "type": "primary",
+      "checkedAt": "2026-07-18",
+      "supports": ["MRT elevators and ramps", "Braille and accessible ticket counters", "station-exit-chain recheck"]
+    },
+    {
+      "id": "bmta-routes",
+      "title": "BMTA route and fare planner",
+      "publisher": "Bangkok Mass Transit Authority",
+      "url": "https://www.bmta.co.th/home",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["official Bangkok bus route lookup", "fare lookup", "live route recheck"]
+    },
+    {
+      "id": "chao-phraya-boat",
+      "title": "Chao Phraya Express Boat routes and timetable",
+      "publisher": "Chao Phraya Express Boat Company Limited",
+      "url": "https://www.chaophrayaexpressboat.com/chaophrayaexpressboat",
+      "type": "primary",
+      "checkedAt": "2026-07-18",
+      "supports": ["operator routes and timetable", "flag and pier information", "fare and service-notice recheck"]
+    },
+    {
+      "id": "srt-dticket",
+      "title": "State Railway of Thailand D-Ticket",
+      "publisher": "State Railway of Thailand",
+      "url": "https://dticket.railway.co.th/DTicketPublicWeb/home/Home",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["official train search", "seat and payment workflow", "transactional inventory boundary"]
+    },
+    {
+      "id": "tmd-bangkok",
+      "title": "Bangkok weather and forecast",
+      "publisher": "Thai Meteorological Department",
+      "url": "https://tmd.go.th/en/weather/province/bangkok",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["current Bangkok weather observations", "seven-day forecast", "observation timestamp"]
+    },
+    {
+      "id": "bma-flood-live",
+      "title": "Bangkok live road-flood monitoring",
+      "publisher": "Bangkok Metropolitan Administration Drainage Department",
+      "url": "https://floodbangkok.bangkok.go.th/",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["live road-flood sensor map", "location-specific flood recheck", "browser-only verification boundary for automated access"]
+    },
+    {
+      "id": "bma-air-quality",
+      "title": "AirBKK live air-quality system",
+      "publisher": "Bangkok Metropolitan Administration Department of Environment",
+      "url": "https://airquality.airbkk.com/",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["live Bangkok AQI", "live PM2.5 observations", "timestamped air-quality decisions"]
+    },
+    {
+      "id": "tourist-police",
+      "title": "Thailand Tourist Police",
+      "publisher": "Tourist Police Bureau Thailand",
+      "url": "https://www.touristpolice.go.th/en/main",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["tourist-police help channel", "multilingual assistance", "emergency-routing recheck"]
+    },
+    {
+      "id": "tourist-police-trust",
+      "title": "Tourist Police Trust Portal",
+      "publisher": "Thai Ministry of Tourism and Sports and Tourist Police",
+      "url": "https://trust.touristpolice.go.th/en",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["provider and suspicious-URL checks", "reporting channel", "commercial verification disclaimer"]
+    },
+    {
+      "id": "bot-exchange",
+      "title": "Daily foreign exchange rates",
+      "publisher": "Bank of Thailand",
+      "url": "https://www.bot.or.th/en/statistics/exchange-rate.html",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["dated reference exchange rates", "interbank and counter-rate context", "final traveler-rate boundary"]
+    },
+    {
+      "id": "thai-vat-refund-tourists",
+      "title": "VAT Refund for Tourists",
+      "publisher": "Revenue Department of Thailand",
+      "url": "https://vrtweb.rd.go.th/106.html",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["tourist VAT-refund workflow", "participating-purchase and document recheck", "export and airport-procedure boundary"]
+    }
+  ],
+  "facts": [
+    {
+      "id": "tdac-current-workflow",
+      "claim": "Travelers must use the current official TDAC workflow and recheck the applicable submission and correction rules before arrival.",
+      "sourceIds": ["tdac-manual", "tdac-faq"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "visa-nationality-recheck",
+      "claim": "Entry and visa conditions depend on current nationality, passport, purpose and policy and must not be frozen in the city guide.",
+      "sourceIds": ["thai-mfa-visa-revision-2026", "thai-evisa", "tat-entry-funds-2026"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "entry-final-decision",
+      "claim": "Immigration authorities make the final entry decision and may request supporting evidence under current rules.",
+      "sourceIds": ["tat-entry-funds-2026"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "customs-channel-choice",
+      "claim": "Arriving travelers must choose the current customs declaration channel based on their goods and permits.",
+      "sourceIds": ["thai-customs-arrivals", "thai-customs-restricted"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "medicine-active-ingredient-check",
+      "claim": "Medicine legality and permit requirements must be checked by active ingredient and classification rather than by brand name.",
+      "sourceIds": ["thai-fda-personal-use", "thai-fda-controlled-medicine", "thai-fda-medication-faq", "thai-fda-drug-checker"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "medicine-original-container-documents",
+      "claim": "The Thai FDA traveler guidance is the current source for checking original-container, prescription and supporting-document expectations for the exact medicine carried.",
+      "sourceIds": ["thai-fda-personal-use", "thai-fda-medication-faq", "thai-fda-drug-checker"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "electronic-cigarette-warning",
+      "claim": "Electronic-cigarette import, sale and possession rules require a current official legal check before travel.",
+      "sourceIds": ["thai-customs-restricted", "thai-ecigarette-law"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "road-safety-driving-documents",
+      "claim": "Road-safety, helmet, driving-document and licence requirements must be checked in current Thai government guidance before a traveler drives or rents a vehicle.",
+      "sourceIds": ["thai-road-safety", "thai-tourist-driving-license"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "health-preparation",
+      "claim": "Vaccination and travel-health preparation must be personalized through qualified advice and current official disease guidance.",
+      "sourceIds": ["thai-ddc-travel-health", "thai-ddc-mosquito", "israel-travel-vaccines"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "israeli-security-check",
+      "claim": "Israeli travelers must consult the live National Security Council warning collector because a warning level cannot be stored as evergreen content.",
+      "sourceIds": ["israel-travel-warnings"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "consular-contact-recheck",
+      "claim": "Embassy notices, contact channels and opening hours must be checked again before use.",
+      "sourceIds": ["israel-embassy-consular", "israel-embassy-contact"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "bangkok-discovery-categories",
+      "claim": "Official city and national tourism sources can support area, attraction and suitability discovery but not live availability or commercial ranking.",
+      "sourceIds": ["tat-bangkok", "bma-bangkok-explore"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "grand-palace-live-status",
+      "claim": "Grand Palace ticketing, dress, opening and accessibility details require a day-of check on the Royal Household pages.",
+      "sourceIds": ["grand-palace-practical", "grand-palace-accessibility"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "bkk-ground-transport",
+      "claim": "BKK transport modes, pickup points, providers, fares and hours must be selected from the current airport information and destination address.",
+      "sourceIds": ["bkk-transport"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "airport-accessibility-chain",
+      "claim": "Airport facilities do not replace airline advance assistance and an end-to-end accessible route must be confirmed for each journey.",
+      "sourceIds": ["bkk-accessibility", "dmk-assistance"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "dmk-arrival-sequence",
+      "claim": "DMK arrival, baggage, customs and transport steps must be checked against the live airport procedure.",
+      "sourceIds": ["dmk-arrival"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "inter-airport-transfer-risk",
+      "claim": "A BKK to DMK connection is a ground transfer between separate airports and shuttle eligibility, pickup and schedules require revalidation.",
+      "sourceIds": ["bkk-dmk-shuttle", "bkk-transport", "dmk-arrival", "dmk-assistance"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "bts-live-route-fare",
+      "claim": "BTS routes, fares, travel times and timetables are dynamic operator facts that must be checked for the travel date.",
+      "sourceIds": ["bts-route-fare", "bts-timetable"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "bts-facility-route",
+      "claim": "A listed BTS facility does not prove a complete accessible path from street to final destination.",
+      "sourceIds": ["bts-facilities"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "mrt-route-payment",
+      "claim": "MRT route, service and contactless payment rules are operator-specific and require a current check.",
+      "sourceIds": ["mrt-route-map", "mrt-emv"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "mrt-accessibility-route",
+      "claim": "MRT facility listings must be combined with a station-exit and last-mile accessibility check.",
+      "sourceIds": ["mrt-accessibility"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "bus-live-routing",
+      "claim": "Bangkok bus routes and fares must be checked in the current BMTA planner and not copied into evergreen prose.",
+      "sourceIds": ["bmta-routes"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "river-boat-live-service",
+      "claim": "River-boat flags, routes, piers, fares and service notices require a current operator check.",
+      "sourceIds": ["chao-phraya-boat"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "rail-inventory-transactional",
+      "claim": "State Railway seat inventory, payment and ticket conditions are transactional and only valid in the live official workflow.",
+      "sourceIds": ["srt-dticket"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "weather-timestamp",
+      "claim": "Bangkok weather observations and forecasts must be displayed with their timestamp and refreshed close to use.",
+      "sourceIds": ["tmd-bangkok"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "flood-browser-only",
+      "claim": "The BMA flood map is a live location-specific input and automated access was not available during packet checking, so it requires direct manual verification.",
+      "sourceIds": ["bma-flood-live"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "air-quality-timestamp",
+      "claim": "Bangkok AQI and PM2.5 values are live observations and must never be presented as evergreen city conditions.",
+      "sourceIds": ["bma-air-quality"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "tourist-police-channel",
+      "claim": "Tourist Police numbers, language support and emergency routing must be rechecked before publication and use.",
+      "sourceIds": ["tourist-police"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "provider-check-boundary",
+      "claim": "A provider or URL status check does not guarantee a contract, payment, service delivery, refund or dispute outcome.",
+      "sourceIds": ["tourist-police-trust"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "exchange-reference-boundary",
+      "claim": "Bank of Thailand exchange rates are dated references and do not equal a final cash, card, ATM or retail traveler rate.",
+      "sourceIds": ["bot-exchange"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "vat-refund-current-process",
+      "claim": "Tourist VAT-refund eligibility, participating purchases, documents and export procedures must be checked in the current Thai Revenue Department workflow.",
+      "sourceIds": ["thai-vat-refund-tourists"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "israeli-returning-customs",
+      "claim": "Returning travelers must check current Israeli customs allowances, restrictions and declaration duties before bringing purchases home.",
+      "sourceIds": ["israel-returning-traveler-customs"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    }
+  ]
+}

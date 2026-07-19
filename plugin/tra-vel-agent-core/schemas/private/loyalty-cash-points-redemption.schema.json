@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://tra-vel.co.il/schemas/private/loyalty-cash-points-redemption.schema.json",
+  "title": "Tra-Vel private componentized cash plus points redemption",
+  "type": "object", "additionalProperties": false,
+  "required": ["contract_version", "environment", "redemption_ref", "record_digest", "idempotency_digest", "account_scope_digest", "trip_ref", "program_ref", "unit_code", "currency", "traveler_refs", "segment_refs", "components", "traveler_totals", "cancellation_scope", "totals", "created_at", "boundary"],
+  "properties": {
+    "contract_version": { "const": "1.1.0" }, "environment": { "const": "simulation" },
+    "redemption_ref": { "type": "string", "pattern": "^loyalty_redemption_[A-Za-z0-9][A-Za-z0-9_-]{15,95}$" },
+    "record_digest": { "$ref": "#/definitions/digest" }, "idempotency_digest": { "$ref": "#/definitions/digest" }, "account_scope_digest": { "$ref": "#/definitions/digest" },
+    "trip_ref": { "$ref": "#/definitions/tripRef" }, "program_ref": { "$ref": "#/definitions/programRef" }, "unit_code": { "$ref": "#/definitions/identifier" }, "currency": { "type": "string", "pattern": "^[A-Z]{3}$" },
+    "traveler_refs": { "type": "array", "minItems": 1, "maxItems": 10, "uniqueItems": true, "items": { "$ref": "#/definitions/travelerRef" } },
+    "segment_refs": { "type": "array", "minItems": 1, "maxItems": 30, "uniqueItems": true, "items": { "$ref": "#/definitions/segmentRef" } },
+    "components": { "type": "array", "minItems": 1, "maxItems": 300, "items": { "$ref": "#/definitions/component" } },
+    "traveler_totals": { "type": "array", "minItems": 1, "maxItems": 10, "items": { "$ref": "#/definitions/travelerTotal" } },
+    "cancellation_scope": {
+      "type": "object", "additionalProperties": false,
+      "required": ["affected_traveler_refs", "preserved_traveler_refs", "affected_component_refs", "preserved_component_refs", "traveler_segment_partitions", "refund_components", "cross_party_reallocation_allowed", "silent_netting_allowed"],
+      "properties": {
+        "affected_traveler_refs": { "$ref": "#/definitions/travelerRefs" }, "preserved_traveler_refs": { "$ref": "#/definitions/optionalTravelerRefs" },
+        "affected_component_refs": { "$ref": "#/definitions/componentRefs" }, "preserved_component_refs": { "$ref": "#/definitions/optionalComponentRefs" },
+        "traveler_segment_partitions": { "type": "array", "minItems": 1, "maxItems": 300, "items": { "$ref": "#/definitions/segmentPartition" } },
+        "refund_components": { "type": "array", "minItems": 1, "maxItems": 300, "items": { "$ref": "#/definitions/refundComponent" } },
+        "cross_party_reallocation_allowed": { "const": false }, "silent_netting_allowed": { "const": false }
+      }
+    },
+    "totals": { "type": "object", "additionalProperties": false, "required": ["cash_minor", "points_integer", "refund_cash_minor", "points_reversal_integer"], "properties": { "cash_minor": { "$ref": "#/definitions/value" }, "points_integer": { "$ref": "#/definitions/value" }, "refund_cash_minor": { "$ref": "#/definitions/value" }, "points_reversal_integer": { "$ref": "#/definitions/value" } } },
+    "created_at": { "$ref": "#/definitions/dateTime" }, "boundary": { "$ref": "#/definitions/boundary" }
+  },
+  "definitions": {
+    "digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" }, "identifier": { "type": "string", "pattern": "^[a-z][a-z0-9_]{1,63}$" }, "dateTime": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$" }, "value": { "type": "integer", "minimum": 0, "maximum": 1000000000000 },
+    "tripRef": { "type": "string", "pattern": "^trip_[A-Za-z0-9][A-Za-z0-9_-]{15,95}$" }, "programRef": { "type": "string", "pattern": "^program_[A-Za-z0-9][A-Za-z0-9_-]{15,95}$" }, "travelerRef": { "type": "string", "pattern": "^traveler_[A-Za-z0-9][A-Za-z0-9_-]{15,95}$" }, "segmentRef": { "type": "string", "pattern": "^segment_[A-Za-z0-9][A-Za-z0-9_-]{15,95}$" }, "componentRef": { "type": "string", "pattern": "^loyalty_component_[A-Za-z0-9][A-Za-z0-9_-]{15,95}$" },
+    "travelerRefs": { "type": "array", "minItems": 1, "maxItems": 10, "uniqueItems": true, "items": { "$ref": "#/definitions/travelerRef" } }, "optionalTravelerRefs": { "type": "array", "maxItems": 10, "uniqueItems": true, "items": { "$ref": "#/definitions/travelerRef" } },
+    "componentRefs": { "type": "array", "minItems": 1, "maxItems": 300, "uniqueItems": true, "items": { "$ref": "#/definitions/componentRef" } }, "optionalComponentRefs": { "type": "array", "maxItems": 300, "uniqueItems": true, "items": { "$ref": "#/definitions/componentRef" } },
+    "component": { "type": "object", "additionalProperties": false, "required": ["component_ref", "traveler_ref", "segment_ref", "component_type", "cash_minor", "points_integer", "evidence_digest"], "properties": { "component_ref": { "$ref": "#/definitions/componentRef" }, "traveler_ref": { "$ref": "#/definitions/travelerRef" }, "segment_ref": { "$ref": "#/definitions/segmentRef" }, "component_type": { "enum": ["base_fare", "tax", "carrier_fee", "service_fee", "ancillary"] }, "cash_minor": { "$ref": "#/definitions/value" }, "points_integer": { "$ref": "#/definitions/value" }, "evidence_digest": { "$ref": "#/definitions/digest" } } },
+    "travelerTotal": { "type": "object", "additionalProperties": false, "required": ["traveler_ref", "cash_minor", "points_integer"], "properties": { "traveler_ref": { "$ref": "#/definitions/travelerRef" }, "cash_minor": { "$ref": "#/definitions/value" }, "points_integer": { "$ref": "#/definitions/value" } } },
+    "segmentPartition": { "type": "object", "additionalProperties": false, "required": ["traveler_ref", "segment_ref", "affected_component_refs", "preserved_component_refs"], "properties": { "traveler_ref": { "$ref": "#/definitions/travelerRef" }, "segment_ref": { "$ref": "#/definitions/segmentRef" }, "affected_component_refs": { "$ref": "#/definitions/optionalComponentRefs" }, "preserved_component_refs": { "$ref": "#/definitions/optionalComponentRefs" } } },
+    "refundComponent": { "type": "object", "additionalProperties": false, "required": ["component_ref", "traveler_ref", "segment_ref", "cash_refund_minor", "points_reversal_integer", "evidence_digest"], "properties": { "component_ref": { "$ref": "#/definitions/componentRef" }, "traveler_ref": { "$ref": "#/definitions/travelerRef" }, "segment_ref": { "$ref": "#/definitions/segmentRef" }, "cash_refund_minor": { "$ref": "#/definitions/value" }, "points_reversal_integer": { "$ref": "#/definitions/value" }, "evidence_digest": { "$ref": "#/definitions/digest" } } },
+    "boundary": { "type": "object", "additionalProperties": false, "required": ["server_only", "public_serialization_allowed", "simulation_only", "execution_authorized", "account_merge_authorized", "accrual_credit_authorized", "redemption_authorized", "voucher_consumption_authorized", "refund_authorized", "supplier_dispatched", "provider_called", "processor_called", "ledger_mutated", "message_sent"], "properties": { "server_only": { "const": true }, "public_serialization_allowed": { "const": false }, "simulation_only": { "const": true }, "execution_authorized": { "const": false }, "account_merge_authorized": { "const": false }, "accrual_credit_authorized": { "const": false }, "redemption_authorized": { "const": false }, "voucher_consumption_authorized": { "const": false }, "refund_authorized": { "const": false }, "supplier_dispatched": { "const": false }, "provider_called": { "const": false }, "processor_called": { "const": false }, "ledger_mutated": { "const": false }, "message_sent": { "const": false } } }
+  }
+}

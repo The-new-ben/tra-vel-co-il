@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
+
 from verify_agent_deploy import (
     NoRedirectHandler,
     VerificationConfig,
@@ -21,22 +23,33 @@ def check(condition: bool, message: str) -> None:
 
 
 MANIFEST = {
-    "version": "0.4.0",
+    "version": "0.7.0",
     "sha256": "a" * 64,
     "content_sha256": "b" * 64,
 }
 DEPLOYED = dict(MANIFEST)
 HEALTH = {
     "ok": True,
-    "plugin_version": "0.4.0",
+    "plugin_version": "0.7.0",
     "contract_version": "1.0.0",
     "provider": {"configured": True},
     "capabilities": {
+        "account_plan_history": True,
         "assisted_quote_cases": True,
         "operator_queue": True,
+        "commercial_intents": True,
+        "durable_commercial_handoffs": True,
+        "sourced_assisted_proposals": True,
+        "audited_proposal_actions": True,
+        "no_login_scoped_sessions": True,
+        "customer_trip_cockpit": True,
         "supplier_search": False,
+        "supplier_dispatch": False,
         "proposal_generation": False,
+        "payment_execution": False,
         "booking_execution": False,
+        "reservation_execution": False,
+        "ticket_issuance": False,
     },
     "agent_store": {
         "schema_version": "1.2.0",
@@ -63,12 +76,157 @@ HEALTH = {
         "ready_supporting_indexes": 1,
         "supporting_indexes_ready": True,
     },
+    "commercial_intent_store": {
+        "schema_version": "1.0.0",
+        "installed_schema_version": "1.0.0",
+        "tables_ready": True,
+        "expected_tables": 3,
+        "ready_tables": 3,
+        "transactional_tables": 3,
+        "required_indexes": 5,
+        "ready_indexes": 5,
+        "required_indexes_ready": True,
+    },
+    "assisted_proposal_store": {
+        "schema_version": "1.0.0",
+        "installed_schema_version": "1.0.0",
+        "idempotency_days": 7,
+        "max_proposals_per_case": 12,
+        "max_revisions_per_proposal": 20,
+        "max_snapshot_bytes": 524288,
+        "expected_tables": 5,
+        "ready_tables": 5,
+        "transactional_tables": 5,
+        "required_indexes": 9,
+        "ready_indexes": 9,
+        "required_indexes_ready": True,
+        "inspection_errors": [],
+        "tables_ready": True,
+    },
+    "vip_capability_session_store": {
+        "schema_version": "1.1.0",
+        "installed_schema_version": "1.1.0",
+        "grant_retention_days": 30,
+        "session_retention_days": 30,
+        "idempotency_days": 2,
+        "session_ttl_seconds": 1800,
+        "expected_tables": 4,
+        "ready_tables": 4,
+        "transactional_tables": 4,
+        "required_indexes": 7,
+        "ready_indexes": 7,
+        "required_indexes_ready": True,
+        "tables_ready": True,
+    },
+    "customer_trip_cockpit_store": {
+        "schema_version": "1.0.0",
+        "installed_schema_version": "1.0.0",
+        "retention_days": 400,
+        "max_projection_bytes": 524288,
+        "expected_tables": 3,
+        "ready_tables": 3,
+        "transactional_tables": 3,
+        "required_indexes": 13,
+        "ready_indexes": 13,
+        "required_indexes_ready": True,
+        "inspection_errors": [],
+        "tables_ready": True,
+    },
 }
 QUEUE = {"cases": [], "meta": {"page": 1}}
 
 
 validate_local_identity(MANIFEST, DEPLOYED)
 validate_remote_contract(HEALTH, QUEUE, MANIFEST)
+
+
+remote_negative_cases = 0
+
+
+def expect_remote_rejection(candidate: dict, message: str) -> None:
+    global remote_negative_cases
+    remote_negative_cases += 1
+    try:
+        validate_remote_contract(candidate, QUEUE, MANIFEST)
+        raise AssertionError(message)
+    except VerificationError:
+        pass
+
+
+missing_capability = deepcopy(HEALTH)
+missing_capability["capabilities"].pop("audited_proposal_actions")
+expect_remote_rejection(missing_capability, "A missing audited-proposal capability passed deployment verification.")
+
+missing_no_login_capability = deepcopy(HEALTH)
+missing_no_login_capability["capabilities"].pop("no_login_scoped_sessions")
+expect_remote_rejection(missing_no_login_capability, "A missing no-login scoped-session capability passed deployment verification.")
+
+false_no_login_capability = deepcopy(HEALTH)
+false_no_login_capability["capabilities"]["no_login_scoped_sessions"] = False
+expect_remote_rejection(false_no_login_capability, "A false no-login scoped-session capability passed deployment verification.")
+
+missing_customer_cockpit_capability = deepcopy(HEALTH)
+missing_customer_cockpit_capability["capabilities"].pop("customer_trip_cockpit")
+expect_remote_rejection(missing_customer_cockpit_capability, "A missing Customer Trip Cockpit capability passed deployment verification.")
+
+false_customer_cockpit_capability = deepcopy(HEALTH)
+false_customer_cockpit_capability["capabilities"]["customer_trip_cockpit"] = False
+expect_remote_rejection(false_customer_cockpit_capability, "A false Customer Trip Cockpit capability passed deployment verification.")
+
+mismatched_proposal_schema = deepcopy(HEALTH)
+mismatched_proposal_schema["assisted_proposal_store"]["ready_indexes"] = 8
+expect_remote_rejection(mismatched_proposal_schema, "An incomplete assisted-proposal index set passed deployment verification.")
+
+errored_proposal_inspection = deepcopy(HEALTH)
+errored_proposal_inspection["assisted_proposal_store"]["inspection_errors"] = ["wp_tra_vel_assisted_proposals"]
+expect_remote_rejection(errored_proposal_inspection, "An assisted-proposal schema inspection error passed deployment verification.")
+
+missing_capability_store = deepcopy(HEALTH)
+missing_capability_store.pop("vip_capability_session_store")
+expect_remote_rejection(missing_capability_store, "A missing capability-session store passed deployment verification.")
+
+capability_store_negative_values = {
+    "schema_version": "1.0.0",
+    "installed_schema_version": "1.0.0",
+    "grant_retention_days": 29,
+    "session_retention_days": 29,
+    "idempotency_days": 3,
+    "session_ttl_seconds": 1801,
+    "expected_tables": 5,
+    "ready_tables": 3,
+    "transactional_tables": 3,
+    "required_indexes": 8,
+    "ready_indexes": 6,
+    "required_indexes_ready": False,
+    "tables_ready": False,
+}
+for field, invalid_value in capability_store_negative_values.items():
+    candidate = deepcopy(HEALTH)
+    candidate["vip_capability_session_store"][field] = invalid_value
+    expect_remote_rejection(candidate, f"Invalid capability-session {field} passed deployment verification.")
+
+missing_customer_cockpit_store = deepcopy(HEALTH)
+missing_customer_cockpit_store.pop("customer_trip_cockpit_store")
+expect_remote_rejection(missing_customer_cockpit_store, "A missing Customer Trip Cockpit store passed deployment verification.")
+
+customer_cockpit_store_negative_values = {
+    "schema_version": "0.9.0",
+    "installed_schema_version": "0.9.0",
+    "retention_days": 399,
+    "max_projection_bytes": 524287,
+    "expected_tables": 4,
+    "ready_tables": 2,
+    "transactional_tables": 2,
+    "required_indexes": 12,
+    "ready_indexes": 12,
+    "required_indexes_ready": False,
+    "inspection_errors": ["wp_tra_vel_customer_trip_cockpits"],
+    "tables_ready": False,
+}
+for field, invalid_value in customer_cockpit_store_negative_values.items():
+    candidate = deepcopy(HEALTH)
+    candidate["customer_trip_cockpit_store"][field] = invalid_value
+    expect_remote_rejection(candidate, f"Invalid Customer Trip Cockpit store {field} passed deployment verification.")
 
 try:
     decode_json_response("health", "text/html; charset=UTF-8", b"<html>private body</html>")
@@ -142,5 +300,5 @@ check(
 
 print(
     "Tra-Vel Agent Core health verification validation passed "
-    "(JSON-only no-redirect checks, bounded backoff, stale-version rejection, secret-safe diagnostics, rollback signal)."
+    f"({remote_negative_cases} independent remote-contract negative cases; JSON-only no-redirect checks, bounded backoff, stale-version rejection, secret-safe diagnostics, rollback signal)."
 )

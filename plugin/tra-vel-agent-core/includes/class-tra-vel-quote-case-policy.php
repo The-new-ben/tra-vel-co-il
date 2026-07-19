@@ -8,8 +8,9 @@
 defined( 'ABSPATH' ) || exit;
 
 class Tra_Vel_Quote_Case_Policy {
-	const CONTRACT_VERSION = '1.0.0';
-	const CONSENT_VERSION  = '2026-07-17';
+	const CONTRACT_VERSION       = '1.1.0';
+	const EVENT_CONTRACT_VERSION = '1.1.0';
+	const CONSENT_VERSION        = '2026-07-17';
 
 	/**
 	 * States deliberately stop before supplier search, proposal, or booking.

@@ -7,6 +7,8 @@
 
 defined( 'ABSPATH' ) || exit;
 
+require_once dirname( __DIR__ ) . '/class-commercial-provenance.php';
+
 class Tra_Vel_V2_Trip_Package_Registry {
 	/** @var Tra_Vel_V2_Trip_Package_Adapter[] */
 	private $adapters = array();
@@ -67,8 +69,18 @@ class Tra_Vel_V2_Trip_Package_Registry {
 			} catch ( Throwable $error ) {
 				$result = new WP_Error( 'tra_vel_package_adapter_exception', 'Package adapter failed safely.' );
 			}
-			if ( is_wp_error( $result ) || empty( $result['packages'] ) ) {
-				$report['error_code'] = is_wp_error( $result ) ? $result->get_error_code() : 'invalid_contract';
+			$validation = is_wp_error( $result ) ? $result : Tra_Vel_V2_Commercial_Provenance::validate(
+				$result,
+				$id,
+				'packages',
+				array( 'pricing', 'total_party' ),
+				'booking',
+				'bookable',
+				isset( $query['currency'] ) ? $query['currency'] : '',
+				'whole_party_trip'
+			);
+			if ( is_wp_error( $validation ) ) {
+				$report['error_code'] = $validation->get_error_code();
 				$reports[ $id ]       = $report;
 				$failed_live[]        = $id;
 				continue;
@@ -76,7 +88,6 @@ class Tra_Vel_V2_Trip_Package_Registry {
 			$report['healthy'] = true;
 			$report['used']    = true;
 			$reports[ $id ]    = $report;
-			$result['data_mode'] = 'live';
 			return array( 'data' => $result, 'reports' => $reports, 'degraded' => ! empty( $failed_live ), 'failed_adapters' => $failed_live );
 		}
 

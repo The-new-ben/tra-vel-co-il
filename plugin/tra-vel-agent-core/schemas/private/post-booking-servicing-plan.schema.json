@@ -1,0 +1,213 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://tra-vel.co.il/schemas/private/post-booking-servicing-plan.schema.json",
+  "title": "Tra-Vel private post-booking servicing review plan",
+  "description": "Deterministic zero-dispatch plan projected from one exact current servicing snapshot.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract_version", "environment", "data_mode", "plan_ref", "plan_digest", "input_binding", "change_class", "plan_state", "scope_resolution", "truth_checks", "action_queue", "financial_handling", "state_axes", "lodging_reconciliation", "communication_reconciliation", "required_approvals", "evaluated_at", "boundary"],
+  "properties": {
+    "contract_version": {"const": "1.0.0"},
+    "environment": {"const": "sandbox"},
+    "data_mode": {"const": "synthetic_demo"},
+    "plan_ref": {"type": "string", "pattern": "^tv_servicing_plan_[a-f0-9]{24}$"},
+    "plan_digest": {"$ref": "#/definitions/digest"},
+    "input_binding": {"$ref": "#/definitions/inputBinding"},
+    "change_class": {"enum": ["voluntary_change", "planned_schedule_change", "day_of_travel_disruption", "supplier_initiated_lodging_change", "traveler_lodging_change"]},
+    "plan_state": {"enum": ["evidence_required", "ready_for_human_review"]},
+    "scope_resolution": {"$ref": "#/definitions/scopeResolution"},
+    "truth_checks": {"type": "array", "minItems": 1, "maxItems": 64, "items": {"$ref": "#/definitions/truthCheck"}},
+    "action_queue": {"type": "array", "minItems": 1, "maxItems": 64, "items": {"$ref": "#/definitions/action"}},
+    "financial_handling": {"$ref": "#/definitions/financialHandling"},
+    "state_axes": {"$ref": "#/definitions/independentStates"},
+    "lodging_reconciliation": {"$ref": "#/definitions/lodgingReconciliation"},
+    "communication_reconciliation": {"$ref": "#/definitions/communicationReconciliation"},
+    "required_approvals": {"$ref": "#/definitions/approvalList"},
+    "evaluated_at": {"$ref": "#/definitions/utc"},
+    "boundary": {"$ref": "#/definitions/boundary"}
+  },
+  "definitions": {
+    "digest": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "utc": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"},
+    "date": {"type": ["string", "null"], "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"},
+    "travelerRef": {"type": "string", "pattern": "^tv_traveler_[A-Za-z0-9_-]{8,96}$"},
+    "segmentRef": {"type": "string", "pattern": "^tv_segment_[A-Za-z0-9_-]{8,96}$"},
+    "orderItemRef": {"type": "string", "pattern": "^tv_order_item_[A-Za-z0-9_-]{8,96}$"},
+    "roomRef": {"type": "string", "pattern": "^tv_room_[A-Za-z0-9_-]{8,96}$"},
+    "guestRef": {"type": "string", "pattern": "^tv_guest_[A-Za-z0-9_-]{8,96}$"},
+    "refListTraveler": {"type": "array", "uniqueItems": true, "maxItems": 128, "items": {"$ref": "#/definitions/travelerRef"}},
+    "refListSegment": {"type": "array", "uniqueItems": true, "maxItems": 256, "items": {"$ref": "#/definitions/segmentRef"}},
+    "refListOrderItem": {"type": "array", "uniqueItems": true, "maxItems": 256, "items": {"$ref": "#/definitions/orderItemRef"}},
+    "refListRoom": {"type": "array", "uniqueItems": true, "maxItems": 128, "items": {"$ref": "#/definitions/roomRef"}},
+    "refListGuest": {"type": "array", "uniqueItems": true, "maxItems": 256, "items": {"$ref": "#/definitions/guestRef"}},
+    "inputBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["owner_scope_digest", "servicing_case_ref", "snapshot_version", "snapshot_digest", "trip_ref", "trip_digest", "supplier_order_ref", "supplier_order_digest", "commerce_order_ref", "commerce_order_digest"],
+      "properties": {
+        "owner_scope_digest": {"$ref": "#/definitions/digest"},
+        "servicing_case_ref": {"type": "string", "pattern": "^tv_servicing_case_[A-Za-z0-9_-]{8,96}$"},
+        "snapshot_version": {"type": "integer", "minimum": 1, "maximum": 2147483647},
+        "snapshot_digest": {"$ref": "#/definitions/digest"},
+        "trip_ref": {"type": "string", "pattern": "^tv_trip_[A-Za-z0-9_-]{8,96}$"},
+        "trip_digest": {"$ref": "#/definitions/digest"},
+        "supplier_order_ref": {"type": "string", "pattern": "^tv_supplier_order_[A-Za-z0-9_-]{8,96}$"},
+        "supplier_order_digest": {"$ref": "#/definitions/digest"},
+        "commerce_order_ref": {"type": "string", "pattern": "^tv_order_[A-Za-z0-9_-]{8,96}$"},
+        "commerce_order_digest": {"$ref": "#/definitions/digest"}
+      }
+    },
+    "scopeResolution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["affected_traveler_refs", "preserved_traveler_refs", "affected_segment_refs", "preserved_segment_refs", "affected_order_item_refs", "preserved_order_item_refs", "affected_room_refs", "preserved_room_refs", "affected_guest_refs", "preserved_guest_refs", "date_scope"],
+      "properties": {
+        "affected_traveler_refs": {"$ref": "#/definitions/refListTraveler"},
+        "preserved_traveler_refs": {"$ref": "#/definitions/refListTraveler"},
+        "affected_segment_refs": {"$ref": "#/definitions/refListSegment"},
+        "preserved_segment_refs": {"$ref": "#/definitions/refListSegment"},
+        "affected_order_item_refs": {"$ref": "#/definitions/refListOrderItem"},
+        "preserved_order_item_refs": {"$ref": "#/definitions/refListOrderItem"},
+        "affected_room_refs": {"$ref": "#/definitions/refListRoom"},
+        "preserved_room_refs": {"$ref": "#/definitions/refListRoom"},
+        "affected_guest_refs": {"$ref": "#/definitions/refListGuest"},
+        "preserved_guest_refs": {"$ref": "#/definitions/refListGuest"},
+        "date_scope": {"$ref": "#/definitions/dateScope"}
+      }
+    },
+    "dateScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["check_in_date", "check_out_date"],
+      "properties": {"check_in_date": {"$ref": "#/definitions/date"}, "check_out_date": {"$ref": "#/definitions/date"}}
+    },
+    "truthCheck": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["truth_code", "state", "supplier_dispatched"],
+      "properties": {
+        "truth_code": {"type": "string", "pattern": "^[a-z][a-z0-9_]{1,63}$"},
+        "state": {"const": "required"},
+        "supplier_dispatched": {"const": false}
+      }
+    },
+    "action": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["action_type", "targets", "required_approvals", "execution_state", "supplier_dispatched", "processor_called", "ledger_mutated", "message_sent"],
+      "properties": {
+        "action_type": {"enum": ["retrieve_current_supplier_order", "verify_reservation_separately", "verify_ticket_issuance", "verify_coupon_statuses", "verify_emd_fulfillment", "verify_servicing_owner", "quote_voluntary_change_rules", "verify_involuntary_entitlements", "preserve_unaffected_flight_scope", "retrieve_current_lodging_reservation", "reconcile_room_guest_date_occupancy", "reconcile_no_show_separately", "verify_inventory_restoration", "verify_message_delivery", "perform_authoritative_message_retrieval", "preserve_unaffected_lodging_scope", "reconcile_add_collect_separately", "reconcile_supplier_refund_separately", "reconcile_residual_value_separately", "reconcile_reusable_value_separately", "record_even_exchange_without_netting", "reconcile_traveler_repayment_separately", "reconcile_supplier_settlement_separately"]},
+        "targets": {"$ref": "#/definitions/actionTargets"},
+        "required_approvals": {"$ref": "#/definitions/approvalList"},
+        "execution_state": {"const": "planned"},
+        "supplier_dispatched": {"const": false},
+        "processor_called": {"const": false},
+        "ledger_mutated": {"const": false},
+        "message_sent": {"const": false}
+      }
+    },
+    "actionTargets": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["traveler_refs", "segment_refs", "order_item_refs", "room_refs", "guest_refs"],
+      "properties": {
+        "traveler_refs": {"$ref": "#/definitions/refListTraveler"},
+        "segment_refs": {"$ref": "#/definitions/refListSegment"},
+        "order_item_refs": {"$ref": "#/definitions/refListOrderItem"},
+        "room_refs": {"$ref": "#/definitions/refListRoom"},
+        "guest_refs": {"$ref": "#/definitions/refListGuest"}
+      }
+    },
+    "approvalList": {"type": "array", "uniqueItems": true, "maxItems": 4, "items": {"enum": ["customer_approval", "financial_approval", "human_operator_review", "supplier_change_approval"]}},
+    "financialHandling": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["differential_refs", "outcomes_present", "component_states", "netting_prohibited", "no_derived_net_amount", "existing_commerce_ledgers_authoritative", "new_payment_state", "traveler_repayment_state", "customer_refund_state", "supplier_settlement_state"],
+      "properties": {
+        "differential_refs": {"type": "array", "uniqueItems": true, "maxItems": 128, "items": {"type": "string", "pattern": "^tv_servicing_diff_[A-Za-z0-9_-]{8,96}$"}},
+        "outcomes_present": {"type": "array", "uniqueItems": true, "maxItems": 5, "items": {"enum": ["add_collect", "refund", "residual_value", "reusable_value", "even_exchange"]}},
+        "component_states": {"type": "array", "maxItems": 128, "items": {"$ref": "#/definitions/componentStates"}},
+        "netting_prohibited": {"const": true},
+        "no_derived_net_amount": {"const": true},
+        "existing_commerce_ledgers_authoritative": {"const": true},
+        "new_payment_state": {"enum": ["not_required", "separate_authorization_required"]},
+        "traveler_repayment_state": {"enum": ["not_required", "separate_reconciliation_required"]},
+        "customer_refund_state": {"enum": ["not_applicable", "not_started", "pending", "partially_paid", "paid", "failed", "unknown"]},
+        "supplier_settlement_state": {"enum": ["not_started", "accrued", "partially_settled", "settled", "disputed", "unknown"]}
+      }
+    },
+    "componentStates": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["differential_ref", "add_collect_state", "supplier_refund_state", "residual_value_state", "reusable_value_state", "traveler_repayment_state", "settlement_state"],
+      "properties": {
+        "differential_ref": {"type": "string", "pattern": "^tv_servicing_diff_[A-Za-z0-9_-]{8,96}$"},
+        "add_collect_state": {"enum": ["not_applicable", "proposed", "authorized", "collected", "failed"]},
+        "supplier_refund_state": {"enum": ["not_applicable", "requested", "pending", "received", "failed"]},
+        "residual_value_state": {"enum": ["not_applicable", "proposed", "issued", "used", "expired"]},
+        "reusable_value_state": {"enum": ["not_applicable", "proposed", "issued", "used", "expired"]},
+        "traveler_repayment_state": {"enum": ["not_applicable", "not_started", "pending", "paid", "failed"]},
+        "settlement_state": {"enum": ["not_started", "accrued", "partially_settled", "settled", "disputed"]}
+      }
+    },
+    "independentStates": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["supplier_reservation_state", "supplier_fulfillment_state", "customer_payment_state", "supplier_refund_state", "customer_refund_state", "supplier_settlement_state", "reconciliation_state"],
+      "properties": {
+        "supplier_reservation_state": {"enum": ["pending", "held", "confirmed", "changed", "cancelled", "unknown"]},
+        "supplier_fulfillment_state": {"enum": ["not_started", "queued", "partial", "fulfilled", "failed", "unknown"]},
+        "customer_payment_state": {"enum": ["not_started", "authorized", "partially_captured", "captured", "failed", "disputed", "charged_back", "unknown"]},
+        "supplier_refund_state": {"enum": ["not_applicable", "requested", "pending", "received", "failed", "unknown"]},
+        "customer_refund_state": {"enum": ["not_applicable", "not_started", "pending", "partially_paid", "paid", "failed", "unknown"]},
+        "supplier_settlement_state": {"enum": ["not_started", "accrued", "partially_settled", "settled", "disputed", "unknown"]},
+        "reconciliation_state": {"enum": ["not_started", "pending", "matched", "exception", "unknown"]}
+      }
+    },
+    "lodgingReconciliation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reservation_state", "room_state", "guest_state", "date_state", "occupancy_state", "no_show_state", "inventory_restoration_state"],
+      "properties": {
+        "reservation_state": {"enum": ["not_applicable", "independent_review_required"]},
+        "room_state": {"enum": ["not_applicable", "independent_review_required"]},
+        "guest_state": {"enum": ["not_applicable", "independent_review_required"]},
+        "date_state": {"enum": ["not_applicable", "independent_review_required"]},
+        "occupancy_state": {"enum": ["not_applicable", "independent_review_required"]},
+        "no_show_state": {"enum": ["not_applicable", "independent_review_required"]},
+        "inventory_restoration_state": {"enum": ["not_applicable", "independent_review_required"]}
+      }
+    },
+    "communicationReconciliation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["delivery_evidence_only", "authoritative_retrieval_state", "booking_state_inference_allowed", "retry_state"],
+      "properties": {
+        "delivery_evidence_only": {"const": true},
+        "authoritative_retrieval_state": {"enum": ["not_requested", "current", "stale", "conflict", "failed"]},
+        "booking_state_inference_allowed": {"const": false},
+        "retry_state": {"enum": ["not_required", "review_required"]}
+      }
+    },
+    "boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["server_only", "public_serialization_allowed", "planning_only", "creates_order", "issues_ticket_or_emd", "changes_supplier_booking", "changes_inventory", "creates_payment", "creates_refund", "creates_settlement", "supplier_dispatched", "processor_called", "message_sent"],
+      "properties": {
+        "server_only": {"const": true},
+        "public_serialization_allowed": {"const": false},
+        "planning_only": {"const": true},
+        "creates_order": {"const": false},
+        "issues_ticket_or_emd": {"const": false},
+        "changes_supplier_booking": {"const": false},
+        "changes_inventory": {"const": false},
+        "creates_payment": {"const": false},
+        "creates_refund": {"const": false},
+        "creates_settlement": {"const": false},
+        "supplier_dispatched": {"const": false},
+        "processor_called": {"const": false},
+        "message_sent": {"const": false}
+      }
+    }
+  }
+}

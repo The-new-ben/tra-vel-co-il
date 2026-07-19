@@ -1,0 +1,550 @@
+{
+  "schemaVersion": 1,
+  "id": "dubai-2026",
+  "locale": "he-IL",
+  "title": "דובאי",
+  "excerpt": "מדריך דובאי לישראלים שמסדר את החלטות הכניסה, הביטחון, העונה, ההגעה מ-DXB, אזור הלינה, התחבורה, המשפחה, הנגישות, התרבות והתקציב על בסיס מקורות רשמיים ובדיקת עדכניות לפני פרסום ונסיעה.",
+  "author": "מערכת Tra-Vel",
+  "reviewer": "טרם מונה עורך מזוהה",
+  "primaryTopic": "Dubai travel guide for Israeli travelers",
+  "canonicalPath": "/destinations/dubai/",
+  "status": "editorial-review",
+  "contentPath": "content/guides/dubai-2026.he.html",
+  "wordTargetMin": 5000,
+  "checkedAt": "2026-07-18",
+  "mapState": "dubai",
+  "reviewMethod": "Editorial-review draft awaiting review by a named editor and publish-time verification. Reopen every mapped UAE, Dubai and Israeli official or primary source and recheck every entry, security, flight, transport, ticket, weather, medicine, customs, conduct, accessibility and operating claim before any publication decision; editorial review is not complete.",
+  "sections": [
+    "Decision summary and trip fit",
+    "Israeli passport, entry and document recheck",
+    "Live Israeli security advisory boundary",
+    "Stopover versus destination-trip decision",
+    "Weather, season and indoor-outdoor pacing",
+    "DXB arrival and terminal-aware transfer planning",
+    "Metro, taxi, bus and private transfer comparison",
+    "Choosing an area without invented property claims",
+    "Downtown, Marina, JBR, Deira and Palm tradeoffs",
+    "nol zones, tickets, transfers and conduct",
+    "Two, three, four and five day itinerary patterns",
+    "Family planning by age, heat and transfer load",
+    "Visible and hidden disability accessibility chain",
+    "Local law, dress, photography and public conduct",
+    "Ramadan and cultural-calendar recheck",
+    "Food, dietary and kosher verification decisions",
+    "Budget framework without fabricated current prices",
+    "Insurance and medical declaration decisions",
+    "Controlled medicines and customs checks",
+    "Connectivity, SIM and offline-document planning",
+    "Separate tickets, DXB transfers and DWC risk",
+    "Booking sequence and supplier revalidation",
+    "Frequently asked traveler questions",
+    "Source log, freshness and publication blockers"
+  ],
+  "sources": [
+    {
+      "id": "uae-embassy-israel-visas",
+      "title": "UAE Embassy in Israel visa information",
+      "publisher": "United Arab Emirates Ministry of Foreign Affairs",
+      "url": "https://www.mofa.gov.ae/en/Missions/Tel-Aviv/Services/Visas",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["Israeli ordinary-passport visa exemption", "visa-waiver recheck source"]
+    },
+    {
+      "id": "uae-entry-check",
+      "title": "Check if you need a visa to enter the UAE",
+      "publisher": "Official Platform of the UAE Government",
+      "url": "https://u.ae/en/information-and-services/visa-and-emirates-id/Visa-information/do-you-need-an-entry-permit-or-a-visa-to-enter-the-uae",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["passport-validity baseline", "nationality-dependent visa status", "embassy recheck requirement"]
+    },
+    {
+      "id": "gdrfa-single-entry-visa",
+      "title": "Issuance of a single-entry tourist visa",
+      "publisher": "General Directorate of Residency and Foreigners Affairs Dubai",
+      "url": "https://gdrfad.gov.ae/en/services/f9e586fe-0642-11ec-0320-0050569629e8",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["non-exempt tourist-visa route", "passport, onward-ticket and insurance requirements", "accredited issuer boundary"]
+    },
+    {
+      "id": "israel-dubai-consular-guidance",
+      "title": "Israeli consular services and traveler guidance in Dubai",
+      "publisher": "Consulate General of Israel in Dubai / Ministry of Foreign Affairs",
+      "url": "https://embassies.gov.il/dubai/he/the-embassy/departments/syrwtym-qwnswlryym",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["Israeli passport-type guidance", "six-month passport guidance", "local-conduct reminders", "consular assistance channel"]
+    },
+    {
+      "id": "israel-nsc-live-warnings",
+      "title": "Live travel-warning collector",
+      "publisher": "Israel National Security Council",
+      "url": "https://www.gov.il/he/Departments/DynamicCollectors/travel-warnings-nsc",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["current country-warning lookup", "publish-time and pre-departure security recheck"]
+    },
+    {
+      "id": "israel-nsc-march-2026-announcement",
+      "title": "Announcement from the National Security Council on 13 March 2026",
+      "publisher": "Israel National Security Council / Ministry of Foreign Affairs",
+      "url": "https://www.gov.il/en/pages/announcement-from-the-national-security-council-13-mar-2026",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["evidence that UAE security and flight guidance can change quickly", "need to avoid freezing dated instructions as current"]
+    },
+    {
+      "id": "israel-dubai-contacts",
+      "title": "Contact the Consulate General of Israel in Dubai",
+      "publisher": "Ministry of Foreign Affairs",
+      "url": "https://embassies.gov.il/dubai/he/contacts",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["consular contact channels", "local emergency-reference categories", "medicine inquiry channel"]
+    },
+    {
+      "id": "dxb-metro",
+      "title": "Metro transport at DXB",
+      "publisher": "Dubai Airports",
+      "url": "https://dubaiairports.ae/transport/metro",
+      "type": "primary",
+      "checkedAt": "2026-07-18",
+      "supports": ["Terminal 1 and Terminal 3 metro connection", "nol availability", "luggage and timetable recheck"]
+    },
+    {
+      "id": "dxb-taxi",
+      "title": "Taxi transport at DXB",
+      "publisher": "Dubai Airports",
+      "url": "https://dubaiairports.ae/transport/taxi",
+      "type": "primary",
+      "checkedAt": "2026-07-18",
+      "supports": ["designated terminal taxi ranks", "airport taxi and ride-hail pickup choices"]
+    },
+    {
+      "id": "dxb-transfers",
+      "title": "Transfers at Dubai International Airport",
+      "publisher": "Dubai Airports",
+      "url": "https://dubaiairports.ae/information/transfers",
+      "type": "primary",
+      "checkedAt": "2026-07-18",
+      "supports": ["separate-ticket baggage and immigration decisions", "terminal transfer planning", "DXB to DWC ground-transfer boundary"]
+    },
+    {
+      "id": "dxb-special-assistance",
+      "title": "Special assistance at DXB and DWC",
+      "publisher": "Dubai Airports",
+      "url": "https://dubaiairports.ae/information/special-assistance",
+      "type": "primary",
+      "checkedAt": "2026-07-18",
+      "supports": ["visible and non-visible disability support", "airport accessibility touchpoints", "airline coordination requirement"]
+    },
+    {
+      "id": "rta-nol-fares",
+      "title": "nol fares and zone rules",
+      "publisher": "Dubai Roads and Transport Authority",
+      "url": "https://rta.ae/wps/portal/rta/ae/public-transport/Nol-Fares?lang=en",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["zone-based fare calculation", "multimodal transfer rules", "nol product comparison"]
+    },
+    {
+      "id": "rta-metro-map",
+      "title": "Metro and tram stations map",
+      "publisher": "Dubai Roads and Transport Authority",
+      "url": "https://www.rta.ae/wps/portal/rta/ae/public-transport/metro-stations-map",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["Red and Green metro routes", "tram network", "DXB Terminal 1 and Terminal 3 stations"]
+    },
+    {
+      "id": "rta-metro-accessibility",
+      "title": "About Dubai Metro",
+      "publisher": "Dubai Roads and Transport Authority",
+      "url": "https://www.rta.ae/wps/portal/rta/ae/public-transport/metro/about-metro",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["metro cabin categories", "lift and wheelchair access", "tactile and audio-visual guidance", "baggage and conduct rules"]
+    },
+    {
+      "id": "visitdubai-weather",
+      "title": "Weather in Dubai",
+      "publisher": "Visit Dubai / Dubai Department of Economy and Tourism",
+      "url": "https://www.visitdubai.com/en/plan-your-trip/weather-in-dubai",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["seasonal heat decision", "indoor and outdoor pacing", "month-specific recheck"]
+    },
+    {
+      "id": "uae-live-weather",
+      "title": "Weather conditions and environmental status",
+      "publisher": "Official Platform of the UAE Government",
+      "url": "https://u.ae/en/information-and-services/environment-and-energy/weather-conditions-and-environmental-status",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["National Center of Meteorology live sources", "real-time warning recheck"]
+    },
+    {
+      "id": "visitdubai-neighborhoods",
+      "title": "Neighborhoods in Dubai",
+      "publisher": "Visit Dubai / Dubai Department of Economy and Tourism",
+      "url": "https://www.visitdubai.com/en/travel-trade/explore-dubai/dubai-neighbourhoods",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["official neighborhood inventory", "area-first planning"]
+    },
+    {
+      "id": "visitdubai-downtown",
+      "title": "Downtown Dubai neighborhood guide",
+      "publisher": "Visit Dubai / Dubai Department of Economy and Tourism",
+      "url": "https://www.visitdubai.com/en/explore-dubai/dubai-neighbourhoods/downtown-dubai",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["landmark, shopping and promenade character", "Downtown area-fit decision"]
+    },
+    {
+      "id": "visitdubai-marina",
+      "title": "Dubai Marina neighborhood guide",
+      "publisher": "Visit Dubai / Dubai Department of Economy and Tourism",
+      "url": "https://www.visitdubai.com/en/explore-dubai/dubai-neighbourhoods/dubai-marina",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["waterfront, family and dining character", "Marina area-fit decision"]
+    },
+    {
+      "id": "visitdubai-jbr",
+      "title": "Jumeirah Beach Residence neighborhood guide",
+      "publisher": "Visit Dubai / Dubai Department of Economy and Tourism",
+      "url": "https://www.visitdubai.com/en/explore-dubai/dubai-neighbourhoods/jumeirah-beach-residence",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["beachside district layout", "JBR walking, lifts and area-fit considerations"]
+    },
+    {
+      "id": "visitdubai-deira",
+      "title": "Deira neighborhood guide",
+      "publisher": "Visit Dubai / Dubai Department of Economy and Tourism",
+      "url": "https://www.visitdubai.com/en/explore-dubai/dubai-neighbourhoods/deira",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["heritage, trading and souk character", "Deira transport and street-level tradeoffs"]
+    },
+    {
+      "id": "visitdubai-palm",
+      "title": "Palm Jumeirah neighborhood guide",
+      "publisher": "Visit Dubai / Dubai Department of Economy and Tourism",
+      "url": "https://www.visitdubai.com/en/explore-dubai/dubai-neighbourhoods/palm-jumeirah",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["island resort and beach character", "Palm transport-chain tradeoffs"]
+    },
+    {
+      "id": "visitdubai-stays",
+      "title": "Places to stay in Dubai",
+      "publisher": "Visit Dubai / Dubai Department of Economy and Tourism",
+      "url": "https://www.visitdubai.com/en/plan-your-trip/places-to-stay",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["hotel, apartment and resort categories", "area and accommodation-type comparison"]
+    },
+    {
+      "id": "visitdubai-itineraries",
+      "title": "Dubai travel itineraries",
+      "publisher": "Visit Dubai / Dubai Department of Economy and Tourism",
+      "url": "https://www.visitdubai.com/en/things-to-do/itineraries",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["duration, family, stopover and interest filters", "itinerary-pattern evidence"]
+    },
+    {
+      "id": "visitdubai-family",
+      "title": "Family activities in Dubai",
+      "publisher": "Visit Dubai / Dubai Department of Economy and Tourism",
+      "url": "https://www.visitdubai.com/en/articles/the-hot-list-families",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["indoor, outdoor, beach and family activity mix", "age and season planning"]
+    },
+    {
+      "id": "visitdubai-accessibility",
+      "title": "Travel accessibility in Dubai",
+      "publisher": "Visit Dubai / Dubai Department of Economy and Tourism",
+      "url": "https://www.visitdubai.com/en/plan-your-trip/travel-accessibility",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["airport, hotel, attraction and transport accessibility planning", "direct venue confirmation requirement"]
+    },
+    {
+      "id": "uae-social-responsibility",
+      "title": "Social responsibility for UAE visitors",
+      "publisher": "Official Platform of the UAE Government",
+      "url": "https://u.ae/en/information-and-services/visiting-and-exploring-the-uae/social-responsibility",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["public conduct", "dress", "photography and permission", "respect for local culture"]
+    },
+    {
+      "id": "uae-controlled-medicines",
+      "title": "Drugs and controlled medicines",
+      "publisher": "Official Platform of the UAE Government",
+      "url": "https://u.ae/en/information-and-services/health-and-fitness/drugs-and-controlled-medicines",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["controlled-medicine recheck", "traveler documentation and approval boundary"]
+    },
+    {
+      "id": "dubai-customs-restricted-goods",
+      "title": "Prohibited and restricted goods",
+      "publisher": "Dubai Customs",
+      "url": "https://www.dubaicustoms.gov.ae/en/mobile/Pages/ProhibitedandRestrictedGoods.aspx",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["prohibited versus restricted distinction", "competent-authority approval requirement"]
+    },
+    {
+      "id": "dubai-tourism-sim",
+      "title": "Tourism SIM card",
+      "publisher": "Official City Portal of Dubai / Digital Dubai Authority",
+      "url": "https://www.dubai.ae/web/dubai.ae/visit/arriving-to-dubai/tourism-sim-card",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["airport tourism-SIM availability", "local-number planning"]
+    },
+    {
+      "id": "visitdubai-ramadan",
+      "title": "Guide to Ramadan in Dubai",
+      "publisher": "Visit Dubai / Dubai Department of Economy and Tourism",
+      "url": "https://www.visitdubai.com/en/articles/guide-to-ramadan",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["lunar-date recheck", "visitor expectations during Ramadan", "schedule and dining changes"]
+    }
+  ],
+  "facts": [
+    {
+      "id": "israeli-ordinary-passport-visa-waiver",
+      "claim": "The UAE Embassy in Israel states that holders of valid Israeli passports are exempt from entry visa requirements, but this must be rechecked before publication and travel.",
+      "sourceIds": ["uae-embassy-israel-visas", "uae-entry-check"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "passport-six-month-baseline",
+      "claim": "The UAE government and Israeli consular guidance state a six-month passport-validity baseline for entry, subject to current passport type and traveler circumstances.",
+      "sourceIds": ["uae-entry-check", "israel-dubai-consular-guidance", "uae-embassy-israel-visas"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "israeli-document-type-limits",
+      "claim": "Israeli consular guidance says entry is for valid regular or biometric Israeli passports and identifies extension-sticker and certain travel-document restrictions that require immediate pre-travel recheck.",
+      "sourceIds": ["israel-dubai-consular-guidance", "uae-embassy-israel-visas"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "non-exempt-tourist-visa-route",
+      "claim": "GDRFA Dubai publishes a separate tourist-visa service for travelers who require it, with passport, onward-ticket and medical-insurance conditions; it must not be presented as applicable to an exempt Israeli traveler unless current status changes.",
+      "sourceIds": ["gdrfa-single-entry-visa", "uae-entry-check"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "nsc-live-warning-authority",
+      "claim": "The live National Security Council collector is the publication-time and pre-departure authority for the current UAE warning and recommendations; no warning level may be frozen into the guide.",
+      "sourceIds": ["israel-nsc-live-warnings"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "security-flight-guidance-high-volatility",
+      "claim": "The dated 13 March 2026 NSC announcement shows that UAE security and flight guidance can change quickly and must never be repeated as a current instruction without live revalidation.",
+      "sourceIds": ["israel-nsc-march-2026-announcement", "israel-nsc-live-warnings"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "israeli-consular-channel",
+      "claim": "The Consulate General of Israel in Dubai publishes appointment, consular and emergency contact channels that must be saved and rechecked before travel.",
+      "sourceIds": ["israel-dubai-contacts", "israel-dubai-consular-guidance"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "dxb-terminal-metro-connection",
+      "claim": "Dubai Airports and RTA show Red Line metro stations at DXB Terminal 1 and Terminal 3, while operating times and service conditions require live recheck.",
+      "sourceIds": ["dxb-metro", "rta-metro-map"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "dxb-taxi-ranks",
+      "claim": "Dubai Airports provides designated taxi ranks at each DXB terminal and distinguishes official taxis from app-based pickup processes.",
+      "sourceIds": ["dxb-taxi"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "dxb-separate-ticket-baggage",
+      "claim": "Dubai Airports says separate-ticket passengers may need to clear passport control, retrieve baggage and check in again, depending on visa and transfer circumstances.",
+      "sourceIds": ["dxb-transfers"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "dxb-dwc-transfer-boundary",
+      "claim": "Dubai Airports treats DXB and DWC as separate airports and says a connection between them can require immigration, baggage collection and a ground transfer.",
+      "sourceIds": ["dxb-transfers"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "nol-zone-calculation",
+      "claim": "RTA calculates public-transport fares by zones crossed and provides multiple nol products whose current rules and values must be compared before purchase.",
+      "sourceIds": ["rta-nol-fares"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "nol-multimodal-transfer",
+      "claim": "RTA provides timed transfer rules across selected public-transport modes, so travelers must validate the current time window and tap process rather than assuming any connection is a single journey.",
+      "sourceIds": ["rta-nol-fares"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "metro-cabin-and-conduct-rules",
+      "claim": "RTA distinguishes general, Gold, and women-and-children metro cabins and publishes baggage, conduct and fine rules that visitors must recheck and follow.",
+      "sourceIds": ["rta-metro-accessibility"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "metro-accessibility-features",
+      "claim": "RTA describes lift access to metro station levels, dedicated wheelchair spaces, tactile guidance and audio-visual platform alerts.",
+      "sourceIds": ["rta-metro-accessibility"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "dxb-visible-hidden-assistance",
+      "claim": "Dubai Airports describes special-assistance services for visible and non-visible disabilities and directs travelers to coordinate additional support with the airline.",
+      "sourceIds": ["dxb-special-assistance"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "venue-specific-accessibility",
+      "claim": "Visit Dubai presents citywide accessibility resources but advises travelers to contact individual attractions and accommodations for current, need-specific details.",
+      "sourceIds": ["visitdubai-accessibility"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "dubai-seasonal-heat",
+      "claim": "Official Dubai guidance distinguishes a hotter summer planning pattern from a milder outdoor-focused season and requires date-specific weather recheck.",
+      "sourceIds": ["visitdubai-weather", "uae-live-weather"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "live-weather-warning-source",
+      "claim": "The UAE government directs travelers to National Center of Meteorology sources for current weather and live warnings.",
+      "sourceIds": ["uae-live-weather"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "neighborhood-inventory",
+      "claim": "Visit Dubai maintains an official inventory of neighborhoods, supporting area-first selection rather than treating the city as one walkable center.",
+      "sourceIds": ["visitdubai-neighborhoods"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "downtown-character",
+      "claim": "Visit Dubai characterizes Downtown around landmarks, shopping and promenades, which should be weighed against the traveler's actual route and desired pace.",
+      "sourceIds": ["visitdubai-downtown"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "marina-jbr-character",
+      "claim": "Visit Dubai characterizes Dubai Marina through waterfront, family, dining and leisure experiences and describes JBR as a beachside district linked to the Marina.",
+      "sourceIds": ["visitdubai-marina", "visitdubai-jbr"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "deira-character",
+      "claim": "Visit Dubai describes Deira as a heritage, commerce and souk area around Dubai Creek with both metro access and street-level traffic tradeoffs.",
+      "sourceIds": ["visitdubai-deira"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "palm-character-and-links",
+      "claim": "Visit Dubai describes Palm Jumeirah as an island resort and beach area whose public-transport chain can involve metro, tram, walking and monorail connections.",
+      "sourceIds": ["visitdubai-palm"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "accommodation-category-choice",
+      "claim": "Visit Dubai distinguishes hotel, resort, apartment and villa-style accommodation, making property type and area separate planning decisions.",
+      "sourceIds": ["visitdubai-stays"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "itinerary-filter-patterns",
+      "claim": "The official itinerary directory supports planning by duration, trip type, family interest, neighborhood and stopover intent rather than one universal route.",
+      "sourceIds": ["visitdubai-itineraries"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "family-indoor-outdoor-mix",
+      "claim": "Official family guidance spans indoor, outdoor, beach and activity categories, so family plans should be matched to age, season and recovery time.",
+      "sourceIds": ["visitdubai-family", "visitdubai-weather"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "public-conduct-dress-photography",
+      "claim": "UAE government visitor guidance addresses respectful public conduct, modest dress in relevant public settings, and restrictions on photographing people or sensitive locations.",
+      "sourceIds": ["uae-social-responsibility", "israel-dubai-consular-guidance"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "controlled-medicine-check",
+      "claim": "UAE health guidance requires travelers to check whether a personal medicine is controlled and what approval or documentation is required before carrying it into the country.",
+      "sourceIds": ["uae-controlled-medicines", "israel-dubai-contacts"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "customs-prohibited-restricted-distinction",
+      "claim": "Dubai Customs distinguishes prohibited goods from restricted goods that require approval from the competent authority, so item-specific checks must precede travel.",
+      "sourceIds": ["dubai-customs-restricted-goods"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "tourism-sim-availability",
+      "claim": "The official Dubai city portal describes a tourism SIM distributed at airport immigration, but provider, eligibility and package details require arrival-time recheck.",
+      "sourceIds": ["dubai-tourism-sim"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "ramadan-lunar-recheck",
+      "claim": "Visit Dubai states that Ramadan dates follow the lunar calendar and visitor schedules and dining patterns can change, requiring year-specific recheck.",
+      "sourceIds": ["visitdubai-ramadan"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    }
+  ]
+}

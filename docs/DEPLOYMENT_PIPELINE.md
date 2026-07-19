@@ -62,7 +62,7 @@ Authenticated routes:
 
 ### Theme CI
 
-`.github/workflows/theme-ci.yml` validates theme/plugin PHP, JavaScript, shell scripts, theme policy, ZIP structure, and checksums. It publishes both installable ZIPs as artifacts.
+`.github/workflows/theme-ci.yml` validates theme/plugin PHP, JavaScript, shell scripts, theme policy, ZIP structure, and checksums. PHP runtime contracts and syntax run against an explicit 7.4 and 8.3 matrix before packaging, so the stated compatibility floor is not delegated to the runner default. It publishes both installable ZIPs as artifacts.
 
 ### Direct production deploy
 
@@ -90,15 +90,23 @@ Concurrent direct uploads remain operationally discouraged while a protected wor
 
 Automatic main-branch upload remains off until `AUTO_DEPLOY_PRODUCTION=true`. When enabled, `ACTIVATE_THEME=false` is mandatory.
 
+### Pre-mutation release requirements
+
+`theme/tra-vel-v2/release-requirements.json` is packaged and SHA-256-bound to the theme artifact. Before any WordPress mutation, the workflow now requires deployment gateway 0.3.0 or newer, Agent Core 0.7.0 or newer, the account-history, assisted-case, operator-queue, commercial-intent, durable-handoff, sourced-proposal, audited-proposal-action, commerce, VIP, and customer Trip Cockpit capabilities, their exact durable schemas, and an exact non-redirecting HTTP 404 for a random nonexistent public URL. A failed dependency or HTTP check stops before upload, so it cannot create a backup or trigger recovery.
+
+The 404 gate is intentionally incompatible with plugins that redirect every missing URL to the homepage. Disable or correctly scope that behavior before a theme release. Theme 1.20 also declares WordPress 6.6 as its minimum because it uses `theme.json` format version 3.
+
 ### Rollback
 
 `.github/workflows/rollback-theme.yml` requires production approval, an exact backup directory, the currently installed content fingerprint, the trusted fingerprint expected from that backup, and `ROLLBACK TRA-VEL V2`. The gateway verifies both fingerprints under its deployment lease before mutation, restores the named backup, and the workflow reruns smoke tests.
+
+The protected deployment job reserves 25 minutes for upload, verification, and recovery. Initial post-deploy status, identity, and route verification share one 360-second budget: status and identity checks consume the first part, and the route smoke test runs only for the remaining time under a hard process deadline. Failure or deadline exhaustion enters the same exact-backup recovery path. The post-rollback smoke test has its own 360-second hard deadline, preventing either verification phase from consuming the workflow's recovery reserve indefinitely.
 
 Obtain the exact backup name and current `installed_fingerprint` from the authenticated `GET /wp-json/tra-vel-deploy/v1/theme/status` response immediately before dispatching a manual rollback. Obtain `expected_restored_fingerprint` from the deployment receipt's `backup_content_sha256` or the matching prestate artifact that created that exact backup. Do not guess either fingerprint or reuse current-state evidence from an older status response.
 
 ### Agent Core deploy
 
-`.github/workflows/deploy-agent-core.yml` packages and validates the private agent plugin. A real dispatch requires the protected production environment, `DEPLOY TRA-VEL AGENT CORE`, and, when requested, `ACTIVATE TRA-VEL AGENT CORE`. The post-deploy gate performs six bounded, cache-busted checks with redirects disabled. It accepts only JSON, authenticates the operator queue without placing the Application Password in a command argument, and requires the exact manifest version, deployment receipt, capabilities, and transactional schema state. Retry logs contain only status, content type, and byte count. A 330-second outer watchdog prevents a slow response from consuming the job-level timeout before rollback can run. A failed update restores its named backup only after all checks are exhausted or the watchdog stops the verifier; a failed first install is deactivated and removed through the narrowly scoped recovery route.
+`.github/workflows/deploy-agent-core.yml` runs the Agent Core PHP contracts and syntax against 7.4 and 8.3 before its package job, then packages and validates the private agent plugin. A real dispatch requires the protected production environment, `DEPLOY TRA-VEL AGENT CORE`, and, when requested, `ACTIVATE TRA-VEL AGENT CORE`. The post-deploy gate performs six bounded, cache-busted checks with redirects disabled. It accepts only JSON, authenticates the operator queue without placing the Application Password in a command argument, and requires the exact manifest version, deployment receipt, capabilities, and transactional schema state. Retry logs contain only status, content type, and byte count. A 330-second outer watchdog prevents a slow response from consuming the job-level timeout before rollback can run. A failed update restores its named backup only after all checks are exhausted or the watchdog stops the verifier; a failed first install is deactivated and removed through the narrowly scoped recovery route.
 
 ## GitHub production environment
 
@@ -109,8 +117,9 @@ Variables:
 | `WP_SITE_URL` | `https://tra-vel.co.il` |
 | `DEPLOY_ENABLED` | `true` after the gateway test succeeds |
 | `ACTIVATE_THEME` | `false` |
-| `EXPECT_THEME_MARKER` | `false` until V2 is active |
-| `SMOKE_PATHS` | `/,/travel-map/,/thailand/` after those pages exist |
+| `EXPECT_THEME_MARKER` | `true` while V2 is the active theme |
+
+The production and rollback workflows intentionally ignore mutable smoke-path variables. Their route set comes from the versioned `scripts/deploy/smoke-routes.tsv` manifest, which currently covers the homepage, map, flagship guide, flights, hotels, packages, insurance, AI planner, both directories, Saved Trips, account, and partners. Every route has a stable, untranslated server-rendered identity marker. The homepage also renders `meta[name="tra-vel-release"]` from `TRA_VEL_V2_VERSION`; new-release smoke tests compare that value with the exact deployment manifest. Asset `?ver=` values remain file modification cache keys and are not treated as release identity. Exact-fingerprint rollback smoke may temporarily allow a missing release meta tag so a pre-marker backup such as 1.17 can still be recovered; any marker that is present must remain valid and match the expected version.
 
 Secrets:
 
@@ -131,7 +140,7 @@ Credential file:
 
 `C:\Users\janana\Documents\.codex-secrets\wordpress-app-passwords\tra-vel.co.il.credential.xml`
 
-Build and upload V2 without activating it:
+Build the theme from a clean Git revision first. The build is deterministic and refuses a dirty working tree. Then upload the exact archive bound to `dist/manifest.json` without activating it:
 
 ```powershell
 & 'C:\Users\janana\Documents\tra-vel-co-il\scripts\wp\deploy-theme-rest.ps1' `
@@ -139,23 +148,15 @@ Build and upload V2 without activating it:
   -DeploymentConfirmation 'DEPLOY TRA-VEL V2'
 ```
 
-Activate only after validation:
-
-```powershell
-& 'C:\Users\janana\Documents\tra-vel-co-il\scripts\wp\deploy-theme-rest.ps1' `
-  -SiteUrl 'https://tra-vel.co.il' `
-  -DeploymentConfirmation 'DEPLOY TRA-VEL V2' `
-  -Activate `
-  -ActivationConfirmation 'ACTIVATE TRA-VEL V2'
-```
+The local REST script is intentionally upload-only. It rejects activation input. Theme activation requires a separate, explicitly approved production procedure after visual, route, analytics, consent, legal, backup, rollback, and commercially complete journey checks are recorded.
 
 ## First live sequence
 
 1. Install deploy gateway 0.3.0 with `scripts/wp/bootstrap-deploy-gateway.ps1`; confirm the temporary snippet is inactive and neutralized or deleted.
 2. Confirm both authenticated theme and Agent Core status endpoints.
-3. Deploy and activate Agent Core 0.4.0 with the protected Agent Core workflow. Use `scripts/wp/bootstrap-agent-core.ps1` and `INSTALL TRA-VEL AGENT CORE` only when no Agent Core installation exists yet.
+3. Deploy and activate Agent Core 0.7.0 with the protected Agent Core workflow. Use `scripts/wp/bootstrap-agent-core.ps1` and `INSTALL TRA-VEL AGENT CORE` only when no Agent Core installation exists yet.
 4. Store the OpenAI key through `scripts/wp/configure-agent-key.ps1`; confirm encrypted storage without printing the secret.
 5. Create a real private run and verify the structured request, HttpOnly ownership cookie, event log, no supplier claims, and exact provider usage.
-6. Upload Tra-Vel V2 1.13.0 with the protected theme workflow. If V2 is already active, it stays active; otherwise activation requires a separately controlled operation after validation.
+6. Upload Tra-Vel V2 1.20.0 with the protected theme workflow. If V2 is already active, it stays active; otherwise activation requires a separately controlled operation after validation.
 7. Run public desktop/mobile, map, AI planner, and route smoke tests with at least three visual checkpoints.
 8. Preserve automatic upload as disabled until another complete update and rollback exercise passes.

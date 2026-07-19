@@ -454,10 +454,13 @@ class Tra_Vel_Quote_Case_Store {
 		return false !== $updated;
 	}
 
-	public function list_owned( $user_id, $guest_token_hash, $limit = 30 ) {
+	public function list_owned( $user_id, $guest_token_hash, $limit = 30, &$read_error = null ) {
 		global $wpdb;
-		$limit = min( 50, max( 1, absint( $limit ) ) );
+		$limit      = min( 50, max( 1, absint( $limit ) ) );
+		$read_error = '';
 		$select = 'SELECT c.*,r.request_snapshot AS current_request_snapshot FROM ' . self::cases_table() . ' c LEFT JOIN ' . self::revisions_table() . ' r ON r.case_id = c.id AND r.revision_no = c.current_revision';
+		$was_suppressed   = $wpdb->suppress_errors();
+		$wpdb->last_error = '';
 		if ( $user_id > 0 && strlen( (string) $guest_token_hash ) === 64 ) {
 			$rows = $wpdb->get_results( $wpdb->prepare( $select . ' WHERE (c.owner_user_id = %d OR (c.owner_user_id = 0 AND c.owner_token_hash = %s)) ORDER BY c.last_activity_at DESC LIMIT %d', absint( $user_id ), (string) $guest_token_hash, $limit ), ARRAY_A );
 		} elseif ( $user_id > 0 ) {
@@ -467,8 +470,13 @@ class Tra_Vel_Quote_Case_Store {
 		} else {
 			$rows = array();
 		}
+		$read_error = (string) $wpdb->last_error;
+		$wpdb->suppress_errors( $was_suppressed );
+		if ( '' !== $read_error || ! is_array( $rows ) ) {
+			return array();
+		}
 		$cases = array_map( array( $this, 'hydrate_case' ), is_array( $rows ) ? $rows : array() );
-		return $this->attach_creation_events( $cases, false );
+		return $this->attach_creation_events( $cases, false, $read_error );
 	}
 
 	public function list_operator( $status = '', $page = 1, $per_page = 30 ) {
@@ -597,7 +605,7 @@ class Tra_Vel_Quote_Case_Store {
 		return $this->mutate_case( $case, 'cancelled', $expected_version, 'quote_case.cancelled', 'traveler', $user_id, 'web', 'בקשת הסיוע בוטלה על ידי המטייל.', array(), $idempotency_key, 'case.cancel', false, $owner_guard );
 	}
 
-	public function record_handoff( $case_uuid, $expected_version, $principal, $channel, $provider, $expires_at, $idempotency_key ) {
+	public function record_handoff( $case_uuid, $expected_version, $principal, $channel, $provider, $target_digest, $expires_at, $idempotency_key ) {
 		$case = $this->get_case_by_uuid( $case_uuid );
 		if ( ! $case ) {
 			return new WP_Error( 'tra_vel_quote_case_missing', 'Quote case not found.', array( 'status' => 404 ) );
@@ -607,12 +615,16 @@ class Tra_Vel_Quote_Case_Store {
 			return new WP_Error( 'tra_vel_quote_case_forbidden', 'This private quote case does not belong to the current traveler.', array( 'status' => 403 ) );
 		}
 		$user_id = absint( $principal['user_id'] ?? 0 );
+		$target_digest = strtolower( (string) $target_digest );
+		if ( ! preg_match( '/^[a-f0-9]{64}$/', $target_digest ) ) {
+			return new WP_Error( 'tra_vel_quote_case_handoff_target_invalid', 'The assisted-contact target could not be bound to its audit record.', array( 'status' => 500 ) );
+		}
 		if ( ! Tra_Vel_Quote_Case_Policy::can_cancel( $case['status'] ) ) {
 			return new WP_Error( 'tra_vel_quote_case_handoff_inactive', 'This quote case no longer accepts assisted-contact handoffs.', array( 'status' => 409 ) );
 		}
 		$current_version = (int) $case['case_version'];
 		$expected_version = (int) $expected_version;
-		$handoff_payload = array( 'channel' => sanitize_key( $channel ), 'provider' => sanitize_key( $provider ), 'expires_at' => (string) $expires_at, 'dispatched' => false );
+		$handoff_payload = array( 'channel' => sanitize_key( $channel ), 'provider' => sanitize_key( $provider ), 'target_digest' => $target_digest, 'expires_at' => (string) $expires_at, 'dispatched' => false );
 		$principal_hash = hash( 'sha256', 'traveler:' . $user_id . ':' . $case['case_uuid'] );
 		$operation_digest = $this->mutation_operation_digest( $case, $case['status'], $expected_version, 'handoff.prepared', $handoff_payload );
 		$idempotent = $this->idempotent_result( 'handoff.prepare', $principal_hash, $idempotency_key, $operation_digest );
@@ -623,11 +635,11 @@ class Tra_Vel_Quote_Case_Store {
 			if ( ! $this->owner_guard_matches( $idempotent, $owner_guard ) ) {
 				return new WP_Error( 'tra_vel_quote_case_forbidden', 'Quote-case ownership changed before this handoff replay.', array( 'status' => 403 ) );
 			}
-			$event = $this->find_reusable_handoff( $case['id'], $current_version, $channel, $provider, $owner_guard );
+			$event = $this->find_reusable_handoff( $case['id'], $current_version, $channel, $provider, $target_digest, $owner_guard );
 			return array( 'case' => $idempotent, 'event' => $event, 'replayed' => true, 'reused' => (bool) $event );
 		}
 		if ( $expected_version === $current_version || $expected_version + 1 === $current_version ) {
-			$reusable = $this->find_reusable_handoff( $case['id'], $current_version, $channel, $provider, $owner_guard );
+			$reusable = $this->find_reusable_handoff( $case['id'], $current_version, $channel, $provider, $target_digest, $owner_guard );
 			if ( $reusable ) {
 				return array( 'case' => $case, 'event' => $reusable, 'replayed' => true, 'reused' => true );
 			}
@@ -1079,6 +1091,19 @@ class Tra_Vel_Quote_Case_Store {
 
 	private function delete_retention_batch( $now, $after_id, $limit ) {
 		global $wpdb;
+		$proposal_table = '';
+		if ( class_exists( 'Tra_Vel_Assisted_Proposal_Store' ) ) {
+			if ( ! method_exists( 'Tra_Vel_Assisted_Proposal_Store', 'is_ready' ) || ! method_exists( 'Tra_Vel_Assisted_Proposal_Store', 'proposals_table' ) || ! Tra_Vel_Assisted_Proposal_Store::is_ready() ) {
+				return new WP_Error( 'tra_vel_quote_cleanup_proposal_store_unavailable', 'Quote-case retention cleanup is waiting for assisted-proposal storage.' );
+			}
+			$proposal_table = (string) Tra_Vel_Assisted_Proposal_Store::proposals_table();
+			if ( $wpdb->prefix . 'tra_vel_assisted_proposals' !== $proposal_table ) {
+				return new WP_Error( 'tra_vel_quote_cleanup_proposal_store_unavailable', 'Quote-case retention cleanup could not verify assisted-proposal storage.' );
+			}
+		}
+		$proposal_guard = '' !== $proposal_table
+			? ' AND NOT EXISTS (SELECT 1 FROM ' . $proposal_table . ' ap WHERE ap.quote_case_id = c.id AND ap.quote_case_uuid = c.case_uuid)'
+			: '';
 		if ( false === $wpdb->query( 'START TRANSACTION' ) ) {
 			return new WP_Error( 'tra_vel_quote_cleanup_transaction_failed', 'Retention cleanup could not start a transaction.' );
 		}
@@ -1086,7 +1111,7 @@ class Tra_Vel_Quote_Case_Store {
 		$wpdb->last_error = '';
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
-				'SELECT id,case_uuid FROM ' . self::cases_table() . ' WHERE id > %d AND retention_until < %s AND legal_hold = 0 ORDER BY id ASC LIMIT %d FOR UPDATE',
+				'SELECT c.id,c.case_uuid FROM ' . self::cases_table() . ' c WHERE c.id > %d AND c.retention_until < %s AND c.legal_hold = 0' . $proposal_guard . ' ORDER BY c.id ASC LIMIT %d FOR UPDATE',
 				absint( $after_id ), (string) $now, absint( $limit )
 			),
 			ARRAY_A
@@ -1115,7 +1140,7 @@ class Tra_Vel_Quote_Case_Store {
 		$deleted_events      = $wpdb->query( $wpdb->prepare( 'DELETE FROM ' . self::events_table() . " WHERE case_id IN ({$id_placeholders})", $case_ids ) );
 		$deleted_revisions   = $wpdb->query( $wpdb->prepare( 'DELETE FROM ' . self::revisions_table() . " WHERE case_id IN ({$id_placeholders})", $case_ids ) );
 		$parent_params       = array_merge( $case_ids, array( (string) $now ) );
-		$deleted_cases       = $wpdb->query( $wpdb->prepare( 'DELETE FROM ' . self::cases_table() . " WHERE id IN ({$id_placeholders}) AND retention_until < %s AND legal_hold = 0", $parent_params ) );
+		$deleted_cases       = $wpdb->query( $wpdb->prepare( 'DELETE c FROM ' . self::cases_table() . " c WHERE c.id IN ({$id_placeholders}) AND c.retention_until < %s AND c.legal_hold = 0" . $proposal_guard, $parent_params ) );
 		if ( false === $deleted_idempotency || false === $deleted_events || false === $deleted_revisions || count( $case_ids ) !== (int) $deleted_cases ) {
 			$wpdb->query( 'ROLLBACK' );
 			return new WP_Error( 'tra_vel_quote_cleanup_delete_failed', 'Retention cleanup rolled back an incomplete deletion batch.' );
@@ -1337,7 +1362,7 @@ class Tra_Vel_Quote_Case_Store {
 		);
 	}
 
-	private function find_reusable_handoff( $case_id, $case_version, $channel, $provider, $owner_guard ) {
+	private function find_reusable_handoff( $case_id, $case_version, $channel, $provider, $target_digest, $owner_guard ) {
 		global $wpdb;
 		$cutoff = gmdate( 'Y-m-d H:i:s', time() - self::HANDOFF_REUSE_SECONDS );
 		$sql    = 'SELECT e.* FROM ' . self::events_table() . ' e INNER JOIN ' . self::cases_table() . ' c ON c.id = e.case_id WHERE e.case_id = %d AND e.case_version = %d AND e.event_type = %s AND e.created_at >= %s';
@@ -1362,7 +1387,7 @@ class Tra_Vel_Quote_Case_Store {
 		}
 		$event = $this->hydrate_event( $row );
 		$data  = is_array( $event['data'] ?? null ) ? $event['data'] : array();
-		if ( sanitize_key( $channel ) !== ( $data['channel'] ?? '' ) || sanitize_key( $provider ) !== ( $data['provider'] ?? '' ) || strtotime( (string) ( $data['expires_at'] ?? '' ) ) <= time() + self::HANDOFF_MIN_REMAINING_SECONDS ) {
+		if ( sanitize_key( $channel ) !== ( $data['channel'] ?? '' ) || sanitize_key( $provider ) !== ( $data['provider'] ?? '' ) || ! hash_equals( $target_digest, (string) ( $data['target_digest'] ?? '' ) ) || strtotime( (string) ( $data['expires_at'] ?? '' ) ) <= time() + self::HANDOFF_MIN_REMAINING_SECONDS ) {
 			return null;
 		}
 		return $event;
@@ -1404,7 +1429,7 @@ class Tra_Vel_Quote_Case_Store {
 			return false;
 		}
 		return array(
-			'contract_version' => Tra_Vel_Quote_Case_Policy::CONTRACT_VERSION,
+			'contract_version' => Tra_Vel_Quote_Case_Policy::EVENT_CONTRACT_VERSION,
 			'event_id'        => $event_uuid,
 			'sequence'        => absint( $sequence ),
 			'type'            => (string) $type,
@@ -1445,8 +1470,9 @@ class Tra_Vel_Quote_Case_Store {
 		return $row;
 	}
 
-	private function attach_creation_events( $cases, $include_internal ) {
+	private function attach_creation_events( $cases, $include_internal, &$read_error = null ) {
 		global $wpdb;
+		$read_error = '';
 		if ( ! $cases ) {
 			return array();
 		}
@@ -1458,13 +1484,24 @@ class Tra_Vel_Quote_Case_Store {
 			$sql .= ' AND visibility = %s';
 			$params[] = 'public';
 		}
-		$rows = $wpdb->get_results( $wpdb->prepare( $sql, $params ), ARRAY_A );
+		$was_suppressed   = $wpdb->suppress_errors();
+		$wpdb->last_error = '';
+		$rows             = $wpdb->get_results( $wpdb->prepare( $sql, $params ), ARRAY_A );
+		$read_error       = (string) $wpdb->last_error;
+		$wpdb->suppress_errors( $was_suppressed );
+		if ( '' !== $read_error || ! is_array( $rows ) ) {
+			return array();
+		}
 		$by_case = array();
-		foreach ( is_array( $rows ) ? $rows : array() as $row ) {
+		foreach ( $rows as $row ) {
 			$by_case[ (int) $row['case_id'] ] = array( $this->hydrate_event( $row ) );
 		}
+		if ( count( $by_case ) !== count( $ids ) ) {
+			$read_error = 'missing quote creation event';
+			return array();
+		}
 		foreach ( $cases as &$case ) {
-			$case['_embedded_events'] = $by_case[ (int) $case['id'] ] ?? array();
+			$case['_embedded_events'] = $by_case[ (int) $case['id'] ];
 		}
 		unset( $case );
 		return $cases;
@@ -1473,7 +1510,7 @@ class Tra_Vel_Quote_Case_Store {
 	private function hydrate_event( $row ) {
 		$payload = json_decode( (string) $row['payload'], true );
 		return array(
-			'contract_version' => Tra_Vel_Quote_Case_Policy::CONTRACT_VERSION,
+			'contract_version' => Tra_Vel_Quote_Case_Policy::EVENT_CONTRACT_VERSION,
 			'event_id'        => (string) $row['event_uuid'],
 			'sequence'        => (int) $row['sequence_no'],
 			'type'            => (string) $row['event_type'],

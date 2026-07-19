@@ -33,20 +33,20 @@
     "position": { "x": 42, "y": 31 }
   },
   "insurance_catalog": {
-    "none": { "id": "none", "name": "ללא ביטוח בחישוב", "daily_adult": 0, "daily_child": 0, "medical_limit": 0, "service": "לא נכלל", "purchasable": false },
-    "essential": { "id": "demo-essential", "name": "Essential", "daily_adult": 2.4, "daily_child": 1.55, "medical_limit": 5000000, "service": "מוקד חירום 24/7", "purchasable": false },
-    "assisted": { "id": "demo-assisted", "name": "Assisted", "daily_adult": 3.8, "daily_child": 2.45, "medical_limit": 5000000, "service": "מוקד חירום 24/7 וצ׳אט", "purchasable": false },
-    "extended": { "id": "demo-extended", "name": "Extended", "daily_adult": 5.4, "daily_child": 3.5, "medical_limit": 10000000, "service": "מוקד חירום ושירות דיגיטלי", "purchasable": false }
+    "none": { "id": "none", "name": "ללא ביטוח בתרחיש", "daily_adult": 0, "daily_child": 0, "medical_limit": 0, "service": "לא נכלל", "purchasable": false },
+    "essential": { "id": "demo-essential", "name": "תרחיש בסיסי לדוגמה", "daily_adult": 2.4, "daily_child": 1.55, "medical_limit": 5000000, "service": "שירות חירום לדוגמה", "purchasable": false },
+    "assisted": { "id": "demo-assisted", "name": "תרחיש עם סיוע לדוגמה", "daily_adult": 3.8, "daily_child": 2.45, "medical_limit": 5000000, "service": "שירות חירום וצ׳אט לדוגמה", "purchasable": false },
+    "extended": { "id": "demo-extended", "name": "תרחיש מורחב לדוגמה", "daily_adult": 5.4, "daily_child": 3.5, "medical_limit": 10000000, "service": "שירות חירום ודיגיטל לדוגמה", "purchasable": false }
   },
   "packages": [
     {
       "id": "budapest-smart-demo",
-      "name": "החבילה החכמה לעיר",
-      "badge": "האיזון המומלץ",
+      "name": "תרחיש עירוני מאוזן",
+      "badge": "איזון לדוגמה",
       "base_score": 96,
       "flight": {
-        "airline": "EL AL",
-        "airline_code": "LY",
+        "airline": "חברת תעופה ישירה לדוגמה",
+        "airline_code": "D1",
         "direct": true,
         "stops": 0,
         "duration_minutes": 215,
@@ -62,7 +62,7 @@
       },
       "stay": {
         "property_id": "danube-house-demo",
-        "name": "Danube House Budapest",
+        "name": "דוגמת לינה במרכז הדנובה",
         "area_id": "district-v",
         "area_name": "מרכז העיר והדנובה",
         "stars": 4,
@@ -90,12 +90,12 @@
     },
     {
       "id": "budapest-value-demo",
-      "name": "בודפשט במחיר מינימלי",
-      "badge": "העלות הנמוכה",
+      "name": "תרחיש בעלות נמוכה",
+      "badge": "עלות תכנון נמוכה",
       "base_score": 82,
       "flight": {
-        "airline": "Wizz Air",
-        "airline_code": "W6",
+        "airline": "חברת תעופה חסכונית לדוגמה",
+        "airline_code": "D2",
         "direct": true,
         "stops": 0,
         "duration_minutes": 205,
@@ -111,7 +111,7 @@
       },
       "stay": {
         "property_id": "quarter-social-demo",
-        "name": "Quarter Social Rooms",
+        "name": "דוגמת לינה ברובע היהודי",
         "area_id": "jewish-quarter",
         "area_name": "הרובע היהודי",
         "stars": 3,
@@ -139,12 +139,12 @@
     },
     {
       "id": "budapest-flex-demo",
-      "name": "גמישות ונוחות מלאה",
-      "badge": "הכי רגוע",
+      "name": "תרחיש גמיש ונוח",
+      "badge": "גמישות לדוגמה",
       "base_score": 91,
       "flight": {
-        "airline": "EL AL",
-        "airline_code": "LY",
+        "airline": "חברת תעופה גמישה לדוגמה",
+        "airline_code": "D3",
         "direct": true,
         "stops": 0,
         "duration_minutes": 215,
@@ -160,7 +160,7 @@
       },
       "stay": {
         "property_id": "castle-view-demo",
-        "name": "Castle View Residence",
+        "name": "דוגמת לינה שקטה בבודה",
         "area_id": "buda-castle",
         "area_name": "בודה ואזור המצודה",
         "stars": 4,
@@ -188,12 +188,12 @@
     },
     {
       "id": "budapest-family-demo",
-      "name": "החבילה המשפחתית",
-      "badge": "מרחב למשפחה",
+      "name": "תרחיש משפחתי",
+      "badge": "התאמה למשפחה",
       "base_score": 92,
       "flight": {
-        "airline": "Arkia",
-        "airline_code": "IZ",
+        "airline": "חברת תעופה משפחתית לדוגמה",
+        "airline_code": "D4",
         "direct": true,
         "stops": 0,
         "duration_minutes": 220,
@@ -209,7 +209,7 @@
       },
       "stay": {
         "property_id": "park-family-demo",
-        "name": "Park Family Aparthotel",
+        "name": "דוגמת דירת משפחה ליד הפארק",
         "area_id": "city-park",
         "area_name": "פארק העיר והגיבורים",
         "stars": 4,

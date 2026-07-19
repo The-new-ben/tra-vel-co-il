@@ -1,0 +1,67 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://tra-vel.co.il/schemas/benefit-program-v1.schema.json",
+  "title": "Tra-Vel benefit program catalogue record",
+  "description": "A source-backed, non-transactional loyalty or travel-benefit program identity. It contains no member credential or numeric campaign promise.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "program_id",
+    "owner_id",
+    "display_name",
+    "unit_code",
+    "unit_type",
+    "supported_operations",
+    "status",
+    "integration_state",
+    "source",
+    "commercial_truth"
+  ],
+  "properties": {
+    "contract_version": { "const": "1.0.0" },
+    "program_id": { "type": "string", "pattern": "^program_[a-z0-9][a-z0-9_]{2,55}$", "maxLength": 64 },
+    "owner_id": { "type": "string", "pattern": "^[a-z][a-z0-9_]{2,63}$", "maxLength": 64 },
+    "display_name": { "type": "string", "minLength": 2, "maxLength": 100 },
+    "unit_code": { "type": "string", "pattern": "^[a-z][a-z0-9_]{1,31}$", "maxLength": 32 },
+    "unit_type": { "enum": ["points", "program_value_minor", "status_currency", "cashback_minor"] },
+    "supported_operations": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 6,
+      "uniqueItems": true,
+      "items": { "enum": ["read_balance", "quote", "redeem", "convert", "earn", "read_status"] }
+    },
+    "status": { "enum": ["catalogued", "active", "suspended", "retired", "announced_not_operational", "unverified"] },
+    "integration_state": { "$ref": "#/definitions/integration_state" },
+    "source": { "$ref": "#/definitions/source" },
+    "commercial_truth": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["live_connection", "live_redemption"],
+      "properties": {
+        "live_connection": { "const": false },
+        "live_redemption": { "const": false }
+      }
+    }
+  },
+  "definitions": {
+    "integration_state": {
+      "enum": ["not_configured", "source_catalogued", "manual_planning_only", "announced_not_operational", "provider_authorization_required"]
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["authority", "official_source_url", "source_content_digest", "observed_at_utc", "fresh_until_utc", "locale", "review_state"],
+      "properties": {
+        "authority": { "enum": ["signed_partner_api", "provider_authorized_api", "official_rules", "official_product_page", "provider_support_confirmation", "customer_evidence", "customer_assertion"] },
+        "official_source_url": { "type": ["string", "null"], "pattern": "^https://", "maxLength": 2048 },
+        "source_content_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "observed_at_utc": { "type": "string", "format": "date-time" },
+        "fresh_until_utc": { "type": "string", "format": "date-time" },
+        "locale": { "type": "string", "pattern": "^[a-z]{2,3}(?:-[A-Z]{2})?$" },
+        "review_state": { "enum": ["unreviewed", "reviewed", "quarantined", "superseded"] }
+      }
+    }
+  }
+}

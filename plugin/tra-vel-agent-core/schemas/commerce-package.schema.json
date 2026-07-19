@@ -1,0 +1,226 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://tra-vel.co.il/schemas/commerce-package-v1.schema.json",
+  "title": "Tra-Vel immutable commerce sandbox package",
+  "description": "An atomic composition of versioned component offers without an unsupported savings claim.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "environment",
+    "package_ref",
+    "version",
+    "owner_scope_digest",
+    "search_session_ref",
+    "status",
+    "title",
+    "components",
+    "pricing",
+    "comparison",
+    "revalidation",
+    "itinerary",
+    "package_digest",
+    "created_at",
+    "updated_at",
+    "expires_at",
+    "sandbox_truth",
+    "data_boundary"
+  ],
+  "properties": {
+    "contract_version": { "const": "1.0.0" },
+    "environment": { "const": "sandbox" },
+    "package_ref": { "$ref": "#/definitions/packageRef" },
+    "version": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+    "owner_scope_digest": { "$ref": "#/definitions/digest" },
+    "search_session_ref": { "$ref": "#/definitions/sessionRef" },
+    "status": { "enum": ["draft", "composed", "revalidation_required", "expired", "invalid"] },
+    "title": { "type": "string", "minLength": 1, "maxLength": 160 },
+    "components": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 32,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "component_ref",
+          "role",
+          "vertical",
+          "provider_id",
+          "provider_reference_digest",
+          "offer_ref",
+          "offer_version",
+          "offer_digest",
+          "required",
+          "sequence"
+        ],
+        "properties": {
+          "component_ref": { "$ref": "#/definitions/componentRef" },
+          "role": { "enum": ["outbound", "inbound", "stay", "arrival", "departure", "experience", "meal", "coverage", "connection", "gear"] },
+          "vertical": { "$ref": "#/definitions/componentVertical" },
+          "provider_id": { "type": "string", "pattern": "^[a-z][a-z0-9_]{2,63}$", "maxLength": 64 },
+          "provider_reference_digest": { "$ref": "#/definitions/digest" },
+          "offer_ref": { "$ref": "#/definitions/offerRef" },
+          "offer_version": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+          "offer_digest": { "$ref": "#/definitions/digest" },
+          "required": { "type": "boolean" },
+          "sequence": { "type": "integer", "minimum": 1, "maximum": 32 }
+        }
+      }
+    },
+    "pricing": { "$ref": "#/definitions/moneyLedger" },
+    "comparison": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["discount_status", "savings_amount_minor", "comparator_digest"],
+      "properties": {
+        "discount_status": { "const": "not_claimed" },
+        "savings_amount_minor": { "const": 0 },
+        "comparator_digest": { "const": null }
+      }
+    },
+    "revalidation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "all_components_required", "state", "checked_at"],
+      "properties": {
+        "mode": { "const": "atomic" },
+        "all_components_required": { "const": true },
+        "state": { "enum": ["not_started", "fresh", "changed", "failed"] },
+        "checked_at": { "$ref": "#/definitions/nullableDateTime" }
+      }
+    },
+    "itinerary": {
+      "type": "array",
+      "maxItems": 64,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["sequence", "day", "component_ref", "place_refs", "label"],
+        "properties": {
+          "sequence": { "type": "integer", "minimum": 1, "maximum": 64 },
+          "day": { "type": "integer", "minimum": 1, "maximum": 365 },
+          "component_ref": { "$ref": "#/definitions/componentRef" },
+          "place_refs": {
+            "type": "array",
+            "maxItems": 8,
+            "uniqueItems": true,
+            "items": { "$ref": "#/definitions/placeRef" }
+          },
+          "label": { "type": "string", "minLength": 1, "maxLength": 160 }
+        }
+      }
+    },
+    "package_digest": { "$ref": "#/definitions/digest" },
+    "created_at": { "$ref": "#/definitions/dateTime" },
+    "updated_at": { "$ref": "#/definitions/dateTime" },
+    "expires_at": { "$ref": "#/definitions/dateTime" },
+    "sandbox_truth": { "$ref": "#/definitions/sandboxTruth" },
+    "data_boundary": { "$ref": "#/definitions/dataBoundary" }
+  },
+  "definitions": {
+    "componentVertical": {
+      "enum": ["flight", "accommodation", "transfer", "activity", "dining", "insurance", "connectivity", "equipment"]
+    },
+    "packageRef": {
+      "type": "string",
+      "pattern": "^tv_package_[A-Za-z0-9_-]{16,96}$",
+      "maxLength": 120
+    },
+    "sessionRef": {
+      "type": "string",
+      "pattern": "^tv_session_[A-Za-z0-9_-]{16,96}$",
+      "maxLength": 120
+    },
+    "componentRef": {
+      "type": "string",
+      "pattern": "^tv_component_[A-Za-z0-9_-]{16,96}$",
+      "maxLength": 120
+    },
+    "offerRef": {
+      "type": "string",
+      "pattern": "^tv_offer_[A-Za-z0-9_-]{16,96}$",
+      "maxLength": 120
+    },
+    "placeRef": {
+      "type": "string",
+      "pattern": "^tv_place_[A-Za-z0-9_-]{16,96}$",
+      "maxLength": 120
+    },
+    "digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "dateTime": { "type": "string", "format": "date-time", "pattern": "Z$" },
+    "nullableDateTime": { "type": ["string", "null"], "format": "date-time", "pattern": "Z$" },
+    "moneyLedger": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "currency",
+        "minor_unit",
+        "price_scope",
+        "line_items",
+        "subtotal_amount_minor",
+        "tax_amount_minor",
+        "fee_amount_minor",
+        "credit_amount_minor",
+        "total_amount_minor",
+        "tax_state",
+        "fee_state"
+      ],
+      "properties": {
+        "currency": { "type": "string", "pattern": "^[A-Z]{3}$" },
+        "minor_unit": { "type": "integer", "minimum": 0, "maximum": 3 },
+        "price_scope": { "const": "package_total" },
+        "line_items": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 128,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["code", "label", "kind", "direction", "amount_minor", "component_ref", "evidence_digest"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[a-z0-9]+(?:_[a-z0-9]+)*$", "maxLength": 60 },
+              "label": { "type": "string", "minLength": 1, "maxLength": 100 },
+              "kind": { "enum": ["base", "tax", "fee", "addon", "credit"] },
+              "direction": { "enum": ["debit", "credit"] },
+              "amount_minor": { "type": "integer", "minimum": 0, "maximum": 1000000000000 },
+              "component_ref": { "$ref": "#/definitions/componentRef" },
+              "evidence_digest": { "$ref": "#/definitions/digest" }
+            }
+          }
+        },
+        "subtotal_amount_minor": { "type": "integer", "minimum": 0, "maximum": 1000000000000 },
+        "tax_amount_minor": { "type": "integer", "minimum": 0, "maximum": 1000000000000 },
+        "fee_amount_minor": { "type": "integer", "minimum": 0, "maximum": 1000000000000 },
+        "credit_amount_minor": { "type": "integer", "minimum": 0, "maximum": 1000000000000 },
+        "total_amount_minor": { "type": "integer", "minimum": 0, "maximum": 1000000000000 },
+        "tax_state": { "enum": ["included", "excluded", "unknown"] },
+        "fee_state": { "enum": ["included", "excluded", "unknown"] }
+      }
+    },
+    "sandboxTruth": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["simulated_inventory", "real_supplier_request", "real_inventory_hold", "real_charge", "real_booking", "real_policy_issuance", "real_settlement"],
+      "properties": {
+        "simulated_inventory": { "const": true },
+        "real_supplier_request": { "const": false },
+        "real_inventory_hold": { "const": false },
+        "real_charge": { "const": false },
+        "real_booking": { "const": false },
+        "real_policy_issuance": { "const": false },
+        "real_settlement": { "const": false }
+      }
+    },
+    "dataBoundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["raw_supplier_reference_exposed", "raw_payment_data_exposed", "medical_data_exposed"],
+      "properties": {
+        "raw_supplier_reference_exposed": { "const": false },
+        "raw_payment_data_exposed": { "const": false },
+        "medical_data_exposed": { "const": false }
+      }
+    }
+  }
+}

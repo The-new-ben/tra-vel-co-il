@@ -201,11 +201,22 @@ def validate_remote_contract(
     require(health.get("contract_version") == "1.0.0", "Health contract version is unexpected.")
     capabilities = health.get("capabilities")
     require(isinstance(capabilities, dict), "Health capabilities are missing.")
+    require(capabilities.get("account_plan_history") is True, "Account plan history is not ready.")
     require(capabilities.get("assisted_quote_cases") is True, "Assisted quote cases are not ready.")
     require(capabilities.get("operator_queue") is True, "Operator queue is not ready.")
+    require(capabilities.get("commercial_intents") is True, "Commercial intents are not ready.")
+    require(capabilities.get("durable_commercial_handoffs") is True, "Durable commercial handoffs are not ready.")
+    require(capabilities.get("sourced_assisted_proposals") is True, "Sourced assisted proposals are not ready.")
+    require(capabilities.get("audited_proposal_actions") is True, "Audited proposal actions are not ready.")
+    require(capabilities.get("no_login_scoped_sessions") is True, "No-login scoped sessions are not ready.")
+    require(capabilities.get("customer_trip_cockpit") is True, "Customer Trip Cockpit is not ready.")
     require(capabilities.get("supplier_search") is False, "Health contract overstates supplier search.")
+    require(capabilities.get("supplier_dispatch") is False, "Health contract overstates supplier dispatch.")
     require(capabilities.get("proposal_generation") is False, "Health contract overstates proposal generation.")
+    require(capabilities.get("payment_execution") is False, "Health contract overstates payment execution.")
     require(capabilities.get("booking_execution") is False, "Health contract overstates booking execution.")
+    require(capabilities.get("reservation_execution") is False, "Health contract overstates reservation execution.")
+    require(capabilities.get("ticket_issuance") is False, "Health contract overstates ticket issuance.")
 
     agent_store = health.get("agent_store")
     require(isinstance(agent_store, dict), "Agent store health is missing.")
@@ -241,6 +252,82 @@ def validate_remote_contract(
     }
     for key, expected in expected_quote_store.items():
         require(quote_store.get(key) == expected, f"Quote-case store {key} is not ready.")
+
+    proposal_store = health.get("assisted_proposal_store")
+    require(isinstance(proposal_store, dict), "Assisted-proposal store health is missing.")
+    expected_proposal_store = {
+        "schema_version": "1.0.0",
+        "installed_schema_version": "1.0.0",
+        "idempotency_days": 7,
+        "max_proposals_per_case": 12,
+        "max_revisions_per_proposal": 20,
+        "max_snapshot_bytes": 524288,
+        "expected_tables": 5,
+        "ready_tables": 5,
+        "transactional_tables": 5,
+        "required_indexes": 9,
+        "ready_indexes": 9,
+        "required_indexes_ready": True,
+        "inspection_errors": [],
+        "tables_ready": True,
+    }
+    for key, expected in expected_proposal_store.items():
+        require(proposal_store.get(key) == expected, f"Assisted-proposal store {key} is not ready.")
+
+    commercial_store = health.get("commercial_intent_store")
+    require(isinstance(commercial_store, dict), "Commercial-intent store health is missing.")
+    expected_commercial_store = {
+        "schema_version": "1.0.0",
+        "installed_schema_version": "1.0.0",
+        "tables_ready": True,
+        "expected_tables": 3,
+        "ready_tables": 3,
+        "transactional_tables": 3,
+        "required_indexes": 5,
+        "ready_indexes": 5,
+        "required_indexes_ready": True,
+    }
+    for key, expected in expected_commercial_store.items():
+        require(commercial_store.get(key) == expected, f"Commercial-intent store {key} is not ready.")
+
+    capability_store = health.get("vip_capability_session_store")
+    require(isinstance(capability_store, dict), "Capability-session store health is missing.")
+    expected_capability_store = {
+        "schema_version": "1.1.0",
+        "installed_schema_version": "1.1.0",
+        "grant_retention_days": 30,
+        "session_retention_days": 30,
+        "idempotency_days": 2,
+        "session_ttl_seconds": 1800,
+        "expected_tables": 4,
+        "ready_tables": 4,
+        "transactional_tables": 4,
+        "required_indexes": 7,
+        "ready_indexes": 7,
+        "required_indexes_ready": True,
+        "tables_ready": True,
+    }
+    for key, expected in expected_capability_store.items():
+        require(capability_store.get(key) == expected, f"Capability-session store {key} is not ready.")
+
+    customer_cockpit_store = health.get("customer_trip_cockpit_store")
+    require(isinstance(customer_cockpit_store, dict), "Customer Trip Cockpit store health is missing.")
+    expected_customer_cockpit_store = {
+        "schema_version": "1.0.0",
+        "installed_schema_version": "1.0.0",
+        "retention_days": 400,
+        "max_projection_bytes": 524288,
+        "expected_tables": 3,
+        "ready_tables": 3,
+        "transactional_tables": 3,
+        "required_indexes": 13,
+        "ready_indexes": 13,
+        "required_indexes_ready": True,
+        "inspection_errors": [],
+        "tables_ready": True,
+    }
+    for key, expected in expected_customer_cockpit_store.items():
+        require(customer_cockpit_store.get(key) == expected, f"Customer Trip Cockpit store {key} is not ready.")
 
     require(isinstance(queue.get("cases"), list), "Operator queue cases are missing.")
     require(isinstance(queue.get("meta"), dict), "Operator queue metadata is missing.")

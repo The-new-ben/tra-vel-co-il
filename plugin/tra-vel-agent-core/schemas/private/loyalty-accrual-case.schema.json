@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://tra-vel.co.il/schemas/private/loyalty-accrual-case.schema.json",
+  "title": "Tra-Vel private loyalty accrual case",
+  "type": "object", "additionalProperties": false,
+  "required": ["contract_version", "environment", "accrual_case_ref", "record_digest", "idempotency_digest", "account_scope_digest", "program_ref", "member_ref", "purchase_ref", "order_item_ref", "unit_code", "bill", "accrual", "timeline", "resolution", "observed_at", "boundary"],
+  "properties": {
+    "contract_version": { "const": "1.1.0" }, "environment": { "const": "simulation" },
+    "accrual_case_ref": { "type": "string", "pattern": "^loyalty_accrual_[A-Za-z0-9][A-Za-z0-9_-]{15,95}$" },
+    "record_digest": { "$ref": "#/definitions/digest" }, "idempotency_digest": { "$ref": "#/definitions/digest" }, "account_scope_digest": { "$ref": "#/definitions/digest" },
+    "program_ref": { "$ref": "#/definitions/programRef" }, "member_ref": { "$ref": "#/definitions/memberRef" },
+    "purchase_ref": { "type": "string", "pattern": "^purchase_[A-Za-z0-9][A-Za-z0-9_-]{15,95}$" },
+    "order_item_ref": { "type": "string", "pattern": "^tv_order_item_[A-Za-z0-9][A-Za-z0-9_-]{15,95}$" },
+    "unit_code": { "$ref": "#/definitions/identifier" },
+    "bill": {
+      "type": "object", "additionalProperties": false, "required": ["state", "currency", "amount_minor", "posted_at", "evidence_digest"],
+      "properties": { "state": { "const": "posted" }, "currency": { "type": "string", "pattern": "^[A-Z]{3}$" }, "amount_minor": { "$ref": "#/definitions/positiveValue" }, "posted_at": { "$ref": "#/definitions/dateTime" }, "evidence_digest": { "$ref": "#/definitions/digest" } }
+    },
+    "accrual": {
+      "type": "object", "additionalProperties": false,
+      "required": ["state", "expected_integer", "credited_integer", "pending_integer", "disputed_integer", "expired_integer", "rejected_integer", "unit_code", "eligibility_basis_digest", "expiry_at"],
+      "properties": { "state": { "$ref": "#/definitions/currentAccrualState" }, "expected_integer": { "$ref": "#/definitions/value" }, "credited_integer": { "$ref": "#/definitions/value" }, "pending_integer": { "$ref": "#/definitions/value" }, "disputed_integer": { "$ref": "#/definitions/value" }, "expired_integer": { "$ref": "#/definitions/value" }, "rejected_integer": { "$ref": "#/definitions/value" }, "unit_code": { "$ref": "#/definitions/identifier" }, "eligibility_basis_digest": { "$ref": "#/definitions/digest" }, "expiry_at": { "anyOf": [{ "$ref": "#/definitions/dateTime" }, { "type": "null" }] } }
+    },
+    "timeline": { "type": "array", "minItems": 1, "maxItems": 30, "items": { "$ref": "#/definitions/timelineEvent" } },
+    "resolution": {
+      "type": "object", "additionalProperties": false,
+      "required": ["case_ref", "next_action_code", "deadline_at", "provider_claim_reference_digest", "bill_posted_implies_credit", "automatic_credit_allowed"],
+      "properties": { "case_ref": { "type": "string", "pattern": "^service_case_[A-Za-z0-9][A-Za-z0-9_-]{15,95}$" }, "next_action_code": { "$ref": "#/definitions/identifier" }, "deadline_at": { "anyOf": [{ "$ref": "#/definitions/dateTime" }, { "type": "null" }] }, "provider_claim_reference_digest": { "anyOf": [{ "$ref": "#/definitions/digest" }, { "type": "null" }] }, "bill_posted_implies_credit": { "const": false }, "automatic_credit_allowed": { "const": false } }
+    },
+    "observed_at": { "$ref": "#/definitions/dateTime" }, "boundary": { "$ref": "#/definitions/boundary" }
+  },
+  "definitions": {
+    "digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" }, "identifier": { "type": "string", "pattern": "^[a-z][a-z0-9_]{1,63}$" }, "dateTime": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$" },
+    "programRef": { "type": "string", "pattern": "^program_[A-Za-z0-9][A-Za-z0-9_-]{15,95}$" }, "memberRef": { "type": "string", "pattern": "^member_[A-Za-z0-9][A-Za-z0-9_-]{15,95}$" },
+    "value": { "type": "integer", "minimum": 0, "maximum": 1000000000000 }, "positiveValue": { "type": "integer", "minimum": 1, "maximum": 1000000000000 },
+    "accrualState": { "enum": ["expected", "pending", "disputed", "credited", "expired", "rejected"] },
+    "currentAccrualState": { "enum": ["pending", "disputed", "credited", "expired", "rejected"] },
+    "timelineEvent": { "type": "object", "additionalProperties": false, "required": ["sequence", "state", "occurred_at", "evidence_digest"], "properties": { "sequence": { "type": "integer", "minimum": 1, "maximum": 30 }, "state": { "$ref": "#/definitions/accrualState" }, "occurred_at": { "$ref": "#/definitions/dateTime" }, "evidence_digest": { "$ref": "#/definitions/digest" } } },
+    "boundary": { "type": "object", "additionalProperties": false, "required": ["server_only", "public_serialization_allowed", "simulation_only", "execution_authorized", "account_merge_authorized", "accrual_credit_authorized", "redemption_authorized", "voucher_consumption_authorized", "refund_authorized", "supplier_dispatched", "provider_called", "processor_called", "ledger_mutated", "message_sent"], "properties": { "server_only": { "const": true }, "public_serialization_allowed": { "const": false }, "simulation_only": { "const": true }, "execution_authorized": { "const": false }, "account_merge_authorized": { "const": false }, "accrual_credit_authorized": { "const": false }, "redemption_authorized": { "const": false }, "voucher_consumption_authorized": { "const": false }, "refund_authorized": { "const": false }, "supplier_dispatched": { "const": false }, "provider_called": { "const": false }, "processor_called": { "const": false }, "ledger_mutated": { "const": false }, "message_sent": { "const": false } } }
+  }
+}

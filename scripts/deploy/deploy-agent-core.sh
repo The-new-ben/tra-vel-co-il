@@ -56,17 +56,51 @@ curl --fail-with-body --silent --show-error --max-time 180 \
   --form "activation_confirmation=${AGENT_ACTIVATION_CONFIRMATION:-}" \
   "$DEPLOY_URL" > "$RESPONSE_FILE"
 
-if [[ -n "${AGENT_DEPLOY_RESULT_FILE:-}" ]]; then
-  cp "$RESPONSE_FILE" "$AGENT_DEPLOY_RESULT_FILE"
-fi
-python3 - "$RESPONSE_FILE" <<'PY'
+python3 - "$RESPONSE_FILE" "$SHA256" "${AGENT_DEPLOY_RESULT_FILE:-}" <<'PY'
 import json
+import os
 import re
 import sys
+
 data = json.load(open(sys.argv[1], encoding="utf-8"))
-if data.get("ok") is not True or not re.fullmatch(r"[a-f0-9]{64}", str(data.get("content_sha256", ""))):
+expected_sha256 = sys.argv[2]
+result_target = sys.argv[3]
+if data.get("ok") is not True or data.get("plugin") != "tra-vel-agent-core":
+    raise SystemExit("WordPress did not confirm the expected Agent Core deployment identity.")
+if not re.fullmatch(r"\d+\.\d+\.\d+(?:[-+][A-Za-z0-9.-]+)?", str(data.get("version", ""))):
+    raise SystemExit("WordPress returned an invalid Agent Core version.")
+if data.get("sha256") != expected_sha256:
+    raise SystemExit("WordPress returned an Agent Core checksum that differs from the uploaded archive.")
+content_sha256 = str(data.get("content_sha256", ""))
+if not re.fullmatch(r"[a-f0-9]{64}", content_sha256):
     raise SystemExit("WordPress did not confirm the installed Agent Core content fingerprint.")
-if data.get("backup") and not re.fullmatch(r"[a-f0-9]{64}", str(data.get("previous_content_sha256", ""))):
+backup = data.get("backup")
+if backup not in (None, "") and not re.fullmatch(r"tra-vel-agent-core-\d{8}T\d{6}Z-[A-Za-z0-9]+", str(backup)):
+    raise SystemExit("WordPress returned an invalid Agent Core backup identity.")
+previous_content_sha256 = data.get("previous_content_sha256")
+if backup not in (None, "") and not re.fullmatch(r"[a-f0-9]{64}", str(previous_content_sha256 or "")):
     raise SystemExit("WordPress did not confirm the previous Agent Core content fingerprint.")
+if not isinstance(data.get("active"), bool):
+    raise SystemExit("WordPress returned an invalid Agent Core activation state.")
+unchanged = data.get("unchanged", False)
+if not isinstance(unchanged, bool) or (unchanged and backup not in (None, "")):
+    raise SystemExit("WordPress returned an invalid Agent Core mutation state.")
+if result_target:
+    receipt = {
+        "ok": True,
+        "plugin": data["plugin"],
+        "version": data["version"],
+        "sha256": data["sha256"],
+        "content_sha256": content_sha256,
+        "previous_content_sha256": previous_content_sha256,
+        "backup": backup,
+        "active": data["active"],
+        "unchanged": unchanged,
+    }
+    descriptor = os.open(result_target, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(descriptor, "w", encoding="utf-8") as result_file:
+        json.dump(receipt, result_file, ensure_ascii=False, indent=2)
+        result_file.write("\n")
+    os.chmod(result_target, 0o600)
 print(f"Deployed {data['plugin']} {data['version']}; active={str(data['active']).lower()}; backup={data.get('backup') or 'none'}")
 PY
