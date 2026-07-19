@@ -1,13 +1,13 @@
 const destinationAssetBase = window.traVelV2?.assetUrl || './assets/';
 const fallbackDestinations = {
-  bangkok: { id: 'bangkok', city: 'בנגקוק', country: 'תאילנד', price: 'החל מ-$950', total: 'מחיר לתכנון לאדם', note: 'המחיר, הזמינות והתנאים הסופיים יינתנו לאחר בדיקה מחדש, לפני הרכישה', image: `${destinationAssetBase}thailand.jpg`, tags: ['12 לילות', 'עד עצירה אחת', 'כבודה בתכנון'], airport: 'BKK · בנגקוק', hotel: 'Siam · מרכז ותחבורה', weather: 'עונה חמה ולחה', latitude: 13.7563, longitude: 100.5018, x: 72, y: 61 },
-  athens: { id: 'athens', city: 'אתונה', country: 'יוון', price: 'החל מ-$189', total: 'מחיר לתכנון לאדם', note: 'המחיר, הזמינות והתנאים הסופיים יינתנו לאחר בדיקה מחדש, לפני הרכישה', image: `${destinationAssetBase}athens-acropolis.jpg`, tags: ['טיסה ישירה', '3 לילות', 'מרכז העיר'], airport: 'ATH · אתונה', hotel: 'Plaka · היסטוריה ואוכל', weather: 'מתאים לחופשה קצרה', latitude: 37.9838, longitude: 23.7275, x: 48, y: 43 },
-  budapest: { id: 'budapest', city: 'בודפשט', country: 'הונגריה', price: 'החל מ-$229', total: 'מחיר לתכנון לאדם', note: 'המחיר, הזמינות והתנאים הסופיים יינתנו לאחר בדיקה מחדש, לפני הרכישה', image: `${destinationAssetBase}city-budapest.webp`, tags: ['טיסה ישירה', '4 לילות', 'מרכז פשט'], airport: 'BUD · בודפשט', hotel: 'District V · מרכז ונוף', weather: 'עיר, ספא וקולינריה', latitude: 47.4979, longitude: 19.0402, x: 43, y: 32 },
-  prague: { id: 'prague', city: 'פראג', country: 'צ׳כיה', price: 'החל מ-$229', total: 'מחיר לתכנון לאדם', note: 'המחיר, הזמינות והתנאים הסופיים יינתנו לאחר בדיקה מחדש, לפני הרכישה', image: `${destinationAssetBase}city-prague.webp`, tags: ['טיסה ישירה', '4 לילות', 'מרכז היסטורי'], airport: 'PRG · פראג', hotel: 'Prague 1 · מרכז ותחבורה', weather: 'עיר, היסטוריה ואוכל', latitude: 50.0755, longitude: 14.4378, x: 39, y: 29 },
-  vienna: { id: 'vienna', city: 'וינה', country: 'אוסטריה', price: 'החל מ-$239', total: 'מחיר לתכנון לאדם', note: 'המחיר, הזמינות והתנאים הסופיים יינתנו לאחר בדיקה מחדש, לפני הרכישה', image: `${destinationAssetBase}city-vienna.webp`, tags: ['טיסה ישירה', '4 לילות', 'תרבות ומשפחות'], airport: 'VIE · וינה', hotel: 'Innere Stadt · מרכז ותחבורה', weather: 'עיר, תרבות וקצב רגוע', latitude: 48.2082, longitude: 16.3738, x: 41, y: 30 },
-  dubai: { id: 'dubai', city: 'דובאי', country: 'איחוד האמירויות', price: 'החל מ-$310', total: 'מחיר לתכנון לאדם', note: 'המחיר, הזמינות והתנאים הסופיים יינתנו לאחר בדיקה מחדש, לפני הרכישה', image: `${destinationAssetBase}hero-budapest-900.webp`, tags: ['טיסה ישירה', 'סוף שבוע', 'עיר וחוף'], airport: 'DXB · דובאי', hotel: 'Creek · שוק ועיר עתיקה', weather: 'שמש ומלונות נופש', latitude: 25.2048, longitude: 55.2708, x: 59, y: 53 },
-  tokyo: { id: 'tokyo', city: 'טוקיו', country: 'יפן', price: 'החל מ-$875', total: 'מחיר לתכנון לאדם', note: 'המחיר, הזמינות והתנאים הסופיים יינתנו לאחר בדיקה מחדש, לפני הרכישה', image: `${destinationAssetBase}city-prague.webp`, tags: ['עד עצירה אחת', '10 לילות', 'מסלול עירוני'], airport: 'HND · טוקיו', hotel: 'Shinjuku · רכבות וחיי לילה', weather: 'עונות מובחנות', latitude: 35.6762, longitude: 139.6503, x: 84, y: 39 },
-  lisbon: { id: 'lisbon', city: 'ליסבון', country: 'פורטוגל', price: 'החל מ-$399', total: 'מחיר לתכנון לאדם', note: 'המחיר, הזמינות והתנאים הסופיים יינתנו לאחר בדיקה מחדש, לפני הרכישה', image: `${destinationAssetBase}city-prague.webp`, tags: ['7 לילות', 'עד עצירה אחת', 'עיר וחופים'], airport: 'LIS · ליסבון', hotel: 'Baixa · מרכז והליכה', weather: 'אקלים אטלנטי נוח', latitude: 38.7223, longitude: -9.1393, x: 29, y: 43 }
+  bangkok: { id: 'bangkok', city: 'בנגקוק', country: 'תאילנד', price: 'החל מ-$950', total: 'מחיר לתכנון לאדם', note: 'המחיר, הזמינות והתנאים מאומתים לפני התשלום', image: `${destinationAssetBase}thailand.jpg`, tags: ['12 לילות', 'עד עצירה אחת', 'כבודה בתכנון'], airport: 'BKK · בנגקוק', hotel: 'Siam · מרכז ותחבורה', weather: 'עונה חמה ולחה', latitude: 13.7563, longitude: 100.5018, x: 72, y: 61 },
+  athens: { id: 'athens', city: 'אתונה', country: 'יוון', price: 'החל מ-$189', total: 'מחיר לתכנון לאדם', note: 'המחיר, הזמינות והתנאים מאומתים לפני התשלום', image: `${destinationAssetBase}athens-acropolis.jpg`, tags: ['טיסה ישירה', '3 לילות', 'מרכז העיר'], airport: 'ATH · אתונה', hotel: 'Plaka · היסטוריה ואוכל', weather: 'מתאים לחופשה קצרה', latitude: 37.9838, longitude: 23.7275, x: 48, y: 43 },
+  budapest: { id: 'budapest', city: 'בודפשט', country: 'הונגריה', price: 'החל מ-$229', total: 'מחיר לתכנון לאדם', note: 'המחיר, הזמינות והתנאים מאומתים לפני התשלום', image: `${destinationAssetBase}city-budapest.webp`, tags: ['טיסה ישירה', '4 לילות', 'מרכז פשט'], airport: 'BUD · בודפשט', hotel: 'District V · מרכז ונוף', weather: 'עיר, ספא וקולינריה', latitude: 47.4979, longitude: 19.0402, x: 43, y: 32 },
+  prague: { id: 'prague', city: 'פראג', country: 'צ׳כיה', price: 'החל מ-$229', total: 'מחיר לתכנון לאדם', note: 'המחיר, הזמינות והתנאים מאומתים לפני התשלום', image: `${destinationAssetBase}city-prague.webp`, tags: ['טיסה ישירה', '4 לילות', 'מרכז היסטורי'], airport: 'PRG · פראג', hotel: 'Prague 1 · מרכז ותחבורה', weather: 'עיר, היסטוריה ואוכל', latitude: 50.0755, longitude: 14.4378, x: 39, y: 29 },
+  vienna: { id: 'vienna', city: 'וינה', country: 'אוסטריה', price: 'החל מ-$239', total: 'מחיר לתכנון לאדם', note: 'המחיר, הזמינות והתנאים מאומתים לפני התשלום', image: `${destinationAssetBase}city-vienna.webp`, tags: ['טיסה ישירה', '4 לילות', 'תרבות ומשפחות'], airport: 'VIE · וינה', hotel: 'Innere Stadt · מרכז ותחבורה', weather: 'עיר, תרבות וקצב רגוע', latitude: 48.2082, longitude: 16.3738, x: 41, y: 30 },
+  dubai: { id: 'dubai', city: 'דובאי', country: 'איחוד האמירויות', price: 'החל מ-$310', total: 'מחיר לתכנון לאדם', note: 'המחיר, הזמינות והתנאים מאומתים לפני התשלום', image: `${destinationAssetBase}hero-budapest-900.webp`, tags: ['טיסה ישירה', 'סוף שבוע', 'עיר וחוף'], airport: 'DXB · דובאי', hotel: 'Creek · שוק ועיר עתיקה', weather: 'שמש ומלונות נופש', latitude: 25.2048, longitude: 55.2708, x: 59, y: 53 },
+  tokyo: { id: 'tokyo', city: 'טוקיו', country: 'יפן', price: 'החל מ-$875', total: 'מחיר לתכנון לאדם', note: 'המחיר, הזמינות והתנאים מאומתים לפני התשלום', image: `${destinationAssetBase}city-prague.webp`, tags: ['עד עצירה אחת', '10 לילות', 'מסלול עירוני'], airport: 'HND · טוקיו', hotel: 'Shinjuku · רכבות וחיי לילה', weather: 'עונות מובחנות', latitude: 35.6762, longitude: 139.6503, x: 84, y: 39 },
+  lisbon: { id: 'lisbon', city: 'ליסבון', country: 'פורטוגל', price: 'החל מ-$399', total: 'מחיר לתכנון לאדם', note: 'המחיר, הזמינות והתנאים מאומתים לפני התשלום', image: `${destinationAssetBase}city-prague.webp`, tags: ['7 לילות', 'עד עצירה אחת', 'עיר וחופים'], airport: 'LIS · ליסבון', hotel: 'Baixa · מרכז והליכה', weather: 'אקלים אטלנטי נוח', latitude: 38.7223, longitude: -9.1393, x: 29, y: 43 }
 };
 
 let destinationData = { ...fallbackDestinations };
@@ -1066,7 +1066,7 @@ function mapEntityPlanePoint(latitude, longitude) {
 function mapEntityTruthCopy(entity) {
   if (entity.truth_state === 'supplier_snapshot') return 'נתון ספק מהבדיקה האחרונה. המחיר, הזמינות והתנאים יאומתו שוב לפני אישור.';
   if (entity.truth_state === 'last_observed') return 'זהו הנתון האחרון שנצפה ואינו הצעה נוכחית. נדרשת בדיקה מחדש לפני החלטה.';
-  return 'מידע לתכנון ולהשוואה. המחיר, הזמינות והתנאים הסופיים יינתנו לאחר בדיקה מחדש, לפני הרכישה.';
+  return 'מידע לתכנון ולהשוואה. המחיר, הזמינות והתנאים מאומתים לפני התשלום.';
 }
 
 function mapEntityFreshnessCopy(freshness) {
@@ -1143,7 +1143,7 @@ function resetMapEntityExplorer(reason = 'empty') {
   if (title) title.textContent = titleText;
   if (summary) summary.textContent = summaryText;
   if (price) price.textContent = 'מחיר יוצג רק עם הקשר ברור ומועד בדיקה.';
-  if (truth) truth.textContent = 'המחיר, הזמינות והתנאים הסופיים יינתנו לאחר בדיקה מחדש, לפני הרכישה.';
+  if (truth) truth.textContent = 'המחיר, הזמינות והתנאים מאומתים לפני התשלום.';
   if (freshness) freshness.textContent = reason === 'loading' ? 'בדיקה פעילה' : 'ממתין לבחירה';
   if (source) source.textContent = 'מקור יוצג לצד כל נתון.';
   if (selectionStatus) {
@@ -1675,7 +1675,7 @@ function setActiveDestination(key, pin, motion = true) {
       price: data.price || 'בהצעה האישית',
       note: hasLiveDealPrices
         ? 'מחיר ההצעה התקבל מהספק במועד המצוין. זמינות, הרכב ותנאים יאומתו לפני אישור.'
-        : (snapshotStale && hasDealSnapshot ? 'זהו צילום הספק האחרון, לא הצעה נוכחית. נדרש אימות מחיר וזמינות מחדש.' : (data.note || 'המחיר, הזמינות והתנאים הסופיים יינתנו לאחר בדיקה מחדש, לפני הרכישה.'))
+        : (snapshotStale && hasDealSnapshot ? 'זהו צילום הספק האחרון, לא הצעה נוכחית. נדרש אימות מחיר וזמינות מחדש.' : (data.note || 'המחיר, הזמינות והתנאים מאומתים לפני התשלום.'))
     },
     hotels: {
       label: 'לינה באזור הנכון',
@@ -1683,7 +1683,7 @@ function setActiveDestination(key, pin, motion = true) {
       price: data.hotelArea || 'אזור לינה',
       note: hasLiveHotelPrices
         ? 'מחיר החדר התקבל מהספק במועד המצוין. מסים, מלאי, ביטול ותנאים יאומתו בהצעה מתוארכת.'
-        : (snapshotStale && hasHotelSnapshot ? 'זהו מחיר החדר האחרון שנבדק. מלאי, מסים וביטול עשויים להשתנות ויש לבדוק שוב.' : 'אזורי הלינה והתקציב עוזרים לבחור. המחיר, הזמינות והתנאים הסופיים יינתנו לאחר בדיקה מחדש, לפני הרכישה.')
+        : (snapshotStale && hasHotelSnapshot ? 'זהו מחיר החדר האחרון שנבדק. מלאי, מסים וביטול עשויים להשתנות ויש לבדוק שוב.' : 'אזורי הלינה והתקציב עוזרים לבחור. המחיר, הזמינות והתנאים מאומתים לפני התשלום.')
     },
     airports: {
       label: 'שדה ודרך',
@@ -2115,7 +2115,7 @@ function localPlanningModule(data, id, fallback) {
     detail: profile?.detail || fallback.detail,
     next_action: profile?.nextAction || fallback.next_action,
     provenance: {
-      source: data?.planning?.sourceLabel || 'Tra-Vel planning profile',
+      source: data?.planning?.sourceLabel || 'פרופיל התכנון של Tra-Vel',
       observed_at: data?.planning?.reviewedOn || ''
     }
   });
@@ -2131,15 +2131,15 @@ function buildLocalSelectedPlan(data) {
   const routeState = discoveryLiveLayers.airports
     ? (snapshotCurrent ? 'live' : 'stale')
     : (destinationRoutes.length ? 'editorial' : 'unavailable');
-  const editorialSource = data?.planning?.sourceLabel || 'Tra-Vel planning profile';
+  const editorialSource = data?.planning?.sourceLabel || 'פרופיל התכנון של Tra-Vel';
   const reviewedOn = data?.planning?.reviewedOn || '';
   const module = (id, state, headline, detail, nextAction) => safeSelectedPlanModule({
     id, state, headline, detail, next_action: nextAction,
     provenance: { source: editorialSource, observed_at: reviewedOn }
   });
   const modules = [
-    module('route', routeState, destinationRoutes.length ? `${destinationRoutes.length} דרכים ל${data.city} מוכנות להשוואה` : `נדרשת בדיקת דרך ל${data.city}`, currentRouteData ? 'מבנה הדרך והזמנים התקבלו מהספק. המחיר מוצג רק לפריטים שהספק תמחר.' : 'השוו מסלולים, זמני דרך ותקציבי תכנון. המחיר, הזמינות והתנאים הסופיים יינתנו לאחר בדיקה מחדש, לפני הרכישה.', 'בחרו דרך מועדפת'),
-    module('stay', discoveryLiveLayers.hotels ? (snapshotCurrent ? 'live' : 'stale') : 'editorial', data.hotelArea ? `מתחילים באזור ${data.hotelArea}` : 'בוחרים אזור לפני מלון', currentHotelData ? 'מחיר החדר וזהות המלון התקבלו. מסים, מלאי וביטול עדיין דורשים הצעה מתוארכת.' : 'השוו אזורים, סגנונות לינה ותקציבי תכנון. המחיר, הזמינות והתנאים הסופיים יינתנו לאחר בדיקה מחדש, לפני הרכישה.', 'השוו אזורים ומלונות'),
+    module('route', routeState, destinationRoutes.length ? `${destinationRoutes.length} דרכים ל${data.city} מוכנות להשוואה` : `נדרשת בדיקת דרך ל${data.city}`, currentRouteData ? 'מבנה הדרך והזמנים התקבלו מהספק. המחיר מוצג רק לפריטים שהספק תמחר.' : 'השוו מסלולים, זמני דרך ותקציבי תכנון. המחיר, הזמינות והתנאים מאומתים לפני התשלום.', 'בחרו דרך מועדפת'),
+    module('stay', discoveryLiveLayers.hotels ? (snapshotCurrent ? 'live' : 'stale') : 'editorial', data.hotelArea ? `מתחילים באזור ${data.hotelArea}` : 'בוחרים אזור לפני מלון', currentHotelData ? 'מחיר החדר וזהות המלון התקבלו. מסים, מלאי וביטול עדיין דורשים הצעה מתוארכת.' : 'השוו אזורים, סגנונות לינה ותקציבי תכנון. המחיר, הזמינות והתנאים מאומתים לפני התשלום.', 'השוו אזורים ומלונות'),
     localPlanningModule(data, 'mobility', { state: 'editorial', headline: 'מחברים שדה, מלון ותחבורה מקומית', detail: 'סוג ההעברה והמחיר ייבדקו לפי שעת הנחיתה, כתובת המלון והרכב הנוסעים.', next_action: 'הוסיפו פרטי העברה' }),
     module('activities', 'editorial', `בונים קצב ופעילויות ל${data.city}`, 'מחברים עוגנים, זמן חופשי, מרחקים וכרטיסים. זמינות ומחיר דורשים תאריך.', 'הוסיפו העדפות לפעילויות'),
     localPlanningModule(data, 'dining', { state: 'needs_details', headline: 'אוכל וכשרות לפי ההעדפות שלכם', detail: 'מוסיפים כשרות, אלרגיות, ילדים ותקציב לפני בניית מסלול אוכל.', next_action: 'הוסיפו העדפות אוכל' }),
@@ -2149,7 +2149,7 @@ function buildLocalSelectedPlan(data) {
     localPlanningModule(data, 'accessibility', { state: 'needs_details', headline: 'משפחה ונגישות', detail: 'גילים, עגלה, הליכה, מעלית וסיוע משנים את המלון ואת קצב היום.', next_action: 'הוסיפו צורכי נגישות' }),
     module('insurance', 'needs_details', 'פרטים לבדיקת ביטוח', 'גילים, יעד, פעילויות, כבודה וביטול הם מידע שכדאי למסור לגורם מורשה. אין כאן המלצה או פוליסה.', 'הכינו פרטים לבדיקת כיסוי'),
     localPlanningModule(data, 'equipment', { state: 'needs_details', headline: 'ציוד, כבודה והשכרה', detail: 'מחברים פעילויות, עונה ותנאי כבודה לפני שמחליטים מה לארוז ומה לשכור.', next_action: 'הוסיפו צורכי ציוד' }),
-    module('total', 'needs_search', 'פירוט עלויות לכל החופשה', 'תקציב התכנון מחבר טיסה, לינה, העברות ותוספות. המחיר, הזמינות והתנאים הסופיים יינתנו לאחר בדיקה מחדש, לפני הרכישה.', 'בקשו בדיקה אישית')
+    module('total', 'needs_search', 'פירוט עלויות לכל החופשה', 'תקציב התכנון מחבר טיסה, לינה, העברות ותוספות. המחיר, הזמינות והתנאים מאומתים לפני התשלום.', 'בקשו בדיקה אישית')
   ];
   const costCategories = data?.planning?.costCategories?.length
     ? data.planning.costCategories
@@ -3312,7 +3312,7 @@ function renderHomeRouteComparison(data) {
     cards.append(button);
   });
   const summary = board.querySelector('[data-route-summary]');
-  if (summary) summary.textContent = 'בחרו מסלול כדי לשמור העדפה. המחיר, הזמינות והתנאים הסופיים יינתנו לאחר בדיקה מחדש, לפני הרכישה.';
+  if (summary) summary.textContent = 'בחרו מסלול כדי לשמור העדפה. המחיר, הזמינות והתנאים מאומתים לפני התשלום.';
   renderIcons();
 }
 
@@ -3472,7 +3472,7 @@ function initHomeDestinationReveal(initialHydration = Promise.resolve(), { autoE
         state.completionTimer = 0;
       }, 900);
     }
-    planSummary.textContent = `כיוון לחופשה ב${finalData.city} מוכן לעריכה. פתחו כל חלק והתאימו אותו לכם. המחיר, הזמינות והתנאים הסופיים יינתנו לאחר בדיקה מחדש, לפני הרכישה.`;
+    planSummary.textContent = `כיוון לחופשה ב${finalData.city} מוכן לעריכה. פתחו כל חלק והתאימו אותו לכם. המחיר, הזמינות והתנאים מאומתים לפני התשלום.`;
     if (animate) window.traVelGlobe3D?.pulseRoute?.(globe);
     const triggerLabel = trigger.querySelector('[data-home-surprise-label]');
     if (triggerLabel && isSurprise) triggerLabel.textContent = 'תפתיעו אותי שוב';
@@ -4049,8 +4049,8 @@ function commercialPriceText(payload, formatted) {
 function commercialDataNotice(payload = {}) {
   const mode = commercialDataMode(payload);
   if (mode === 'live') return 'הנתונים התקבלו מהספק. המחיר והזמינות ייבדקו שוב לפני מעבר לספק.';
-  if (mode === 'mixed') return 'מחיר לתכנון המבוסס בחלקו על נתוני ספק. המחיר, הזמינות והתנאים הסופיים יינתנו לאחר בדיקה מחדש, לפני הרכישה.';
-  return 'מחיר לתכנון והשוואה. המחיר, הזמינות והתנאים הסופיים יינתנו לאחר בדיקה מחדש, לפני הרכישה.';
+  if (mode === 'mixed') return 'מחיר לתכנון המבוסס בחלקו על נתוני ספק. המחיר, הזמינות והתנאים מאומתים לפני התשלום.';
+  return 'מחיר לתכנון והשוואה. המחיר, הזמינות והתנאים מאומתים לפני התשלום.';
 }
 
 const productPlannerDestinationAliases = {
@@ -4868,7 +4868,7 @@ async function hydrateDiscovery(params = {}, { allowGlobeFocus = true, allowConf
       ? 'יעדים'
       : (payload.layers?.find(layer => layer.id === activeLayer)?.label || 'יעדים');
     const liveModeLabels = { deals: 'מחירים שהתקבלו מהספק', hotels: 'מחירי לינה שהתקבלו מהספק', airports: 'נתוני דרך מעודכנים', weather: 'תנאי מזג אוויר נוכחיים' };
-    const verificationLabels = { deals: 'מחירי תכנון מוצגים כעת. מחיר, זמינות ותנאים סופיים יינתנו לאחר בדיקה מחדש, לפני הרכישה', hotels: 'מחירי תכנון עוזרים לבחור אזור וחדר. המחיר, הזמינות והתנאים הסופיים יינתנו לאחר בדיקה מחדש, לפני הרכישה', airports: 'השוו זמן, עצירות ותנאים. פרטי הטיסה הסופיים יינתנו לאחר בדיקה מחדש, לפני הרכישה', weather: 'התאימו את החופשה לעונה. תחזית מדויקת תוצג סמוך לנסיעה' };
+    const verificationLabels = { deals: 'מחירי תכנון מוצגים כעת. מחיר, זמינות ותנאים סופיים יינתנו לאחר בדיקה מחדש, לפני הרכישה', hotels: 'מחירי תכנון עוזרים לבחור אזור וחדר. המחיר, הזמינות והתנאים מאומתים לפני התשלום', airports: 'השוו זמן, עצירות ותנאים. פרטי הטיסה הסופיים יינתנו לאחר בדיקה מחדש, לפני הרכישה', weather: 'התאימו את החופשה לעונה. תחזית מדויקת תוצג סמוך לנסיעה' };
     const modeLabel = remainOpen
       ? 'בחרו יעד כדי לפתוח מחיר, זמינות ותוכנית מלאה'
       : (discoveryFreshness !== 'current'
@@ -8141,7 +8141,7 @@ function renderWorkspaceQuoteCaseCard(initialCase, confirmedPositive = false) {
   handoff.dataset.workspaceQuoteAction = 'handoff';
   const handoffIcon = document.createElement('i');
   handoffIcon.dataset.lucide = 'message-circle';
-  handoff.append(handoffIcon, document.createTextNode('המשיכו בוואטסאפ'));
+  handoff.append(handoffIcon, document.createTextNode('המשיכו בוואטסאפ · מענה מיידי 24/7'));
   const pendingMutation = workspaceQuoteCaseMutationRegistry.get(caseData.case_id);
   const retainedIdempotencyKey = pendingMutation?.idempotencyKey || workspaceQuoteCaseRetryKeys.get(caseData.case_id) || '';
   if (retainedIdempotencyKey) handoff.dataset.idempotencyKey = retainedIdempotencyKey;

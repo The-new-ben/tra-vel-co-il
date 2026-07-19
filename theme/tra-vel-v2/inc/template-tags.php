@@ -19,6 +19,18 @@ function tra_vel_v2_demo_disclosure() {
 	echo '</small>';
 }
 
+function tra_vel_v2_mobile_bottom_nav() {
+	?>
+	<nav class="mobile-bottom-nav" aria-label="<?php esc_attr_e( 'ניווט מהיר', 'tra-vel-v2' ); ?>">
+		<a class="<?php echo is_front_page() ? 'active' : ''; ?>" href="<?php echo esc_url( home_url( '/' ) ); ?>"><i data-lucide="house"></i><?php esc_html_e( 'בית', 'tra-vel-v2' ); ?></a>
+		<a class="<?php echo is_page( 'travel-map' ) ? 'active' : ''; ?>" href="<?php echo esc_url( home_url( '/travel-map/' ) ); ?>"><i data-lucide="earth"></i><?php esc_html_e( 'מפה', 'tra-vel-v2' ); ?></a>
+		<a href="<?php echo esc_url( home_url( '/#search' ) ); ?>"><i data-lucide="search"></i><?php esc_html_e( 'חיפוש', 'tra-vel-v2' ); ?></a>
+		<a class="<?php echo is_page( 'saved' ) ? 'active' : ''; ?>" href="<?php echo esc_url( home_url( '/saved/' ) ); ?>"><i data-lucide="heart"></i><?php esc_html_e( 'שמורים', 'tra-vel-v2' ); ?></a>
+		<a class="<?php echo is_page( 'account' ) ? 'active' : ''; ?>" href="<?php echo esc_url( home_url( '/account/' ) ); ?>"><i data-lucide="user-round"></i><?php esc_html_e( 'חשבון', 'tra-vel-v2' ); ?></a>
+	</nav>
+	<?php
+}
+
 function tra_vel_v2_brand() {
 	?>
 	<a class="brand" href="<?php echo esc_url( home_url( '/' ) ); ?>" aria-label="<?php esc_attr_e( 'Tra-Vel דף הבית', 'tra-vel-v2' ); ?>">

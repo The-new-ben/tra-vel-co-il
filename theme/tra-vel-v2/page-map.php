@@ -38,7 +38,7 @@ $default_map_airport = sanitize_text_field( $default_map_data['airport']['code']
 			<div>
 				<span class="eyebrow"><?php esc_html_e( 'מפת החופשות', 'tra-vel-v2' ); ?></span>
 				<h1><?php esc_html_e( 'לאן תרצו לטוס? בחרו יעד על המפה.', 'tra-vel-v2' ); ?></h1>
-				<p><?php esc_html_e( 'סובבו את העולם ובחרו נקודה. פתחו טיסות, אזורי לינה, מזג אוויר ותקציב מלא לתכנון. המחיר, הזמינות והתנאים הסופיים יינתנו לאחר בדיקה מחדש, לפני הרכישה.', 'tra-vel-v2' ); ?></p>
+				<p><?php esc_html_e( 'סובבו את העולם ובחרו נקודה. פתחו טיסות, אזורי לינה, מזג אוויר ותקציב מלא לתכנון. המחיר, הזמינות והתנאים מאומתים לפני התשלום.', 'tra-vel-v2' ); ?></p>
 			</div>
 			<a href="#map-support" class="map-intro-link"><i data-lucide="mouse-pointer-click"></i><?php esc_html_e( 'מה אפשר לעשות במפה', 'tra-vel-v2' ); ?></a>
 		</div>
@@ -251,7 +251,7 @@ $default_map_airport = sanitize_text_field( $default_map_data['airport']['code']
 					<span><?php esc_html_e( 'בחרו נקודה כדי לחבר אותה לתוכנית החופשה המלאה.', 'tra-vel-v2' ); ?></span>
 				</p>
 				<a class="map-entity-action" data-map-entity-action href="#map-support"><span><?php esc_html_e( 'פתחו את תכנון היעד', 'tra-vel-v2' ); ?></span><i data-lucide="arrow-down"></i></a>
-				<p class="map-entity-boundary"><i data-lucide="circle-check-big"></i><?php esc_html_e( 'המחיר, הזמינות והתנאים הסופיים יינתנו לאחר בדיקה מחדש, לפני הרכישה.', 'tra-vel-v2' ); ?></p>
+				<p class="map-entity-boundary"><i data-lucide="circle-check-big"></i><?php esc_html_e( 'המחיר, הזמינות והתנאים מאומתים לפני התשלום.', 'tra-vel-v2' ); ?></p>
 			</article>
 		</div>
 
@@ -276,7 +276,7 @@ $default_map_airport = sanitize_text_field( $default_map_data['airport']['code']
 					<div class="result-top"><div><small><?php esc_html_e( 'רעיון לתכנון', 'tra-vel-v2' ); ?></small><h2 data-result-city><?php echo esc_html( $default_map_label ); ?></h2></div><button class="save-button" type="button" aria-label="<?php esc_attr_e( 'שמירת היעד', 'tra-vel-v2' ); ?>"><i data-lucide="heart"></i></button></div>
 					<div class="result-tags" data-result-tags><?php foreach ( array_slice( (array) ( $default_map_data['tags'] ?? array() ), 0, 3 ) as $tag ) : ?><span><?php echo esc_html( $tag ); ?></span><?php endforeach; ?></div>
 					<div class="result-facts"><span data-result-airport><bdi dir="ltr"><?php echo esc_html( $default_map_airport ); ?></bdi></span><span data-result-hotel><?php esc_html_e( 'אזורי לינה', 'tra-vel-v2' ); ?></span><span data-result-weather><?php esc_html_e( 'מזג אוויר', 'tra-vel-v2' ); ?></span></div>
-					<div class="map-price-state"><div><small data-result-state-label><?php esc_html_e( 'מחיר לתכנון', 'tra-vel-v2' ); ?></small><strong data-result-total><?php esc_html_e( 'בחרו יעד', 'tra-vel-v2' ); ?></strong></div><p><span data-result-price><?php esc_html_e( 'המחיר נבנה לפי היעד וההרכב.', 'tra-vel-v2' ); ?></span> <span data-result-note><?php esc_html_e( 'המחיר, הזמינות והתנאים הסופיים יינתנו לאחר בדיקה מחדש, לפני הרכישה.', 'tra-vel-v2' ); ?></span></p></div>
+					<div class="map-price-state"><div><small data-result-state-label><?php esc_html_e( 'מחיר לתכנון', 'tra-vel-v2' ); ?></small><strong data-result-total><?php esc_html_e( 'בחרו יעד', 'tra-vel-v2' ); ?></strong></div><p><span data-result-price><?php esc_html_e( 'המחיר נבנה לפי היעד וההרכב.', 'tra-vel-v2' ); ?></span> <span data-result-note><?php esc_html_e( 'המחיר, הזמינות והתנאים מאומתים לפני התשלום.', 'tra-vel-v2' ); ?></span></p></div>
 					<div class="map-destination-actions"><a data-result-guide href="<?php echo esc_url( home_url( '/destinations/' ) ); ?>"><i data-lucide="book-open"></i><?php esc_html_e( 'מצאו מדריך ליעד', 'tra-vel-v2' ); ?></a><a data-result-hotels href="<?php echo esc_url( home_url( '/hotels/' ) ); ?>"><i data-lucide="bed-double"></i><?php esc_html_e( 'פתחו חיפוש מלונות', 'tra-vel-v2' ); ?></a><a data-result-insurance href="<?php echo esc_url( home_url( '/travel-insurance/' ) ); ?>"><i data-lucide="shield-check"></i><?php esc_html_e( 'מה לבדוק בביטוח', 'tra-vel-v2' ); ?></a></div>
 					<section class="destination-plan-360" data-destination-plan aria-labelledby="destination-plan-title">
 						<header class="destination-plan-head"><div><span class="eyebrow"><?php esc_html_e( 'כל החופשה במקום אחד', 'tra-vel-v2' ); ?></span><h3 id="destination-plan-title" data-plan-title><?php echo esc_html( sprintf( __( 'פתחו תכנון ל%s', 'tra-vel-v2' ), $default_map_city ) ); ?></h3></div><span class="destination-plan-state" data-plan-state><?php esc_html_e( 'כל חלק פתוח לעריכה', 'tra-vel-v2' ); ?></span></header>
@@ -339,7 +339,7 @@ $default_map_airport = sanitize_text_field( $default_map_data['airport']['code']
 							</aside>
 						</section>
 						<div class="destination-plan-actions"><a class="destination-plan-primary" data-plan-ai href="<?php echo esc_url( home_url( '/ai-planner/' ) ); ?>"><i data-lucide="sparkles"></i><?php esc_html_e( 'סדרו לי תוכנית לחופשה', 'tra-vel-v2' ); ?></a><button data-plan-save type="button"><i data-lucide="bookmark-plus"></i><span><?php esc_html_e( 'שמרו לנסיעה', 'tra-vel-v2' ); ?></span></button><a data-plan-guide href="<?php echo esc_url( home_url( '/destinations/' ) ); ?>"><?php esc_html_e( 'מצאו מדריך ליעד', 'tra-vel-v2' ); ?><i data-lucide="arrow-left"></i></a></div>
-						<p class="destination-plan-truth"><i data-lucide="shield-check"></i><span data-plan-truth><?php esc_html_e( 'היעד נבחר. המחיר, הזמינות והתנאים הסופיים יינתנו לאחר בדיקה מחדש, לפני הרכישה.', 'tra-vel-v2' ); ?></span></p>
+						<p class="destination-plan-truth"><i data-lucide="shield-check"></i><span data-plan-truth><?php esc_html_e( 'היעד נבחר. המחיר, הזמינות והתנאים מאומתים לפני התשלום.', 'tra-vel-v2' ); ?></span></p>
 					</section>
 				</div>
 			</article>

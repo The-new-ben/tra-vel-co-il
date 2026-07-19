@@ -410,7 +410,7 @@ unknownDestinationMapSegment.destination_id = 'unknown-destination';
 assert.equal(context.normalizeMapSegmentCollection([unknownDestinationMapSegment], mapEntityDestinations).length, 0, 'A segment for an unknown destination must fail closed.');
 assert.equal(context.normalizeMapSegmentCollection([planningRouteSegments[0], cloneMapFixture(planningRouteSegments[0])], mapEntityDestinations).length, 1, 'A duplicate map segment id must be rejected instead of drawing the route twice.');
 
-const finalPriceBoundary = 'המחיר, הזמינות והתנאים הסופיים יינתנו לאחר בדיקה מחדש, לפני הרכישה.';
+const finalPriceBoundary = 'המחיר, הזמינות והתנאים מאומתים לפני התשלום.';
 assert.equal(context.mapEntityTruthCopy({truth_state:'planning'}), `מידע לתכנון ולהשוואה. ${finalPriceBoundary}`, 'Planning map truth copy must retain the exact final-price, availability, and terms boundary.');
 assert.equal(context.mapEntityTruthCopy({truth_state:'supplier_snapshot'}), 'נתון ספק מהבדיקה האחרונה. המחיר, הזמינות והתנאים יאומתו שוב לפני אישור.', 'Supplier-snapshot map copy must require revalidation instead of claiming a final price.');
 assert.equal(context.mapEntityTruthCopy({truth_state:'last_observed'}), 'זהו הנתון האחרון שנצפה ואינו הצעה נוכחית. נדרשת בדיקה מחדש לפני החלטה.', 'Last-observed map copy must not be mistaken for a current offer.');
@@ -462,7 +462,7 @@ assert.equal(context.commercialPriceText(mixedCommercialPayload, '$500'), '$500'
 assert.equal(context.commercialPriceText(liveCommercialPayload, '$500'), '$500', 'A live supplier amount may retain its supplier-formatted price.');
 assert.equal(context.commercialPriceText(demoCommercialPayload, ''), 'בהצעה האישית', 'A missing planning amount must lead to the personal quote without making the card look broken.');
 assert.equal(context.commercialDataNotice(demoCommercialPayload).includes('מחיר לתכנון והשוואה'), true, 'Planning prices must be explicitly identified as comparison guidance.');
-assert.equal(context.commercialDataNotice(demoCommercialPayload).includes('המחיר, הזמינות והתנאים הסופיים יינתנו לאחר בדיקה מחדש, לפני הרכישה'), true, 'Planning prices must retain a clear final-price, availability and terms boundary.');
+assert.equal(context.commercialDataNotice(demoCommercialPayload).includes('המחיר, הזמינות והתנאים מאומתים לפני התשלום'), true, 'Planning prices must retain a clear final-price, availability and terms boundary.');
 assert.equal(context.insuranceSaleReady({meta:{data_mode:'live',regulated_sale_ready:false}}), false, 'Live travel data alone must not enable a regulated insurance sale.');
 assert.equal(context.insuranceSaleReady({meta:{data_mode:'live',regulated_sale_ready:true}}), true, 'Insurance product rendering requires an explicit regulated-sale capability.');
 assert.equal(context.insuranceSaleReady({meta:{data_mode:'live',cache_state:'stale_error',regulated_sale_ready:true}}), false, 'Stale regulated results must not expose an insurance sale action.');
@@ -2591,7 +2591,7 @@ assert.deepEqual(renderedHomePlanningDomains, ['flights', 'accommodation', 'tran
 assert.equal((homeComponentMarkup.match(/<small>/g) || []).length, 8, 'Every homepage planning record must expose its own unverified planning state.');
 const homeComponentVisibleMarkup = homeComponentMarkup.replace(/<\?php[\s\S]*?\?>/g, '');
 assert.doesNotMatch(homeComponentVisibleMarkup, /\$\s*\d|₪\s*\d|data-price|price=/i, 'Independent planning records must not invent per-component prices.');
-assert.match(frontPageSource, /אלה אפשרויות לתכנון. המחיר, הזמינות והתנאים הסופיים יינתנו לאחר בדיקה מחדש, לפני הרכישה./, 'The eight-component plan must retain the pre-purchase revalidation boundary.');
+assert.match(frontPageSource, /אלה אפשרויות לתכנון. המחיר, הזמינות והתנאים מאומתים לפני התשלום./, 'The eight-component plan must retain the pre-purchase revalidation boundary.');
 assert.match(cssSource, /\.home-plan-modules a \{[^}]*min-height: 58px;/, 'Every editable planning record must meet the keyboard and touch target floor.');
 
 assert.equal(context.hasKnownTripIntentQuery(new URLSearchParams('?budget=1200')), true, 'A budget query must suppress the automatic seasonal reveal.');

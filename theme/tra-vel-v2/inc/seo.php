@@ -97,6 +97,7 @@ add_filter( 'wpseo_schema_website', 'tra_vel_v2_enrich_yoast_website_schema' );
  */
 function tra_vel_v2_should_noindex_public_request() {
 	$private_page = is_page_template( 'page-saved.php' ) || is_page_template( 'page-account.php' ) || is_page( array( 'saved', 'account' ) );
+	$thin_archive = is_author() || is_category() || is_tag() || is_date() || is_search();
 	$incomplete_guide = is_singular() && tra_vel_v2_is_destination_guide() && ! tra_vel_v2_is_guide_publication_ready();
 	$facet_keys   = array(
 		'q', 'origin', 'destination', 'destination_mode', 'selection_destination', 'product', 'focus', 'layer', 'depart', 'departure', 'return', 'departure_date', 'return_date', 'date', 'dates', 'route', 'checkin', 'checkout', 'check_in', 'check_out', 'start_date', 'end_date', 'adults', 'children', 'infants', 'rooms', 'travelers', 'party',
@@ -107,7 +108,7 @@ function tra_vel_v2_should_noindex_public_request() {
 	);
 	$has_facets   = (bool) array_intersect( $facet_keys, array_keys( wp_unslash( $_GET ) ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 
-	return $private_page || $has_facets || $incomplete_guide;
+	return $private_page || $thin_archive || $has_facets || $incomplete_guide;
 }
 
 /**
@@ -154,6 +155,57 @@ function tra_vel_v2_aioseo_robots_policy( $attributes ) {
 	return $output;
 }
 add_filter( 'aioseo_robots_meta', 'tra_vel_v2_aioseo_robots_policy', 20 );
+
+/** Never guess-redirect unknown URLs into unrelated or unready pages; unlaunched paths must 404 cleanly. */
+add_filter( 'do_redirect_guess_404_permalink', '__return_false' );
+
+/** Keep author archives out of XML sitemaps; the byline system links authors internally instead. */
+add_filter( 'wpseo_sitemap_exclude_author', '__return_true' );
+
+/**
+ * Keep thin taxonomy archives out of XML sitemaps until they carry curated content.
+ *
+ * @param bool   $excluded Current exclusion state.
+ * @param string $taxonomy Taxonomy name.
+ * @return bool
+ */
+function tra_vel_v2_sitemap_exclude_taxonomies( $excluded, $taxonomy ) {
+	if ( in_array( (string) $taxonomy, array( 'category', 'post_tag', 'post_format' ), true ) ) {
+		return true;
+	}
+	return (bool) $excluded;
+}
+add_filter( 'wpseo_sitemap_exclude_taxonomy', 'tra_vel_v2_sitemap_exclude_taxonomies', 10, 2 );
+
+/**
+ * Keep noindexed private pages and unready destination guides out of the page sitemap.
+ *
+ * @param array<int, int> $excluded_ids Post IDs Yoast already excludes.
+ * @return array<int, int>
+ */
+function tra_vel_v2_sitemap_exclude_noindexed_pages( $excluded_ids ) {
+	$excluded_ids = is_array( $excluded_ids ) ? $excluded_ids : array();
+	foreach ( array( 'saved', 'account' ) as $private_slug ) {
+		$private_page = get_page_by_path( $private_slug );
+		if ( $private_page instanceof WP_Post ) {
+			$excluded_ids[] = (int) $private_page->ID;
+		}
+	}
+	$guide_pages = get_pages(
+		array(
+			'meta_key'   => '_wp_page_template',
+			'meta_value' => 'page-destination.php',
+			'number'     => 50,
+		)
+	);
+	foreach ( (array) $guide_pages as $guide_page ) {
+		if ( $guide_page instanceof WP_Post && function_exists( 'tra_vel_v2_is_guide_publication_ready' ) && ! tra_vel_v2_is_guide_publication_ready( $guide_page->ID ) ) {
+			$excluded_ids[] = (int) $guide_page->ID;
+		}
+	}
+	return array_values( array_unique( array_map( 'intval', $excluded_ids ) ) );
+}
+add_filter( 'wpseo_exclude_from_sitemap_by_post_ids', 'tra_vel_v2_sitemap_exclude_noindexed_pages' );
 
 /**
  * Build a non-commercial ItemList for the editorial destination directory.

@@ -29,7 +29,7 @@ $overlay_header = is_front_page() || is_page_template( 'page-destination.php' ) 
 						<strong><?php esc_html_e( 'הנסיעה', 'tra-vel-v2' ); ?></strong>
 						<a href="<?php echo esc_url( home_url( '/flights/' ) ); ?>"><i data-lucide="plane"></i><span><?php esc_html_e( 'טיסות', 'tra-vel-v2' ); ?><small><?php esc_html_e( 'ישירות, קונקשנים ומסלולים רב־יעדיים', 'tra-vel-v2' ); ?></small></span></a>
 						<a href="<?php echo esc_url( home_url( '/hotels/' ) ); ?>"><i data-lucide="hotel"></i><span><?php esc_html_e( 'מלונות', 'tra-vel-v2' ); ?><small><?php esc_html_e( 'בדקו מחירים, חדרים ותנאים', 'tra-vel-v2' ); ?></small></span></a>
-						<a href="<?php echo esc_url( home_url( '/packages/' ) ); ?>"><i data-lucide="package"></i><span><?php esc_html_e( 'טיסה + מלון', 'tra-vel-v2' ); ?><small><?php esc_html_e( 'בדקו טיסה ומלון יחד', 'tra-vel-v2' ); ?></small></span></a>
+						<a href="<?php echo esc_url( home_url( '/packages/' ) ); ?>"><i data-lucide="package"></i><span><?php esc_html_e( 'טיסה ומלון', 'tra-vel-v2' ); ?><small><?php esc_html_e( 'בדקו טיסה ומלון יחד', 'tra-vel-v2' ); ?></small></span></a>
 					</div>
 					<div class="mega-column">
 						<strong><?php esc_html_e( 'שקט נפשי', 'tra-vel-v2' ); ?></strong>
@@ -55,7 +55,7 @@ $overlay_header = is_front_page() || is_page_template( 'page-destination.php' ) 
 		<div class="header-actions">
 			<a class="round-button" href="<?php echo esc_url( home_url( '/saved/' ) ); ?>" aria-label="<?php esc_attr_e( 'נסיעות שמורות', 'tra-vel-v2' ); ?>"><i data-lucide="heart"></i></a>
 			<a class="round-button account-button" href="<?php echo esc_url( home_url( '/account/' ) ); ?>" aria-label="<?php esc_attr_e( 'החשבון שלי', 'tra-vel-v2' ); ?>"><i data-lucide="user-round"></i></a>
-			<a class="header-cta" href="<?php echo esc_url( home_url( '/#search' ) ); ?>"><?php esc_html_e( 'התחילו חיפוש', 'tra-vel-v2' ); ?></a>
+			<a class="header-cta" href="<?php echo esc_url( home_url( '/#search' ) ); ?>"><?php esc_html_e( 'השוו טיסה ומלון', 'tra-vel-v2' ); ?></a>
 			<button class="mobile-menu-button" type="button" aria-expanded="false" aria-controls="mobile-primary-navigation" aria-label="<?php esc_attr_e( 'פתיחת תפריט', 'tra-vel-v2' ); ?>"><i data-lucide="menu"></i></button>
 		</div>
 		<div class="mobile-drawer" id="mobile-primary-navigation" role="dialog" aria-modal="true" aria-labelledby="mobile-navigation-title" aria-hidden="true" tabindex="-1">
@@ -81,7 +81,7 @@ $overlay_header = is_front_page() || is_page_template( 'page-destination.php' ) 
 				<div class="mobile-nav-links" id="mobile-discover-links">
 					<a href="<?php echo esc_url( home_url( '/destinations/' ) ); ?>"><i data-lucide="map-pinned"></i><span><strong><?php esc_html_e( 'יעדים', 'tra-vel-v2' ); ?></strong><small><?php esc_html_e( 'בחרו לפי תקציב, עונה וסגנון', 'tra-vel-v2' ); ?></small></span></a>
 					<a href="<?php echo esc_url( home_url( '/guides/' ) ); ?>"><i data-lucide="book-open"></i><span><strong><?php esc_html_e( 'מדריכי עומק', 'tra-vel-v2' ); ?></strong><small><?php esc_html_e( 'המידע שצריך לפני שסוגרים', 'tra-vel-v2' ); ?></small></span></a>
-					<a href="<?php echo esc_url( home_url( '/ai-planner/' ) ); ?>"><i data-lucide="sparkles"></i><span><strong><?php esc_html_e( 'מתכנן הנסיעות', 'tra-vel-v2' ); ?></strong><small><?php esc_html_e( 'הופכים בקשה למסלול ברור', 'tra-vel-v2' ); ?></small></span></a>
+					<a href="<?php echo esc_url( home_url( '/ai-planner/' ) ); ?>"><i data-lucide="sparkles"></i><span><strong><?php esc_html_e( 'מתכנן החופשה', 'tra-vel-v2' ); ?></strong><small><?php esc_html_e( 'הופכים בקשה למסלול ברור', 'tra-vel-v2' ); ?></small></span></a>
 				</div>
 			</div>
 			<div class="mobile-account-grid">
