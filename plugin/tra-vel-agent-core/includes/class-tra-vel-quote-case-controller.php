@@ -208,13 +208,18 @@ class Tra_Vel_Quote_Case_Controller extends WP_REST_Controller {
 		if ( true !== rest_sanitize_boolean( $request->get_param( 'consent' ) ) || Tra_Vel_Quote_Case_Policy::CONSENT_VERSION !== $request->get_param( 'consent_version' ) ) {
 			return new WP_Error( 'tra_vel_quote_case_consent_required', 'Explicit assisted-quote and retention consent is required.', array( 'status' => 400 ) );
 		}
+		$acquisition = Tra_Vel_Quote_Case_Policy::sanitize_acquisition( $request->get_param( 'acquisition' ) );
+		$contact     = Tra_Vel_Quote_Case_Policy::sanitize_contact( $request->get_param( 'contact' ), 'tra_vel_quote_case' );
+		if ( is_wp_error( $contact ) ) {
+			return $contact;
+		}
 		$rate = $this->consume_create_limit( $run['run_uuid'] );
 		if ( is_wp_error( $rate ) ) {
 			return $rate;
 		}
 
 		$principal = $this->principal( true );
-		$result    = $this->store->create_from_run( $run, $principal, $request->get_param( 'consent_version' ), $request->get_param( 'idempotency_key' ) );
+		$result    = $this->store->create_from_run( $run, $principal, $request->get_param( 'consent_version' ), $request->get_param( 'idempotency_key' ), $acquisition, $contact );
 		if ( is_wp_error( $result ) ) {
 			return $result;
 		}
@@ -481,6 +486,11 @@ class Tra_Vel_Quote_Case_Controller extends WP_REST_Controller {
 		$public['assigned_user_id']  = (int) $case['assigned_user_id'];
 		$public['consent_version']   = (string) $case['consent_version'];
 		$public['consented_at']      = gmdate( 'c', strtotime( $case['consented_at'] . ' UTC' ) );
+		// Acquisition attribution and the explicitly consented lead contact are
+		// operator-readable only. They must never enter public_case, traveler
+		// responses, event payloads, logs, or webhook bodies.
+		$public['acquisition']       = is_array( $case['acquisition'] ?? null ) && array() !== $case['acquisition'] ? $case['acquisition'] : null;
+		$public['contact']           = is_array( $case['contact'] ?? null ) && array() !== $case['contact'] ? $case['contact'] : null;
 		$public['allowed_transitions'] = Tra_Vel_Quote_Case_Policy::transitions()[ $case['status'] ] ?? array();
 		$public['events']            = 1 === (int) $event_limit && isset( $case['_embedded_events'] )
 			? (array) $case['_embedded_events']
@@ -643,6 +653,8 @@ class Tra_Vel_Quote_Case_Controller extends WP_REST_Controller {
 			'consent'             => array( 'type' => 'boolean', 'required' => true, 'sanitize_callback' => 'rest_sanitize_boolean' ),
 			'consent_version'     => array( 'type' => 'string', 'required' => true, 'enum' => array( Tra_Vel_Quote_Case_Policy::CONSENT_VERSION ), 'sanitize_callback' => 'sanitize_text_field', 'validate_callback' => 'rest_validate_request_arg' ),
 			'idempotency_key'     => $this->idempotency_arg(),
+			'acquisition'         => array( 'type' => 'object', 'default' => array(), 'validate_callback' => 'rest_validate_request_arg' ),
+			'contact'             => array( 'type' => 'object', 'default' => array(), 'validate_callback' => 'rest_validate_request_arg' ),
 		);
 	}
 

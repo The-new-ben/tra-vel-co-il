@@ -55,6 +55,18 @@ for (const key of ['scope', 'trip', 'candidate']) {
 }
 const statuses = schema.properties?.status?.enum || [];
 if (statuses.join('|') !== 'active|expired') fail('CommercialIntent must expose only active and expired lifecycle truth.');
+if (schema.properties?.contract_version?.const !== '1.1.0' || !String(schema.$id || '').endsWith('/schema/commercial-intent#1.1.0')) {
+  fail('CommercialIntent DTO must be versioned as 1.1.0 for the contact_provided disclosure.');
+}
+if (schema.$defs?.scope?.properties?.contract_version?.const !== '1.0.0') {
+  fail('CommercialIntent stored scope contract must stay at 1.0.0 so existing scope digests keep resuming.');
+}
+if (schema.properties?.contact_provided?.type !== 'boolean' || !(schema.required || []).includes('contact_provided')) {
+  fail('CommercialIntent must disclose consented contact presence as a required boolean and nothing more.');
+}
+for (const piiField of ['name', 'phone']) {
+  if (piiField in (schema.properties || {})) fail(`CommercialIntent public schema must never expose lead ${piiField}.`);
+}
 const schemaText = JSON.stringify(schema).toLowerCase();
 for (const forbidden of ['accepted', 'reserved', 'paid', 'booked', 'confirmed', 'issued', 'payment_status', 'booking_id', 'reservation_id', 'ticket_number', 'policy_number']) {
   if (schemaText.includes(forbidden)) fail(`CommercialIntent schema contains forbidden transactional claim ${forbidden}.`);
@@ -73,6 +85,16 @@ for (const marker of [
 for (const forbiddenPersisted of ["'price_amount'", "'total_price'", "'medical_condition'", "'pregnancy'", "'passport_number'", "'payment_status'"]) {
   if (policy.includes(forbiddenPersisted)) fail(`Commercial intent policy persists forbidden or unverified field ${forbiddenPersisted}.`);
 }
+if (!/const\s+CONTACT_CONSENT_VERSION\s*=\s*'2026-07-19'/.test(policy)) fail('Commercial intent policy must pin the exact lead contact-consent version 2026-07-19.');
+if (!/const\s+SCOPE_CONTRACT_VERSION\s*=\s*'1\.0\.0'/.test(policy) || !policy.includes("'contract_version'  => self::SCOPE_CONTRACT_VERSION")) {
+  fail('Commercial intent scope must keep its own 1.0.0 contract so stored scope digests keep resuming.');
+}
+for (const marker of [
+  'public static function sanitize_contact',
+  'public static function normalize_phone',
+  'tra_vel_commercial_contact_consent_required',
+  'tra_vel_commercial_contact_phone_invalid',
+]) requireText(policy, marker, `Commercial intent consent-gated contact policy is missing ${marker}.`);
 
 if ((store.match(/ENGINE=InnoDB/g) || []).length !== 3) fail('Commercial intent store must install exactly three InnoDB tables.');
 for (const marker of [
@@ -96,6 +118,13 @@ for (const marker of [
   'SHOW INDEX',
 ]) requireText(store, marker, `Commercial intent store is missing ${marker}.`);
 if ((store.match(/UNIQUE KEY/g) || []).length < 5) fail('Commercial intent store lost an ownership, event-order or idempotency uniqueness invariant.');
+if (!/const\s+DB_VERSION\s*=\s*'1\.1\.0'/.test(store)) fail('Commercial intent DB version must advance for the consented contact column.');
+for (const marker of [
+  'contact longtext NULL',
+  "'contact',",
+  "unset( $contact_for_digest['consented_at'] )",
+  '$contact ? Tra_Vel_Commercial_Intent_Policy::canonical_json( $contact ) : null',
+]) requireText(store, marker, `Commercial intent contact storage is missing ${marker}.`);
 
 for (const marker of [
   "'/' . $this->rest_base",
@@ -112,6 +141,20 @@ for (const marker of [
 	'$source_port !== $home_port',
 ]) requireText(controller, marker, `Commercial intent controller is missing ${marker}.`);
 requireText(controller, "if ( ! empty( $result['created'] ) )", 'Commercial intent creation hook must not fire again for idempotent replay or active-scope reuse.');
+for (const marker of [
+  "unset( $raw['contact'] )",
+  'Tra_Vel_Commercial_Intent_Policy::sanitize_contact',
+  "'contact_provided' => ! empty( $intent['contact'] )",
+]) requireText(controller, marker, `Commercial intent consented-contact boundary is missing ${marker}.`);
+const contactExtraction = controller.indexOf("unset( $raw['contact'] )");
+const scopeNormalization = controller.indexOf('Tra_Vel_Commercial_Intent_Policy::normalize_scope( $raw )');
+if (contactExtraction < 0 || scopeNormalization < 0 || contactExtraction > scopeNormalization) {
+  fail('The contact object must be extracted before the scope passes recursive sensitive-field rejection.');
+}
+const publicIntentSection = controller.slice(controller.indexOf('private function public_intent'), controller.indexOf('private function handoff_context'));
+for (const piiMarker of ["'name'", "'phone'", "$intent['contact']['"]) {
+  if (publicIntentSection.includes(piiMarker)) fail(`Public intent presenter must never emit lead contact detail marker ${piiMarker}.`);
+}
 requireText(store, 'CLEANUP_STATUS_OPTION', 'Commercial intent cleanup must expose durable operational status.');
 requireText(store, 'retention_select_failed', 'Commercial intent cleanup must distinguish a failed parent read from an empty batch.');
 requireText(uninstall, 'tra_vel_commercial_intent_cleanup_status', 'Uninstall does not remove the commercial cleanup status after explicit data-removal opt-in.');

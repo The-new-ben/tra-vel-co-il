@@ -21,7 +21,7 @@ $GLOBALS['tvq_handoff_context']   = null;
 $GLOBALS['tvq_registered_routes'] = array();
 $GLOBALS['tvq_uuid_counter']      = 100;
 $GLOBALS['tvq_scheduled_events']  = array();
-$GLOBALS['tvq_options']           = array( 'tra_vel_quote_case_db_version' => '1.0.1', 'tra_vel_agent_db_version' => '1.2.0' );
+$GLOBALS['tvq_options']           = array( 'tra_vel_quote_case_db_version' => '1.1.0', 'tra_vel_agent_db_version' => '1.2.0' );
 $GLOBALS['tvq_assisted_proposal_ready'] = true;
 
 class WP_REST_Controller {
@@ -100,7 +100,7 @@ class Tra_Vel_Test_Quote_Schema_Wpdb {
 		'wp_tra_vel_agent_events' => array( 'id', 'run_id', 'sequence_no', 'event_uuid', 'event_type', 'phase', 'status', 'source', 'visible', 'message', 'payload', 'created_at' ),
 		'wp_tra_vel_agent_approvals' => array( 'id', 'approval_uuid', 'run_id', 'approval_version', 'action_type', 'scope_digest', 'status', 'summary', 'action_snapshot', 'decision_key', 'decided_by', 'created_at', 'expires_at', 'decided_at' ),
 		'wp_tra_vel_agent_limits' => array( 'counter_key', 'counter_value', 'expires_at' ),
-		'wp_tra_vel_quote_cases' => array( 'id', 'case_uuid', 'reference_code', 'source_run_id', 'source_run_uuid', 'source_request_uuid', 'source_request_revision', 'owner_user_id', 'owner_token_hash', 'status', 'case_version', 'current_revision', 'latest_request_digest', 'last_event_sequence', 'service_mode', 'assigned_user_id', 'consent_version', 'consented_at', 'created_at', 'updated_at', 'last_activity_at', 'service_expires_at', 'retention_until', 'closed_at', 'legal_hold' ),
+		'wp_tra_vel_quote_cases' => array( 'id', 'case_uuid', 'reference_code', 'source_run_id', 'source_run_uuid', 'source_request_uuid', 'source_request_revision', 'owner_user_id', 'owner_token_hash', 'status', 'case_version', 'current_revision', 'latest_request_digest', 'last_event_sequence', 'service_mode', 'assigned_user_id', 'consent_version', 'consented_at', 'acquisition', 'contact', 'created_at', 'updated_at', 'last_activity_at', 'service_expires_at', 'retention_until', 'closed_at', 'legal_hold' ),
 		'wp_tra_vel_quote_case_revisions' => array( 'id', 'case_id', 'revision_no', 'source_request_uuid', 'source_request_revision', 'request_digest', 'request_snapshot', 'actor_type', 'actor_user_id', 'created_at' ),
 		'wp_tra_vel_quote_case_events' => array( 'id', 'case_id', 'sequence_no', 'case_version', 'event_uuid', 'event_type', 'from_status', 'to_status', 'actor_type', 'actor_user_id', 'source', 'visibility', 'message', 'payload', 'payload_digest', 'created_at' ),
 		'wp_tra_vel_quote_case_idempotency' => array( 'id', 'operation_scope', 'principal_hash', 'idempotency_key_hash', 'request_digest', 'case_uuid', 'case_version', 'response_code', 'created_at', 'expires_at' ),
@@ -490,7 +490,7 @@ class Tra_Vel_Test_Quote_Case_Store {
 
 	private $next_id = 1;
 
-	public function create_from_run( $run, $principal, $consent_version, $idempotency_key ) {
+	public function create_from_run( $run, $principal, $consent_version, $idempotency_key, $acquisition = array(), $contact = array() ) {
 		unset( $idempotency_key );
 		$this->create_calls++;
 		foreach ( $this->cases as $existing ) {
@@ -520,6 +520,8 @@ class Tra_Vel_Test_Quote_Case_Store {
 			'assigned_user_id'        => 0,
 			'consent_version'         => (string) $consent_version,
 			'consented_at'            => '2030-04-01 10:00:00',
+			'acquisition'             => is_array( $acquisition ) ? $acquisition : array(),
+			'contact'                 => is_array( $contact ) ? $contact : array(),
 			'created_at'              => '2030-04-01 10:00:00',
 			'updated_at'              => '2030-04-01 10:00:00',
 			'retention_until'         => '2030-06-30 10:00:00',
@@ -877,7 +879,7 @@ tvq_assert( 1 === $agent_cleanup->invoke( null, 991, '2030-04-03 00:00:00' ), 'A
 tvq_assert( in_array( 'COMMIT', $GLOBALS['wpdb']->transaction_log, true ), 'AgentRun cleanup did not commit its complete aggregate deletion' );
 
 $schema_health = Tra_Vel_Quote_Case_Store::schema_health();
-tvq_assert( '1.0.1' === $schema_health['installed_schema_version'], 'schema health lost the installed database version' );
+tvq_assert( '1.1.0' === $schema_health['installed_schema_version'], 'schema health lost the installed database version' );
 tvq_assert( true === $schema_health['tables_ready'] && 4 === $schema_health['ready_tables'], 'schema health rejected a complete quote-case database shape' );
 tvq_assert( 4 === $schema_health['transactional_tables'], 'schema health did not require every quote-case table to use InnoDB' );
 tvq_assert( true === $schema_health['required_indexes_ready'] && 7 === $schema_health['ready_indexes'], 'schema health did not verify the unique concurrency indexes' );
@@ -1304,4 +1306,84 @@ tvq_assert( 'operator' === $transition->data['event']['actor_type'] && 'operator
 tvq_assert( 900 === $claim_store->cases[ $claim_case_id ]['assigned_user_id'], 'in-review case was not assigned to the acting operator' );
 tvq_assert( ! isset( $transition->data['booking'], $transition->data['reservation'], $transition->data['price'] ), 'assisted transition invented a transaction' );
 
-echo "Tra-Vel quote case runtime validation passed (cross-store readiness, bounded recovery, monotonic sync, read-error retry, transactional retention, private ownership, handoff, account claim, and operator gates).\n";
+// Lead capture: acquisition attribution and the explicitly consented contact
+// are policy-bounded, stored with the case, surfaced to operators only, and
+// never echoed into traveler payloads. Contact without provable consent fails
+// closed before any durable write.
+$rejected_contact_policy = Tra_Vel_Quote_Case_Policy::sanitize_contact( array( 'name' => 'דנה', 'phone' => '052-510-1555' ) );
+tvq_assert_error( $rejected_contact_policy, 'tra_vel_quote_case_contact_consent_required', 'contact without explicit consent' );
+$stale_contact_policy = Tra_Vel_Quote_Case_Policy::sanitize_contact( array( 'phone' => '0525101555', 'consent' => true, 'consent_version' => '2026-01-01' ) );
+tvq_assert_error( $stale_contact_policy, 'tra_vel_quote_case_contact_consent_required', 'contact with a stale consent version' );
+$bad_phone_policy = Tra_Vel_Quote_Case_Policy::sanitize_contact( array( 'phone' => '12ab34', 'consent' => true, 'consent_version' => Tra_Vel_Quote_Case_Policy::CONTACT_CONSENT_VERSION ) );
+tvq_assert_error( $bad_phone_policy, 'tra_vel_quote_case_contact_phone_invalid', 'invalid callback phone' );
+tvq_assert( '+972525101555' === Tra_Vel_Quote_Case_Policy::normalize_phone( '+972 52-510-1555' ), 'phone normalization lost its international format' );
+tvq_assert( '' === Tra_Vel_Quote_Case_Policy::normalize_phone( '123456' ), 'a six-digit fragment passed phone normalization' );
+$lead_acquisition = Tra_Vel_Quote_Case_Policy::sanitize_acquisition(
+	array(
+		'utm_source'    => 'google',
+		'utm_medium'    => 'cpc',
+		'utm_campaign'  => 'thailand-winter',
+		'utm_term'      => str_repeat( 'k', 200 ),
+		'utm_content'   => 'https://evil.example/track',
+		'landing_path'  => '/deals/thailand/?utm_source=google',
+		'referrer_host' => 'https://www.google.com/search?q=x',
+		'first_seen_at' => '2026-07-19T08:30:00Z',
+		'session_id'    => 'must-be-stripped',
+		'client_ip'     => '10.0.0.1',
+	)
+);
+tvq_assert( 'google' === ( $lead_acquisition['utm_source'] ?? '' ) && 'thailand-winter' === ( $lead_acquisition['utm_campaign'] ?? '' ), 'bounded acquisition lost safe campaign fields' );
+tvq_assert( isset( $lead_acquisition['utm_term'] ) && strlen( $lead_acquisition['utm_term'] ) <= 120, 'acquisition utm_term escaped its 120-character bound' );
+tvq_assert( ! isset( $lead_acquisition['utm_content'] ), 'a URL-bearing utm_content escaped sensitive-pattern redaction' );
+tvq_assert( ! isset( $lead_acquisition['session_id'] ) && ! isset( $lead_acquisition['client_ip'] ), 'unknown acquisition keys were not stripped' );
+tvq_assert( 'www.google.com' === ( $lead_acquisition['referrer_host'] ?? '' ), 'referrer URL was not reduced to its bare host' );
+tvq_assert( '/deals/thailand/?utm_source=google' === ( $lead_acquisition['landing_path'] ?? '' ), 'a safe same-site landing path was not preserved' );
+tvq_assert( '2026-07-19T08:30:00+00:00' === ( $lead_acquisition['first_seen_at'] ?? '' ), 'first_seen_at was not normalized to UTC date-time' );
+tvq_assert( ! isset( Tra_Vel_Quote_Case_Policy::sanitize_acquisition( array( 'landing_path' => 'https://evil.example/x' ) )['landing_path'] ), 'an absolute landing URL escaped the same-site path bound' );
+tvq_assert( array() === Tra_Vel_Quote_Case_Policy::sanitize_acquisition( array( 'utm_source' => '', 'unknown' => 'x' ) ), 'an empty acquisition object did not collapse to nothing stored' );
+
+tvq_reset_runtime();
+list( $lead_controller, $lead_store, $lead_run, $lead_run_token ) = tvq_fixture( 3 );
+$_COOKIE['__Host-tra_vel_agent_run'] = $lead_run['run_uuid'] . '.' . $lead_run_token;
+$unconsented_contact = $lead_controller->create_case( tvq_request( $lead_run, array( 'idempotency_key' => 'quote-create-lead-000001', 'contact' => array( 'name' => 'דנה לוי', 'phone' => '0525101555' ) ) ) );
+tvq_assert_error( $unconsented_contact, 'tra_vel_quote_case_contact_consent_required', 'quote contact without consent' );
+tvq_assert( 0 === $lead_store->create_calls, 'an unconsented contact reached durable case creation' );
+$lead_response = $lead_controller->create_case(
+	tvq_request(
+		$lead_run,
+		array(
+			'idempotency_key' => 'quote-create-lead-000002',
+			'acquisition'     => array( 'utm_source' => 'google', 'utm_medium' => 'cpc', 'utm_campaign' => 'thailand-winter', 'landing_path' => '/deals/thailand/', 'referrer_host' => 'www.google.com', 'first_seen_at' => '2026-07-19T08:30:00Z', 'client_ip' => '10.0.0.1' ),
+			'contact'         => array( 'name' => 'דנה לוי', 'phone' => '+972 52-510-1555', 'consent' => true, 'consent_version' => Tra_Vel_Quote_Case_Policy::CONTACT_CONSENT_VERSION ),
+		)
+	)
+);
+tvq_assert_private( $lead_response, 'lead-capture quote create' );
+tvq_assert_public_contract( $lead_response->data['case'], 'lead-capture quote case' );
+$lead_case_id     = $lead_response->data['case']['case_id'];
+$lead_public_json = (string) wp_json_encode( $lead_response->data, JSON_UNESCAPED_UNICODE );
+tvq_assert( false === strpos( $lead_public_json, '525101555' ) && false === strpos( $lead_public_json, 'דנה' ) && false === strpos( $lead_public_json, 'acquisition' ), 'traveler payload leaked lead contact or acquisition data' );
+$stored_lead_case = $lead_store->get_case_by_uuid( $lead_case_id );
+tvq_assert( 'google' === ( $stored_lead_case['acquisition']['utm_source'] ?? '' ) && '+972525101555' === ( $stored_lead_case['contact']['phone'] ?? '' ), 'the durable case did not retain bounded lead capture' );
+tvq_assert( Tra_Vel_Quote_Case_Policy::CONTACT_CONSENT_VERSION === ( $stored_lead_case['contact']['consent_version'] ?? '' ), 'the stored contact lost its consent version evidence' );
+tvq_assert( ! isset( $stored_lead_case['acquisition']['client_ip'] ), 'an unknown acquisition key reached durable storage' );
+
+$GLOBALS['tvq_capabilities'][902] = array( 'tra_vel_view_quote_cases' => true );
+$GLOBALS['tvq_current_user']      = 902;
+$lead_operator_list = $lead_controller->list_operator_cases( new WP_REST_Request( array( 'status' => '', 'page' => 1, 'per_page' => 30 ) ) );
+tvq_assert_private( $lead_operator_list, 'lead-capture operator list' );
+$lead_operator_case = $lead_operator_list->data['cases'][0];
+tvq_assert( 'google' === ( $lead_operator_case['acquisition']['utm_source'] ?? '' ) && 'thailand-winter' === ( $lead_operator_case['acquisition']['utm_campaign'] ?? '' ), 'the operator queue lost acquisition attribution' );
+tvq_assert( '+972525101555' === ( $lead_operator_case['contact']['phone'] ?? '' ) && 'דנה לוי' === ( $lead_operator_case['contact']['name'] ?? '' ), 'the operator queue lost the consented lead contact' );
+$lead_operator_single = $lead_controller->get_operator_case( new WP_REST_Request( array( 'case_id' => $lead_case_id ) ) );
+tvq_assert_private( $lead_operator_single, 'lead-capture operator detail' );
+tvq_assert( '+972525101555' === ( $lead_operator_single->data['case']['contact']['phone'] ?? '' ) && 'google' === ( $lead_operator_single->data['case']['acquisition']['utm_source'] ?? '' ), 'the operator case detail lost lead capture' );
+$lead_plain_case = $lead_store->get_case_by_uuid( $lead_case_id );
+$lead_plain_case['acquisition'] = array();
+$lead_plain_case['contact']     = array();
+$lead_store->cases[ $lead_case_id ] = $lead_plain_case;
+$lead_absent_single = $lead_controller->get_operator_case( new WP_REST_Request( array( 'case_id' => $lead_case_id ) ) );
+tvq_assert( null === $lead_absent_single->data['case']['acquisition'] && null === $lead_absent_single->data['case']['contact'], 'an absent lead capture was not presented as an explicit null' );
+$GLOBALS['tvq_current_user'] = 0;
+
+echo "Tra-Vel quote case runtime validation passed (cross-store readiness, bounded recovery, monotonic sync, read-error retry, transactional retention, private ownership, handoff, account claim, operator gates, and consent-gated lead capture).\n";

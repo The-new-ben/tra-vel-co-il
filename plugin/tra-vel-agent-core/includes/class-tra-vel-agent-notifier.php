@@ -5,8 +5,11 @@
  * This class only observes actions that upstream code fires after a durable
  * database commit. It never opens a transaction, never mutates aggregate
  * state, and never blocks the traveler response on a failed channel. Every
- * outbound message carries opaque identifiers and the public TV reference
- * only: no traveler personal data, no free-form trip text, no budget amounts.
+ * outbound message carries opaque identifiers and the public TV reference:
+ * no free-form trip text and no budget amounts. The operator-only email may
+ * additionally carry the explicitly consented lead contact and bounded UTM
+ * attribution; the webhook and customer channels never receive contact data
+ * beyond a contact_provided boolean.
  *
  * @package TraVelAgent
  */
@@ -19,7 +22,7 @@ class Tra_Vel_Agent_Notifier {
 	const WEBHOOK_MAX_URL_LENGTH   = 500;
 	const SENT_MARKER_TTL_DAYS     = 30;
 	const MAX_OPERATOR_RECIPIENTS  = 10;
-	const PAYLOAD_CONTRACT_VERSION = '1.0.0';
+	const PAYLOAD_CONTRACT_VERSION = '1.1.0';
 
 	/** @var Tra_Vel_Agent_Store|null Marker storage; injectable for deterministic tests. */
 	private $marker_store;
@@ -56,17 +59,34 @@ class Tra_Vel_Agent_Notifier {
 		if ( ! $this->claim_marker( 'case_created:' . $case_id . ':1' ) ) {
 			return;
 		}
-		$status = is_array( $context ) && isset( $context['status'] ) ? sanitize_key( (string) $context['status'] ) : 'queued';
-		$this->send_operator_email(
-			'Tra-Vel: בקשת סיוע חדשה ' . $reference,
-			array(
-				'התקבלה בקשת סיוע חדשה במערכת Tra-Vel.',
-				'אסמכתה: ' . $reference,
-				'סטטוס: ' . $this->status_label( $status ),
-				'טיפול בתור המפעילים: ' . $this->operator_queue_url(),
-			)
+		$status      = is_array( $context ) && isset( $context['status'] ) ? sanitize_key( (string) $context['status'] ) : 'queued';
+		$case        = $this->read_case( $case_id );
+		$attribution = $this->case_attribution( $case );
+		$contact     = $this->case_contact( $case );
+		$lines       = array(
+			'התקבלה בקשת סיוע חדשה במערכת Tra-Vel.',
+			'אסמכתה: ' . $reference,
+			'סטטוס: ' . $this->status_label( $status ),
 		);
-		$this->send_webhook( 'quote_case.created', $case_id, $reference, null, null, null );
+		if ( $attribution ) {
+			$campaign_parts = array();
+			foreach ( array( 'utm_source' => 'מקור', 'utm_medium' => 'ערוץ', 'utm_campaign' => 'קמפיין' ) as $field => $label ) {
+				if ( isset( $attribution[ $field ] ) ) {
+					$campaign_parts[] = $label . ': ' . $attribution[ $field ];
+				}
+			}
+			$lines[] = 'שיוך שיווקי — ' . implode( ' | ', $campaign_parts );
+		}
+		if ( $contact ) {
+			$lines[] = 'המטייל השאיר פרטי התקשרות בהסכמה מפורשת (' . sanitize_text_field( (string) ( $contact['consent_version'] ?? '' ) ) . '):';
+			if ( '' !== (string) ( $contact['name'] ?? '' ) ) {
+				$lines[] = 'שם: ' . sanitize_text_field( (string) $contact['name'] );
+			}
+			$lines[] = 'טלפון לחזרה: ' . sanitize_text_field( (string) ( $contact['phone'] ?? '' ) );
+		}
+		$lines[] = 'טיפול בתור המפעילים: ' . $this->operator_queue_url();
+		$this->send_operator_email( 'Tra-Vel: בקשת סיוע חדשה ' . $reference, $lines );
+		$this->send_webhook( 'quote_case.created', $case_id, $reference, null, null, null, $attribution ? $attribution : null, (bool) $contact );
 	}
 
 	/**
@@ -105,7 +125,7 @@ class Tra_Vel_Agent_Notifier {
 					'טיפול בתור המפעילים: ' . $this->operator_queue_url(),
 				)
 			);
-			$this->send_webhook( 'assisted_proposal.published', $case_id, $reference, $proposal_id, $revision, null );
+			$this->send_webhook( 'assisted_proposal.published', $case_id, $reference, $proposal_id, $revision, null, null, (bool) $this->case_contact( $case ) );
 		}
 
 		if ( $this->claim_marker( 'customer_proposal:' . $case_id . ':' . $proposal_id . ':' . $revision ) ) {
@@ -154,7 +174,7 @@ class Tra_Vel_Agent_Notifier {
 				'טיפול בתור המפעילים: ' . $this->operator_queue_url(),
 			)
 		);
-		$this->send_webhook( 'quote_case.traveler_action', $case_id, $reference, $proposal_id, $revision > 0 ? $revision : null, $action );
+		$this->send_webhook( 'quote_case.traveler_action', $case_id, $reference, $proposal_id, $revision > 0 ? $revision : null, $action, null, (bool) $this->case_contact( $case ) );
 	}
 
 	/**
@@ -366,21 +386,57 @@ class Tra_Vel_Agent_Notifier {
 	}
 
 	/**
+	 * Extract the bounded, non-personal campaign attribution from a case.
+	 *
+	 * Only utm_source, utm_medium, and utm_campaign leave the aggregate;
+	 * landing paths, referrer hosts, and terms stay operator-only in storage.
+	 *
+	 * @param array|null $case Hydrated quote case, or null on uncertainty.
+	 * @return array<string,string>
+	 */
+	private function case_attribution( $case ) {
+		$acquisition = is_array( $case ) && isset( $case['acquisition'] ) && is_array( $case['acquisition'] ) ? $case['acquisition'] : array();
+		$attribution = array();
+		foreach ( array( 'utm_source', 'utm_medium', 'utm_campaign' ) as $field ) {
+			$value = sanitize_text_field( (string) ( $acquisition[ $field ] ?? '' ) );
+			if ( '' !== $value ) {
+				$attribution[ $field ] = function_exists( 'mb_substr' ) ? mb_substr( $value, 0, 120 ) : substr( $value, 0, 120 );
+			}
+		}
+		return $attribution;
+	}
+
+	/**
+	 * Read the consented lead contact for the operator email only.
+	 *
+	 * @param array|null $case Hydrated quote case, or null on uncertainty.
+	 * @return array<string,string>
+	 */
+	private function case_contact( $case ) {
+		$contact = is_array( $case ) && isset( $case['contact'] ) && is_array( $case['contact'] ) ? $case['contact'] : array();
+		return '' !== (string) ( $contact['phone'] ?? '' ) ? $contact : array();
+	}
+
+	/**
 	 * POST one bounded JSON event to the optional encrypted webhook endpoint.
 	 *
 	 * One transport retry at most; HTTP rejections are never retried and never
-	 * block the traveler response. The payload carries opaque identifiers and
-	 * the public reference only.
+	 * block the traveler response. The payload carries opaque identifiers, the
+	 * public reference, at most the three bounded UTM attribution fields, and
+	 * a contact_provided boolean. Lead names and phone numbers never leave the
+	 * operator-readable store through this channel.
 	 *
-	 * @param string      $event       Namespaced event name.
-	 * @param string      $case_id     Quote-case UUID.
-	 * @param string      $reference   Public TV reference.
-	 * @param string|null $proposal_id Proposal UUID when applicable.
-	 * @param int|null    $revision    Published revision when applicable.
-	 * @param string|null $action      Traveler action when applicable.
+	 * @param string      $event            Namespaced event name.
+	 * @param string      $case_id          Quote-case UUID.
+	 * @param string      $reference        Public TV reference.
+	 * @param string|null $proposal_id      Proposal UUID when applicable.
+	 * @param int|null    $revision         Published revision when applicable.
+	 * @param string|null $action           Traveler action when applicable.
+	 * @param array|null  $acquisition      Bounded utm_source/utm_medium/utm_campaign attribution.
+	 * @param bool        $contact_provided Whether a consented lead contact exists on the case.
 	 * @return void
 	 */
-	private function send_webhook( $event, $case_id, $reference, $proposal_id, $revision, $action ) {
+	private function send_webhook( $event, $case_id, $reference, $proposal_id, $revision, $action, $acquisition = null, $contact_provided = false ) {
 		$url = self::get_webhook_url();
 		if ( '' === $url ) {
 			return;
@@ -393,6 +449,8 @@ class Tra_Vel_Agent_Notifier {
 			'proposal_id'      => $proposal_id,
 			'revision'         => $revision,
 			'action'           => $action,
+			'acquisition'      => is_array( $acquisition ) && array() !== $acquisition ? $acquisition : null,
+			'contact_provided' => (bool) $contact_provided,
 			'occurred_at'      => gmdate( 'c' ),
 		);
 		$args = array(

@@ -2,7 +2,7 @@
 Contributors: tra-vel
 Requires at least: 6.5
 Requires PHP: 7.4
-Stable tag: 0.8.0
+Stable tag: 0.9.0
 License: Proprietary
 
 Private AI travel planning, durable assisted-quote cases, operator progress, and protected approval foundations for Tra-Vel.
@@ -17,11 +17,20 @@ Version 0.7.0 adds the end-to-end sandbox commerce, supplier operations, VIP ser
 
 Version 0.8.0 adds the post-commit notification spine, bounded provider retries with raised interpretation capacity, and the truthful assisted-state Trip Cockpit feed. Notifications carry only the opaque TV reference; the optional operator webhook endpoint is stored encrypted and is never echoed by REST.
 
+Version 0.9.0 adds bounded acquisition attribution on quote cases and an optional, explicitly consented lead contact on quote cases and commercial intents. Both live in operator-readable storage only: traveler-visible payloads never echo them, the webhook carries at most three UTM fields plus a contact_provided boolean, and the records are deleted with their parent aggregate by the existing retention cleanup.
+
 == Security ==
 
 Use a hosting environment variable or wp-config.php constant for the OpenAI key when possible. The administrator-only encrypted-option fallback requires sodium. Keys are never returned by REST.
 
 == Changelog ==
+
+= 0.9.0 =
+
+* Acquisition attribution: quote-case creation accepts an optional bounded `acquisition` object (five UTM fields at 120 characters, a same-site landing path, a referrer host, and a first-seen timestamp). Unknown keys are stripped, UTM values pass the planning-text sensitive-pattern redaction, empty objects store nothing, and the record survives request-revision minimization on a dedicated case column.
+* Operator lead visibility: operator queue list and detail responses expose `acquisition` and the consented `contact`; the traveler QuoteCase DTO, events, logs, and webhook bodies never include them. The 0.8.0 creation email adds utm_source/utm_medium/utm_campaign and the consented name and phone; the webhook payload (contract 1.1.0) adds the three UTM fields and a `contact_provided` boolean only.
+* Consented lead contact: quote-case creation and commercial intents accept an optional `contact` object (name at 80 characters, phone normalized to plus-and-digits with 7 to 15 digits) that is rejected with 400 unless consent is true and consent_version equals the new CONTACT_CONSENT_VERSION `2026-07-19`. Public commercial responses disclose a `contact_provided` boolean only (CommercialIntent DTO 1.1.0, stored scope contract unchanged); retention cleanup deletes the contact with its parent row.
+* Schema migrations and health: quote-case storage advances to 1.1.0 (acquisition and contact columns) and commercial-intent storage to 1.1.0 (contact column) with fail-closed column inspection; health adds the truthful `lead_contact_capture` capability; private lead-capture schemas and deployment gates enforce the new bounds.
 
 = 0.8.0 =
 

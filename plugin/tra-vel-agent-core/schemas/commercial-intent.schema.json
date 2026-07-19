@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://tra-vel.co.il/wp-json/tra-vel-agent/v1/schema/commercial-intent#1.0.0",
+  "$id": "https://tra-vel.co.il/wp-json/tra-vel-agent/v1/schema/commercial-intent#1.1.0",
   "title": "Tra-Vel Commercial Intent",
-  "description": "A private, durable and non-binding record of a traveler's request to verify a travel option. It is not an order, reservation, booking, ticket, policy or payment.",
+  "description": "A private, durable and non-binding record of a traveler's request to verify a travel option. It is not an order, reservation, booking, ticket, policy or payment. When a traveler explicitly consents to callback contact, the public record discloses only a contact_provided boolean; the bounded name and phone stay in operator-readable storage.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -14,12 +14,13 @@
     "ownership",
     "vertical",
     "scope",
+    "contact_provided",
     "created_at",
     "updated_at",
     "expires_at"
   ],
   "properties": {
-    "contract_version": {"const": "1.0.0"},
+    "contract_version": {"const": "1.1.0"},
     "intent_id": {"type": "string", "format": "uuid"},
     "reference": {"type": "string", "pattern": "^TVI-[A-Z0-9]{8}$"},
     "status": {"enum": ["active", "expired"]},
@@ -27,6 +28,7 @@
     "ownership": {"enum": ["account", "private_browser_owner"]},
     "vertical": {"enum": ["flight", "hotel", "package", "insurance", "car", "transfer", "activity", "esim"]},
     "scope": {"$ref": "#/$defs/scope"},
+    "contact_provided": {"type": "boolean"},
     "created_at": {"type": "string", "format": "date-time"},
     "updated_at": {"type": "string", "format": "date-time"},
     "expires_at": {"type": "string", "format": "date-time"}

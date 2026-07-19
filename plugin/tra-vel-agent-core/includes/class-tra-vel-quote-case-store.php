@@ -8,7 +8,7 @@
 defined( 'ABSPATH' ) || exit;
 
 class Tra_Vel_Quote_Case_Store {
-	const DB_VERSION        = '1.0.1';
+	const DB_VERSION        = '1.1.0';
 	const DB_VERSION_OPTION = 'tra_vel_quote_case_db_version';
 	const ACTIVE_DAYS       = 30;
 	const RETENTION_DAYS    = 90;
@@ -62,6 +62,8 @@ class Tra_Vel_Quote_Case_Store {
 			assigned_user_id bigint(20) unsigned NOT NULL DEFAULT 0,
 			consent_version varchar(24) NOT NULL,
 			consented_at datetime NOT NULL,
+			acquisition longtext NULL,
+			contact longtext NULL,
 			created_at datetime NOT NULL,
 			updated_at datetime NOT NULL,
 			last_activity_at datetime NOT NULL,
@@ -205,18 +207,27 @@ class Tra_Vel_Quote_Case_Store {
 	 * @param array  $principal          user_id/token_hash/principal_hash.
 	 * @param string $consent_version    Accepted policy version.
 	 * @param string $idempotency_key    Caller operation key.
+	 * @param array  $acquisition        Policy-bounded acquisition attribution.
+	 * @param array  $contact            Policy-bounded consented lead contact.
 	 * @return array|WP_Error {case,replayed,created}.
 	 */
-	public function create_from_run( $run, $principal, $consent_version, $idempotency_key ) {
+	public function create_from_run( $run, $principal, $consent_version, $idempotency_key, $acquisition = array(), $contact = array() ) {
 		global $wpdb;
 		$valid = Tra_Vel_Quote_Case_Policy::validate_ready_run( $run );
 		if ( is_wp_error( $valid ) ) {
 			return $valid;
 		}
 
+		$acquisition       = is_array( $acquisition ) ? $acquisition : array();
+		$contact           = is_array( $contact ) ? $contact : array();
+		// The consent timestamp is generated per attempt and must not break
+		// an idempotent replay of the same logical request.
+		$contact_for_digest = $contact;
+		unset( $contact_for_digest['consented_at'] );
+		$lead_digest       = Tra_Vel_Quote_Case_Policy::digest( array( 'acquisition' => $acquisition, 'contact' => $contact_for_digest ) );
 		$snapshot          = Tra_Vel_Quote_Case_Policy::snapshot( $run['trip_request'] );
 		$request_digest    = Tra_Vel_Quote_Case_Policy::digest( $snapshot );
-		$operation_digest  = hash( 'sha256', implode( '|', array( $run['run_uuid'], $request_digest, $consent_version ) ) );
+		$operation_digest  = hash( 'sha256', implode( '|', array( $run['run_uuid'], $request_digest, $consent_version, $lead_digest ) ) );
 		$principal_hash    = (string) $principal['principal_hash'];
 		$idempotency_key   = $this->sanitize_idempotency_key( $idempotency_key );
 		$replay            = $this->idempotent_result( 'case.create', $principal_hash, $idempotency_key, $operation_digest );
@@ -278,6 +289,8 @@ class Tra_Vel_Quote_Case_Store {
 				'assigned_user_id'        => 0,
 				'consent_version'         => (string) $consent_version,
 				'consented_at'            => $now,
+				'acquisition'             => $acquisition ? wp_json_encode( $acquisition, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES ) : null,
+				'contact'                 => $contact ? wp_json_encode( $contact, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES ) : null,
 				'created_at'              => $now,
 				'updated_at'              => $now,
 				'last_activity_at'        => $now,
@@ -286,7 +299,7 @@ class Tra_Vel_Quote_Case_Store {
 				'closed_at'               => null,
 				'legal_hold'              => 0,
 			),
-			array( '%s', '%s', '%d', '%s', '%s', '%d', '%d', '%s', '%s', '%d', '%d', '%s', '%d', '%s', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d' )
+			array( '%s', '%s', '%d', '%s', '%s', '%d', '%d', '%s', '%s', '%d', '%d', '%s', '%d', '%s', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d' )
 		);
 		if ( false === $inserted ) {
 			$wpdb->query( 'ROLLBACK' );
@@ -1459,6 +1472,10 @@ class Tra_Vel_Quote_Case_Store {
 		foreach ( array( 'id', 'source_run_id', 'source_request_revision', 'owner_user_id', 'case_version', 'current_revision', 'last_event_sequence', 'assigned_user_id', 'legal_hold' ) as $field ) {
 			$row[ $field ] = (int) $row[ $field ];
 		}
+		foreach ( array( 'acquisition', 'contact' ) as $lead_field ) {
+			$decoded            = array_key_exists( $lead_field, $row ) ? json_decode( (string) $row[ $lead_field ], true ) : null;
+			$row[ $lead_field ] = is_array( $decoded ) ? $decoded : array();
+		}
 		$joined_snapshot = array_key_exists( 'current_request_snapshot', $row ) ? json_decode( (string) $row['current_request_snapshot'], true ) : null;
 		unset( $row['current_request_snapshot'] );
 		if ( is_array( $joined_snapshot ) ) {
@@ -1610,7 +1627,7 @@ class Tra_Vel_Quote_Case_Store {
 		global $wpdb;
 		$requirements = array(
 			self::cases_table() => array(
-				'columns' => array( 'id', 'case_uuid', 'reference_code', 'source_run_id', 'source_run_uuid', 'source_request_uuid', 'source_request_revision', 'owner_user_id', 'owner_token_hash', 'status', 'case_version', 'current_revision', 'latest_request_digest', 'last_event_sequence', 'service_mode', 'assigned_user_id', 'consent_version', 'consented_at', 'created_at', 'updated_at', 'last_activity_at', 'service_expires_at', 'retention_until', 'closed_at', 'legal_hold' ),
+				'columns' => array( 'id', 'case_uuid', 'reference_code', 'source_run_id', 'source_run_uuid', 'source_request_uuid', 'source_request_revision', 'owner_user_id', 'owner_token_hash', 'status', 'case_version', 'current_revision', 'latest_request_digest', 'last_event_sequence', 'service_mode', 'assigned_user_id', 'consent_version', 'consented_at', 'acquisition', 'contact', 'created_at', 'updated_at', 'last_activity_at', 'service_expires_at', 'retention_until', 'closed_at', 'legal_hold' ),
 				'unique'  => array( array( 'case_uuid' ), array( 'reference_code' ), array( 'source_run_uuid' ) ),
 			),
 			self::revisions_table() => array(

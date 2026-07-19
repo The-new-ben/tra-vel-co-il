@@ -634,6 +634,10 @@ class Tra_Vel_Agent_Controller extends WP_REST_Controller {
 					'operator_queue'         => class_exists( 'Tra_Vel_Quote_Case_Controller' ),
 					'commercial_intents'     => class_exists( 'Tra_Vel_Commercial_Intent_Store' ),
 					'durable_commercial_handoffs' => class_exists( 'Tra_Vel_Commercial_Intent_Controller' ),
+					'lead_contact_capture'   => class_exists( 'Tra_Vel_Commercial_Intent_Policy' )
+						&& defined( 'Tra_Vel_Commercial_Intent_Policy::CONTACT_CONSENT_VERSION' )
+						&& class_exists( 'Tra_Vel_Quote_Case_Policy' )
+						&& defined( 'Tra_Vel_Quote_Case_Policy::CONTACT_CONSENT_VERSION' ),
 					'sourced_assisted_proposals' => $proposal_contract_ready,
 					'audited_proposal_actions' => $proposal_contract_ready && class_exists( 'Tra_Vel_Quote_Case_Capabilities' ) && defined( 'Tra_Vel_Quote_Case_Capabilities::PUBLISH_PROPOSALS' ),
 					'attested_trip_care_receipts' => $vip_intake_ready,

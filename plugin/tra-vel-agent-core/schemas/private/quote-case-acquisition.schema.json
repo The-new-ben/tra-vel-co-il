@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://tra-vel.co.il/schemas/private/quote-case-acquisition.schema.json",
+  "title": "Tra-Vel private quote-case acquisition attribution",
+  "description": "The closed, bounded marketing-attribution record stored with an assisted quote case. It is operator-readable only: it never appears in traveler-visible payloads, event payloads, or logs, and only utm_source, utm_medium, and utm_campaign may leave through the operator notification email and webhook. Every field is optional; an object with no surviving fields is not stored at all.",
+  "type": "object",
+  "additionalProperties": false,
+  "minProperties": 1,
+  "properties": {
+    "utm_source": { "type": "string", "minLength": 1, "maxLength": 120 },
+    "utm_medium": { "type": "string", "minLength": 1, "maxLength": 120 },
+    "utm_campaign": { "type": "string", "minLength": 1, "maxLength": 120 },
+    "utm_term": { "type": "string", "minLength": 1, "maxLength": 120 },
+    "utm_content": { "type": "string", "minLength": 1, "maxLength": 120 },
+    "landing_path": { "type": "string", "minLength": 1, "maxLength": 200, "pattern": "^/(?:[^/].*)?$" },
+    "referrer_host": { "type": "string", "minLength": 1, "maxLength": 120, "pattern": "^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$" },
+    "first_seen_at": { "type": "string", "format": "date-time" }
+  }
+}
