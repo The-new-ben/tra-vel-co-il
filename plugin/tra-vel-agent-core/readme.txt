@@ -2,7 +2,7 @@
 Contributors: tra-vel
 Requires at least: 6.5
 Requires PHP: 7.4
-Stable tag: 0.7.0
+Stable tag: 0.8.0
 License: Proprietary
 
 Private AI travel planning, durable assisted-quote cases, operator progress, and protected approval foundations for Tra-Vel.
@@ -15,11 +15,20 @@ Raw natural-language prompts are processed in memory and are not persisted. Anon
 
 Version 0.7.0 adds the end-to-end sandbox commerce, supplier operations, VIP servicing, traveler registration, local tourism, loyalty value, and private Trip Cockpit foundations. Customer-safe views are owner-bound, capability-scoped, no-store, and revisioned; simulated commercial facts remain explicitly sandboxed until a validated provider response supplies live availability, price, and terms.
 
+Version 0.8.0 adds the post-commit notification spine, bounded provider retries with raised interpretation capacity, and the truthful assisted-state Trip Cockpit feed. Notifications carry only the opaque TV reference; the optional operator webhook endpoint is stored encrypted and is never echoed by REST.
+
 == Security ==
 
 Use a hosting environment variable or wp-config.php constant for the OpenAI key when possible. The administrator-only encrypted-option fallback requires sodium. Keys are never returned by REST.
 
 == Changelog ==
+
+= 0.8.0 =
+
+* Notification spine: post-commit `tra_vel_quote_case_created`, `tra_vel_assisted_proposal_published`, and `tra_vel_quote_case_traveler_action` actions with idempotent send-once markers, filterable operator email, an optional encrypted webhook channel behind admin-only REST settings, and a privacy-minimal Hebrew customer email on proposal publication.
+* Provider resilience and capacity: bounded interpreter retries (two at most, transport/429/5xx only, jittered exponential backoff, Retry-After honored up to eight seconds) plus a 200-per-day global and 8-per-10-minutes visitor interpretation default.
+* Trip Cockpit feed: wired the authoritative source provider and lifecycle emitter, added a truthful assisted-state snapshot projector from durable quote cases and published proposals only, and re-enabled the theme cockpit UI via `tra_vel_v2_cockpit_feed_available`.
+* Release mechanics: version, readme, health fixtures, and validator pins moved to 0.8.0 while theme compatibility stays at Agent Core 0.7.0 or newer.
 
 = 0.7.0 =
 

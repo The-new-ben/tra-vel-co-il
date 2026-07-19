@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tra-Vel Agent Core
  * Description: Private AI travel planning plus durable, consented assisted-quote operations for Tra-Vel.
- * Version: 0.7.0
+ * Version: 0.8.0
  * Requires at least: 6.5
  * Requires PHP: 7.4
  * Author: Tra-Vel
@@ -11,7 +11,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'TRA_VEL_AGENT_VERSION', '0.7.0' );
+define( 'TRA_VEL_AGENT_VERSION', '0.8.0' );
 define( 'TRA_VEL_AGENT_FILE', __FILE__ );
 define( 'TRA_VEL_AGENT_PATH', __DIR__ );
 
@@ -33,6 +33,7 @@ require_once TRA_VEL_AGENT_PATH . '/includes/class-tra-vel-assisted-proposal-pol
 require_once TRA_VEL_AGENT_PATH . '/includes/class-tra-vel-assisted-proposal-composer.php';
 require_once TRA_VEL_AGENT_PATH . '/includes/class-tra-vel-assisted-proposal-store.php';
 require_once TRA_VEL_AGENT_PATH . '/includes/class-tra-vel-assisted-proposal-controller.php';
+require_once TRA_VEL_AGENT_PATH . '/includes/class-tra-vel-agent-notifier.php';
 require_once TRA_VEL_AGENT_PATH . '/includes/commerce/bootstrap.php';
 require_once TRA_VEL_AGENT_PATH . '/includes/vip/bootstrap.php';
 require_once TRA_VEL_AGENT_PATH . '/includes/local-tourism/bootstrap.php';
@@ -88,9 +89,20 @@ add_action(
 		Tra_Vel_Traveler_Registration_Store::maybe_upgrade();
 		Tra_Vel_Customer_Trip_Cockpit_Store::maybe_upgrade();
 		( new Tra_Vel_Customer_Trip_Cockpit_Source_Assembler() )->register_hooks();
+		( new Tra_Vel_Customer_Trip_Cockpit_Authoritative_Source_Provider() )->register_hooks();
+		( new Tra_Vel_Customer_Trip_Cockpit_Lifecycle_Emitter() )->register_hooks();
+		( new Tra_Vel_Customer_Trip_Cockpit_Assisted_Snapshot_Provider() )->register_hooks();
+		( new Tra_Vel_Agent_Notifier() )->register_hooks();
 		Tra_Vel_Quote_Case_Capabilities::maybe_install();
 	}
 );
+
+/**
+ * Theme 1.21.0 gates its Trip Cockpit UI on this filter. Agent Core 0.8.0
+ * ships a truthful assisted-state feed behind the cockpit REST route, so the
+ * plugin now declares that feed available.
+ */
+add_filter( 'tra_vel_v2_cockpit_feed_available', '__return_true' );
 
 add_action(
 	'tra_vel_agent_run_revised',
