@@ -235,6 +235,7 @@ class Tra_Vel_Plugin_Deploy_Controller extends WP_REST_Controller {
 			);
 			update_option( self::OPTION_LAST, $deployment, false );
 			$this->prune_backups();
+			$this->purge_site_caches();
 			return new WP_REST_Response(
 				array(
 					'ok'      => true,
@@ -283,10 +284,21 @@ class Tra_Vel_Plugin_Deploy_Controller extends WP_REST_Controller {
 			}
 			$status = $this->get_status()->get_data();
 			update_option( self::OPTION_LAST, array( 'rolled_back_at' => gmdate( 'c' ), 'backup' => $backup_name, 'version' => $status['installed_version'], 'content_sha256' => $status['installed_fingerprint'], 'user_id' => get_current_user_id() ), false );
+			$this->purge_site_caches();
 			return rest_ensure_response( array( 'ok' => true, 'restored' => $backup_name, 'version' => $status['installed_version'], 'content_sha256' => $status['installed_fingerprint'], 'active' => $status['active'] ) );
 		} finally {
 			$this->release_lock( $lease );
 		}
+	}
+
+	/**
+	 * Purge page and object caches after a plugin file mutation so runtime
+	 * behavior matches the deployed release immediately. LiteSpeed purge is a
+	 * no-op when the host does not run it.
+	 */
+	private function purge_site_caches() {
+		do_action( 'litespeed_purge_all' );
+		wp_cache_flush();
 	}
 
 	public function remove_failed_fresh_install( WP_REST_Request $request ) {
