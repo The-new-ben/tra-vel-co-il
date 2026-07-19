@@ -533,6 +533,104 @@ class Tra_Vel_Agent_Store {
 		return is_array( $row ) ? $this->hydrate_run( $row ) : null;
 	}
 
+	/**
+	 * List resumable runs for one authenticated WordPress account.
+	 *
+	 * The account identifier is supplied by the authenticated controller, never
+	 * by a request parameter. Guest and expired rows are excluded in SQL, and
+	 * the primary key is the deterministic tie-breaker for equal update times.
+	 *
+	 * @param int         $user_id   Current WordPress user ID.
+	 * @param int         $limit     Requested result limit.
+	 * @param string|null $read_error Database error, when the SELECT failed.
+	 * @return array
+	 */
+	public function list_owned_runs( $user_id, $limit = 12, &$read_error = null ) {
+		global $wpdb;
+		$user_id   = absint( $user_id );
+		$limit     = min( 20, max( 1, absint( $limit ) ) );
+		$read_error = '';
+		if ( $user_id < 1 ) {
+			return array();
+		}
+
+		$was_suppressed   = $wpdb->suppress_errors();
+		$wpdb->last_error = '';
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				'SELECT id,run_uuid,status,mode,locale,trip_request,proposals,created_at,updated_at,expires_at FROM ' . self::runs_table() . ' WHERE owner_user_id = %d AND expires_at >= %s ORDER BY updated_at DESC, id DESC LIMIT %d',
+				$user_id,
+				current_time( 'mysql', true ),
+				$limit
+			),
+			ARRAY_A
+		);
+		$read_error = (string) $wpdb->last_error;
+		if ( ! is_array( $rows ) && '' === $read_error ) {
+			$read_error = 'unknown AgentRun list read failure';
+		}
+		$wpdb->suppress_errors( $was_suppressed );
+		if ( '' !== $read_error || ! is_array( $rows ) ) {
+			return array();
+		}
+		return array_map( array( $this, 'hydrate_run_summary_row' ), $rows );
+	}
+
+	/**
+	 * Batch-load only the ownership fields needed to verify source-run resume.
+	 *
+	 * @param array       $run_uuids Source AgentRun UUIDs.
+	 * @param string|null $read_error Database error, when the SELECT failed.
+	 * @return array Rows keyed by run UUID.
+	 */
+	public function get_run_ownership_by_uuids( $run_uuids, &$read_error = null ) {
+		global $wpdb;
+		$run_uuids = array_slice(
+			array_values(
+				array_unique(
+					array_filter(
+						array_map( 'strval', is_array( $run_uuids ) ? $run_uuids : array() ),
+						static function ( $run_uuid ) {
+							return (bool) preg_match( '/^[0-9a-fA-F-]{36}$/', $run_uuid );
+						}
+					)
+				)
+			),
+			0,
+			50
+		);
+		$read_error = '';
+		if ( ! $run_uuids ) {
+			return array();
+		}
+
+		$placeholders      = implode( ',', array_fill( 0, count( $run_uuids ), '%s' ) );
+		$was_suppressed   = $wpdb->suppress_errors();
+		$wpdb->last_error = '';
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				'SELECT run_uuid,owner_user_id,owner_token_hash,expires_at FROM ' . self::runs_table() . ' WHERE run_uuid IN (' . $placeholders . ')',
+				$run_uuids
+			),
+			ARRAY_A
+		);
+		$read_error = (string) $wpdb->last_error;
+		$wpdb->suppress_errors( $was_suppressed );
+		if ( '' !== $read_error || ! is_array( $rows ) ) {
+			return array();
+		}
+
+		$indexed = array();
+		foreach ( $rows as $row ) {
+			if ( ! is_array( $row ) || empty( $row['run_uuid'] ) ) {
+				continue;
+			}
+			$row['owner_user_id'] = (int) $row['owner_user_id'];
+			$indexed[ (string) $row['run_uuid'] ] = $row;
+		}
+		return $indexed;
+	}
+
 	public function get_events( $run_id, $after = 0 ) {
 		global $wpdb;
 		$rows = $wpdb->get_results( $wpdb->prepare( 'SELECT * FROM ' . self::events_table() . ' WHERE run_id = %d AND sequence_no > %d ORDER BY sequence_no ASC', absint( $run_id ), absint( $after ) ), ARRAY_A );
@@ -592,6 +690,15 @@ class Tra_Vel_Agent_Store {
 		}
 		$row['id']            = (int) $row['id'];
 		$row['owner_user_id'] = (int) $row['owner_user_id'];
+		return $row;
+	}
+
+	private function hydrate_run_summary_row( $row ) {
+		foreach ( array( 'trip_request', 'proposals' ) as $field ) {
+			$decoded       = json_decode( (string) ( $row[ $field ] ?? '' ), true );
+			$row[ $field ] = is_array( $decoded ) ? $decoded : array();
+		}
+		$row['id'] = (int) $row['id'];
 		return $row;
 	}
 

@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://tra-vel.co.il/wp-json/tra-vel-agent/v1/schema/quote-case#1.0.0",
+  "$id": "https://tra-vel.co.il/wp-json/tra-vel-agent/v1/schema/quote-case#1.1.0",
   "title": "Tra-Vel QuoteCase",
   "description": "The traveler-safe representation of a persistent assisted quote case.",
   "type": "object",
@@ -16,6 +16,7 @@
     "source",
     "summary",
     "next_action",
+    "resume_available",
     "events",
     "created_at",
     "updated_at",
@@ -23,7 +24,7 @@
   ],
   "properties": {
     "contract_version": {
-      "const": "1.0.0"
+      "const": "1.1.0"
     },
     "case_id": {
       "type": "string",
@@ -264,12 +265,15 @@
         }
       }
     },
+    "resume_available": {
+      "type": "boolean"
+    },
     "events": {
       "type": "array",
       "minItems": 1,
       "maxItems": 20,
       "items": {
-        "$ref": "https://tra-vel.co.il/wp-json/tra-vel-agent/v1/schema/quote-case-event#1.0.0"
+        "$ref": "https://tra-vel.co.il/wp-json/tra-vel-agent/v1/schema/quote-case-event#1.1.0"
       }
     },
     "created_at": {

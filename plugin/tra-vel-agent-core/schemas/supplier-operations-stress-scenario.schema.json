@@ -1,0 +1,88 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://tra-vel.co.il/schemas/supplier-operations-stress-scenario.schema.json",
+  "title": "Tra-Vel deterministic supplier operations stress matrix",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract_version", "environment", "fixture_id", "clock_started_at", "scenarios"],
+  "properties": {
+    "contract_version": { "const": "1.0.0" },
+    "environment": { "const": "sandbox" },
+    "fixture_id": { "type": "string", "pattern": "^supplier_stress_[a-z0-9_]{8,64}$" },
+    "clock_started_at": { "type": "string", "format": "date-time" },
+    "scenarios": {
+      "type": "array",
+      "minItems": 8,
+      "items": { "$ref": "#/definitions/scenario" }
+    }
+  },
+  "definitions": {
+    "onboardingState": {
+      "enum": ["draft", "commercial_review", "security_review", "technical_certification", "operations_review", "sandbox_ready", "sandbox_active", "live_review", "live_ready", "live_active", "suspended", "migrating", "retired", "disabled"]
+    },
+    "healthState": { "enum": ["healthy", "degraded", "open", "half_open", "offline", "disabled"] },
+    "operationState": { "enum": ["queued", "started", "succeeded", "failed", "uncertain", "reconciled"] },
+    "settlementState": { "enum": ["unreported", "reported", "eligible", "payable", "paid", "reversed", "disputed"] },
+    "revisionState": { "enum": ["draft", "certified", "active", "superseded", "rolled_back", "retired"] },
+    "stateVector": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["onboarding", "health", "operation", "settlement", "revision"],
+      "properties": {
+        "onboarding": { "$ref": "#/definitions/onboardingState" },
+        "health": { "$ref": "#/definitions/healthState" },
+        "operation": { "$ref": "#/definitions/operationState" },
+        "settlement": { "$ref": "#/definitions/settlementState" },
+        "revision": { "$ref": "#/definitions/revisionState" }
+      }
+    },
+    "providerStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sequence", "at_offset_seconds", "event", "outcome"],
+      "properties": {
+        "sequence": { "type": "integer", "minimum": 1 },
+        "at_offset_seconds": { "type": "integer", "minimum": 0, "maximum": 2592000 },
+        "event": { "enum": ["dispatch", "timeout", "webhook", "credential_expiry", "terms_update", "refund_report", "settlement_statement", "migration_cutover"] },
+        "outcome": { "enum": ["accepted", "rejected", "uncertain", "duplicate", "late", "mismatch", "unavailable", "revision_changed"] }
+      }
+    },
+    "scenario": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scenario_id", "seed", "injected_at", "injection", "provider_script", "initial_states", "expected_states", "expected_actions", "invariants", "customer_projection"],
+      "properties": {
+        "scenario_id": { "type": "string", "pattern": "^stress_[a-z0-9_]{5,64}$" },
+        "seed": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+        "injected_at": { "type": "string", "format": "date-time" },
+        "injection": {
+          "enum": ["supplier_outage", "partial_confirmation", "duplicate_late_webhook", "credential_rotation", "terms_revision_mid_checkout", "refund_mismatch", "settlement_dispute", "provider_acquisition_migration"]
+        },
+        "provider_script": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/definitions/providerStep" }
+        },
+        "initial_states": { "$ref": "#/definitions/stateVector" },
+        "expected_states": { "$ref": "#/definitions/stateVector" },
+        "expected_actions": {
+          "type": "array",
+          "minItems": 2,
+          "uniqueItems": true,
+          "items": {
+            "enum": ["open_circuit", "block_mutation", "reconcile_authoritative_state", "preserve_partial_success", "deduplicate_event", "quarantine_late_event", "rotate_credential", "retire_old_credential", "revalidate_terms", "expire_decision", "require_reapproval", "open_refund_variance", "freeze_settlement", "open_settlement_dispute", "preserve_evidence", "route_after_hours", "create_migration_revision", "dual_read_compare", "rollback_revision", "notify_operator"]
+          }
+        },
+        "invariants": {
+          "type": "array",
+          "minItems": 2,
+          "uniqueItems": true,
+          "items": {
+            "enum": ["no_duplicate_side_effect", "no_success_without_evidence", "uncertain_not_failed", "partial_success_visible", "raw_payload_not_persisted", "credential_never_logged", "old_credential_revoked", "decision_binds_terms_revision", "stale_terms_never_execute", "refund_ledgers_remain_separate", "settlement_math_balances", "dispute_preserves_statement", "migration_keeps_reference_map", "rollback_target_is_immutable", "customer_copy_reflects_truth", "after_hours_owner_and_timer"]
+          }
+        },
+        "customer_projection": { "enum": ["attention_required", "supplier_processing", "recovery_in_progress", "approval_required", "financial_review", "migration_in_progress"] }
+      }
+    }
+  }
+}

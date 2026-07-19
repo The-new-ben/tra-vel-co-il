@@ -90,23 +90,34 @@ function tra_vel_v2_enrich_yoast_website_schema( $data ) {
 add_filter( 'wpseo_schema_website', 'tra_vel_v2_enrich_yoast_website_schema' );
 
 /**
+ * Whether the current public request must remain outside the search index.
+ *
+ * Core and plugin robots emitters share this predicate so installing AIOSEO
+ * cannot bypass the private-page, facet or incomplete-guide boundary.
+ */
+function tra_vel_v2_should_noindex_public_request() {
+	$private_page = is_page_template( 'page-saved.php' ) || is_page_template( 'page-account.php' ) || is_page( array( 'saved', 'account' ) );
+	$incomplete_guide = is_singular() && tra_vel_v2_is_destination_guide() && ! tra_vel_v2_is_guide_publication_ready();
+	$facet_keys   = array(
+		'q', 'origin', 'destination', 'destination_mode', 'selection_destination', 'product', 'focus', 'layer', 'depart', 'departure', 'return', 'departure_date', 'return_date', 'date', 'dates', 'route', 'checkin', 'checkout', 'check_in', 'check_out', 'start_date', 'end_date', 'adults', 'children', 'infants', 'rooms', 'travelers', 'party',
+		'currency', 'sort', 'stops', 'budget', 'hotel_class', 'amenities',
+		'direct', 'trip', 'max_stops', 'max_duration', 'allow_overnight', 'flexible', 'flexibility', 'area', 'hotel_area', 'trip_destination', 'transfers', 'kosher', 'accessibility', 'vibe',
+		'neighborhood', 'insurance', 'activities', 'scope', 'selection_id', 'selection_kind', 'latitude', 'longitude', 'map_lat', 'map_lng', 'map_zoom',
+		'prompt', 'intent', 'mode', 'cabin', 'trip_style', 'insurance_tier',
+	);
+	$has_facets   = (bool) array_intersect( $facet_keys, array_keys( wp_unslash( $_GET ) ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+
+	return $private_page || $has_facets || $incomplete_guide;
+}
+
+/**
  * Prevent personal pages and faceted map/search combinations becoming crawl traps.
  *
  * @param array<string, bool> $robots Existing directives.
  * @return array<string, bool>
  */
 function tra_vel_v2_robots_policy( $robots ) {
-	$private_page = is_page_template( 'page-saved.php' ) || is_page_template( 'page-account.php' ) || is_page( array( 'saved', 'account' ) );
-	$facet_keys   = array(
-		'q', 'origin', 'destination', 'focus', 'layer', 'depart', 'return', 'departure_date', 'return_date', 'checkin', 'checkout', 'start_date', 'end_date', 'adults', 'children', 'infants', 'rooms',
-		'currency', 'sort', 'stops', 'budget', 'hotel_class', 'amenities',
-		'direct', 'trip', 'max_stops', 'max_duration', 'allow_overnight', 'area', 'trip_destination',
-		'neighborhood', 'insurance', 'activities', 'map_lat', 'map_lng', 'map_zoom',
-		'prompt', 'intent', 'mode', 'cabin', 'trip_style', 'insurance_tier',
-	);
-	$has_facets   = (bool) array_intersect( $facet_keys, array_keys( wp_unslash( $_GET ) ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-
-	if ( $private_page || $has_facets ) {
+	if ( tra_vel_v2_should_noindex_public_request() ) {
 		$robots['noindex'] = true;
 		$robots['follow']  = true;
 		unset( $robots['index'], $robots['nofollow'] );
@@ -114,6 +125,35 @@ function tra_vel_v2_robots_policy( $robots ) {
 	return $robots;
 }
 add_filter( 'wp_robots', 'tra_vel_v2_robots_policy' );
+
+/** Preserve the same global noindex/follow policy when Yoast owns robots. */
+function tra_vel_v2_yoast_robots_policy( $robots ) {
+	if ( tra_vel_v2_should_noindex_public_request() ) {
+		$robots['index'] = 'noindex';
+		$robots['follow'] = 'follow';
+	}
+	return $robots;
+}
+add_filter( 'wpseo_robots_array', 'tra_vel_v2_yoast_robots_policy', 20 );
+
+/** Preserve the same global noindex/follow policy when AIOSEO owns robots. */
+function tra_vel_v2_aioseo_robots_policy( $attributes ) {
+	if ( ! tra_vel_v2_should_noindex_public_request() ) {
+		return $attributes;
+	}
+
+	$output = (array) $attributes;
+	foreach ( (array) $attributes as $key => $value ) {
+		$directive = is_string( $key ) ? strtolower( $key ) : strtolower( (string) $value );
+		if ( in_array( $directive, array( 'index', 'nofollow' ), true ) ) {
+			unset( $output[ $key ] );
+		}
+	}
+	$output['noindex'] = 'noindex';
+	$output['nofollow'] = '';
+	return $output;
+}
+add_filter( 'aioseo_robots_meta', 'tra_vel_v2_aioseo_robots_policy', 20 );
 
 /**
  * Build a non-commercial ItemList for the editorial destination directory.
@@ -126,20 +166,38 @@ add_filter( 'wp_robots', 'tra_vel_v2_robots_policy' );
 function tra_vel_v2_directory_item_list() {
 	$path = TRA_VEL_V2_PATH . '/assets/data/editorial-directory.json';
 	$data = file_exists( $path ) ? json_decode( file_get_contents( $path ), true ) : array();
-	$destinations = isset( $data['destinations'] ) && is_array( $data['destinations'] ) ? $data['destinations'] : array();
+	$earth_destinations = isset( $data['destinations'] ) && is_array( $data['destinations'] ) ? $data['destinations'] : array();
+	$supporting_guides = isset( $data['supporting_guides'] ) && is_array( $data['supporting_guides'] ) ? $data['supporting_guides'] : array();
+	$destinations = $earth_destinations;
+	$is_guides_directory = is_page_template( 'page-directory.php' ) && 'guides' === get_post_field( 'post_name', get_queried_object_id() );
+	if ( $is_guides_directory ) {
+		$destinations = array_values(
+			array_filter(
+				array_merge( $earth_destinations, $supporting_guides ),
+				static function ( $destination ) {
+					return 'published' === ( $destination['guide_status'] ?? '' ) && ! empty( $destination['guide_path'] );
+				}
+			)
+		);
+	}
 	$items = array();
 	foreach ( $destinations as $index => $destination ) {
+		$item = array(
+			'@type'            => 'TouristDestination',
+			'name'             => sanitize_text_field( $destination['city'] ?? '' ),
+			'containedInPlace' => array(
+				'@type' => 'Country',
+				'name'  => sanitize_text_field( $destination['country'] ?? '' ),
+			),
+		);
+		$guide_path = isset( $destination['guide_path'] ) ? (string) $destination['guide_path'] : '';
+		if ( 'published' === ( $destination['guide_status'] ?? '' ) && tra_vel_v2_is_public_guide_path( $guide_path ) ) {
+			$item['url'] = home_url( $guide_path );
+		}
 		$items[] = array(
 			'@type'    => 'ListItem',
 			'position' => $index + 1,
-			'item'     => array(
-				'@type'            => 'TouristDestination',
-				'name'             => sanitize_text_field( $destination['city'] ?? '' ),
-				'containedInPlace' => array(
-					'@type' => 'Country',
-					'name'  => sanitize_text_field( $destination['country'] ?? '' ),
-				),
-			),
+			'item'     => $item,
 		);
 	}
 	return array(
@@ -147,6 +205,19 @@ function tra_vel_v2_directory_item_list() {
 		'numberOfItems'   => count( $items ),
 		'itemListElement' => $items,
 	);
+}
+
+/**
+ * Whether a reviewed guide path is provisionable by the destination template.
+ *
+ * One-level Earth guides and one additional supporting-guide level are public.
+ * Deeper paths stay outside this phase of the contract.
+ *
+ * @param string $path Candidate site-relative path.
+ * @return bool
+ */
+function tra_vel_v2_is_public_guide_path( $path ) {
+	return (bool) preg_match( '#^/destinations/[a-z0-9-]+(?:/[a-z0-9-]+)?/$#', (string) $path );
 }
 
 /**
@@ -188,6 +259,14 @@ function tra_vel_v2_schema_data() {
 		return array( '@context' => 'https://schema.org', '@graph' => $graph );
 	}
 
+	if ( is_page_template( 'page-seo-opportunity.php' ) && function_exists( 'tra_vel_v2_seo_opportunity_schema_nodes' ) ) {
+		$opportunity_nodes = tra_vel_v2_seo_opportunity_schema_nodes( get_queried_object_id() );
+		if ( $opportunity_nodes ) {
+			$graph = array_merge( $graph, $opportunity_nodes );
+		}
+		return array( '@context' => 'https://schema.org', '@graph' => $graph );
+	}
+
 	if ( ! is_singular() || ! tra_vel_v2_is_destination_guide() ) {
 		return array( '@context' => 'https://schema.org', '@graph' => $graph );
 	}
@@ -195,8 +274,39 @@ function tra_vel_v2_schema_data() {
 	$post_id   = get_queried_object_id();
 	$url       = get_permalink( $post_id );
 	$profile   = tra_vel_v2_get_guide_profile( $post_id );
+	$webpage   = array(
+		'@type'      => 'WebPage',
+		'@id'        => $url . '#webpage',
+		'url'        => $url,
+		'name'       => get_the_title( $post_id ),
+		'inLanguage' => 'he-IL',
+		'isPartOf'   => array( '@id' => $site_id ),
+		'breadcrumb' => array( '@id' => $url . '#breadcrumb' ),
+	);
+	$breadcrumb_items = array();
+	foreach ( tra_vel_v2_guide_breadcrumb_items( $post_id ) as $position => $item ) {
+		$breadcrumb_items[] = array(
+			'@type'    => 'ListItem',
+			'position' => $position + 1,
+			'name'     => $item['name'],
+			'item'     => $item['url'],
+		);
+	}
+	$breadcrumb = array(
+		'@type'           => 'BreadcrumbList',
+		'@id'             => $url . '#breadcrumb',
+		'itemListElement' => $breadcrumb_items,
+	);
+
+	if ( ! tra_vel_v2_is_guide_publication_ready( $post_id ) ) {
+		$graph[] = $webpage;
+		$graph[] = $breadcrumb;
+		return array( '@context' => 'https://schema.org', '@graph' => $graph );
+	}
+
 	$author_id = (int) get_post_field( 'post_author', $post_id );
 	$author    = $profile['author'] ?: ( get_the_author_meta( 'display_name', $author_id ) ?: 'Tra-Vel' );
+	$author_type = false !== stripos( $author, 'Tra-Vel' ) ? 'Organization' : 'Person';
 	$image     = get_the_post_thumbnail_url( $post_id, 'full' );
 	$excerpt   = get_the_excerpt( $post_id );
 	$article   = array(
@@ -210,7 +320,7 @@ function tra_vel_v2_schema_data() {
 		'inLanguage'       => 'he-IL',
 		'mainEntityOfPage' => array( '@id' => $url . '#webpage' ),
 		'isPartOf'         => array( '@id' => $site_id ),
-		'author'           => array( '@type' => 'Person', 'name' => $author ),
+		'author'           => array( '@type' => $author_type, 'name' => $author ),
 		'publisher'        => array( '@id' => $org_id ),
 	);
 
@@ -218,7 +328,7 @@ function tra_vel_v2_schema_data() {
 		$article['image'] = esc_url_raw( $image );
 	}
 	if ( $profile['primary_topic'] ) {
-		$article['about'] = array( '@type' => 'TouristDestination', 'name' => $profile['primary_topic'] );
+		$article['about'] = array( '@type' => 'TouristDestination', 'name' => get_the_title( $post_id ) );
 	}
 	if ( $profile['is_reviewed'] ) {
 		$article['lastReviewed'] = $profile['checked'];
@@ -238,26 +348,10 @@ function tra_vel_v2_schema_data() {
 		$article['citation'] = $citations;
 	}
 
-	$graph[] = array(
-		'@type'      => 'WebPage',
-		'@id'        => $url . '#webpage',
-		'url'        => $url,
-		'name'       => get_the_title( $post_id ),
-		'inLanguage' => 'he-IL',
-		'isPartOf'   => array( '@id' => $site_id ),
-		'about'      => array( '@id' => $url . '#guide' ),
-		'breadcrumb' => array( '@id' => $url . '#breadcrumb' ),
-	);
+	$webpage['about'] = array( '@id' => $url . '#guide' );
+	$graph[] = $webpage;
 	$graph[] = $article;
-	$graph[] = array(
-		'@type'           => 'BreadcrumbList',
-		'@id'             => $url . '#breadcrumb',
-		'itemListElement' => array(
-			array( '@type' => 'ListItem', 'position' => 1, 'name' => __( 'ראשי', 'tra-vel-v2' ), 'item' => home_url( '/' ) ),
-			array( '@type' => 'ListItem', 'position' => 2, 'name' => __( 'יעדים', 'tra-vel-v2' ), 'item' => home_url( '/destinations/' ) ),
-			array( '@type' => 'ListItem', 'position' => 3, 'name' => get_the_title( $post_id ), 'item' => $url ),
-		),
-	);
+	$graph[] = $breadcrumb;
 
 	return array( '@context' => 'https://schema.org', '@graph' => $graph );
 }
@@ -268,21 +362,7 @@ function tra_vel_v2_schema_graph() {
 		return;
 	}
 	if ( defined( 'WPSEO_VERSION' ) || defined( 'AIOSEO_VERSION' ) || function_exists( 'aioseo' ) ) {
-		if ( ! tra_vel_v2_is_destination_guide() ) {
-			return;
-		}
-		$data    = tra_vel_v2_schema_data();
-		$article = array_values(
-			array_filter(
-				$data['@graph'],
-				static function ( $node ) {
-					return isset( $node['@id'] ) && '#guide' === substr( $node['@id'], -6 );
-				}
-			)
-		);
-		if ( $article ) {
-			echo '<script type="application/ld+json">' . wp_json_encode( array( '@context' => 'https://schema.org', '@graph' => $article ), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE ) . '</script>';
-		}
+		// The active SEO plugin owns the graph. Filters below enrich or gate it.
 		return;
 	}
 	echo '<script type="application/ld+json">' . wp_json_encode( tra_vel_v2_schema_data(), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE ) . '</script>';
@@ -299,9 +379,12 @@ function tra_vel_v2_enrich_yoast_article_schema( $data ) {
 	if ( ! tra_vel_v2_is_destination_guide() ) {
 		return $data;
 	}
+	if ( ! tra_vel_v2_is_guide_publication_ready() ) {
+		return $data;
+	}
 	$profile = tra_vel_v2_get_guide_profile();
 	if ( $profile['primary_topic'] ) {
-		$data['about'] = array( '@type' => 'TouristDestination', 'name' => $profile['primary_topic'] );
+		$data['about'] = array( '@type' => 'TouristDestination', 'name' => get_the_title( get_queried_object_id() ) );
 	}
 	if ( $profile['is_reviewed'] ) {
 		$data['lastReviewed'] = $profile['checked'];
@@ -324,6 +407,77 @@ function tra_vel_v2_enrich_yoast_article_schema( $data ) {
 add_filter( 'wpseo_schema_article', 'tra_vel_v2_enrich_yoast_article_schema' );
 
 /**
+ * Remove Yoast's Article graph piece until the guide publication gate passes.
+ *
+ * @param array<int, object> $pieces  Yoast graph-piece objects.
+ * @param mixed              $context Yoast schema context.
+ * @return array<int, object>
+ */
+function tra_vel_v2_gate_yoast_article_piece( $pieces, $context = null ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
+	if ( ! tra_vel_v2_is_destination_guide() || tra_vel_v2_is_guide_publication_ready() ) {
+		return $pieces;
+	}
+
+	return array_values(
+		array_filter(
+			$pieces,
+			static function ( $piece ) {
+				return ! is_a( $piece, '\\Yoast\\WP\\SEO\\Generators\\Schema\\Article' );
+			}
+		)
+	);
+}
+add_filter( 'wpseo_schema_graph_pieces', 'tra_vel_v2_gate_yoast_article_piece', 11, 2 );
+
+/**
+ * Enrich a complete AIOSEO Article and remove Article claims from thin guides.
+ *
+ * @param array<int, array<string, mixed>> $schema AIOSEO graph nodes.
+ * @return array<int, array<string, mixed>>
+ */
+function tra_vel_v2_gate_aioseo_guide_schema( $schema ) {
+	if ( ! tra_vel_v2_is_destination_guide() || ! is_array( $schema ) ) {
+		return $schema;
+	}
+
+	$ready   = tra_vel_v2_is_guide_publication_ready();
+	$profile = $ready ? tra_vel_v2_get_guide_profile() : array();
+	$output  = array();
+	foreach ( $schema as $node ) {
+		if ( ! is_array( $node ) ) {
+			$output[] = $node;
+			continue;
+		}
+		$types = isset( $node['@type'] ) ? (array) $node['@type'] : array();
+		$is_article = (bool) array_intersect( array( 'Article', 'BlogPosting', 'NewsArticle' ), $types );
+		if ( ! $ready && $is_article ) {
+			continue;
+		}
+		if ( ! $ready && in_array( 'WebPage', $types, true ) ) {
+			unset( $node['about'], $node['mainEntity'] );
+		}
+		if ( $ready && $is_article ) {
+			$node['about']        = array( '@type' => 'TouristDestination', 'name' => get_the_title( get_queried_object_id() ) );
+			$node['lastReviewed'] = $profile['checked'];
+			$node['citation']     = array_values(
+				array_filter(
+					array_map(
+						static function ( $source ) {
+							return ! empty( $source['url'] ) ? esc_url_raw( $source['url'], array( 'https' ) ) : '';
+						},
+						$profile['sources']
+					)
+				)
+			);
+		}
+		$output[] = $node;
+	}
+
+	return array_values( $output );
+}
+add_filter( 'aioseo_schema_output', 'tra_vel_v2_gate_aioseo_guide_schema' );
+
+/**
  * Identify directory pages as collections inside Yoast's graph.
  *
  * @param array<string, mixed> $data Yoast WebPage schema.
@@ -333,6 +487,8 @@ function tra_vel_v2_enrich_yoast_directory_schema( $data ) {
 	if ( is_page_template( 'page-directory.php' ) ) {
 		$data['@type']      = 'CollectionPage';
 		$data['mainEntity'] = tra_vel_v2_directory_item_list();
+	} elseif ( tra_vel_v2_is_destination_guide() && ! tra_vel_v2_is_guide_publication_ready() ) {
+		unset( $data['about'], $data['mainEntity'] );
 	}
 	return $data;
 }

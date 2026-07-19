@@ -15,7 +15,7 @@ function tra_vel_v2_asset_uri( $path ) {
 
 function tra_vel_v2_demo_disclosure() {
 	echo '<small class="demo-label"><i data-lucide="info"></i>';
-	esc_html_e( 'מחיר ותנאים מוצגים רק לאחר בחירת תאריכים והרכב', 'tra-vel-v2' );
+	esc_html_e( 'המחירים המוצגים עוזרים לתכנן ולהשוות. המחיר, הזמינות והתנאים הסופיים יינתנו לאחר בדיקה מחדש, לפני הרכישה.', 'tra-vel-v2' );
 	echo '</small>';
 }
 

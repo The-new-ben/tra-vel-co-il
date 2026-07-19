@@ -1,0 +1,74 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://tra-vel.co.il/schemas/balance-snapshot-v1.schema.json",
+  "title": "Tra-Vel immutable benefit balance snapshot",
+  "description": "An immutable planning observation with explicit provenance and freshness. It never authorizes redemption.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "snapshot_id",
+    "connection_id",
+    "program_id",
+    "amounts",
+    "expiry_lots",
+    "assurance",
+    "declared_freshness",
+    "source",
+    "immutable_digest",
+    "planning_only"
+  ],
+  "properties": {
+    "contract_version": { "const": "1.0.0" },
+    "snapshot_id": { "type": "string", "pattern": "^balance_[a-z0-9][a-z0-9_]{2,54}$", "maxLength": 64 },
+    "connection_id": { "type": "string", "pattern": "^connection_[a-z0-9][a-z0-9_]{2,51}$", "maxLength": 64 },
+    "program_id": { "type": "string", "pattern": "^program_[a-z0-9][a-z0-9_]{2,55}$", "maxLength": 64 },
+    "amounts": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 20,
+      "items": { "$ref": "#/definitions/amount" }
+    },
+    "expiry_lots": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["unit_code", "amount_integer", "expires_at_utc"],
+        "properties": {
+          "unit_code": { "type": "string", "pattern": "^[a-z][a-z0-9_]{1,31}$", "maxLength": 32 },
+          "amount_integer": { "type": "integer", "minimum": 0 },
+          "expires_at_utc": { "type": "string", "format": "date-time" }
+        }
+      }
+    },
+    "assurance": { "enum": ["provider_verified", "authorized_partner_verified", "official_terms_verified", "customer_evidence", "customer_asserted", "unknown"] },
+    "declared_freshness": { "enum": ["current", "stale", "expired", "self_reported"] },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["authority", "source_reference_digest", "observed_at_utc", "fresh_until_utc"],
+      "properties": {
+        "authority": { "enum": ["signed_partner_api", "provider_authorized_api", "provider_support_confirmation", "customer_evidence", "customer_assertion"] },
+        "source_reference_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "observed_at_utc": { "type": "string", "format": "date-time" },
+        "fresh_until_utc": { "type": "string", "format": "date-time" }
+      }
+    },
+    "immutable_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "planning_only": { "const": true }
+  },
+  "definitions": {
+    "amount": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["unit_code", "unit_type", "amount_integer"],
+      "properties": {
+        "unit_code": { "type": "string", "pattern": "^[a-z][a-z0-9_]{1,31}$", "maxLength": 32 },
+        "unit_type": { "enum": ["points", "program_value_minor", "status_currency", "cashback_minor"] },
+        "amount_integer": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}

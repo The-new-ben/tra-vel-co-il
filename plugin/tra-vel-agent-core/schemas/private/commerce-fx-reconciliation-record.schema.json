@@ -1,0 +1,257 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://tra-vel.co.il/schemas/private/commerce-fx-reconciliation-record.schema.json",
+  "title": "Tra-Vel private commerce FX reconciliation record",
+  "description": "Server-only sandbox evidence for an explicit source-to-target currency conversion. It preserves both original currencies and grants no payment, supplier, rate-provider, or settlement authority.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version", "environment", "reconciliation_ref", "version",
+    "previous_snapshot_digest", "snapshot_digest", "owner_scope_digest",
+    "order_ref", "order_item_ref", "funds_flow_binding_digest",
+    "idempotency_key_digest", "source_currency", "source_exponent",
+    "target_currency", "target_exponent", "source_rate", "locked_quote",
+    "ledger", "servicing", "liabilities", "event_history", "created_at",
+    "updated_at", "last_event_sequence", "sandbox_truth", "data_boundary"
+  ],
+  "properties": {
+    "contract_version": { "const": "1.0.0" },
+    "environment": { "const": "sandbox" },
+    "reconciliation_ref": { "$ref": "#/definitions/reconciliationRef" },
+    "version": { "$ref": "#/definitions/positiveVersion" },
+    "previous_snapshot_digest": { "$ref": "#/definitions/nullableDigest" },
+    "snapshot_digest": { "$ref": "#/definitions/digest" },
+    "owner_scope_digest": { "$ref": "#/definitions/digest" },
+    "order_ref": { "$ref": "#/definitions/orderRef" },
+    "order_item_ref": { "$ref": "#/definitions/orderItemRef" },
+    "funds_flow_binding_digest": { "$ref": "#/definitions/digest" },
+    "idempotency_key_digest": { "$ref": "#/definitions/digest" },
+    "source_currency": { "$ref": "#/definitions/currency" },
+    "source_exponent": { "$ref": "#/definitions/exponent" },
+    "target_currency": { "$ref": "#/definitions/currency" },
+    "target_exponent": { "$ref": "#/definitions/exponent" },
+    "source_rate": { "$ref": "#/definitions/sourceRate" },
+    "locked_quote": { "$ref": "#/definitions/lockedQuote" },
+    "ledger": { "$ref": "#/definitions/ledger" },
+    "servicing": { "$ref": "#/definitions/servicing" },
+    "liabilities": { "$ref": "#/definitions/liabilities" },
+    "event_history": {
+      "type": "array",
+      "maxItems": 128,
+      "items": { "$ref": "#/definitions/eventEvidence" }
+    },
+    "created_at": { "$ref": "#/definitions/dateTime" },
+    "updated_at": { "$ref": "#/definitions/dateTime" },
+    "last_event_sequence": { "type": "integer", "minimum": 0, "maximum": 128 },
+    "sandbox_truth": { "$ref": "#/definitions/sandboxTruth" },
+    "data_boundary": { "$ref": "#/definitions/dataBoundary" }
+  },
+  "definitions": {
+    "digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "nullableDigest": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" },
+    "dateTime": { "type": "string", "pattern": "^[0-9]{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12][0-9]|3[01])T(?:[01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]Z$" },
+    "positiveVersion": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+    "money": { "type": "integer", "minimum": 0, "maximum": 1000000000000 },
+    "signedMoney": { "type": "integer", "minimum": -1000000000000, "maximum": 1000000000000 },
+    "currency": { "enum": ["EUR", "GBP", "ILS", "JPY", "KWD", "THB", "USD"] },
+    "exponent": { "type": "integer", "minimum": 0, "maximum": 3 },
+    "reconciliationRef": { "type": "string", "pattern": "^fxrec_[a-f0-9]{32}$" },
+    "sourceRateRef": { "type": "string", "pattern": "^fxrate_[a-z0-9][a-z0-9_-]{7,95}$" },
+    "quoteRef": { "type": "string", "pattern": "^fxquote_[a-f0-9]{32}$" },
+    "orderRef": { "type": "string", "pattern": "^tv_order_[A-Za-z0-9_-]{16,96}$", "maxLength": 120 },
+    "orderItemRef": { "type": "string", "pattern": "^tv_order_item_[A-Za-z0-9_-]{16,96}$", "maxLength": 125 },
+    "sourceRate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_rate_ref", "source_rate_version", "source_rate_digest",
+        "fixture_label", "base_currency", "quote_currency", "base_exponent",
+        "quote_exponent", "numerator", "denominator", "observed_at",
+        "effective_at", "valid_until", "simulated", "real_provider_response"
+      ],
+      "properties": {
+        "source_rate_ref": { "$ref": "#/definitions/sourceRateRef" },
+        "source_rate_version": { "$ref": "#/definitions/positiveVersion" },
+        "source_rate_digest": { "$ref": "#/definitions/digest" },
+        "fixture_label": { "type": "string", "pattern": "^SIMULATED_[A-Z0-9_]{8,80}$", "maxLength": 90 },
+        "base_currency": { "$ref": "#/definitions/currency" },
+        "quote_currency": { "$ref": "#/definitions/currency" },
+        "base_exponent": { "$ref": "#/definitions/exponent" },
+        "quote_exponent": { "$ref": "#/definitions/exponent" },
+        "numerator": { "type": "integer", "minimum": 1, "maximum": 100000 },
+        "denominator": { "type": "integer", "minimum": 1, "maximum": 100000 },
+        "observed_at": { "$ref": "#/definitions/dateTime" },
+        "effective_at": { "$ref": "#/definitions/dateTime" },
+        "valid_until": { "$ref": "#/definitions/dateTime" },
+        "simulated": { "const": true },
+        "real_provider_response": { "const": false }
+      }
+    },
+    "lockedQuote": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "quote_ref", "quote_version", "quote_digest", "source_rate_digest",
+        "locked_at", "locked_until", "direction", "spread_bps",
+        "spread_application", "fee_minor", "fee_application", "rounding_mode",
+        "residual_policy", "refund_rate_policy", "reversal_rate_policy",
+        "dispute_rate_policy", "chargeback_rate_policy", "fee_refund_policy"
+      ],
+      "properties": {
+        "quote_ref": { "$ref": "#/definitions/quoteRef" },
+        "quote_version": { "$ref": "#/definitions/positiveVersion" },
+        "quote_digest": { "$ref": "#/definitions/digest" },
+        "source_rate_digest": { "$ref": "#/definitions/digest" },
+        "locked_at": { "$ref": "#/definitions/dateTime" },
+        "locked_until": { "$ref": "#/definitions/dateTime" },
+        "direction": { "const": "base_to_quote" },
+        "spread_bps": { "type": "integer", "minimum": 0, "maximum": 2500 },
+        "spread_application": { "enum": ["none", "add_to_quote", "deduct_from_quote"] },
+        "fee_minor": { "$ref": "#/definitions/money" },
+        "fee_application": { "enum": ["none", "add_to_target", "deduct_from_target"] },
+        "rounding_mode": { "const": "half_up" },
+        "residual_policy": { "const": "largest_absolute_then_code" },
+        "refund_rate_policy": { "const": "original_locked_rate" },
+        "reversal_rate_policy": { "const": "original_locked_rate" },
+        "dispute_rate_policy": { "const": "original_locked_rate" },
+        "chargeback_rate_policy": { "const": "original_locked_rate" },
+        "fee_refund_policy": { "enum": ["non_refundable", "pro_rata"] }
+      }
+    },
+    "ledgerLine": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code", "source_amount_minor", "market_target_minor",
+        "quoted_target_before_residual_minor", "residual_adjustment_minor",
+        "target_amount_minor"
+      ],
+      "properties": {
+        "code": { "type": "string", "pattern": "^[a-z][a-z0-9_]{1,47}$" },
+        "source_amount_minor": { "$ref": "#/definitions/signedMoney" },
+        "market_target_minor": { "$ref": "#/definitions/signedMoney" },
+        "quoted_target_before_residual_minor": { "$ref": "#/definitions/signedMoney" },
+        "residual_adjustment_minor": { "type": "integer", "minimum": -32, "maximum": 32 },
+        "target_amount_minor": { "$ref": "#/definitions/signedMoney" }
+      }
+    },
+    "ledger": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ledger_code", "source_total_minor", "market_target_total_minor",
+        "target_before_fee_minor", "spread_effect_minor", "fee_effect_minor",
+        "target_total_minor", "rounding_residual_minor", "residual_allocation_code",
+        "unallocated_residual_minor", "lines"
+      ],
+      "properties": {
+        "ledger_code": { "enum": ["customer_pricing", "settlement_obligation"] },
+        "source_total_minor": { "$ref": "#/definitions/money" },
+        "market_target_total_minor": { "$ref": "#/definitions/money" },
+        "target_before_fee_minor": { "$ref": "#/definitions/money" },
+        "spread_effect_minor": { "$ref": "#/definitions/signedMoney" },
+        "fee_effect_minor": { "$ref": "#/definitions/signedMoney" },
+        "target_total_minor": { "$ref": "#/definitions/money" },
+        "rounding_residual_minor": { "type": "integer", "minimum": -32, "maximum": 32 },
+        "residual_allocation_code": { "type": ["string", "null"], "pattern": "^[a-z][a-z0-9_]{1,47}$" },
+        "unallocated_residual_minor": { "const": 0 },
+        "lines": { "type": "array", "minItems": 1, "maxItems": 32, "items": { "$ref": "#/definitions/ledgerLine" } }
+      }
+    },
+    "servicing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "returned_source_minor", "returned_target_minor", "refunded_source_minor",
+        "refunded_target_minor", "reversed_source_minor", "reversed_target_minor",
+        "refund_settled_target_minor", "open_dispute_source_minor",
+        "open_dispute_target_minor", "charged_back_source_minor",
+        "charged_back_target_minor", "chargeback_recovered_target_minor",
+        "supplier_settled_target_minor", "fee_refunded_target_minor",
+        "cumulative_rounding_adjustment_minor"
+      ],
+      "properties": {
+        "returned_source_minor": { "$ref": "#/definitions/money" },
+        "returned_target_minor": { "$ref": "#/definitions/money" },
+        "refunded_source_minor": { "$ref": "#/definitions/money" },
+        "refunded_target_minor": { "$ref": "#/definitions/money" },
+        "reversed_source_minor": { "$ref": "#/definitions/money" },
+        "reversed_target_minor": { "$ref": "#/definitions/money" },
+        "refund_settled_target_minor": { "$ref": "#/definitions/money" },
+        "open_dispute_source_minor": { "$ref": "#/definitions/money" },
+        "open_dispute_target_minor": { "$ref": "#/definitions/money" },
+        "charged_back_source_minor": { "$ref": "#/definitions/money" },
+        "charged_back_target_minor": { "$ref": "#/definitions/money" },
+        "chargeback_recovered_target_minor": { "$ref": "#/definitions/money" },
+        "supplier_settled_target_minor": { "$ref": "#/definitions/money" },
+        "fee_refunded_target_minor": { "$ref": "#/definitions/money" },
+        "cumulative_rounding_adjustment_minor": { "$ref": "#/definitions/signedMoney" }
+      }
+    },
+    "liabilities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "supplier_payable_target_minor", "supplier_payable_outstanding_target_minor",
+        "customer_refund_due_target_minor", "dispute_exposure_target_minor",
+        "chargeback_exposure_target_minor", "fx_fee_liability_target_minor",
+        "rounding_exposure_target_minor", "rate_policy"
+      ],
+      "properties": {
+        "supplier_payable_target_minor": { "$ref": "#/definitions/money" },
+        "supplier_payable_outstanding_target_minor": { "$ref": "#/definitions/money" },
+        "customer_refund_due_target_minor": { "$ref": "#/definitions/money" },
+        "dispute_exposure_target_minor": { "$ref": "#/definitions/money" },
+        "chargeback_exposure_target_minor": { "$ref": "#/definitions/money" },
+        "fx_fee_liability_target_minor": { "$ref": "#/definitions/money" },
+        "rounding_exposure_target_minor": { "$ref": "#/definitions/signedMoney" },
+        "rate_policy": { "const": "original_locked_rate" }
+      }
+    },
+    "eventEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sequence", "event_type", "idempotency_key_digest", "evidence_digest",
+        "occurred_at", "source_amount_minor", "target_amount_minor",
+        "effective_target_delta_minor", "rounding_adjustment_minor"
+      ],
+      "properties": {
+        "sequence": { "type": "integer", "minimum": 1, "maximum": 128 },
+        "event_type": { "enum": ["refund_accrued", "refund_settled", "reversal_observed", "dispute_opened", "dispute_closed", "chargeback_observed", "chargeback_recovered", "supplier_settlement_observed"] },
+        "idempotency_key_digest": { "$ref": "#/definitions/digest" },
+        "evidence_digest": { "$ref": "#/definitions/digest" },
+        "occurred_at": { "$ref": "#/definitions/dateTime" },
+        "source_amount_minor": { "type": ["integer", "null"], "minimum": 1, "maximum": 1000000000000 },
+        "target_amount_minor": { "type": ["integer", "null"], "minimum": 1, "maximum": 1000000000000 },
+        "effective_target_delta_minor": { "$ref": "#/definitions/signedMoney" },
+        "rounding_adjustment_minor": { "$ref": "#/definitions/signedMoney" }
+      }
+    },
+    "sandboxTruth": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["simulated_rate", "real_rate_provider_call", "real_processor_call", "real_customer_charge", "real_supplier_payment", "real_settlement"],
+      "properties": {
+        "simulated_rate": { "const": true },
+        "real_rate_provider_call": { "const": false },
+        "real_processor_call": { "const": false },
+        "real_customer_charge": { "const": false },
+        "real_supplier_payment": { "const": false },
+        "real_settlement": { "const": false }
+      }
+    },
+    "dataBoundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["server_only", "public_serialization_allowed", "raw_credentials_stored", "raw_payment_data_stored", "personal_data_stored"],
+      "properties": {
+        "server_only": { "const": true },
+        "public_serialization_allowed": { "const": false },
+        "raw_credentials_stored": { "const": false },
+        "raw_payment_data_stored": { "const": false },
+        "personal_data_stored": { "const": false }
+      }
+    }
+  }
+}

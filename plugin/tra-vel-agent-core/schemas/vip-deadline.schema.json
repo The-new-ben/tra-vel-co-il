@@ -1,0 +1,46 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://tra-vel.co.il/schemas/vip-deadline-v1.schema.json",
+  "title": "Tra-Vel VIP service deadline",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract_version", "deadline_ref", "case_ref", "type", "basis", "due_at", "local_due_at", "local_timezone", "safety_margin_seconds", "owner_ref", "escalation_ref", "state", "source_version_digest", "computed_at", "satisfied_at", "data_boundary"],
+  "properties": {
+    "contract_version": { "const": "1.0.0" },
+    "deadline_ref": { "$ref": "#/definitions/deadlineRef" },
+    "case_ref": { "$ref": "#/definitions/caseRef" },
+    "type": { "enum": ["cancellation_cutoff", "ticketing_limit", "checkin", "boarding", "connection", "pickup", "claim_notice", "dispute_response", "refund_follow_up", "internal_sla", "evidence_submission", "authorization_expiry", "reconciliation"] },
+    "basis": { "enum": ["internal_sla", "supplier_cutoff", "trip_event", "legal_policy_notice", "vulnerability_escalation", "operation_reconciliation"] },
+    "due_at": { "$ref": "#/definitions/dateTime" },
+    "local_due_at": { "type": "string", "format": "date-time", "pattern": "(?:Z|[+-][0-9]{2}:[0-9]{2})$" },
+    "local_timezone": { "type": "string", "pattern": "^(?:UTC|[A-Za-z_+-]+(?:/[A-Za-z0-9_+.-]+)+)$", "maxLength": 64 },
+    "safety_margin_seconds": { "type": "integer", "minimum": 0, "maximum": 2592000 },
+    "owner_ref": { "$ref": "#/definitions/principalRef" },
+    "escalation_ref": { "$ref": "#/definitions/principalRef" },
+    "state": { "enum": ["scheduled", "due", "missed", "satisfied", "cancelled", "uncertain"] },
+    "source_version_digest": { "$ref": "#/definitions/digest" },
+    "computed_at": { "$ref": "#/definitions/dateTime" },
+    "satisfied_at": { "$ref": "#/definitions/nullableDateTime" },
+    "data_boundary": { "$ref": "#/definitions/dataBoundary" }
+  },
+  "definitions": {
+    "deadlineRef": { "type": "string", "pattern": "^tv_deadline_[A-Za-z0-9_-]{16,96}$" },
+    "caseRef": { "type": "string", "pattern": "^tv_case_[A-Za-z0-9_-]{16,96}$" },
+    "principalRef": { "type": "string", "pattern": "^tv_principal_[A-Za-z0-9_-]{16,96}$" },
+    "digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "dateTime": { "type": "string", "format": "date-time", "pattern": "Z$" },
+    "nullableDateTime": { "type": ["string", "null"], "format": "date-time", "pattern": "Z$" },
+    "dataBoundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["raw_identity_data_exposed", "raw_payment_data_exposed", "raw_medical_data_exposed", "raw_provider_payload_exposed", "bearer_secret_exposed"],
+      "properties": {
+        "raw_identity_data_exposed": { "const": false },
+        "raw_payment_data_exposed": { "const": false },
+        "raw_medical_data_exposed": { "const": false },
+        "raw_provider_payload_exposed": { "const": false },
+        "bearer_secret_exposed": { "const": false }
+      }
+    }
+  }
+}

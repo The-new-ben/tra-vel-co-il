@@ -1,0 +1,319 @@
+{
+  "schemaVersion": 1,
+  "id": "vienna-2026",
+  "locale": "he-IL",
+  "title": "וינה",
+  "excerpt": "מדריך וינה לישראלים שיחבר בין תנאי כניסה, בחירת עונה, אזורי לינה, תחבורה משדה התעופה, נגישות, תרבות ומסלול ביקור, על בסיס מקורות רשמיים ובדיקת עדכניות לפני פרסום.",
+  "author": "מערכת Tra-Vel",
+  "reviewer": "טרם מונה עורך מזוהה",
+  "primaryTopic": "Vienna travel guide for Israelis",
+  "canonicalPath": "/destinations/vienna/",
+  "status": "editorial-review",
+  "contentPath": "content/guides/vienna-2026.he.html",
+  "wordTargetMin": 5000,
+  "checkedAt": "2026-07-18",
+  "mapState": "vienna",
+  "reviewMethod": "Editorial-review draft awaiting review by a named editor and publish-time verification. Recheck every entry, warning, ticket, transfer, operating and accessibility fact against the mapped Austrian, EU, Israeli, municipal, transport, meteorological and venue first-party sources before any publication decision; editorial review is not complete.",
+  "sections": [
+    "Decision summary and trip fit",
+    "Who Vienna suits and who may prefer another city",
+    "Entry rules for Israeli travelers",
+    "Season, weather and clothing decisions",
+    "Flight and arrival decision criteria from Israel",
+    "Airport transfer comparison by luggage, time and mobility needs",
+    "Choosing a base by neighborhood character",
+    "Public transport tickets, validation and airport-zone boundaries",
+    "Two, three, four and five day route architectures",
+    "Imperial Vienna and Schonbrunn visit planning",
+    "Belvedere and major art museum planning",
+    "Opera, music and evening culture decisions",
+    "Markets, food areas and neighborhood pacing",
+    "Families, slower travel and rainy-day alternatives",
+    "Mobility, sensory and venue-level accessibility",
+    "Budget framework without unsourced prices",
+    "Safety, Israeli warnings and consular help",
+    "Final booking and revalidation checklist"
+  ],
+  "sources": [
+    {
+      "id": "austria-israel-entry",
+      "title": "How to apply: special entry information for Israeli citizens",
+      "publisher": "Austrian Embassy Tel Aviv / Federal Ministry for European and International Affairs",
+      "url": "https://www.bmeia.gv.at/en/austrian-embassy-tel-aviv/travel-to-austria/entrance-and-residence/how-to-apply",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["Israeli visa exemption", "90 in 180 day rule", "passport validity and issue-date rules"]
+    },
+    {
+      "id": "eu-non-eu-documents",
+      "title": "Travel documents for non-EU nationals",
+      "publisher": "European Union / Your Europe",
+      "url": "https://europa.eu/youreurope/citizens/travel/entry-exit/non-eu-nationals/index_en.htm",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["Schengen document rules", "supporting documents at the border", "entry refusal criteria"]
+    },
+    {
+      "id": "israel-nsc-warnings",
+      "title": "Travel Warning",
+      "publisher": "Israel National Security Council",
+      "url": "https://www.gov.il/en/departments/dynamiccollectors/travel-warnings-nsc?skip=0",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["current country warning lookup", "warning-level definitions", "official pre-departure security check"]
+    },
+    {
+      "id": "israel-vienna-consular",
+      "title": "Contact the Embassy of Israel in Vienna",
+      "publisher": "Embassy of Israel in Austria / Ministry of Foreign Affairs",
+      "url": "https://embassies.gov.il/austria/he/contacts",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["official consular channel", "Vienna embassy contact details", "appointment channel"]
+    },
+    {
+      "id": "vienna-airport-arrival",
+      "title": "Arrival and Parking",
+      "publisher": "Vienna Airport",
+      "url": "https://viennaairport.com/en/passengers/arrival__parking",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["airport transport categories", "CAT and rail options", "bus and individual transport choices"]
+    },
+    {
+      "id": "cat-about-accessibility",
+      "title": "All about us, the City Airport Train Vienna",
+      "publisher": "City Airport Train",
+      "url": "https://www.cityairporttrain.com/en/info-service/about-us/?modal=ticket-widget",
+      "type": "primary",
+      "checkedAt": "2026-07-18",
+      "supports": ["direct airport to Wien Mitte service", "ground-level access", "wheelchair spaces and assistance limits"]
+    },
+    {
+      "id": "wiener-linien-tickets",
+      "title": "Tickets",
+      "publisher": "Wiener Linien",
+      "url": "https://www.wienerlinien.at/tickets",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["urban ticket types", "Vienna core-zone scope", "airport and CAT exclusions"]
+    },
+    {
+      "id": "wiener-linien-accessibility",
+      "title": "Accessibility at Wiener Linien",
+      "publisher": "Wiener Linien",
+      "url": "https://tramwm.wienerlinien.at/web/guest/barrierefreiheit",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["accessible stations and stops", "low-floor service information", "accessible route planning and ticket purchase"]
+    },
+    {
+      "id": "vienna-neighborhoods",
+      "title": "What is a Gratzel?",
+      "publisher": "Vienna Tourist Board",
+      "url": "https://www.wien.info/en/see-do/neighborhoods/graetzel-457846",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["neighborhood character", "informal neighborhood boundaries", "area-fit decisions"]
+    },
+    {
+      "id": "vienna-climate",
+      "title": "Climate and Weather in Vienna",
+      "publisher": "Vienna Tourist Board",
+      "url": "https://www.wien.info/en/climate-and-weather-in-vienna-709530",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["seasonal planning", "continental weather patterns", "1991 to 2020 climate normals"]
+    },
+    {
+      "id": "vienna-accessible",
+      "title": "Accessible Vienna",
+      "publisher": "Vienna Tourist Board",
+      "url": "https://www.wien.info/en/travel-info/accessible-vienna?set_language=en",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["accessible trip planning", "venue-specific accessibility checks", "historic-building constraints"]
+    },
+    {
+      "id": "geosphere-climate",
+      "title": "Climate information",
+      "publisher": "GeoSphere Austria",
+      "url": "https://www.geosphere.at/en/topics/climate/climate-information",
+      "type": "official",
+      "checkedAt": "2026-07-18",
+      "supports": ["official Austrian climate monitoring", "verified measurement data", "long-term climate context"]
+    },
+    {
+      "id": "schoenbrunn-accessibility",
+      "title": "Barrier-free access",
+      "publisher": "Schonbrunn Palace",
+      "url": "https://www.schoenbrunn.at/en/visitor-information/barrier-free-access/",
+      "type": "primary",
+      "checkedAt": "2026-07-18",
+      "supports": ["palace display-room access", "garden access limits", "mobility and sensory visitor services"]
+    },
+    {
+      "id": "belvedere-visit",
+      "title": "Plan your visit",
+      "publisher": "Belvedere Museum Vienna",
+      "url": "https://www.belvedere.at/en/visit",
+      "type": "primary",
+      "checkedAt": "2026-07-18",
+      "supports": ["venue-specific ticket structure", "time-slot requirement", "accessibility resources"]
+    },
+    {
+      "id": "khm-accessibility",
+      "title": "Accessibility at the museum",
+      "publisher": "Kunsthistorisches Museum Vienna",
+      "url": "https://www.khm.at/en/visit/besucherinformation/access-contact/",
+      "type": "primary",
+      "checkedAt": "2026-07-18",
+      "supports": ["accessible entrance", "elevator access", "wheelchair and inclusive visit planning"]
+    },
+    {
+      "id": "state-opera-accessibility",
+      "title": "Accessibility",
+      "publisher": "Vienna State Opera",
+      "url": "https://www.wiener-staatsoper.at/en/accessibility/",
+      "type": "primary",
+      "checkedAt": "2026-07-18",
+      "supports": ["performance accessibility", "wheelchair reservation", "guided-tour accessibility limits"]
+    }
+  ],
+  "facts": [
+    {
+      "id": "israeli-tourist-visa-exemption",
+      "claim": "The Austrian Embassy in Tel Aviv states that Israeli citizens holding a valid Israeli passport do not need an entry visa for tourist, visitor or business stays of up to 90 days in a 180-day period.",
+      "sourceIds": ["austria-israel-entry"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "israeli-passport-validity",
+      "claim": "The Austrian and EU sources state that the passport should remain valid for at least three months after the planned departure from the Schengen area and should have been issued within the previous ten years.",
+      "sourceIds": ["austria-israel-entry", "eu-non-eu-documents"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "border-supporting-documents",
+      "claim": "EU guidance says border officials may request supporting evidence such as lodging, return travel and sufficient means even when a traveler is visa-exempt.",
+      "sourceIds": ["eu-non-eu-documents"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "nsc-warning-check",
+      "claim": "The Israeli National Security Council maintains a dynamic country-warning system with defined threat levels, so Austria must be checked there again immediately before travel and publication.",
+      "sourceIds": ["israel-nsc-warnings"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "vienna-consular-channel",
+      "claim": "The Embassy of Israel in Vienna publishes the official address, phone, email and appointment channel for consular assistance in Austria.",
+      "sourceIds": ["israel-vienna-consular"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "airport-transfer-categories",
+      "claim": "Vienna Airport presents CAT, suburban and long-distance rail, buses, taxis, rental cars and car sharing as distinct arrival choices that should be compared by destination, luggage and mobility needs.",
+      "sourceIds": ["vienna-airport-arrival"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "cat-route-and-access",
+      "claim": "The CAT operator describes a nonstop airport to Wien Mitte service with ground-level access, wide aisles and reserved wheelchair areas, while noting that the onboard restroom is not barrier-free.",
+      "sourceIds": ["cat-about-accessibility"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "city-ticket-airport-boundary",
+      "claim": "Wiener Linien states that Vienna core-zone tickets do not include travel to or from Vienna Airport and do not include the City Airport Train.",
+      "sourceIds": ["wiener-linien-tickets"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "visitor-ticket-comparison",
+      "claim": "The current Wiener Linien product set gives visitors single-journey, 24-hour, 7-day and city-card options whose validity, personalization and validation rules must be compared before purchase.",
+      "sourceIds": ["wiener-linien-tickets"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "public-transport-accessibility",
+      "claim": "Wiener Linien reports that all underground stations and most tram and bus stops are accessible and provides live low-floor vehicle information through its digital services.",
+      "sourceIds": ["wiener-linien-accessibility"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "informal-neighborhood-boundaries",
+      "claim": "The Vienna Tourist Board describes Gratzel as small neighborhood areas with distinct atmosphere whose boundaries are often informal rather than exact administrative lines.",
+      "sourceIds": ["vienna-neighborhoods"],
+      "volatile": false
+    },
+    {
+      "id": "neighborhood-fit-varies",
+      "claim": "Official destination guidance distinguishes Vienna neighborhoods through different combinations of architecture, street life, markets, culture, food and shopping, making area choice an itinerary decision rather than a hotel-only decision.",
+      "sourceIds": ["vienna-neighborhoods"],
+      "volatile": false
+    },
+    {
+      "id": "distinct-seasons",
+      "claim": "Vienna has distinct seasons, with hot summer conditions, cold winters, transitional spring and autumn weather, possible summer storms and possible winter snow.",
+      "sourceIds": ["vienna-climate"],
+      "volatile": false
+    },
+    {
+      "id": "climate-normal-basis",
+      "claim": "The official Vienna climate table uses 1991 to 2020 averages measured by GeoSphere Austria at the Hohe Warte station and warns that daily conditions vary from those averages.",
+      "sourceIds": ["vienna-climate", "geosphere-climate"],
+      "volatile": false
+    },
+    {
+      "id": "official-climate-monitoring",
+      "claim": "GeoSphere Austria operates a national meteorological measurement network and publishes verified climate data that places current Austrian weather events in long-term context.",
+      "sourceIds": ["geosphere-climate"],
+      "volatile": false
+    },
+    {
+      "id": "venue-specific-accessibility",
+      "claim": "The Vienna Tourist Board cautions that accessibility varies across historic museums and sights and advises checking the specific venue description rather than assuming uniform access.",
+      "sourceIds": ["vienna-accessible"],
+      "volatile": false
+    },
+    {
+      "id": "schoenbrunn-access-split",
+      "claim": "Schonbrunn states that its display rooms are accessible by ramps or lift, but identifies selected garden and viewpoint areas that are accessible only by stairs.",
+      "sourceIds": ["schoenbrunn-accessibility"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "belvedere-time-slot",
+      "claim": "The Belvedere states that visits to the Upper and Lower Belvedere currently require a valid time-slot ticket, while Belvedere 21 uses a day selection.",
+      "sourceIds": ["belvedere-visit"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "khm-access-plan",
+      "claim": "The Kunsthistorisches Museum directs reduced-mobility visitors to a side entrance, provides elevator access to all floors and asks visitors to reserve a wheelchair in advance.",
+      "sourceIds": ["khm-accessibility"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "opera-access-difference",
+      "claim": "The Vienna State Opera reports elevator access for performance seating and dedicated wheelchair spaces, but says its multi-floor guided tours are not currently barrier-free.",
+      "sourceIds": ["state-opera-accessibility"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    }
+  ]
+}

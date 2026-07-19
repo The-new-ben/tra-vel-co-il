@@ -1,0 +1,210 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://tra-vel.co.il/schemas/private/vip-intake-fanout.schema.json",
+  "title": "Tra-Vel private VIP intake fan-out plan",
+  "description": "A deterministic, side-effect-free projection from one verified intake/trip binding and normalized observations into isolated private case seeds.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract_version", "environment", "fanout_ref", "fanout_digest", "binding", "observation_ledger", "case_seeds", "summary", "created_at", "private_boundary"],
+  "properties": {
+    "contract_version": {"const": "1.1.0"},
+    "environment": {"const": "sandbox"},
+    "fanout_ref": {"$ref": "#/definitions/fanoutRef"},
+    "fanout_digest": {"$ref": "#/definitions/digest"},
+    "binding": {"$ref": "#/definitions/binding"},
+    "observation_ledger": {"$ref": "#/definitions/observationLedger"},
+    "case_seeds": {"type": "array", "minItems": 1, "maxItems": 5, "items": {"$ref": "#/definitions/caseSeed"}},
+    "summary": {"$ref": "#/definitions/summary"},
+    "created_at": {"$ref": "#/definitions/dateTime"},
+    "private_boundary": {"$ref": "#/definitions/privateBoundary"}
+  },
+  "definitions": {
+    "digest": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "dateTime": {"type": "string", "pattern": "^[0-9]{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12][0-9]|3[01])T(?:[01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]Z$"},
+    "fanoutRef": {"type": "string", "pattern": "^tv_fanout_[A-Za-z0-9_-]{16,96}$"},
+    "intakeRef": {"type": "string", "pattern": "^tv_intake_[A-Za-z0-9_-]{16,96}$"},
+    "tripRef": {"type": "string", "pattern": "^tv_trip_[A-Za-z0-9_-]{16,96}$"},
+    "observationRef": {"type": "string", "pattern": "^tv_observation_[A-Za-z0-9_-]{16,96}$"},
+    "caseSeedRef": {"type": "string", "pattern": "^tv_case_seed_[A-Za-z0-9_-]{16,96}$"},
+    "caseFamilyRef": {"type": "string", "pattern": "^tv_case_family_[A-Za-z0-9_-]{16,96}$"},
+    "caseEventRef": {"type": "string", "pattern": "^tv_case_event_[A-Za-z0-9_-]{16,96}$"},
+    "evidenceRef": {"type": "string", "pattern": "^tv_evidence_[A-Za-z0-9_-]{16,96}$"},
+    "serviceRef": {"type": "string", "pattern": "^tv_service_[A-Za-z0-9_-]{16,96}$"},
+    "dependencyRef": {"type": "string", "pattern": "^tv_dependency_[A-Za-z0-9_-]{16,96}$"},
+    "family": {"enum": ["lost_card_payment", "lost_baggage_flight", "medical_insurance_assistance", "esim_connectivity", "accessibility_failure"]},
+    "riskSignal": {"enum": ["immediate_danger", "stranded", "vulnerable_traveler", "time_critical", "fraud_exposure", "offline", "none"]},
+    "inputBoundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["raw_message_present", "raw_identity_data_present", "raw_payment_data_present", "raw_medical_data_present", "raw_supplier_payload_present", "bearer_secret_present"],
+      "properties": {
+        "raw_message_present": {"const": false},
+        "raw_identity_data_present": {"const": false},
+        "raw_payment_data_present": {"const": false},
+        "raw_medical_data_present": {"const": false},
+        "raw_supplier_payload_present": {"const": false},
+        "bearer_secret_present": {"const": false}
+      }
+    },
+    "binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contract_version", "intake_ref", "trip_ref", "intake_digest", "match_evidence_digest", "match_state", "validated_at", "binding_digest", "data_boundary"],
+      "properties": {
+        "contract_version": {"const": "1.1.0"},
+        "intake_ref": {"$ref": "#/definitions/intakeRef"},
+        "trip_ref": {"$ref": "#/definitions/tripRef"},
+        "intake_digest": {"$ref": "#/definitions/digest"},
+        "match_evidence_digest": {"$ref": "#/definitions/digest"},
+        "match_state": {"const": "verified_unique"},
+        "validated_at": {"$ref": "#/definitions/dateTime"},
+        "binding_digest": {"$ref": "#/definitions/digest"},
+        "data_boundary": {"$ref": "#/definitions/inputBoundary"}
+      }
+    },
+    "observationLedger": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["accepted", "accepted_count", "duplicate_count", "ledger_digest"],
+      "properties": {
+        "accepted": {"type": "array", "minItems": 1, "maxItems": 32, "items": {"$ref": "#/definitions/ledgerEntry"}},
+        "accepted_count": {"type": "integer", "minimum": 1, "maximum": 32},
+        "duplicate_count": {"type": "integer", "minimum": 0, "maximum": 2147483647},
+        "ledger_digest": {"$ref": "#/definitions/digest"}
+      }
+    },
+    "ledgerEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["observation_ref", "observation_digest", "idempotency_digest", "mapped_case_families"],
+      "properties": {
+        "observation_ref": {"$ref": "#/definitions/observationRef"},
+        "observation_digest": {"$ref": "#/definitions/digest"},
+        "idempotency_digest": {"$ref": "#/definitions/digest"},
+        "mapped_case_families": {"type": "array", "minItems": 1, "maxItems": 1, "uniqueItems": true, "items": {"$ref": "#/definitions/family"}}
+      }
+    },
+    "caseSeed": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["case_seed_ref", "case_seed_digest", "family", "family_ref", "family_event_ref", "source_observation_refs", "risk_signals", "priority", "playbook_code", "evidence_partition", "authority", "dependencies", "routing", "execution"],
+      "properties": {
+        "case_seed_ref": {"$ref": "#/definitions/caseSeedRef"},
+        "case_seed_digest": {"$ref": "#/definitions/digest"},
+        "family": {"$ref": "#/definitions/family"},
+        "family_ref": {"$ref": "#/definitions/caseFamilyRef"},
+        "family_event_ref": {"$ref": "#/definitions/caseEventRef"},
+        "source_observation_refs": {"type": "array", "minItems": 1, "maxItems": 32, "uniqueItems": true, "items": {"$ref": "#/definitions/observationRef"}},
+        "risk_signals": {"type": "array", "minItems": 1, "maxItems": 7, "uniqueItems": true, "items": {"$ref": "#/definitions/riskSignal"}},
+        "priority": {"enum": ["P0", "P1", "P2", "P3"]},
+        "playbook_code": {"enum": ["secure_payment_instrument_and_reconcile", "trace_baggage_and_protect_flight_trip", "medical_safety_and_insurance_assistance", "restore_esim_and_offline_connectivity", "restore_accessibility_assistance"]},
+        "evidence_partition": {"$ref": "#/definitions/evidencePartition"},
+        "authority": {"$ref": "#/definitions/authority"},
+        "dependencies": {"$ref": "#/definitions/dependencies"},
+        "routing": {"$ref": "#/definitions/routing"},
+        "execution": {"$ref": "#/definitions/execution"}
+      }
+    },
+    "evidencePartition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scope", "evidence_items", "restricted", "cross_case_disclosure_allowed", "partition_digest"],
+      "properties": {
+        "scope": {"enum": ["payment_restricted", "flight_baggage_case", "medical_restricted", "connectivity_case", "accessibility_restricted"]},
+        "evidence_items": {"type": "array", "minItems": 1, "maxItems": 64, "items": {"$ref": "#/definitions/evidenceItem"}},
+        "restricted": {"type": "boolean"},
+        "cross_case_disclosure_allowed": {"const": false},
+        "partition_digest": {"$ref": "#/definitions/digest"}
+      }
+    },
+    "evidenceItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["evidence_ref", "evidence_digest"],
+      "properties": {
+        "evidence_ref": {"$ref": "#/definitions/evidenceRef"},
+        "evidence_digest": {"$ref": "#/definitions/digest"}
+      }
+    },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["required", "requirement_code", "state", "execution_authorized"],
+      "properties": {
+        "required": {"const": true},
+        "requirement_code": {"enum": ["payment_instrument_control_verification", "carrier_claim_or_service_change_step_up", "medical_assistance_consent_and_policy_verification", "connectivity_purchase_or_profile_change_step_up", "accessibility_assistance_consent"]},
+        "state": {"const": "unverified"},
+        "execution_authorized": {"const": false}
+      }
+    },
+    "dependencies": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["service_refs", "dependency_refs", "preserve_unaffected_services"],
+      "properties": {
+        "service_refs": {"type": "array", "minItems": 1, "maxItems": 64, "uniqueItems": true, "items": {"$ref": "#/definitions/serviceRef"}},
+        "dependency_refs": {"type": "array", "minItems": 1, "maxItems": 64, "uniqueItems": true, "items": {"$ref": "#/definitions/dependencyRef"}},
+        "preserve_unaffected_services": {"const": true}
+      }
+    },
+    "routing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["after_hours_required", "after_hours_route_code", "safety_handoff_required", "safety_route_code", "operator_review_required", "dispatch_state"],
+      "properties": {
+        "after_hours_required": {"const": true},
+        "after_hours_route_code": {"enum": ["payment_security_on_call", "flight_baggage_on_call", "medical_assistance_on_call", "connectivity_support_on_call", "accessibility_support_on_call"]},
+        "safety_handoff_required": {"type": "boolean"},
+        "safety_route_code": {"anyOf": [{"type": "null"}, {"const": "emergency_services_and_medical_assistance"}]},
+        "operator_review_required": {"const": true},
+        "dispatch_state": {"const": "not_dispatched"}
+      }
+    },
+    "execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["supplier_action_executed", "payment_action_executed", "claim_action_executed", "booking_action_executed", "execution_effect"],
+      "properties": {
+        "supplier_action_executed": {"const": false},
+        "payment_action_executed": {"const": false},
+        "claim_action_executed": {"const": false},
+        "booking_action_executed": {"const": false},
+        "execution_effect": {"const": "none"}
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["seed_count", "family_order", "p0_seed_count", "safety_seed_count", "duplicate_observation_count", "duplicate_playbook_count", "clarification_required", "side_effect_count"],
+      "properties": {
+        "seed_count": {"type": "integer", "minimum": 1, "maximum": 5},
+        "family_order": {"type": "array", "minItems": 1, "maxItems": 5, "uniqueItems": true, "items": {"$ref": "#/definitions/family"}},
+        "p0_seed_count": {"type": "integer", "minimum": 0, "maximum": 5},
+        "safety_seed_count": {"type": "integer", "minimum": 0, "maximum": 5},
+        "duplicate_observation_count": {"type": "integer", "minimum": 0, "maximum": 2147483647},
+        "duplicate_playbook_count": {"const": 0},
+        "clarification_required": {"const": false},
+        "side_effect_count": {"const": 0}
+      }
+    },
+    "privateBoundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["server_only", "public_serialization_allowed", "planning_only", "storage_written", "rest_route_registered", "network_called", "ai_called", "supplier_dispatched", "payment_executed", "claim_submitted", "booking_executed", "authorization_effect"],
+      "properties": {
+        "server_only": {"const": true},
+        "public_serialization_allowed": {"const": false},
+        "planning_only": {"const": true},
+        "storage_written": {"const": false},
+        "rest_route_registered": {"const": false},
+        "network_called": {"const": false},
+        "ai_called": {"const": false},
+        "supplier_dispatched": {"const": false},
+        "payment_executed": {"const": false},
+        "claim_submitted": {"const": false},
+        "booking_executed": {"const": false},
+        "authorization_effect": {"const": "none"}
+      }
+    }
+  }
+}

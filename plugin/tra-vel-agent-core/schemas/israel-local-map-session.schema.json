@@ -1,0 +1,177 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://tra-vel.co.il/schemas/israel-local-map-session-v1.0.0.json",
+  "title": "Tra-Vel Earth-to-Israel local-map session",
+  "description": "A stateful, restorable handoff from the world globe to a high-resolution Israeli map. Layout is expressed as logical safe-area state rather than CSS coordinates.",
+  "type": "object",
+  "required": ["contract_version", "session_ref", "navigation_state", "render_state", "local_map_level", "preserved_context", "camera", "selection", "local_data", "layout", "interaction"],
+  "properties": {
+    "contract_version": { "const": "1.0.0" },
+    "session_ref": { "type": "string", "pattern": "^local_map_[a-z0-9]{12,64}$" },
+    "navigation_state": { "enum": ["world_globe", "country_focus", "israel_region_overview", "local_high_res_map", "place_or_route_detail", "itinerary_assembly", "revalidated_proposal"] },
+    "render_state": { "enum": ["globe_ready", "descending", "local_tiles_loading", "local_ready", "degraded_tiles", "offline_cached"] },
+    "local_map_level": { "enum": ["world", "country", "region", "city_or_rural", "neighborhood", "venue"] },
+    "preserved_context": { "$ref": "#/definitions/preservedContext" },
+    "camera": { "$ref": "#/definitions/camera" },
+    "selection": { "$ref": "#/definitions/selection" },
+    "local_data": { "$ref": "#/definitions/localData" },
+    "layout": { "$ref": "#/definitions/layout" },
+    "interaction": { "$ref": "#/definitions/interaction" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "navigation_state": { "const": "world_globe" } } },
+      "then": { "properties": { "local_map_level": { "const": "world" } } }
+    },
+    {
+      "if": { "properties": { "navigation_state": { "const": "country_focus" } } },
+      "then": { "properties": { "local_map_level": { "const": "country" } } }
+    },
+    {
+      "if": { "properties": { "navigation_state": { "const": "israel_region_overview" } } },
+      "then": { "properties": { "local_map_level": { "const": "region" } } }
+    },
+    {
+      "if": { "properties": { "navigation_state": { "const": "local_high_res_map" } } },
+      "then": { "properties": { "local_map_level": { "enum": ["city_or_rural", "neighborhood"] } } }
+    },
+    {
+      "if": { "properties": { "navigation_state": { "const": "place_or_route_detail" } } },
+      "then": { "properties": { "local_map_level": { "enum": ["neighborhood", "venue"] } } }
+    }
+  ],
+  "additionalProperties": false,
+  "definitions": {
+    "point": {
+      "type": "object",
+      "required": ["latitude", "longitude"],
+      "properties": {
+        "latitude": { "type": "number", "minimum": -90, "maximum": 90 },
+        "longitude": { "type": "number", "minimum": -180, "maximum": 180 }
+      },
+      "additionalProperties": false
+    },
+    "preservedContext": {
+      "type": "object",
+      "required": ["context_ref", "context_digest", "revision", "dates_state", "party_state", "budget_state", "benefits_state", "accessibility_state", "intent_state", "restorable"],
+      "properties": {
+        "context_ref": { "type": "string", "pattern": "^trip_context_[a-z0-9]{12,64}$" },
+        "context_digest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+        "revision": { "type": "integer", "minimum": 1 },
+        "dates_state": { "enum": ["unset", "set"] },
+        "party_state": { "enum": ["unset", "set"] },
+        "budget_state": { "enum": ["unset", "set"] },
+        "benefits_state": { "enum": ["unknown", "disconnected", "connected_current", "connected_stale"] },
+        "accessibility_state": { "enum": ["unknown", "not_requested", "requirements_set"] },
+        "intent_state": { "enum": ["unset", "free_language_set", "structured_set"] },
+        "restorable": { "const": true }
+      },
+      "additionalProperties": false
+    },
+    "camera": {
+      "type": "object",
+      "required": ["center", "zoom", "bearing", "pitch", "history_ref"],
+      "properties": {
+        "center": { "$ref": "#/definitions/point" },
+        "zoom": { "type": "number", "minimum": 0, "maximum": 24 },
+        "bearing": { "type": "number", "minimum": -360, "maximum": 360 },
+        "pitch": { "type": "number", "minimum": 0, "maximum": 85 },
+        "history_ref": { "type": "string", "pattern": "^camera_history_[a-z0-9]{8,64}$" }
+      },
+      "additionalProperties": false
+    },
+    "selection": {
+      "type": "object",
+      "required": ["kind", "selection_ref", "preview_state", "restorable"],
+      "properties": {
+        "kind": { "enum": ["none", "country", "region", "place", "route"] },
+        "selection_ref": { "type": ["string", "null"], "pattern": "^(country|region|local_item|route)_[a-z0-9_-]{2,80}$" },
+        "preview_state": { "enum": ["closed", "loading", "ready", "stale", "unavailable"] },
+        "restorable": { "const": true }
+      },
+      "additionalProperties": false
+    },
+    "localData": {
+      "type": "object",
+      "required": ["tile_state", "layer_density", "cluster_state", "progressive_load_state", "last_successful_tile_set_ref", "commercial_refresh_state"],
+      "properties": {
+        "tile_state": { "enum": ["not_requested", "loading", "ready", "degraded", "offline_cached"] },
+        "layer_density": { "enum": ["sparse_global", "regional_summary", "dense_operational"] },
+        "cluster_state": { "enum": ["not_applicable", "clustered", "expanding", "individual_points"] },
+        "progressive_load_state": { "enum": ["idle", "loading", "partial", "complete", "failed"] },
+        "last_successful_tile_set_ref": { "type": ["string", "null"], "pattern": "^tiles_[a-z0-9]{8,64}$" },
+        "commercial_refresh_state": { "enum": ["not_requested", "checking", "current", "stale", "offline_blocked"] }
+      },
+      "additionalProperties": false
+    },
+    "layout": {
+      "type": "object",
+      "required": ["viewport_class", "reading_direction", "logical_edge_model", "map_surface_role", "map_ownership_ratio", "bottom_sheet_state", "side_rail_state", "filter_surface_state", "selected_content_mode", "route_progress_mode", "overlay_stack_depth", "context_card_count", "map_controls_zone", "map_controls_available", "map_pan_available", "static_poster_under_canvas", "requires_second_entry_click", "safe_area_reflow_state", "safe_area_revision", "selected_target_visibility"],
+      "properties": {
+        "viewport_class": { "enum": ["mobile", "desktop"] },
+        "reading_direction": { "enum": ["rtl", "ltr"] },
+        "logical_edge_model": { "const": "logical_start_end" },
+        "map_surface_role": { "const": "primary" },
+        "map_ownership_ratio": { "type": "number", "minimum": 0, "maximum": 1 },
+        "bottom_sheet_state": { "enum": ["absent", "peek", "half", "full"] },
+        "side_rail_state": { "enum": ["absent", "collapsed", "open"] },
+        "filter_surface_state": { "enum": ["closed", "dedicated_sheet", "side_rail"] },
+        "selected_content_mode": { "enum": ["collision_aware_anchor", "docked_side_rail", "mobile_bottom_sheet"] },
+        "route_progress_mode": { "enum": ["hidden", "narrow_top_strip", "docked_side_rail"] },
+        "overlay_stack_depth": { "type": "integer", "minimum": 0, "maximum": 1 },
+        "context_card_count": { "type": "integer", "minimum": 0, "maximum": 1 },
+        "map_controls_zone": { "enum": ["logical_inline_start", "logical_inline_end"] },
+        "map_controls_available": { "const": true },
+        "map_pan_available": { "const": true },
+        "static_poster_under_canvas": { "const": false },
+        "requires_second_entry_click": { "const": false },
+        "safe_area_reflow_state": { "enum": ["pending", "applied", "failed"] },
+        "safe_area_revision": { "type": "integer", "minimum": 1 },
+        "selected_target_visibility": { "enum": ["visible", "repositioning", "occluded"] }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "viewport_class": { "const": "desktop" } } },
+          "then": {
+            "properties": {
+              "map_ownership_ratio": { "minimum": 0.6666666667 },
+              "bottom_sheet_state": { "const": "absent" },
+              "side_rail_state": { "enum": ["collapsed", "open"] },
+              "filter_surface_state": { "const": "side_rail" },
+              "selected_content_mode": { "enum": ["collision_aware_anchor", "docked_side_rail"] }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "viewport_class": { "const": "mobile" } } },
+          "then": {
+            "properties": {
+              "bottom_sheet_state": { "enum": ["peek", "half", "full"] },
+              "side_rail_state": { "const": "absent" },
+              "filter_surface_state": { "enum": ["closed", "dedicated_sheet"] },
+              "selected_content_mode": { "const": "mobile_bottom_sheet" },
+              "route_progress_mode": { "enum": ["hidden", "narrow_top_strip"] }
+            }
+          }
+        }
+      ],
+      "additionalProperties": false
+    },
+    "interaction": {
+      "type": "object",
+      "required": ["pointer_supported", "touch_supported", "keyboard_supported", "screen_reader_summary_available", "motion_preference", "connectivity_state", "progress_feedback_state", "primary_action_count", "back_restores_camera"],
+      "properties": {
+        "pointer_supported": { "type": "boolean" },
+        "touch_supported": { "type": "boolean" },
+        "keyboard_supported": { "const": true },
+        "screen_reader_summary_available": { "const": true },
+        "motion_preference": { "enum": ["full", "reduced"] },
+        "connectivity_state": { "enum": ["online", "offline"] },
+        "progress_feedback_state": { "enum": ["idle", "visible", "complete", "degraded"] },
+        "primary_action_count": { "type": "integer", "minimum": 0, "maximum": 1 },
+        "back_restores_camera": { "const": true }
+      },
+      "additionalProperties": false
+    }
+  }
+}

@@ -18,6 +18,7 @@ const tripRequest = readJson('trip-request.schema.json');
 const runEvent = readJson('run-event.schema.json');
 const approval = readJson('approval.schema.json');
 const agentRun = readJson('agent-run.schema.json');
+const agentRunSummary = readJson('agent-run-summary.schema.json');
 const providerPhp = readPhp('class-tra-vel-agent-openai-provider.php');
 const controllerPhp = readPhp('class-tra-vel-agent-controller.php');
 const storePhp = readPhp('class-tra-vel-agent-store.php');
@@ -42,6 +43,7 @@ for (const [label, schema] of [
   ['RunEvent', runEvent],
   ['ApprovalRequest', approval],
   ['AgentRun', agentRun],
+  ['AgentRunSummary', agentRunSummary],
 ]) {
   if (schema?.$schema !== 'http://json-schema.org/draft-07/schema#') fail(`${label} must use the repository Draft 7 contract convention.`);
   assertClosedObject(schema, label);
@@ -97,6 +99,21 @@ const runStatuses = agentRun.properties?.status?.enum || [];
 if (!hasEvery(runStatuses, ['needs_clarification', 'request_ready', 'provider_error'])) fail('AgentRun is missing first-slice terminal/readiness states.');
 if (runStatuses.some(status => /booked|purchased|reserved/.test(status))) fail('The interpretation-only AgentRun contract must not claim a supplier transaction state.');
 
+const runSummaryFields = [
+  'run_id', 'status', 'mode', 'locale', 'summary', 'planning_context', 'readiness',
+  'request_revision', 'proposal_count', 'created_at', 'updated_at', 'expires_at',
+  'resume_available',
+];
+assertRequired(agentRunSummary, runSummaryFields, 'AgentRunSummary');
+if (!sameMembers(Object.keys(agentRunSummary.properties || {}), runSummaryFields)) fail('AgentRunSummary must expose only the agreed account-history DTO fields.');
+assertClosedObject(agentRunSummary.properties?.planning_context, 'AgentRunSummary.planning_context');
+assertClosedObject(agentRunSummary.properties?.readiness, 'AgentRunSummary.readiness');
+assertRequired(agentRunSummary.properties?.planning_context, ['kind', 'selection_id', 'latitude', 'longitude', 'destination', 'intent', 'scope'], 'AgentRunSummary.planning_context');
+assertRequired(agentRunSummary.properties?.readiness, ['status', 'blockers'], 'AgentRunSummary.readiness');
+if (agentRunSummary.properties?.proposal_count?.minimum !== 0 || agentRunSummary.properties?.request_revision?.minimum !== 0) fail('AgentRunSummary counts and revisions must remain non-negative.');
+if (agentRunSummary.properties?.resume_available?.type !== 'boolean') fail('AgentRunSummary must publish a boolean resume_available truth flag.');
+if (agentRunSummary.properties?.planning_context?.additionalProperties !== false || agentRunSummary.properties?.readiness?.additionalProperties !== false) fail('AgentRunSummary nested objects must remain closed.');
+
 if (!/'store'\s*=>\s*false/.test(providerPhp)) fail('OpenAI Responses calls must disable provider-side response storage.');
 if (!providerPhp.includes('implements Tra_Vel_Agent_Provider')) fail('The OpenAI interpreter is not behind the replaceable provider boundary.');
 if (!providerInterfacePhp.includes('public function revise(') || !providerPhp.includes('public function revise(')) fail('The provider boundary must support strict in-place request revision.');
@@ -119,6 +136,7 @@ for (const marker of ['planning_context_schema', 'validate_planning_context', 's
 }
 if (!controllerPhp.includes('/messages') || !controllerPhp.includes('public function revise_run(')) fail('Agent Core must expose a same-run natural-language revision endpoint.');
 if (!/request_revision'\s*=>\s*\$this->provider->health\(\)\['configured'\]/.test(controllerPhp)) fail('Agent health must report request revision availability from the configured provider.');
+if (!/account_plan_history'\s*=>\s*true/.test(controllerPhp)) fail('Agent health must report account plan-history availability.');
 for (const eventType of ['clarification.response.received', 'request.revision.started', 'request.revised', 'request.revision.failed']) {
   if (!controllerPhp.includes(`'${eventType}'`)) fail(`Same-run revision is missing truthful event ${eventType}.`);
 }
@@ -144,8 +162,37 @@ if ((storePhp.match(/UNIQUE\s+KEY/gi) || []).length < 5 || (storePhp.match(/PRIM
 if (!storePhp.includes("0 === (int) $run['owner_user_id']") || !storePhp.includes("'owner_token_hash'     => absint")) fail('Account-owned AgentRuns must invalidate anonymous bearer ownership.');
 if (!controllerPhp.includes("'agent_store'") || !controllerPhp.includes('Tra_Vel_Agent_Store::schema_health()')) fail('Agent health must expose transactional AgentRun store readiness.');
 if (!controllerPhp.includes('public function can_use_store') || !controllerPhp.includes('Tra_Vel_Agent_Store::is_ready()') || !controllerPhp.includes("'tra_vel_agent_store_unavailable'")) fail('Agent runtime routes must fail closed when the transactional AgentRun schema is unavailable.');
+for (const marker of ['/schema/agent-run-summary', 'public function can_list_runs', 'public function list_runs', 'list_owned_runs( $user_id, $limit, $read_error )', "'tra_vel_agent_runs_read_failed'", "'runs' => array_map"]) {
+  if (!controllerPhp.includes(marker)) fail(`Authenticated account-run collection is missing ${marker}.`);
+}
+const listRunsPhp = controllerPhp.slice(controllerPhp.indexOf('public function can_list_runs'), controllerPhp.indexOf('public function get_run('));
+if (!/get_current_user_id\(\)\s*<\s*1/.test(listRunsPhp) || !/current_user_can\(\s*'read'\s*\)/.test(listRunsPhp)) fail('Account-run collection must require both a signed-in user and the read capability.');
+if (/get_param\(\s*['"]owner/.test(listRunsPhp) || /owner_user_id\s*=\s*\$request/.test(listRunsPhp)) fail('Account-run collection must never accept an owner identifier from the request.');
+if (!/min\(\s*20,\s*max\(\s*1/.test(listRunsPhp)) fail('Account-run collection must cap direct callback limits at 20.');
+if (!/['"]limit['"]\s*=>\s*array\([^\n]+['"]default['"]\s*=>\s*12/.test(controllerPhp) || !/get_param\(\s*['"]limit['"]\s*\)[\s\S]{0,40}\?:\s*12/.test(listRunsPhp)) fail('Account-run collection must default to 12 while retaining the 20-item cap.');
+if (!/tra_vel_agent_runs_read_failed[\s\S]{0,180}status'\s*=>\s*503/.test(listRunsPhp)) fail('Account-run collection must surface database read uncertainty as 503.');
+const summaryPresenterPhp = controllerPhp.slice(controllerPhp.indexOf('public function public_run_summary'), controllerPhp.indexOf('private function attach_run_cookie'));
+for (const field of runSummaryFields) {
+  if (!new RegExp(`['"]${field}['"]\\s*=>`).test(summaryPresenterPhp)) fail(`Account-run DTO presenter must emit ${field}.`);
+}
+for (const internalField of ['id', 'owner_user_id', 'owner_token_hash', 'trip_request', 'proposals', 'provider', 'provider_state', 'events', 'approvals', 'input_text']) {
+  if (new RegExp(`['"]${internalField}['"]\\s*=>`).test(summaryPresenterPhp)) fail(`Account-run DTO presenter must not expose ${internalField}.`);
+}
+if (!/proposal_count'\s*=>\s*count\(\s*\$proposals\s*\)/.test(summaryPresenterPhp)) fail('Account-run DTO must count the actual stored proposals array.');
+if (!/private_response[\s\S]{0,160}'runs'/.test(listRunsPhp) && !/'runs'[\s\S]{0,160}private_response/.test(listRunsPhp)) fail('Account-run collection must use the private no-store response wrapper.');
 if (!storePhp.includes('INSERT IGNORE INTO') || !storePhp.includes('counter_value < %d')) fail('Agent request limits must reserve capacity atomically in the database.');
 if (!/function\s+get_run_by_uuid\s*\([^)]*&\$read_error/.test(storePhp) || !/get_run_by_uuid[\s\S]{0,520}last_error/.test(storePhp)) fail('Authoritative AgentRun reads must expose transient SELECT errors separately from true absence.');
+const listOwnedRunsPhp = storePhp.slice(storePhp.indexOf('public function list_owned_runs'), storePhp.indexOf('public function get_run_ownership_by_uuids'));
+if (!/\$user_id\s*=\s*absint\(\s*\$user_id\s*\)/.test(listOwnedRunsPhp) || !/if \( \$user_id < 1 \)/.test(listOwnedRunsPhp)) fail('AgentRun list storage must reject guest ownership before querying.');
+if (!/WHERE owner_user_id = %d AND expires_at >= %s/.test(listOwnedRunsPhp)) fail('AgentRun list SQL must bind the exact account and exclude expired rows.');
+if (!/ORDER BY updated_at DESC, id DESC LIMIT %d/.test(listOwnedRunsPhp)) fail('AgentRun list SQL must use stable updated_at DESC, id DESC ordering and a prepared limit.');
+if (!/min\(\s*20,\s*max\(\s*1/.test(listOwnedRunsPhp)) fail('AgentRun list storage must cap its limit at 20 independently of REST validation.');
+if (!/function\s+list_owned_runs\(\s*\$user_id,\s*\$limit\s*=\s*12/.test(listOwnedRunsPhp)) fail('AgentRun list storage must share the 12-item default.');
+if (!/suppress_errors[\s\S]{0,900}last_error/.test(listOwnedRunsPhp) || !/'' !== \$read_error/.test(listOwnedRunsPhp)) fail('AgentRun list storage must distinguish a SELECT failure from an empty account.');
+for (const forbiddenColumn of ['owner_token_hash', 'input_text', 'request_fingerprint', 'provider_state']) {
+  const selectLine = listOwnedRunsPhp.match(/SELECT [^\n]+ FROM/)?.[0] || '';
+  if (selectLine.includes(forbiddenColumn)) fail(`AgentRun account list should not read unnecessary private column ${forbiddenColumn}.`);
+}
 if (!controllerPhp.includes("'tra_vel_agent_provider_concurrency_limit', 2") || !controllerPhp.includes("'tra_vel_agent_provider_busy'")) fail('Live provider work must enforce the default two-slot concurrency semaphore.');
 if (!storePhp.includes('acquire_lease') || !storePhp.includes('release_lease') || !storePhp.includes('AND option_value = %s')) fail('Provider concurrency leases must be atomic and owner-conditionally released.');
 if (!storePhp.includes("preg_replace( '/[^a-z0-9._-]/'") || storePhp.includes("str_replace( '_', '.', $row['event_type'] )")) fail('Run events must preserve canonical dot and underscore separators without lossy conversion.');

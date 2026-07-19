@@ -4,7 +4,7 @@
   "title": "Tra-Vel destination guide source packet",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "id", "locale", "title", "excerpt", "author", "reviewer", "primaryTopic", "canonicalPath", "status", "wordTargetMin", "checkedAt", "mapState", "sections", "sources", "facts"],
+  "required": ["schemaVersion", "id", "locale", "title", "excerpt", "author", "reviewer", "reviewMethod", "primaryTopic", "canonicalPath", "status", "wordTargetMin", "checkedAt", "mapState", "sections", "sources", "facts"],
   "properties": {
     "schemaVersion": { "const": 1 },
     "id": { "type": "string", "pattern": "^[a-z0-9-]+$" },
@@ -20,7 +20,7 @@
     "mapState": { "type": "string", "pattern": "^[a-z0-9-]+$" },
     "reviewer": { "type": "string", "minLength": 2 },
     "reviewMethod": { "type": "string", "minLength": 30 },
-    "contentPath": { "type": "string", "pattern": "^content/guides/[a-z0-9-]+\\.(md|html)$" },
+    "contentPath": { "type": "string", "pattern": "^content/guides/[a-z0-9-]+(?:\\.[a-z]{2})?\\.(md|html)$" },
     "flightTime": { "type": "string", "minLength": 2 },
     "dailyBudget": { "type": "string", "minLength": 2 },
     "bestSeason": { "type": "string", "minLength": 2 },

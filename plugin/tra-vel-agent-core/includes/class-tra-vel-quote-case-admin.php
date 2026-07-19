@@ -66,21 +66,77 @@ class Tra_Vel_Quote_Case_Admin {
 		);
 
 		wp_enqueue_script(
-			'tra-vel-quote-cases-admin',
-			plugins_url( 'assets/admin/quote-cases.js', TRA_VEL_AGENT_FILE ),
+			'tra-vel-assisted-proposal-composer-admin',
+			plugins_url( 'assets/admin/assisted-proposal-composer.js', TRA_VEL_AGENT_FILE ),
 			array(),
 			TRA_VEL_AGENT_VERSION,
 			true
 		);
 
+		wp_enqueue_script(
+			'tra-vel-quote-cases-admin',
+			plugins_url( 'assets/admin/quote-cases.js', TRA_VEL_AGENT_FILE ),
+			array( 'tra-vel-assisted-proposal-composer-admin' ),
+			TRA_VEL_AGENT_VERSION,
+			true
+		);
+
+		$proposal_ready = class_exists( 'Tra_Vel_Assisted_Proposal_Store' )
+			&& method_exists( 'Tra_Vel_Assisted_Proposal_Store', 'is_ready' )
+			&& Tra_Vel_Assisted_Proposal_Store::is_ready();
+		$source_ttls = array();
+		foreach ( Tra_Vel_Assisted_Proposal_Policy::source_types() as $source_type ) {
+			$source_ttls[ $source_type ] = (int) floor( Tra_Vel_Assisted_Proposal_Policy::source_max_ttl_seconds( $source_type ) / MINUTE_IN_SECONDS );
+		}
+		$public_source_providers = array();
+		foreach ( Tra_Vel_Assisted_Proposal_Policy::public_source_provider_registry() as $provider_code => $definition ) {
+			if ( ! is_string( $provider_code ) || ! preg_match( '/^[a-z0-9]+(?:[-_][a-z0-9]+)*$/', $provider_code ) || ! is_array( $definition ) ) {
+				continue;
+			}
+			$public_source_providers[ $provider_code ] = array(
+				'sourceTypes'   => array_values( array_intersect( Tra_Vel_Assisted_Proposal_Policy::source_types(), (array) ( $definition['source_types'] ?? array() ) ) ),
+				'relationships' => array_values( array_intersect( Tra_Vel_Assisted_Proposal_Policy::source_relationships(), (array) ( $definition['relationships'] ?? array() ) ) ),
+			);
+		}
+
 		wp_localize_script(
 			'tra-vel-quote-cases-admin',
 			'TraVelQuoteCasesAdmin',
 			array(
-				'restUrl'   => esc_url_raw( rest_url( 'tra-vel-agent/v1/operator/quote-cases' ) ),
-				'nonce'     => wp_create_nonce( 'wp_rest' ),
-				'statuses'  => $this->statuses(),
-				'canManage' => current_user_can( Tra_Vel_Quote_Case_Capabilities::MANAGE_CASES ),
+				'restUrl'                => esc_url_raw( rest_url( 'tra-vel-agent/v1/operator/quote-cases' ) ),
+				'nonce'                  => wp_create_nonce( 'wp_rest' ),
+				'statuses'               => $this->statuses(),
+				'canManage'              => current_user_can( Tra_Vel_Quote_Case_Capabilities::MANAGE_CASES ),
+				'canPublish'             => $proposal_ready && current_user_can( Tra_Vel_Quote_Case_Capabilities::PUBLISH_PROPOSALS ),
+				'canOverrideAssignment'  => current_user_can( 'manage_options' ),
+				'currentUserId'          => get_current_user_id(),
+				'proposalReady'          => $proposal_ready,
+				'proposal'               => array(
+					'positions'           => Tra_Vel_Assisted_Proposal_Policy::positions(),
+					'sourceTypes'         => Tra_Vel_Assisted_Proposal_Policy::source_types(),
+					'sourceRelationships' => Tra_Vel_Assisted_Proposal_Policy::source_relationships(),
+					'categories'          => Tra_Vel_Assisted_Proposal_Policy::categories(),
+					'currencies'          => Tra_Vel_Assisted_Proposal_Policy::currencies(),
+					'sourceTtlMinutes'    => $source_ttls,
+					'publicSourceProviders' => $public_source_providers,
+					'disclosure'          => Tra_Vel_Assisted_Proposal_Policy::FINAL_QUOTE_DISCLOSURE,
+				),
+				'proposalStrings'        => array(
+					'open'                 => __( 'Open proposals', 'tra-vel-agent' ),
+					'close'                => __( 'Close proposal workspace', 'tra-vel-agent' ),
+					'heading'              => __( 'Build a sourced trip proposal', 'tra-vel-agent' ),
+					'intro'                => __( 'Prepare one editable 360-degree option. Only facts tied to the evidence below can be shown as priced.', 'tra-vel-agent' ),
+					'publish'              => __( 'Publish non-binding proposal', 'tra-vel-agent' ),
+					'publishing'           => __( 'Publishing...', 'tra-vel-agent' ),
+					'published'            => __( 'The sourced proposal is now available in the traveler workspace.', 'tra-vel-agent' ),
+					'withdraw'             => __( 'Withdraw proposal', 'tra-vel-agent' ),
+					'loading'              => __( 'Loading proposal history...', 'tra-vel-agent' ),
+					'noProposals'          => __( 'No proposal has been published for this case yet.', 'tra-vel-agent' ),
+					'assignmentRequired'   => __( 'Claim this case before publishing a proposal.', 'tra-vel-agent' ),
+					'storeUnavailable'     => __( 'Proposal tools are unavailable until their protected storage passes readiness checks.', 'tra-vel-agent' ),
+					'finalReview'          => __( 'Final review', 'tra-vel-agent' ),
+					'priceBoundary'        => __( 'Final price, availability, and terms are provided only after revalidation in a personal quote.', 'tra-vel-agent' ),
+				),
 			)
 		);
 	}

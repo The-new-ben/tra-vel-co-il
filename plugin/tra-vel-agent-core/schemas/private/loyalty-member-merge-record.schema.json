@@ -1,0 +1,83 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://tra-vel.co.il/schemas/private/loyalty-member-merge-record.schema.json",
+  "title": "Tra-Vel private loyalty member merge record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract_version", "environment", "merge_ref", "record_digest", "idempotency_digest", "account_scope_digest", "program_ref", "unit_code", "source_member_ref", "target_member_ref", "source_snapshot_digest", "target_snapshot_digest", "pre_merge", "resolution", "audit_lineage", "created_at", "boundary"],
+  "properties": {
+    "contract_version": { "const": "1.1.0" },
+    "environment": { "const": "simulation" },
+    "merge_ref": { "$ref": "#/definitions/mergeRef" },
+    "record_digest": { "$ref": "#/definitions/digest" },
+    "idempotency_digest": { "$ref": "#/definitions/digest" },
+    "account_scope_digest": { "$ref": "#/definitions/digest" },
+    "program_ref": { "$ref": "#/definitions/programRef" },
+    "unit_code": { "$ref": "#/definitions/identifier" },
+    "source_member_ref": { "$ref": "#/definitions/memberRef" },
+    "target_member_ref": { "$ref": "#/definitions/memberRef" },
+    "source_snapshot_digest": { "$ref": "#/definitions/digest" },
+    "target_snapshot_digest": { "$ref": "#/definitions/digest" },
+    "pre_merge": {
+      "type": "object", "additionalProperties": false, "required": ["source", "target"],
+      "properties": { "source": { "$ref": "#/definitions/memberLedger" }, "target": { "$ref": "#/definitions/memberLedger" } }
+    },
+    "resolution": {
+      "type": "object", "additionalProperties": false,
+      "required": ["survivor_member_ref", "retired_member_ref", "transfer_lots", "preserved_target_lot_refs", "post_merge_totals", "double_credit_integer", "duplicate_identity_evidence_digest"],
+      "properties": {
+        "survivor_member_ref": { "$ref": "#/definitions/memberRef" },
+        "retired_member_ref": { "$ref": "#/definitions/memberRef" },
+        "transfer_lots": { "type": "array", "minItems": 1, "maxItems": 100, "items": { "$ref": "#/definitions/transferLot" } },
+        "preserved_target_lot_refs": { "$ref": "#/definitions/lotRefs" },
+        "post_merge_totals": { "$ref": "#/definitions/stateTotals" },
+        "double_credit_integer": { "const": 0 },
+        "duplicate_identity_evidence_digest": { "$ref": "#/definitions/digest" }
+      }
+    },
+    "audit_lineage": { "$ref": "#/definitions/auditLineage" },
+    "created_at": { "$ref": "#/definitions/dateTime" },
+    "boundary": { "$ref": "#/definitions/boundary" }
+  },
+  "definitions": {
+    "digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "identifier": { "type": "string", "pattern": "^[a-z][a-z0-9_]{1,63}$" },
+    "dateTime": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$" },
+    "mergeRef": { "type": "string", "pattern": "^loyalty_merge_[A-Za-z0-9][A-Za-z0-9_-]{15,95}$" },
+    "programRef": { "type": "string", "pattern": "^program_[A-Za-z0-9][A-Za-z0-9_-]{15,95}$" },
+    "memberRef": { "type": "string", "pattern": "^member_[A-Za-z0-9][A-Za-z0-9_-]{15,95}$" },
+    "lotRef": { "type": "string", "pattern": "^value_lot_[A-Za-z0-9][A-Za-z0-9_-]{15,95}$" },
+    "integerValue": { "type": "integer", "minimum": 0, "maximum": 1000000000000 },
+    "lotRefs": { "type": "array", "minItems": 1, "maxItems": 100, "uniqueItems": true, "items": { "$ref": "#/definitions/lotRef" } },
+    "stateTotals": {
+      "type": "object", "additionalProperties": false,
+      "required": ["available_integer", "pending_integer", "disputed_integer", "expired_integer"],
+      "properties": { "available_integer": { "$ref": "#/definitions/integerValue" }, "pending_integer": { "$ref": "#/definitions/integerValue" }, "disputed_integer": { "$ref": "#/definitions/integerValue" }, "expired_integer": { "$ref": "#/definitions/integerValue" } }
+    },
+    "memberLedger": {
+      "type": "object", "additionalProperties": false,
+      "required": ["member_ref", "available_integer", "pending_integer", "disputed_integer", "expired_integer", "lots"],
+      "properties": { "member_ref": { "$ref": "#/definitions/memberRef" }, "available_integer": { "$ref": "#/definitions/integerValue" }, "pending_integer": { "$ref": "#/definitions/integerValue" }, "disputed_integer": { "$ref": "#/definitions/integerValue" }, "expired_integer": { "$ref": "#/definitions/integerValue" }, "lots": { "type": "array", "minItems": 1, "maxItems": 100, "items": { "$ref": "#/definitions/ledgerLot" } } }
+    },
+    "ledgerLot": {
+      "type": "object", "additionalProperties": false,
+      "required": ["lot_ref", "state", "amount_integer", "evidence_digest"],
+      "properties": { "lot_ref": { "$ref": "#/definitions/lotRef" }, "state": { "enum": ["available", "pending", "disputed", "expired"] }, "amount_integer": { "type": "integer", "minimum": 1, "maximum": 1000000000000 }, "evidence_digest": { "$ref": "#/definitions/digest" } }
+    },
+    "transferLot": {
+      "type": "object", "additionalProperties": false,
+      "required": ["lot_ref", "original_member_ref", "state", "amount_integer", "evidence_digest"],
+      "properties": { "lot_ref": { "$ref": "#/definitions/lotRef" }, "original_member_ref": { "$ref": "#/definitions/memberRef" }, "state": { "enum": ["available", "pending", "disputed", "expired"] }, "amount_integer": { "type": "integer", "minimum": 1, "maximum": 1000000000000 }, "evidence_digest": { "$ref": "#/definitions/digest" } }
+    },
+    "auditLineage": {
+      "type": "object", "additionalProperties": false,
+      "required": ["operation_ref", "sequence", "previous_operation_digest", "source_event_digests", "lineage_digest", "immutable"],
+      "properties": { "operation_ref": { "type": "string", "pattern": "^loyalty_operation_[A-Za-z0-9][A-Za-z0-9_-]{15,95}$" }, "sequence": { "type": "integer", "minimum": 1, "maximum": 1000000000000 }, "previous_operation_digest": { "anyOf": [{ "$ref": "#/definitions/digest" }, { "type": "null" }] }, "source_event_digests": { "type": "array", "minItems": 1, "maxItems": 20, "uniqueItems": true, "items": { "$ref": "#/definitions/digest" } }, "lineage_digest": { "$ref": "#/definitions/digest" }, "immutable": { "const": true } }
+    },
+    "boundary": {
+      "type": "object", "additionalProperties": false,
+      "required": ["server_only", "public_serialization_allowed", "simulation_only", "execution_authorized", "account_merge_authorized", "accrual_credit_authorized", "redemption_authorized", "voucher_consumption_authorized", "refund_authorized", "supplier_dispatched", "provider_called", "processor_called", "ledger_mutated", "message_sent"],
+      "properties": { "server_only": { "const": true }, "public_serialization_allowed": { "const": false }, "simulation_only": { "const": true }, "execution_authorized": { "const": false }, "account_merge_authorized": { "const": false }, "accrual_credit_authorized": { "const": false }, "redemption_authorized": { "const": false }, "voucher_consumption_authorized": { "const": false }, "refund_authorized": { "const": false }, "supplier_dispatched": { "const": false }, "provider_called": { "const": false }, "processor_called": { "const": false }, "ledger_mutated": { "const": false }, "message_sent": { "const": false } }
+    }
+  }
+}

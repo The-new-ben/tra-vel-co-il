@@ -1,0 +1,165 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://tra-vel.co.il/schemas/private/israel-local-service-revision-v1.0.0.json",
+  "title": "Tra-Vel private immutable Israel local service revision",
+  "description": "Synthetic-demo operational facts bound to an existing commerce offer and trip node; this contract creates no availability, price, booking, payment, or supplier action.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract_version", "environment", "data_mode", "service_revision_ref", "service_ref", "revision_number", "previous_revision_digest", "revision_digest", "supplier_ref", "inventory_type", "sellable", "occupancy", "arrival", "terms", "after_hours_support", "provenance", "commerce_binding", "created_at", "effective_at", "boundary"],
+  "properties": {
+    "contract_version": {"const": "1.0.0"},
+    "environment": {"const": "sandbox"},
+    "data_mode": {"const": "synthetic_demo"},
+    "service_revision_ref": {"$ref": "#/definitions/serviceRevisionRef"},
+    "service_ref": {"$ref": "#/definitions/serviceRef"},
+    "revision_number": {"type": "integer", "minimum": 1, "maximum": 2147483647},
+    "previous_revision_digest": {"$ref": "#/definitions/nullableDigest"},
+    "revision_digest": {"$ref": "#/definitions/digest"},
+    "supplier_ref": {"type": "string", "pattern": "^party_synthetic_demo_[a-z0-9]{8,48}$"},
+    "inventory_type": {"enum": ["hotel", "boutique_hotel", "apartment", "short_rental", "villa", "hostel", "guesthouse_bnb", "kibbutz_rural_lodging", "campsite", "glamping", "attraction", "tour", "dining", "mobility_transport"]},
+    "sellable": {"$ref": "#/definitions/sellable"},
+    "occupancy": {"$ref": "#/definitions/occupancy"},
+    "arrival": {"$ref": "#/definitions/arrival"},
+    "terms": {"$ref": "#/definitions/terms"},
+    "after_hours_support": {"$ref": "#/definitions/afterHours"},
+    "provenance": {"$ref": "#/definitions/provenance"},
+    "commerce_binding": {"$ref": "#/definitions/commerceBinding"},
+    "created_at": {"$ref": "#/definitions/dateTime"},
+    "effective_at": {"$ref": "#/definitions/dateTime"},
+    "boundary": {"$ref": "#/definitions/boundary"}
+  },
+  "allOf": [
+    {"if": {"properties": {"revision_number": {"const": 1}}}, "then": {"properties": {"previous_revision_digest": {"type": "null"}}}},
+    {"if": {"properties": {"revision_number": {"minimum": 2}}}, "then": {"properties": {"previous_revision_digest": {"$ref": "#/definitions/digest"}}}}
+  ],
+  "definitions": {
+    "digest": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "nullableDigest": {"anyOf": [{"type": "null"}, {"$ref": "#/definitions/digest"}]},
+    "dateTime": {"type": "string", "format": "date-time", "pattern": "Z$"},
+    "nullableDateTime": {"anyOf": [{"type": "null"}, {"$ref": "#/definitions/dateTime"}]},
+    "localTime": {"type": "string", "pattern": "^(?:[01][0-9]|2[0-3]):[0-5][0-9]$"},
+    "nullableLocalTime": {"anyOf": [{"type": "null"}, {"$ref": "#/definitions/localTime"}]},
+    "serviceRevisionRef": {"type": "string", "pattern": "^tv_local_service_rev_[A-Za-z0-9_-]{16,96}$"},
+    "serviceRef": {"type": "string", "pattern": "^tv_local_service_[A-Za-z0-9_-]{16,96}$"},
+    "sellable": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scope", "product_ref", "unit_ref", "session_ref", "route_ref"],
+      "properties": {
+        "scope": {"enum": ["unit", "session", "route"]},
+        "product_ref": {"type": "string", "pattern": "^tv_product_[A-Za-z0-9_-]{16,96}$"},
+        "unit_ref": {"type": ["string", "null"], "pattern": "^tv_unit_[A-Za-z0-9_-]{16,96}$"},
+        "session_ref": {"type": ["string", "null"], "pattern": "^tv_session_[A-Za-z0-9_-]{16,96}$"},
+        "route_ref": {"type": ["string", "null"], "pattern": "^tv_route_[A-Za-z0-9_-]{16,96}$"}
+      },
+      "allOf": [
+        {"if": {"properties": {"scope": {"const": "unit"}}}, "then": {"properties": {"unit_ref": {"type": "string"}, "session_ref": {"type": "null"}, "route_ref": {"type": "null"}}}},
+        {"if": {"properties": {"scope": {"const": "session"}}}, "then": {"properties": {"unit_ref": {"type": "null"}, "session_ref": {"type": "string"}, "route_ref": {"type": "null"}}}},
+        {"if": {"properties": {"scope": {"const": "route"}}}, "then": {"properties": {"unit_ref": {"type": "null"}, "session_ref": {"type": "null"}, "route_ref": {"type": "string"}}}}
+      ]
+    },
+    "occupancy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["max_occupancy", "max_adults", "max_children", "child_age_rule_ref", "child_age_bands"],
+      "properties": {
+        "max_occupancy": {"type": "integer", "minimum": 1, "maximum": 64},
+        "max_adults": {"type": "integer", "minimum": 1, "maximum": 64},
+        "max_children": {"type": "integer", "minimum": 0, "maximum": 64},
+        "child_age_rule_ref": {"type": "string", "pattern": "^tv_child_age_rule_[A-Za-z0-9_-]{16,96}$"},
+        "child_age_bands": {"type": "array", "minItems": 1, "maxItems": 18, "items": {"$ref": "#/definitions/childAgeBand"}}
+      }
+    },
+    "childAgeBand": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["band_code", "min_age", "max_age", "counts_as_occupant"],
+      "properties": {
+        "band_code": {"type": "string", "pattern": "^[a-z][a-z0-9_]{1,31}$"},
+        "min_age": {"type": "integer", "minimum": 0, "maximum": 17},
+        "max_age": {"type": "integer", "minimum": 0, "maximum": 17},
+        "counts_as_occupant": {"type": "boolean"}
+      }
+    },
+    "arrival": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["check_in_local", "check_out_local", "key_handoff_mode", "key_handoff_ref", "late_arrival_notice_minutes", "arrival_instruction_ref"],
+      "properties": {
+        "check_in_local": {"$ref": "#/definitions/nullableLocalTime"},
+        "check_out_local": {"$ref": "#/definitions/nullableLocalTime"},
+        "key_handoff_mode": {"enum": ["reception", "meet_and_greet", "lockbox", "digital_key", "driver_or_guide", "not_applicable"]},
+        "key_handoff_ref": {"type": "string", "pattern": "^tv_handoff_[A-Za-z0-9_-]{16,96}$"},
+        "late_arrival_notice_minutes": {"type": "integer", "minimum": 0, "maximum": 10080},
+        "arrival_instruction_ref": {"type": "string", "pattern": "^tv_arrival_[A-Za-z0-9_-]{16,96}$"}
+      }
+    },
+    "terms": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tax_treatment", "tax_terms_ref", "deposit_treatment", "deposit_terms_ref", "cancellation_treatment", "cancellation_terms_ref", "cancellation_deadline_utc"],
+      "properties": {
+        "tax_treatment": {"enum": ["included", "excluded_on_arrival", "conditional_exemption_review", "not_applicable", "unknown"]},
+        "tax_terms_ref": {"type": "string", "pattern": "^tv_terms_[A-Za-z0-9_-]{16,96}$"},
+        "deposit_treatment": {"enum": ["none", "preauthorization", "captured_refundable", "pay_on_arrival", "unknown"]},
+        "deposit_terms_ref": {"type": "string", "pattern": "^tv_terms_[A-Za-z0-9_-]{16,96}$"},
+        "cancellation_treatment": {"enum": ["free_until_deadline", "tiered", "non_refundable", "supplier_review_required", "unknown"]},
+        "cancellation_terms_ref": {"type": "string", "pattern": "^tv_terms_[A-Za-z0-9_-]{16,96}$"},
+        "cancellation_deadline_utc": {"$ref": "#/definitions/nullableDateTime"}
+      }
+    },
+    "afterHours": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["available", "owner_ref", "channel_ref", "response_target_minutes", "handoff_instruction_ref"],
+      "properties": {
+        "available": {"type": "boolean"},
+        "owner_ref": {"type": "string", "pattern": "^party_synthetic_demo_[a-z0-9]{8,48}$"},
+        "channel_ref": {"type": "string", "pattern": "^tv_channel_[A-Za-z0-9_-]{16,96}$"},
+        "response_target_minutes": {"type": "integer", "minimum": 1, "maximum": 1440},
+        "handoff_instruction_ref": {"type": "string", "pattern": "^tv_handoff_instruction_[A-Za-z0-9_-]{16,96}$"}
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["authority", "source_ref", "evidence_digest", "observed_at", "reviewed_at", "expires_at", "review_state"],
+      "properties": {
+        "authority": {"enum": ["official_live_feed", "official_registry", "provider_authorized_api", "signed_supplier_event", "operator_confirmation", "customer_report", "synthetic_test"]},
+        "source_ref": {"type": "string", "pattern": "^tv_source_[A-Za-z0-9_-]{16,96}$"},
+        "evidence_digest": {"$ref": "#/definitions/digest"},
+        "observed_at": {"$ref": "#/definitions/dateTime"},
+        "reviewed_at": {"$ref": "#/definitions/dateTime"},
+        "expires_at": {"$ref": "#/definitions/dateTime"},
+        "review_state": {"enum": ["reviewed", "quarantined", "superseded"]}
+      }
+    },
+    "commerceBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["commerce_offer_ref", "trip_node_ref", "offer_version", "offer_digest"],
+      "properties": {
+        "commerce_offer_ref": {"type": "string", "pattern": "^tv_offer_[A-Za-z0-9_-]{16,96}$"},
+        "trip_node_ref": {"type": "string", "pattern": "^tv_node_[A-Za-z0-9_-]{16,96}$"},
+        "offer_version": {"type": "integer", "minimum": 1, "maximum": 2147483647},
+        "offer_digest": {"$ref": "#/definitions/digest"}
+      }
+    },
+    "boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["server_only", "public_serialization_allowed", "synthetic_demo", "live_availability_claimed", "checkout_created", "supplier_dispatched", "processor_called", "raw_pii_stored", "raw_payment_data_stored"],
+      "properties": {
+        "server_only": {"const": true},
+        "public_serialization_allowed": {"const": false},
+        "synthetic_demo": {"const": true},
+        "live_availability_claimed": {"const": false},
+        "checkout_created": {"const": false},
+        "supplier_dispatched": {"const": false},
+        "processor_called": {"const": false},
+        "raw_pii_stored": {"const": false},
+        "raw_payment_data_stored": {"const": false}
+      }
+    }
+  }
+}

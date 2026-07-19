@@ -7,6 +7,8 @@
 
 defined( 'ABSPATH' ) || exit;
 
+require_once dirname( __DIR__ ) . '/class-commercial-provenance.php';
+
 class Tra_Vel_V2_Insurance_Quote_Registry {
 	/** @var Tra_Vel_V2_Insurance_Quote_Adapter[] */
 	private $adapters = array();
@@ -60,8 +62,19 @@ class Tra_Vel_V2_Insurance_Quote_Registry {
 			} catch ( Throwable $error ) {
 				$result = new WP_Error( 'tra_vel_insurance_adapter_exception', 'Insurance adapter failed safely.' );
 			}
-			if ( is_wp_error( $result ) || empty( $result['plans'] ) ) {
-				$report['error_code'] = is_wp_error( $result ) ? $result->get_error_code() : 'invalid_contract';
+			$validation = is_wp_error( $result ) ? $result : Tra_Vel_V2_Commercial_Provenance::validate(
+				$result,
+				$id,
+				'plans',
+				array( 'pricing', 'total_trip' ),
+				'purchase',
+				'purchasable',
+				isset( $query['currency'] ) ? $query['currency'] : '',
+				'whole_policy_period',
+				array( 'regulated' => true )
+			);
+			if ( is_wp_error( $validation ) ) {
+				$report['error_code'] = $validation->get_error_code();
 				$reports[ $id ] = $report;
 				$failed_live[] = $id;
 				continue;
@@ -69,7 +82,6 @@ class Tra_Vel_V2_Insurance_Quote_Registry {
 			$report['healthy'] = true;
 			$report['used'] = true;
 			$reports[ $id ] = $report;
-			$result['data_mode'] = 'live';
 			return array( 'data' => $result, 'reports' => $reports, 'degraded' => ! empty( $failed_live ), 'failed_adapters' => $failed_live );
 		}
 		if ( ! $demo_adapter ) {

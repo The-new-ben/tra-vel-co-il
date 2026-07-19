@@ -9,6 +9,10 @@ define( 'TRA_VEL_V2_PATH', dirname( __DIR__, 2 ) . '/theme/tra-vel-v2' );
 define( 'TRA_VEL_OPEN_METEO_API_KEY', 'test-commercial-key-never-ship' );
 
 $GLOBALS['tv2_weather_request_url'] = '';
+$weather_contract                  = json_decode( (string) file_get_contents( TRA_VEL_V2_PATH . '/assets/data/discovery-demo.json' ), true );
+$GLOBALS['tv2_weather_destination_count'] = is_array( $weather_contract ) && isset( $weather_contract['destinations'] ) && is_array( $weather_contract['destinations'] )
+	? count( $weather_contract['destinations'] )
+	: 0;
 
 class WP_Error {
 	private $code;
@@ -38,7 +42,7 @@ function wp_safe_remote_get( $url, $args ) {
 	unset( $args );
 	$GLOBALS['tv2_weather_request_url'] = $url;
 	$items = array();
-	for ( $index = 0; $index < 6; ++$index ) {
+	for ( $index = 0; $index < $GLOBALS['tv2_weather_destination_count']; ++$index ) {
 		$items[] = array(
 			'current' => array(
 				'time'                 => '2026-07-16T15:00',
@@ -78,8 +82,9 @@ tv2_weather_assert( ! is_wp_error( $payload ), 'adapter returned an error' );
 tv2_weather_assert( 'customer-api.open-meteo.com' === $parts['host'], 'request did not use the commercial endpoint' );
 tv2_weather_assert( TRA_VEL_OPEN_METEO_API_KEY === $query['apikey'], 'commercial key was not sent to the supplier' );
 tv2_weather_assert( 'GMT' === $query['timezone'], 'multi-location request did not pin observations to GMT' );
-tv2_weather_assert( 6 === count( explode( ',', $query['latitude'] ) ), 'multi-location request does not contain six coordinates' );
-tv2_weather_assert( 6 === count( $payload['destinations'] ), 'normalized response does not contain six destinations' );
+tv2_weather_assert( $GLOBALS['tv2_weather_destination_count'] > 0, 'canonical discovery data does not contain weather destinations' );
+tv2_weather_assert( $GLOBALS['tv2_weather_destination_count'] === count( explode( ',', $query['latitude'] ) ), 'multi-location request does not contain every canonical latitude' );
+tv2_weather_assert( $GLOBALS['tv2_weather_destination_count'] === count( $payload['destinations'] ), 'normalized response does not contain every canonical destination' );
 tv2_weather_assert( true === $payload['provider_status']['weather']['connected'], 'weather provider was not marked connected' );
 tv2_weather_assert( 'live' === $payload['provider_status']['weather']['readiness'], 'weather provider was not marked live' );
 tv2_weather_assert( 'גשם' === $payload['destinations'][0]['weather']['condition'], 'WMO weather code was not normalized' );

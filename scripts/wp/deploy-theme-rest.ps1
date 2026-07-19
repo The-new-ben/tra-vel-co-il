@@ -3,7 +3,6 @@ param(
     [string]$SiteUrl = 'https://tra-vel.co.il',
     [string]$CredentialPath = 'C:\Users\janana\Documents\.codex-secrets\wordpress-app-passwords\tra-vel.co.il.credential.xml',
     [string]$ArchivePath = '',
-    [switch]$Activate,
     [string]$DeploymentConfirmation = '',
     [string]$ActivationConfirmation = ''
 )
@@ -19,13 +18,15 @@ if (-not (Test-Path -LiteralPath $CredentialPath)) {
 
 if (-not $ArchivePath) {
     $repoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
-    & python (Join-Path $repoRoot 'scripts\ci\build_theme.py')
-    if ($LASTEXITCODE -ne 0) {
-        throw 'Theme packaging failed.'
+    $manifestPath = Join-Path $repoRoot 'dist\manifest.json'
+    if (-not (Test-Path -LiteralPath $manifestPath)) {
+        throw 'No validated build manifest was found. Build from a clean revision before deployment.'
     }
-    $ArchivePath = Get-ChildItem -LiteralPath (Join-Path $repoRoot 'dist') -Filter 'tra-vel-v2-*.zip' |
-        Sort-Object LastWriteTime -Descending |
-        Select-Object -First 1 -ExpandProperty FullName
+    $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
+    if (-not $manifest.archive -or $manifest.sha256 -notmatch '^[a-f0-9]{64}$') {
+        throw 'The deployment manifest is invalid.'
+    }
+    $ArchivePath = Join-Path $repoRoot (Join-Path 'dist' $manifest.archive)
 }
 
 if (-not (Test-Path -LiteralPath $ArchivePath)) {
@@ -34,8 +35,22 @@ if (-not (Test-Path -LiteralPath $ArchivePath)) {
 if ($DeploymentConfirmation -cne 'DEPLOY TRA-VEL V2') {
     throw 'Deployment requires the exact phrase DEPLOY TRA-VEL V2.'
 }
-if ($Activate -and $ActivationConfirmation -cne 'ACTIVATE TRA-VEL V2') {
-    throw 'Activation requires the exact phrase ACTIVATE TRA-VEL V2.'
+if ($ActivationConfirmation) {
+    throw 'This release path is upload-only and cannot activate the production theme.'
+}
+
+$archiveFullPath = (Resolve-Path -LiteralPath $ArchivePath).Path
+$manifestPath = Join-Path (Split-Path -Parent $archiveFullPath) 'manifest.json'
+if (-not (Test-Path -LiteralPath $manifestPath)) {
+    throw 'A manifest.json file must accompany the selected archive.'
+}
+$manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
+if ($manifest.theme -cne 'tra-vel-v2' -or $manifest.archive -cne [IO.Path]::GetFileName($archiveFullPath) -or $manifest.sha256 -notmatch '^[a-f0-9]{64}$') {
+    throw 'The selected archive does not match the Tra-Vel V2 manifest identity.'
+}
+$archiveSha256 = (Get-FileHash -LiteralPath $archiveFullPath -Algorithm SHA256).Hash.ToLowerInvariant()
+if ($archiveSha256 -cne $manifest.sha256) {
+    throw 'The selected archive checksum does not match manifest.json.'
 }
 
 Add-Type -AssemblyName System.Net.Http
@@ -48,7 +63,7 @@ $multipart = $null
 
 try {
     $basic = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($credential.UserName + ':' + $plainPassword))
-    $sha256 = (Get-FileHash -LiteralPath $ArchivePath -Algorithm SHA256).Hash.ToLowerInvariant()
+    $sha256 = $archiveSha256
     $handler = [Net.Http.HttpClientHandler]::new()
     $client = [Net.Http.HttpClient]::new($handler)
     $client.Timeout = [TimeSpan]::FromMinutes(3)
@@ -56,11 +71,11 @@ try {
     $client.DefaultRequestHeaders.Add('X-Tra-Vel-SHA256', $sha256)
 
     $multipart = [Net.Http.MultipartFormDataContent]::new()
-    $fileStream = [IO.File]::OpenRead((Resolve-Path -LiteralPath $ArchivePath).Path)
+    $fileStream = [IO.File]::OpenRead($archiveFullPath)
     $fileContent = [Net.Http.StreamContent]::new($fileStream)
     $fileContent.Headers.ContentType = [Net.Http.Headers.MediaTypeHeaderValue]::new('application/zip')
     $multipart.Add($fileContent, 'package', [IO.Path]::GetFileName($ArchivePath))
-    $multipart.Add([Net.Http.StringContent]::new($Activate.IsPresent.ToString().ToLowerInvariant()), 'activate')
+    $multipart.Add([Net.Http.StringContent]::new('false'), 'activate')
     $multipart.Add([Net.Http.StringContent]::new($DeploymentConfirmation), 'deployment_confirmation')
     $multipart.Add([Net.Http.StringContent]::new($ActivationConfirmation), 'activation_confirmation')
 

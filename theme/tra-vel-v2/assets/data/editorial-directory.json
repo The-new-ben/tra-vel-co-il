@@ -93,6 +93,24 @@
       "source_count": 17
     },
     {
+      "id": "dubai",
+      "city": "דובאי",
+      "country": "איחוד האמירויות",
+      "region": "asia",
+      "region_label": "אסיה",
+      "experience": "city",
+      "experience_label": "עיר, חוף ועצירת ביניים",
+      "duration": "לפי התאריכים והמסלול",
+      "best_for": "עיר · חוף · עצירת ביניים",
+      "decision": "חופשה בעיר מול עצירת ביניים בדרך ליעד נוסף",
+      "map_state": "dubai",
+      "image": "earth-blue-marble.jpg",
+      "guide_status": "research",
+      "guide_path": "",
+      "word_count": 0,
+      "source_count": 0
+    },
+    {
       "id": "tokyo",
       "city": "טוקיו",
       "country": "יפן",
@@ -104,11 +122,30 @@
       "best_for": "תרבות · אוכל · טיול ארוך",
       "decision": "בסיס אחד נוח מול פיצול שכונות וטיולי יום",
       "map_state": "tokyo",
-      "image": "city-prague.webp",
+      "image": "earth-blue-marble.jpg",
+      "guide_status": "research",
+      "guide_path": "",
+      "word_count": 0,
+      "source_count": 0
+    },
+    {
+      "id": "lisbon",
+      "city": "ליסבון",
+      "country": "פורטוגל",
+      "region": "europe",
+      "region_label": "אירופה",
+      "experience": "city",
+      "experience_label": "עיר, אוכל וחוף",
+      "duration": "לפי התאריכים והמסלול",
+      "best_for": "עיר · אוכל · חוף",
+      "decision": "מרכז והליכה מול חוף וטיולי יום",
+      "map_state": "lisbon",
+      "image": "earth-blue-marble.jpg",
       "guide_status": "research",
       "guide_path": "",
       "word_count": 0,
       "source_count": 0
     }
-  ]
+  ],
+  "supporting_guides": []
 }

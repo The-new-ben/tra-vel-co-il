@@ -1,0 +1,129 @@
+{
+  "contract_version": "1.0.0",
+  "environment": "sandbox",
+  "fixture_id": "supplier_stress_operations_v1",
+  "clock_started_at": "2026-07-19T09:00:00Z",
+  "scenarios": [
+    {
+      "scenario_id": "stress_supplier_outage",
+      "seed": 1101,
+      "injected_at": "2026-07-19T09:01:00Z",
+      "injection": "supplier_outage",
+      "provider_script": [
+        { "sequence": 1, "at_offset_seconds": 0, "event": "dispatch", "outcome": "unavailable" },
+        { "sequence": 2, "at_offset_seconds": 30, "event": "timeout", "outcome": "uncertain" }
+      ],
+      "initial_states": { "onboarding": "sandbox_active", "health": "healthy", "operation": "started", "settlement": "unreported", "revision": "active" },
+      "expected_states": { "onboarding": "sandbox_active", "health": "open", "operation": "uncertain", "settlement": "unreported", "revision": "active" },
+      "expected_actions": ["open_circuit", "block_mutation", "reconcile_authoritative_state", "route_after_hours", "notify_operator"],
+      "invariants": ["no_duplicate_side_effect", "uncertain_not_failed", "no_success_without_evidence", "after_hours_owner_and_timer", "customer_copy_reflects_truth"],
+      "customer_projection": "recovery_in_progress"
+    },
+    {
+      "scenario_id": "stress_partial_confirmation",
+      "seed": 1102,
+      "injected_at": "2026-07-19T09:02:00Z",
+      "injection": "partial_confirmation",
+      "provider_script": [
+        { "sequence": 1, "at_offset_seconds": 0, "event": "dispatch", "outcome": "accepted" },
+        { "sequence": 2, "at_offset_seconds": 20, "event": "timeout", "outcome": "uncertain" }
+      ],
+      "initial_states": { "onboarding": "sandbox_active", "health": "healthy", "operation": "started", "settlement": "unreported", "revision": "active" },
+      "expected_states": { "onboarding": "sandbox_active", "health": "degraded", "operation": "uncertain", "settlement": "unreported", "revision": "active" },
+      "expected_actions": ["preserve_partial_success", "block_mutation", "reconcile_authoritative_state", "notify_operator"],
+      "invariants": ["partial_success_visible", "uncertain_not_failed", "no_duplicate_side_effect", "no_success_without_evidence", "customer_copy_reflects_truth"],
+      "customer_projection": "supplier_processing"
+    },
+    {
+      "scenario_id": "stress_duplicate_late_webhook",
+      "seed": 1103,
+      "injected_at": "2026-07-19T09:03:00Z",
+      "injection": "duplicate_late_webhook",
+      "provider_script": [
+        { "sequence": 1, "at_offset_seconds": 0, "event": "webhook", "outcome": "accepted" },
+        { "sequence": 2, "at_offset_seconds": 1, "event": "webhook", "outcome": "duplicate" },
+        { "sequence": 3, "at_offset_seconds": 3600, "event": "webhook", "outcome": "late" }
+      ],
+      "initial_states": { "onboarding": "sandbox_active", "health": "healthy", "operation": "succeeded", "settlement": "reported", "revision": "active" },
+      "expected_states": { "onboarding": "sandbox_active", "health": "healthy", "operation": "succeeded", "settlement": "reported", "revision": "active" },
+      "expected_actions": ["deduplicate_event", "quarantine_late_event", "reconcile_authoritative_state", "preserve_evidence"],
+      "invariants": ["no_duplicate_side_effect", "raw_payload_not_persisted", "no_success_without_evidence", "customer_copy_reflects_truth"],
+      "customer_projection": "supplier_processing"
+    },
+    {
+      "scenario_id": "stress_credential_rotation",
+      "seed": 1104,
+      "injected_at": "2026-07-19T09:04:00Z",
+      "injection": "credential_rotation",
+      "provider_script": [
+        { "sequence": 1, "at_offset_seconds": 0, "event": "credential_expiry", "outcome": "rejected" },
+        { "sequence": 2, "at_offset_seconds": 300, "event": "dispatch", "outcome": "accepted" }
+      ],
+      "initial_states": { "onboarding": "sandbox_active", "health": "degraded", "operation": "queued", "settlement": "unreported", "revision": "active" },
+      "expected_states": { "onboarding": "sandbox_active", "health": "healthy", "operation": "queued", "settlement": "unreported", "revision": "active" },
+      "expected_actions": ["rotate_credential", "retire_old_credential", "preserve_evidence", "notify_operator"],
+      "invariants": ["credential_never_logged", "old_credential_revoked", "no_duplicate_side_effect", "after_hours_owner_and_timer"],
+      "customer_projection": "supplier_processing"
+    },
+    {
+      "scenario_id": "stress_terms_revision_mid_checkout",
+      "seed": 1105,
+      "injected_at": "2026-07-19T09:05:00Z",
+      "injection": "terms_revision_mid_checkout",
+      "provider_script": [
+        { "sequence": 1, "at_offset_seconds": 0, "event": "terms_update", "outcome": "revision_changed" },
+        { "sequence": 2, "at_offset_seconds": 5, "event": "dispatch", "outcome": "rejected" }
+      ],
+      "initial_states": { "onboarding": "sandbox_active", "health": "healthy", "operation": "queued", "settlement": "unreported", "revision": "active" },
+      "expected_states": { "onboarding": "sandbox_active", "health": "healthy", "operation": "queued", "settlement": "unreported", "revision": "superseded" },
+      "expected_actions": ["revalidate_terms", "expire_decision", "require_reapproval", "preserve_evidence"],
+      "invariants": ["decision_binds_terms_revision", "stale_terms_never_execute", "no_duplicate_side_effect", "customer_copy_reflects_truth"],
+      "customer_projection": "approval_required"
+    },
+    {
+      "scenario_id": "stress_refund_mismatch",
+      "seed": 1106,
+      "injected_at": "2026-07-19T09:06:00Z",
+      "injection": "refund_mismatch",
+      "provider_script": [
+        { "sequence": 1, "at_offset_seconds": 0, "event": "refund_report", "outcome": "mismatch" },
+        { "sequence": 2, "at_offset_seconds": 60, "event": "settlement_statement", "outcome": "mismatch" }
+      ],
+      "initial_states": { "onboarding": "sandbox_active", "health": "healthy", "operation": "started", "settlement": "payable", "revision": "active" },
+      "expected_states": { "onboarding": "sandbox_active", "health": "healthy", "operation": "uncertain", "settlement": "disputed", "revision": "active" },
+      "expected_actions": ["open_refund_variance", "freeze_settlement", "reconcile_authoritative_state", "preserve_evidence", "notify_operator"],
+      "invariants": ["refund_ledgers_remain_separate", "settlement_math_balances", "uncertain_not_failed", "no_duplicate_side_effect", "customer_copy_reflects_truth"],
+      "customer_projection": "financial_review"
+    },
+    {
+      "scenario_id": "stress_settlement_dispute",
+      "seed": 1107,
+      "injected_at": "2026-07-19T09:07:00Z",
+      "injection": "settlement_dispute",
+      "provider_script": [
+        { "sequence": 1, "at_offset_seconds": 0, "event": "settlement_statement", "outcome": "mismatch" },
+        { "sequence": 2, "at_offset_seconds": 120, "event": "settlement_statement", "outcome": "late" }
+      ],
+      "initial_states": { "onboarding": "sandbox_active", "health": "healthy", "operation": "succeeded", "settlement": "paid", "revision": "active" },
+      "expected_states": { "onboarding": "sandbox_active", "health": "healthy", "operation": "succeeded", "settlement": "disputed", "revision": "active" },
+      "expected_actions": ["freeze_settlement", "open_settlement_dispute", "preserve_evidence", "notify_operator"],
+      "invariants": ["settlement_math_balances", "dispute_preserves_statement", "refund_ledgers_remain_separate", "no_duplicate_side_effect"],
+      "customer_projection": "financial_review"
+    },
+    {
+      "scenario_id": "stress_provider_acquisition_migration",
+      "seed": 1108,
+      "injected_at": "2026-07-19T09:08:00Z",
+      "injection": "provider_acquisition_migration",
+      "provider_script": [
+        { "sequence": 1, "at_offset_seconds": 0, "event": "migration_cutover", "outcome": "revision_changed" },
+        { "sequence": 2, "at_offset_seconds": 900, "event": "dispatch", "outcome": "uncertain" }
+      ],
+      "initial_states": { "onboarding": "live_active", "health": "healthy", "operation": "queued", "settlement": "payable", "revision": "active" },
+      "expected_states": { "onboarding": "migrating", "health": "degraded", "operation": "queued", "settlement": "payable", "revision": "superseded" },
+      "expected_actions": ["create_migration_revision", "dual_read_compare", "rollback_revision", "preserve_evidence", "notify_operator"],
+      "invariants": ["migration_keeps_reference_map", "rollback_target_is_immutable", "no_duplicate_side_effect", "no_success_without_evidence", "customer_copy_reflects_truth"],
+      "customer_projection": "migration_in_progress"
+    }
+  ]
+}

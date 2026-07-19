@@ -1,0 +1,37 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://tra-vel.co.il/schemas/private/post-booking-servicing-stress-matrix.schema.json",
+  "title": "Tra-Vel private post-booking servicing stress matrix",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract_version", "environment", "data_mode", "scenario_count", "scenarios"],
+  "properties": {
+    "contract_version": {"const": "1.0.0"},
+    "environment": {"const": "sandbox"},
+    "data_mode": {"const": "synthetic_demo"},
+    "scenario_count": {"type": "integer", "minimum": 30, "maximum": 256},
+    "scenarios": {"type": "array", "minItems": 30, "maxItems": 256, "items": {"$ref": "#/definitions/scenario"}}
+  },
+  "definitions": {
+    "scenario": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scenario_id", "family", "change_class", "flight_applicable", "lodging_applicable", "affected_travelers", "affected_segments", "affected_items", "affected_rooms", "affected_guests", "financial_outcomes", "expected_plan_state", "required_proofs"],
+      "properties": {
+        "scenario_id": {"type": "string", "pattern": "^PBS-[0-9]{3}$"},
+        "family": {"enum": ["flight_reservation_ticketing", "flight_scope", "flight_financial", "lodging_scope", "lodging_no_show_inventory", "lodging_messaging", "cross_axis"]},
+        "change_class": {"enum": ["voluntary_change", "planned_schedule_change", "day_of_travel_disruption", "supplier_initiated_lodging_change", "traveler_lodging_change"]},
+        "flight_applicable": {"type": "boolean"},
+        "lodging_applicable": {"type": "boolean"},
+        "affected_travelers": {"type": "integer", "minimum": 0, "maximum": 4},
+        "affected_segments": {"type": "integer", "minimum": 0, "maximum": 4},
+        "affected_items": {"type": "integer", "minimum": 1, "maximum": 4},
+        "affected_rooms": {"type": "integer", "minimum": 0, "maximum": 2},
+        "affected_guests": {"type": "integer", "minimum": 0, "maximum": 4},
+        "financial_outcomes": {"type": "array", "maxItems": 4, "uniqueItems": true, "items": {"enum": ["add_collect", "refund", "residual_value", "reusable_value", "even_exchange"]}},
+        "expected_plan_state": {"enum": ["evidence_required", "ready_for_human_review"]},
+        "required_proofs": {"type": "array", "minItems": 2, "maxItems": 8, "uniqueItems": true, "items": {"enum": ["reservation_not_ticket", "servicing_owner_explicit", "coupon_scope_preserved", "emd_separate", "voluntary_involuntary_separate", "no_netting", "combined_financial_components", "supplier_customer_refund_separate", "settlement_separate", "room_guest_date_occupancy_separate", "no_show_inventory_separate", "message_delivery_not_booking_truth", "unaffected_scope_preserved", "evidence_required"]}}
+      }
+    }
+  }
+}

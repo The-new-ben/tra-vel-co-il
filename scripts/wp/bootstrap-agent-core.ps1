@@ -301,6 +301,41 @@ try {
         if (-not $health.ok -or $health.plugin_version -ne $installResult.version) {
             throw 'The activated Agent Core health contract is unavailable or has the wrong version.'
         }
+        $capabilityHealth = $health.vip_capability_session_store
+        if (
+            -not $health.capabilities.no_login_scoped_sessions -or
+            -not $capabilityHealth -or
+            $capabilityHealth.schema_version -ne '1.1.0' -or
+            $capabilityHealth.installed_schema_version -ne '1.1.0' -or
+            [int]$capabilityHealth.expected_tables -ne 4 -or
+            [int]$capabilityHealth.ready_tables -ne 4 -or
+            [int]$capabilityHealth.transactional_tables -ne 4 -or
+            [int]$capabilityHealth.required_indexes -ne 7 -or
+            [int]$capabilityHealth.ready_indexes -ne 7 -or
+            -not $capabilityHealth.required_indexes_ready -or
+            -not $capabilityHealth.tables_ready
+        ) {
+            throw 'The activated Agent Core capability-session schema is not exactly ready.'
+        }
+        $cockpitHealth = $health.customer_trip_cockpit_store
+        if (
+            -not $health.capabilities.customer_trip_cockpit -or
+            -not $cockpitHealth -or
+            $cockpitHealth.schema_version -ne '1.0.0' -or
+            $cockpitHealth.installed_schema_version -ne '1.0.0' -or
+            [int]$cockpitHealth.retention_days -ne 400 -or
+            [int]$cockpitHealth.max_projection_bytes -ne 524288 -or
+            [int]$cockpitHealth.expected_tables -ne 3 -or
+            [int]$cockpitHealth.ready_tables -ne 3 -or
+            [int]$cockpitHealth.transactional_tables -ne 3 -or
+            [int]$cockpitHealth.required_indexes -ne 13 -or
+            [int]$cockpitHealth.ready_indexes -ne 13 -or
+            -not $cockpitHealth.required_indexes_ready -or
+            @($cockpitHealth.inspection_errors).Count -ne 0 -or
+            -not $cockpitHealth.tables_ready
+        ) {
+            throw 'The activated Agent Core Customer Trip Cockpit schema is not exactly ready.'
+        }
     }
     catch {
         $healthError = $_.Exception.Message

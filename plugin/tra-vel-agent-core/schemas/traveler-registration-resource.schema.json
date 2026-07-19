@@ -1,0 +1,96 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://tra-vel.co.il/schemas/traveler-registration-resource-v1.schema.json",
+  "title": "Tra-Vel minimized traveler registration resource",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract_version", "registration_ref", "trip_ref", "gate", "party_flags", "requirements", "version", "ownership", "created_at", "updated_at", "bindings", "readiness", "authorization", "side_effects"],
+  "properties": {
+    "contract_version": { "const": "1.0.0" },
+    "registration_ref": { "type": "string", "pattern": "^tv_registration_[A-Za-z0-9_-]{16,96}$" },
+    "trip_ref": { "type": "string", "pattern": "^tv_trip_[A-Za-z0-9_-]{16,96}$" },
+    "gate": { "enum": ["discover", "personalize", "ready_to_quote", "ready_to_reserve", "ready_to_fulfill", "ready_to_travel"] },
+    "party_flags": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["minor_present", "dependent_adult_present", "accessibility_required"],
+      "properties": {
+        "minor_present": { "type": "boolean" },
+        "dependent_adult_present": { "type": "boolean" },
+        "accessibility_required": { "type": "boolean" }
+      }
+    },
+    "requirements": {
+      "type": "array",
+      "maxItems": 32,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["code", "status", "evidence_recorded", "verified_at"],
+        "properties": {
+          "code": {
+            "enum": [
+              "intent_recorded", "travel_window_recorded", "party_size_recorded", "contact_verified", "traveler_roles_declared",
+              "traveler_preferences_recorded", "loyalty_preferences_recorded", "exact_occupancy_recorded", "rules_identity_facts_recorded",
+              "accessibility_requirements_recorded", "dependent_support_plan_recorded", "reachable_contact_verified",
+              "travel_document_snapshot_verified", "guardian_authority_verified", "dependent_authority_verified", "terms_accepted",
+              "booking_questions_complete", "payment_session_owner_verified", "payment_state_sufficient", "supplier_confirmation_verified",
+              "mandatory_traveler_data_accepted", "traveler_manifest_snapshot_verified", "document_admissibility_current",
+              "checkin_pickup_instructions_ready", "accessibility_supplier_acknowledged", "emergency_contacts_offline",
+              "service_contact_pack_offline", "itinerary_offline", "dependency_health_checked"
+            ]
+          },
+          "status": { "enum": ["self_asserted", "verified", "not_applicable"] },
+          "evidence_recorded": { "type": "boolean" },
+          "verified_at": { "type": ["string", "null"], "format": "date-time", "pattern": "Z$" }
+        }
+      }
+    },
+    "version": { "type": "integer", "minimum": 1 },
+    "ownership": { "const": "account" },
+    "created_at": { "type": "string", "format": "date-time", "pattern": "Z$" },
+    "updated_at": { "type": "string", "format": "date-time", "pattern": "Z$" },
+    "bindings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role_manifest_bound", "profile_ref_count", "vault_item_ref_count"],
+      "properties": {
+        "role_manifest_bound": { "const": true },
+        "profile_ref_count": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "vault_item_ref_count": { "type": "integer", "minimum": 0, "maximum": 100 }
+      }
+    },
+    "readiness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["declared_gate_policy_ready", "next_gate", "transition_count"],
+      "properties": {
+        "declared_gate_policy_ready": { "const": true },
+        "next_gate": { "enum": [null, "personalize", "ready_to_quote", "ready_to_reserve", "ready_to_fulfill", "ready_to_travel"] },
+        "transition_count": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "authorization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["effect", "executable_scopes", "account_ownership_grants_trip_role_authority"],
+      "properties": {
+        "effect": { "const": "registration_only" },
+        "executable_scopes": { "type": "array", "maxItems": 0 },
+        "account_ownership_grants_trip_role_authority": { "const": false }
+      }
+    },
+    "side_effects": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["supplier_action_started", "payment_action_started", "booking_action_started", "cancellation_action_started", "refund_action_started"],
+      "properties": {
+        "supplier_action_started": { "const": false },
+        "payment_action_started": { "const": false },
+        "booking_action_started": { "const": false },
+        "cancellation_action_started": { "const": false },
+        "refund_action_started": { "const": false }
+      }
+    }
+  }
+}

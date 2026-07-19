@@ -1,0 +1,426 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://tra-vel.co.il/schemas/supplier-operations-profile.schema.json",
+  "title": "Tra-Vel supplier operations profile",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version", "supplier_id", "revision_id", "revision_number", "previous_revision_digest",
+    "created_at", "effective_at", "environment", "lifecycle_status", "verticals", "capability_claims",
+    "relationship", "credentials", "endpoints", "operation_support", "escalation", "licensing",
+    "data_governance", "attribution", "settlement", "source_controls", "health", "kill_switch",
+    "readiness", "commercial_truth", "revision_control"
+  ],
+  "properties": {
+    "contract_version": { "const": "1.0.0" },
+    "supplier_id": { "type": "string", "pattern": "^[a-z][a-z0-9_]{2,63}$" },
+    "revision_id": { "type": "string", "pattern": "^suprev_[a-z0-9]{12,64}$" },
+    "revision_number": { "type": "integer", "minimum": 1 },
+    "previous_revision_digest": { "$ref": "#/definitions/nullableDigest" },
+    "created_at": { "$ref": "#/definitions/dateTime" },
+    "effective_at": { "$ref": "#/definitions/dateTime" },
+    "environment": { "enum": ["sandbox", "live"] },
+    "lifecycle_status": { "$ref": "#/definitions/onboardingState" },
+    "verticals": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/definitions/vertical" }
+    },
+    "capability_claims": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/capabilityClaim" }
+    },
+    "relationship": { "$ref": "#/definitions/relationship" },
+    "credentials": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/credential" }
+    },
+    "endpoints": { "$ref": "#/definitions/endpoints" },
+    "operation_support": { "$ref": "#/definitions/operationSupport" },
+    "escalation": { "$ref": "#/definitions/escalation" },
+    "licensing": { "$ref": "#/definitions/licensing" },
+    "data_governance": { "$ref": "#/definitions/dataGovernance" },
+    "attribution": { "$ref": "#/definitions/attribution" },
+    "settlement": { "$ref": "#/definitions/settlement" },
+    "source_controls": { "$ref": "#/definitions/sourceControls" },
+    "health": { "$ref": "#/definitions/health" },
+    "kill_switch": { "$ref": "#/definitions/killSwitch" },
+    "readiness": { "$ref": "#/definitions/readiness" },
+    "commercial_truth": { "$ref": "#/definitions/commercialTruth" },
+    "revision_control": { "$ref": "#/definitions/revisionControl" }
+  },
+  "definitions": {
+    "digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "nullableDigest": {
+      "anyOf": [
+        { "$ref": "#/definitions/digest" },
+        { "type": "null" }
+      ]
+    },
+    "dateTime": { "type": "string", "format": "date-time" },
+    "nullableDateTime": {
+      "anyOf": [
+        { "$ref": "#/definitions/dateTime" },
+        { "type": "null" }
+      ]
+    },
+    "nullableToken": {
+      "anyOf": [
+        { "type": "string", "pattern": "^[a-z][a-z0-9_]{2,63}$" },
+        { "type": "null" }
+      ]
+    },
+    "opaqueRef": { "type": "string", "pattern": "^[a-z][a-z0-9_]{2,31}_[a-z0-9][a-z0-9_-]{7,95}$" },
+    "nullableOpaqueRef": {
+      "anyOf": [
+        { "$ref": "#/definitions/opaqueRef" },
+        { "type": "null" }
+      ]
+    },
+    "jurisdiction": { "type": "string", "pattern": "^(?:GLOBAL|[A-Z]{2}(?:-[A-Z0-9]{1,3})?)$" },
+    "vertical": {
+      "enum": ["flight", "accommodation", "package", "transfer", "activity", "dining", "insurance", "connectivity", "equipment"]
+    },
+    "capability": {
+      "enum": ["search", "revalidate", "reserve", "confirm", "fulfill", "change", "cancel", "refund", "payment_authorize", "payment_capture", "payment_void", "payment_refund", "webhook", "reconcile", "report_conversion", "settlement_reconcile"]
+    },
+    "onboardingState": {
+      "enum": ["draft", "commercial_review", "security_review", "technical_certification", "operations_review", "sandbox_ready", "sandbox_active", "live_review", "live_ready", "live_active", "suspended", "migrating", "retired", "disabled"]
+    },
+    "capabilityClaim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["vertical", "capability", "certification_status", "evidence_digests", "certified_at", "expires_at"],
+      "properties": {
+        "vertical": { "$ref": "#/definitions/vertical" },
+        "capability": { "$ref": "#/definitions/capability" },
+        "certification_status": { "enum": ["not_started", "fixture_passed", "sandbox_certified", "live_certified", "suspended"] },
+        "evidence_digests": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/definitions/digest" }
+        },
+        "certified_at": { "$ref": "#/definitions/nullableDateTime" },
+        "expires_at": { "$ref": "#/definitions/nullableDateTime" }
+      }
+    },
+    "relationship": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["model", "legal_entity_ref", "agreement_ref", "agreement_digest", "agreement_status", "effective_at", "expires_at", "governing_jurisdiction", "service_jurisdictions", "merchant_of_record"],
+      "properties": {
+        "model": { "enum": ["owned", "direct", "affiliate"] },
+        "legal_entity_ref": { "$ref": "#/definitions/opaqueRef" },
+        "agreement_ref": { "$ref": "#/definitions/opaqueRef" },
+        "agreement_digest": { "$ref": "#/definitions/digest" },
+        "agreement_status": { "enum": ["draft", "signed", "expired", "terminated"] },
+        "effective_at": { "$ref": "#/definitions/dateTime" },
+        "expires_at": { "$ref": "#/definitions/nullableDateTime" },
+        "governing_jurisdiction": { "$ref": "#/definitions/jurisdiction" },
+        "service_jurisdictions": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/definitions/jurisdiction" }
+        },
+        "merchant_of_record": { "enum": ["supplier", "platform", "mixed", "not_applicable"] }
+      }
+    },
+    "credential": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["credential_ref", "environment", "status", "scopes", "issued_at", "expires_at", "last_rotated_at", "evidence_digest"],
+      "properties": {
+        "credential_ref": { "$ref": "#/definitions/opaqueRef" },
+        "environment": { "enum": ["sandbox", "live"] },
+        "status": { "enum": ["missing", "configured", "rotation_due", "revoked"] },
+        "scopes": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/definitions/capability" }
+        },
+        "issued_at": { "$ref": "#/definitions/nullableDateTime" },
+        "expires_at": { "$ref": "#/definitions/nullableDateTime" },
+        "last_rotated_at": { "$ref": "#/definitions/nullableDateTime" },
+        "evidence_digest": { "$ref": "#/definitions/nullableDigest" }
+      }
+    },
+    "endpoints": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["environment", "allowed_hosts", "tls_required", "redirect_policy", "webhook_source_hosts", "certificate_evidence_digest", "last_verified_at"],
+      "properties": {
+        "environment": { "enum": ["sandbox", "live"] },
+        "allowed_hosts": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z]{2,63}$" }
+        },
+        "tls_required": { "type": "boolean" },
+        "redirect_policy": { "enum": ["deny", "canonical_same_host", "allowlisted"] },
+        "webhook_source_hosts": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z]{2,63}$" }
+        },
+        "certificate_evidence_digest": { "$ref": "#/definitions/nullableDigest" },
+        "last_verified_at": { "$ref": "#/definitions/nullableDateTime" }
+      }
+    },
+    "operationLane": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["supported", "contact_route_ref", "after_hours_route_ref", "acknowledgement_sla_seconds", "resolution_sla_seconds", "reconciliation_sla_seconds", "timezone", "holiday_calendar_ref", "evidence_digest"],
+      "properties": {
+        "supported": { "type": "boolean" },
+        "contact_route_ref": { "$ref": "#/definitions/opaqueRef" },
+        "after_hours_route_ref": { "$ref": "#/definitions/opaqueRef" },
+        "acknowledgement_sla_seconds": { "type": "integer", "minimum": 1, "maximum": 604800 },
+        "resolution_sla_seconds": { "type": "integer", "minimum": 1, "maximum": 2592000 },
+        "reconciliation_sla_seconds": { "type": "integer", "minimum": 1, "maximum": 2592000 },
+        "timezone": { "type": "string", "minLength": 3, "maxLength": 64 },
+        "holiday_calendar_ref": { "$ref": "#/definitions/opaqueRef" },
+        "evidence_digest": { "$ref": "#/definitions/digest" }
+      }
+    },
+    "operationSupport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["search", "reservation", "confirmation", "change", "cancel", "refund", "fulfillment", "webhook", "reconciliation", "settlement"],
+      "properties": {
+        "search": { "$ref": "#/definitions/operationLane" },
+        "reservation": { "$ref": "#/definitions/operationLane" },
+        "confirmation": { "$ref": "#/definitions/operationLane" },
+        "change": { "$ref": "#/definitions/operationLane" },
+        "cancel": { "$ref": "#/definitions/operationLane" },
+        "refund": { "$ref": "#/definitions/operationLane" },
+        "fulfillment": { "$ref": "#/definitions/operationLane" },
+        "webhook": { "$ref": "#/definitions/operationLane" },
+        "reconciliation": { "$ref": "#/definitions/operationLane" },
+        "settlement": { "$ref": "#/definitions/operationLane" }
+      }
+    },
+    "escalationStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sequence", "delay_seconds", "route_ref", "scope"],
+      "properties": {
+        "sequence": { "type": "integer", "minimum": 1 },
+        "delay_seconds": { "type": "integer", "minimum": 0, "maximum": 604800 },
+        "route_ref": { "$ref": "#/definitions/opaqueRef" },
+        "scope": { "enum": ["operational", "commercial", "security", "financial", "regulated"] }
+      }
+    },
+    "escalation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["primary_route_ref", "after_hours_route_ref", "duty_manager_route_ref", "coverage_model", "timezone", "holiday_calendar_ref", "steps", "last_drill_at", "drill_evidence_digest"],
+      "properties": {
+        "primary_route_ref": { "$ref": "#/definitions/opaqueRef" },
+        "after_hours_route_ref": { "$ref": "#/definitions/opaqueRef" },
+        "duty_manager_route_ref": { "$ref": "#/definitions/opaqueRef" },
+        "coverage_model": { "enum": ["24x7", "follow_the_sun", "business_hours_with_on_call"] },
+        "timezone": { "type": "string", "minLength": 3, "maxLength": 64 },
+        "holiday_calendar_ref": { "$ref": "#/definitions/opaqueRef" },
+        "steps": { "type": "array", "minItems": 3, "items": { "$ref": "#/definitions/escalationStep" } },
+        "last_drill_at": { "$ref": "#/definitions/nullableDateTime" },
+        "drill_evidence_digest": { "$ref": "#/definitions/nullableDigest" }
+      }
+    },
+    "licensing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "jurisdictions", "licence_reference_digest", "verified_at", "expires_at", "regulated_contact_ref"],
+      "properties": {
+        "status": { "enum": ["not_required", "sandbox_only", "verified", "suspended", "expired"] },
+        "jurisdictions": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/definitions/jurisdiction" }
+        },
+        "licence_reference_digest": { "$ref": "#/definitions/nullableDigest" },
+        "verified_at": { "$ref": "#/definitions/nullableDateTime" },
+        "expires_at": { "$ref": "#/definitions/nullableDateTime" },
+        "regulated_contact_ref": { "$ref": "#/definitions/nullableOpaqueRef" }
+      }
+    },
+    "retentionClass": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["data_class", "retention_days", "purpose_ref"],
+      "properties": {
+        "data_class": { "enum": ["operations", "financial", "identity_reference", "regulated_reference", "security_audit"] },
+        "retention_days": { "type": "integer", "minimum": 1, "maximum": 3650 },
+        "purpose_ref": { "$ref": "#/definitions/opaqueRef" }
+      }
+    },
+    "dataGovernance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["retention_policy_ref", "retention_policy_digest", "retention_classes", "minimum_necessary_enforced", "log_redaction_enforced", "data_residency_jurisdictions", "deletion_sla_days", "security_review_evidence_digest"],
+      "properties": {
+        "retention_policy_ref": { "$ref": "#/definitions/opaqueRef" },
+        "retention_policy_digest": { "$ref": "#/definitions/digest" },
+        "retention_classes": { "type": "array", "minItems": 1, "items": { "$ref": "#/definitions/retentionClass" } },
+        "minimum_necessary_enforced": { "const": true },
+        "log_redaction_enforced": { "const": true },
+        "data_residency_jurisdictions": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/definitions/jurisdiction" }
+        },
+        "deletion_sla_days": { "type": "integer", "minimum": 1, "maximum": 3650 },
+        "security_review_evidence_digest": { "$ref": "#/definitions/digest" }
+      }
+    },
+    "attribution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "click_reference_required", "conversion_reference_required", "attribution_window_days", "conversion_reporting_sla_hours", "reversal_supported", "evidence_digest"],
+      "properties": {
+        "mode": { "enum": ["none", "click", "conversion", "owned"] },
+        "click_reference_required": { "type": "boolean" },
+        "conversion_reference_required": { "type": "boolean" },
+        "attribution_window_days": { "type": "integer", "minimum": 0, "maximum": 365 },
+        "conversion_reporting_sla_hours": { "type": "integer", "minimum": 1, "maximum": 8760 },
+        "reversal_supported": { "type": "boolean" },
+        "evidence_digest": { "$ref": "#/definitions/digest" }
+      }
+    },
+    "settlement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["model", "currency", "gross_basis", "commission_bps", "markup_authority", "invoice_party", "customer_funds_owner", "supplier_payable_method", "payout_route_ref", "payout_lag_days", "reconciliation_frequency", "dispute_sla_hours", "chargeback_owner", "tax_owner", "evidence_digest"],
+      "properties": {
+        "model": { "enum": ["owned", "commission", "net_rate", "affiliate"] },
+        "currency": { "type": "string", "pattern": "^[A-Z]{3}$" },
+        "gross_basis": { "enum": ["retail_gross", "supplier_net", "commissionable_gross", "not_applicable"] },
+        "commission_bps": {
+          "anyOf": [
+            { "type": "integer", "minimum": 0, "maximum": 10000 },
+            { "type": "null" }
+          ]
+        },
+        "markup_authority": { "enum": ["platform", "supplier", "contract", "not_applicable"] },
+        "invoice_party": { "enum": ["supplier", "platform", "affiliate_network", "not_applicable"] },
+        "customer_funds_owner": { "enum": ["supplier", "platform", "not_applicable"] },
+        "supplier_payable_method": { "enum": ["gross_less_commission", "net_rate", "affiliate_invoice", "internal"] },
+        "payout_route_ref": { "$ref": "#/definitions/opaqueRef" },
+        "payout_lag_days": { "type": "integer", "minimum": 0, "maximum": 365 },
+        "reconciliation_frequency": { "enum": ["per_transaction", "daily", "weekly", "monthly"] },
+        "dispute_sla_hours": { "type": "integer", "minimum": 1, "maximum": 8760 },
+        "chargeback_owner": { "enum": ["supplier", "platform", "shared", "not_applicable"] },
+        "tax_owner": { "enum": ["supplier", "platform", "shared", "not_applicable"] },
+        "evidence_digest": { "$ref": "#/definitions/digest" }
+      }
+    },
+    "sourceControls": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["catalog_mode", "product_revision_digest", "rate_revision_digest", "availability_revision_digest", "terms_revision_digest", "blackout_revision_digest", "last_verified_at", "terms_valid_until", "max_cache_age_seconds", "revalidation_required", "source_evidence_digest"],
+      "properties": {
+        "catalog_mode": { "enum": ["pull", "push", "hybrid"] },
+        "product_revision_digest": { "$ref": "#/definitions/digest" },
+        "rate_revision_digest": { "$ref": "#/definitions/digest" },
+        "availability_revision_digest": { "$ref": "#/definitions/digest" },
+        "terms_revision_digest": { "$ref": "#/definitions/digest" },
+        "blackout_revision_digest": { "$ref": "#/definitions/digest" },
+        "last_verified_at": { "$ref": "#/definitions/dateTime" },
+        "terms_valid_until": { "$ref": "#/definitions/dateTime" },
+        "max_cache_age_seconds": { "type": "integer", "minimum": 0, "maximum": 2592000 },
+        "revalidation_required": { "const": true },
+        "source_evidence_digest": { "$ref": "#/definitions/digest" }
+      }
+    },
+    "health": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "failure_threshold", "open_interval_seconds", "half_open_probe_limit", "last_probe_at", "last_success_at", "telemetry_evidence_digest"],
+      "properties": {
+        "state": { "enum": ["healthy", "degraded", "open", "half_open", "offline", "disabled"] },
+        "failure_threshold": { "type": "integer", "minimum": 1, "maximum": 1000 },
+        "open_interval_seconds": { "type": "integer", "minimum": 1, "maximum": 604800 },
+        "half_open_probe_limit": { "type": "integer", "minimum": 1, "maximum": 100 },
+        "last_probe_at": { "$ref": "#/definitions/nullableDateTime" },
+        "last_success_at": { "$ref": "#/definitions/nullableDateTime" },
+        "telemetry_evidence_digest": { "$ref": "#/definitions/nullableDigest" }
+      }
+    },
+    "killSwitch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "blocked_capabilities", "reason_code", "activated_at", "activated_by_ref"],
+      "properties": {
+        "state": { "enum": ["armed", "engaged", "released"] },
+        "blocked_capabilities": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/definitions/capability" }
+        },
+        "reason_code": { "$ref": "#/definitions/nullableToken" },
+        "activated_at": { "$ref": "#/definitions/nullableDateTime" },
+        "activated_by_ref": { "$ref": "#/definitions/nullableOpaqueRef" }
+      }
+    },
+    "gate": { "enum": ["pending", "pass", "not_applicable", "fail"] },
+    "readinessGates": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["commercial", "credentials", "endpoints", "certification", "operations", "licensing", "data_governance", "settlement", "source_freshness", "resilience"],
+      "properties": {
+        "commercial": { "$ref": "#/definitions/gate" },
+        "credentials": { "$ref": "#/definitions/gate" },
+        "endpoints": { "$ref": "#/definitions/gate" },
+        "certification": { "$ref": "#/definitions/gate" },
+        "operations": { "$ref": "#/definitions/gate" },
+        "licensing": { "$ref": "#/definitions/gate" },
+        "data_governance": { "$ref": "#/definitions/gate" },
+        "settlement": { "$ref": "#/definitions/gate" },
+        "source_freshness": { "$ref": "#/definitions/gate" },
+        "resilience": { "$ref": "#/definitions/gate" }
+      }
+    },
+    "readiness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requested_mode", "decision", "gates", "evidence_digests", "decided_at"],
+      "properties": {
+        "requested_mode": { "enum": ["sandbox", "live"] },
+        "decision": { "enum": ["draft", "sandbox_ready", "live_ready", "suspended", "disabled"] },
+        "gates": { "$ref": "#/definitions/readinessGates" },
+        "evidence_digests": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/definitions/digest" }
+        },
+        "decided_at": { "$ref": "#/definitions/nullableDateTime" }
+      }
+    },
+    "commercialTruth": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["simulated", "real_booking", "real_charge"],
+      "properties": {
+        "simulated": { "type": "boolean" },
+        "real_booking": { "type": "boolean" },
+        "real_charge": { "type": "boolean" }
+      }
+    },
+    "revisionControl": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["immutable", "content_digest", "supersedes_revision_digest", "rollback_target_digest", "rollback_reason_code"],
+      "properties": {
+        "immutable": { "const": true },
+        "content_digest": { "$ref": "#/definitions/digest" },
+        "supersedes_revision_digest": { "$ref": "#/definitions/nullableDigest" },
+        "rollback_target_digest": { "$ref": "#/definitions/nullableDigest" },
+        "rollback_reason_code": { "$ref": "#/definitions/nullableToken" }
+      }
+    }
+  }
+}

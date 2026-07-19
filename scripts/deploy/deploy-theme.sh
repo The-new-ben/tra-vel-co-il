@@ -2,6 +2,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REQUIREMENTS_FILE="${THEME_RELEASE_REQUIREMENTS_FILE:-${SCRIPT_DIR}/../../theme/tra-vel-v2/release-requirements.json}"
 
 ARCHIVE="${1:-}"
 : "${WP_SITE_URL:?WP_SITE_URL is required}"
@@ -28,6 +29,21 @@ if [[ "${ACTIVATE_THEME:-false}" == "true" && "${ACTIVATION_CONFIRMATION:-}" != 
   echo "Activation requires the exact phrase ACTIVATE TRA-VEL V2." >&2
   exit 1
 fi
+if [[ ! -r "$REQUIREMENTS_FILE" ]]; then
+  echo "Theme release requirements are unavailable." >&2
+  exit 1
+fi
+REQUIRED_GATEWAY_VERSION="$(python3 - "$REQUIREMENTS_FILE" <<'PY'
+import json
+import re
+import sys
+data = json.load(open(sys.argv[1], encoding="utf-8"))
+value = str((data.get("deploy_gateway") or {}).get("min_version", ""))
+if not re.fullmatch(r"\d+\.\d+\.\d+(?:[-+][A-Za-z0-9.-]+)?", value):
+    raise SystemExit("Theme release requirements contain an invalid gateway version.")
+print(value)
+PY
+)"
 
 SHA256="$(sha256sum "$ARCHIVE" | cut -d' ' -f1)"
 DEPLOY_URL="${WP_SITE_URL%/}/wp-json/tra-vel-deploy/v1/theme"
@@ -36,7 +52,7 @@ trap 'rm -f "$RESPONSE_FILE"' EXIT
 
 echo "Checking the authenticated deployment gateway."
 bash "${SCRIPT_DIR}/get-theme-status.sh" "$RESPONSE_FILE"
-python3 - "$RESPONSE_FILE" "${THEME_DEPLOY_PRESTATE_FILE:-}" "${REQUIRE_EXISTING_THEME:-false}" <<'PY'
+python3 - "$RESPONSE_FILE" "${THEME_DEPLOY_PRESTATE_FILE:-}" "${REQUIRE_EXISTING_THEME:-false}" "$REQUIRED_GATEWAY_VERSION" <<'PY'
 import json
 import os
 import re
@@ -45,8 +61,26 @@ import sys
 data = json.load(open(sys.argv[1], encoding="utf-8"))
 prestate_target = sys.argv[2]
 require_existing = sys.argv[3] == "true"
+required_gateway_version = sys.argv[4]
+semver_pattern = re.compile(r"^(\d+)\.(\d+)\.(\d+)(?:([-+])([A-Za-z0-9.-]+))?$")
+
+def version_at_least(current, minimum):
+    current_match = semver_pattern.fullmatch(str(current or ""))
+    minimum_match = semver_pattern.fullmatch(str(minimum or ""))
+    if not current_match or not minimum_match:
+        return False
+    current_numbers = tuple(int(current_match[index]) for index in (1, 2, 3))
+    minimum_numbers = tuple(int(minimum_match[index]) for index in (1, 2, 3))
+    if current_numbers != minimum_numbers:
+        return current_numbers > minimum_numbers
+    if minimum_match[5] is None:
+        return current_match[5] is None
+    return current_match[5] is None or current_match[5] >= minimum_match[5]
+
 if not isinstance(data.get("gateway_version"), str) or data.get("theme") != "tra-vel-v2":
     raise SystemExit("The deployment gateway did not return a valid status response.")
+if not version_at_least(data["gateway_version"], required_gateway_version):
+    raise SystemExit(f"Deployment gateway {data['gateway_version']} is below required {required_gateway_version}.")
 if not isinstance(data.get("installed"), bool) or not isinstance(data.get("active"), bool):
     raise SystemExit("The deployment gateway returned an invalid installed state.")
 installed_version = data.get("installed_version")
@@ -63,6 +97,7 @@ if require_existing and not data["installed"]:
 if prestate_target:
     prestate = {
         "theme": data["theme"],
+        "gateway_version": data["gateway_version"],
         "installed": data["installed"],
         "installed_version": installed_version,
         "installed_fingerprint": installed_fingerprint,

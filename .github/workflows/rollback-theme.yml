@@ -42,7 +42,6 @@ jobs:
     env:
       WP_SITE_URL: ${{ vars.WP_SITE_URL }}
       SITE_URL: ${{ vars.WP_SITE_URL }}
-      SMOKE_PATHS: ${{ vars.SMOKE_PATHS }}
       EXPECT_THEME_MARKER: ${{ vars.EXPECT_THEME_MARKER }}
       BACKUP_NAME: ${{ inputs.backup_name }}
       EXPECTED_CURRENT_FINGERPRINT: ${{ inputs.expected_current_fingerprint }}
@@ -60,6 +59,7 @@ jobs:
         run: |
           set -euo pipefail
           node scripts/ci/validate-theme-deploy-contract.mjs
+          [[ "$GITHUB_REF_NAME" == "main" ]] || { echo "Production rollback is allowed only from main." >&2; exit 1; }
           [[ "$ROLLBACK_CONFIRMATION" == "ROLLBACK TRA-VEL V2" ]] || { echo "Rollback confirmation did not match." >&2; exit 1; }
           [[ "$WP_SITE_URL" =~ ^https:// ]] || { echo "WP_SITE_URL must use HTTPS." >&2; exit 1; }
           [[ -n "$WP_USERNAME" && -n "$WP_APP_PASSWORD" ]] || { echo "WordPress deployment secrets are missing." >&2; exit 1; }
@@ -74,4 +74,4 @@ jobs:
         run: bash scripts/deploy/rollback-theme.sh "$BACKUP_NAME"
 
       - name: Smoke test restored website
-        run: bash scripts/deploy/smoke-test.sh "$WP_SITE_URL"
+        run: ALLOW_LEGACY_RELEASE_MARKER=true bash scripts/deploy/smoke-test.sh "$WP_SITE_URL"

@@ -35,13 +35,14 @@ for (( attempt = 1; attempt <= ATTEMPTS; attempt++ )); do
     "$STATUS_URL" > "$TEMP_FILE" \
     && python3 - "$TEMP_FILE" <<'PY'
 import json
+import re
 import sys
 
 try:
     data = json.load(open(sys.argv[1], encoding="utf-8"))
 except (OSError, ValueError, TypeError):
     raise SystemExit(1)
-if not isinstance(data, dict) or data.get("theme") != "tra-vel-v2" or not isinstance(data.get("gateway_version"), str):
+if not isinstance(data, dict) or data.get("theme") != "tra-vel-v2" or not re.fullmatch(r"\d+\.\d+\.\d+(?:[-+][A-Za-z0-9.-]+)?", str(data.get("gateway_version", ""))):
     raise SystemExit(1)
 PY
   then

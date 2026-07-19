@@ -1,0 +1,56 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://tra-vel.co.il/schemas/agent/assisted-proposal-traveler-source-1.0.0.json",
+  "title": "Tra-Vel Traveler AssistedProposal Source",
+  "description": "A traveler-safe evidence summary without provider lookup handles or integrity internals.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "source_id",
+    "source_type",
+    "public_label",
+    "supplier_name",
+    "seller_name",
+    "source_url",
+    "observed_at",
+    "fresh_until",
+    "requires_revalidation"
+  ],
+  "properties": {
+    "contract_version": { "const": "1.0.0" },
+    "source_id": { "type": "string", "format": "uuid" },
+    "source_type": {
+      "enum": [
+        "connected_api",
+        "supplier_portal",
+        "supplier_written_quote",
+        "public_supplier_page",
+        "official_information"
+      ]
+    },
+    "public_label": { "type": "string", "minLength": 1, "maxLength": 190 },
+    "supplier_name": { "type": "string", "maxLength": 190 },
+    "seller_name": { "type": "string", "maxLength": 190 },
+    "source_url": { "type": ["string", "null"], "format": "uri", "maxLength": 500 },
+    "observed_at": { "type": "string", "format": "date-time" },
+    "fresh_until": { "type": "string", "format": "date-time" },
+    "requires_revalidation": { "const": true }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "source_type": { "enum": ["public_supplier_page", "official_information"] }
+        },
+        "required": ["source_type"]
+      },
+      "then": {
+        "properties": { "source_url": { "type": "string", "format": "uri", "maxLength": 500, "pattern": "^https://[^?#]+$" } }
+      },
+      "else": {
+        "properties": { "source_url": { "type": "null" } }
+      }
+    }
+  ]
+}

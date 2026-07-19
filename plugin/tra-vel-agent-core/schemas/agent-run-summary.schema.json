@@ -1,0 +1,188 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://tra-vel.co.il/wp-json/tra-vel-agent/v1/schema/agent-run-summary#1.0.0",
+  "title": "Tra-Vel AgentRun account summary",
+  "description": "The closed, resumable account-history projection of one unexpired private AgentRun.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "run_id",
+    "status",
+    "mode",
+    "locale",
+    "summary",
+    "planning_context",
+    "readiness",
+    "request_revision",
+    "proposal_count",
+    "created_at",
+    "updated_at",
+    "expires_at",
+    "resume_available"
+  ],
+  "properties": {
+    "run_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "status": {
+      "enum": [
+        "created",
+        "provider_error",
+        "needs_clarification",
+        "request_ready",
+        "searching",
+        "proposal_ready",
+        "approval_required",
+        "completed",
+        "failed",
+        "cancelled"
+      ]
+    },
+    "mode": {
+      "enum": [
+        "agent",
+        "surprise"
+      ]
+    },
+    "locale": {
+      "enum": [
+        "he-IL",
+        "en-US",
+        "mixed"
+      ]
+    },
+    "summary": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "planning_context": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "selection_id",
+        "latitude",
+        "longitude",
+        "destination",
+        "intent",
+        "scope"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "free_text",
+            "destination",
+            "map_point"
+          ]
+        },
+        "selection_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[A-Za-z0-9_-]{8,80}$"
+        },
+        "latitude": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": -90,
+          "maximum": 90
+        },
+        "longitude": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": -180,
+          "maximum": 180
+        },
+        "destination": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[a-z0-9-]{1,60}$"
+        },
+        "intent": {
+          "enum": [
+            "smart",
+            "value",
+            "easy",
+            "romantic",
+            "family",
+            "adventure",
+            "surprise"
+          ]
+        },
+        "scope": {
+          "type": "array",
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "flights",
+              "accommodation",
+              "transfers",
+              "activities",
+              "dining",
+              "insurance",
+              "connectivity",
+              "equipment"
+            ]
+          }
+        }
+      }
+    },
+    "readiness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "blockers"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "needs_clarification",
+            "ready_for_search",
+            "unsupported"
+          ]
+        },
+        "blockers": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "type": "string",
+            "maxLength": 200
+          }
+        }
+      }
+    },
+    "request_revision": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "proposal_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "resume_available": {
+      "type": "boolean"
+    }
+  }
+}

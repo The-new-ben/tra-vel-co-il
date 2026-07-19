@@ -14,6 +14,8 @@ $GLOBALS['tv_agent_current_user'] = 0;
 $GLOBALS['tv_agent_transients']   = array();
 $GLOBALS['tv_agent_uuid_counter'] = 0;
 $GLOBALS['tv_agent_filters']      = array();
+$GLOBALS['tv_agent_can_read']     = true;
+$GLOBALS['tv_agent_routes']       = array();
 
 class WP_REST_Controller {
 	protected $namespace;
@@ -116,7 +118,7 @@ function wp_strip_all_tags( $value ) { return strip_tags( (string) $value ); }
 function wp_json_encode( $value, $flags = 0 ) { return json_encode( $value, $flags ); }
 function get_current_user_id() { return (int) $GLOBALS['tv_agent_current_user']; }
 function current_user_can( $capability ) {
-	if ( 'read' === $capability ) return get_current_user_id() > 0;
+	if ( 'read' === $capability ) return get_current_user_id() > 0 && ! empty( $GLOBALS['tv_agent_can_read'] );
 	return 'manage_options' === $capability && 1 === get_current_user_id();
 }
 function wp_generate_uuid4() {
@@ -138,7 +140,7 @@ function get_transient( $key ) { return array_key_exists( $key, $GLOBALS['tv_age
 function set_transient( $key, $value, $ttl ) { unset( $ttl ); $GLOBALS['tv_agent_transients'][ $key ] = $value; return true; }
 function is_ssl() { return true; }
 function wp_get_environment_type() { return 'local'; }
-function register_rest_route() {}
+function register_rest_route( $namespace, $route, $args ) { $GLOBALS['tv_agent_routes'][] = compact( 'namespace', 'route', 'args' ); }
 function rest_ensure_response( $value ) { return $value instanceof WP_REST_Response ? $value : new WP_REST_Response( $value ); }
 
 require TRA_VEL_AGENT_PATH . '/includes/class-tra-vel-agent-policy.php';
@@ -183,6 +185,9 @@ class Tra_Vel_Test_Agent_Store {
 	public $leases = array();
 	public $deny_leases = false;
 	public $side_effect_count = 0;
+	public $list_read_error = '';
+	public $last_list_user_id = 0;
+	public $last_list_limit = 0;
 	private $next_id = 1;
 
 	public function consume_limit( $key, $limit, $expires_at ) {
@@ -271,6 +276,29 @@ class Tra_Vel_Test_Agent_Store {
 	public function get_run_by_uuid( $run_uuid ) {
 		foreach ( $this->runs as $run ) if ( $run_uuid === $run['run_uuid'] ) return $run;
 		return null;
+	}
+
+	public function list_owned_runs( $user_id, $limit = 12, &$read_error = null ) {
+		$this->last_list_user_id = (int) $user_id;
+		$this->last_list_limit   = min( 20, max( 1, (int) $limit ) );
+		$read_error = (string) $this->list_read_error;
+		if ( '' !== $read_error || $user_id < 1 ) return array();
+		$runs = array_values(
+			array_filter(
+				$this->runs,
+				static function ( $run ) use ( $user_id ) {
+					return (int) $run['owner_user_id'] === (int) $user_id && strtotime( $run['expires_at'] . ' UTC' ) >= time();
+				}
+			)
+		);
+		usort(
+			$runs,
+			static function ( $left, $right ) {
+				$updated = strcmp( (string) $right['updated_at'], (string) $left['updated_at'] );
+				return 0 !== $updated ? $updated : (int) $right['id'] <=> (int) $left['id'];
+			}
+		);
+		return array_slice( $runs, 0, $this->last_list_limit );
 	}
 
 	public function get_events( $run_id, $after = 0 ) {
@@ -378,6 +406,7 @@ function tv_agent_controller_reset( $address ) {
 	$GLOBALS['tv_agent_current_user'] = 0;
 	$GLOBALS['tv_agent_transients']   = array();
 	$GLOBALS['tv_agent_filters']      = array();
+	$GLOBALS['tv_agent_can_read']     = true;
 	$_SERVER['REMOTE_ADDR']           = $address;
 	$_COOKIE                          = array();
 }
@@ -414,6 +443,94 @@ $production_owner_store = new Tra_Vel_Agent_Store();
 $account_owned_run = array( 'owner_user_id' => 41, 'owner_token_hash' => hash( 'sha256', str_repeat( 't', 40 ) ), 'expires_at' => gmdate( 'Y-m-d H:i:s', time() + 3600 ) );
 tv_agent_controller_assert( true === $production_owner_store->can_access( $account_owned_run, '', 41 ), 'account owner lost access to its private run' );
 tv_agent_controller_assert( false === $production_owner_store->can_access( $account_owned_run, str_repeat( 't', 40 ), 42 ), 'stale bearer retained access after an AgentRun became account-owned' );
+
+// Account history is an authenticated, exact-owner, capped and closed resume
+// projection. Guest, expired and other-account rows never reach the presenter.
+tv_agent_controller_reset( '192.0.2.9' );
+$history_store      = new Tra_Vel_Test_Agent_Store();
+$history_controller = new Tra_Vel_Agent_Controller( $history_store, new Tra_Vel_Test_Agent_Provider( tv_agent_controller_provider_result( tv_agent_controller_base_request() ) ) );
+$history_controller->register_routes();
+$run_routes = array_values(
+	array_filter(
+		$GLOBALS['tv_agent_routes'],
+		static function ( $route ) { return '/runs' === $route['route']; }
+	)
+);
+tv_agent_controller_assert( 1 === count( $run_routes ) && 2 === count( $run_routes[0]['args'] ), 'run collection did not register GET beside POST' );
+tv_agent_controller_assert( 'GET' === $run_routes[0]['args'][0]['methods'] && 'POST' === $run_routes[0]['args'][1]['methods'], 'run collection methods changed' );
+
+$guest_list_permission = $history_controller->can_list_runs();
+tv_agent_controller_assert( is_wp_error( $guest_list_permission ) && 'tra_vel_agent_login_required' === $guest_list_permission->get_error_code(), 'guest gained account plan history' );
+$GLOBALS['tv_agent_current_user'] = 41;
+$GLOBALS['tv_agent_can_read']     = false;
+$no_read_permission = $history_controller->can_list_runs();
+tv_agent_controller_assert( is_wp_error( $no_read_permission ) && 'tra_vel_agent_login_required' === $no_read_permission->get_error_code(), 'account without read capability gained plan history' );
+$GLOBALS['tv_agent_can_read'] = true;
+
+$history_uuids = array();
+for ( $index = 1; $index <= 22; $index++ ) {
+	$created = $history_store->create_run(
+		array(
+			'owner_user_id'       => 41,
+			'request_fingerprint' => hash( 'sha256', 'history-' . $index ),
+			'mode'                => 22 === $index ? 'surprise' : 'agent',
+			'locale'              => 'en-US',
+			'input_kind'          => 'typed',
+		)
+	);
+	$history_uuids[ $index ] = $created['run_uuid'];
+	$history_store->runs[ $created['id'] ]['updated_at'] = gmdate( 'Y-m-d H:i:s', time() + $index * 60 );
+	$history_store->runs[ $created['id'] ]['expires_at'] = gmdate( 'Y-m-d H:i:s', time() + DAY_IN_SECONDS );
+	$history_store->runs[ $created['id'] ]['trip_request'] = array(
+		'summary'          => 'Saved account plan ' . $index,
+		'revision'         => $index,
+		'planning_context' => array( 'kind' => 'destination', 'selection_id' => 'history_' . str_pad( (string) $index, 8, '0', STR_PAD_LEFT ), 'latitude' => null, 'longitude' => null, 'destination' => 'bangkok', 'intent' => 'value', 'scope' => array( 'flights', 'accommodation' ) ),
+		'readiness'        => array( 'status' => 'ready_for_search', 'blockers' => array() ),
+	);
+	$history_store->runs[ $created['id'] ]['proposals'] = 22 === $index ? array( array( 'raw_body' => 'hidden-a' ), array( 'raw_body' => 'hidden-b' ) ) : array();
+}
+$history_store->runs[22]['trip_request']['summary'] = str_repeat( 'מסע ', 180 );
+$history_store->runs[22]['trip_request']['readiness']['blockers'] = array( str_repeat( 'פרט ', 90 ) );
+$history_store->runs[21]['updated_at'] = gmdate( 'Y-m-d H:i:s', time() + 5000 );
+$history_store->runs[22]['updated_at'] = $history_store->runs[21]['updated_at'];
+
+$expired = $history_store->create_run( array( 'owner_user_id' => 41, 'request_fingerprint' => hash( 'sha256', 'expired-history' ), 'mode' => 'agent', 'locale' => 'en-US', 'input_kind' => 'typed' ) );
+$history_store->runs[ $expired['id'] ]['updated_at'] = gmdate( 'Y-m-d H:i:s', time() + 9000 );
+$history_store->runs[ $expired['id'] ]['expires_at'] = gmdate( 'Y-m-d H:i:s', time() - 60 );
+$guest = $history_store->create_run( array( 'owner_user_id' => 0, 'request_fingerprint' => hash( 'sha256', 'guest-history' ), 'mode' => 'agent', 'locale' => 'en-US', 'input_kind' => 'typed' ) );
+$history_store->runs[ $guest['id'] ]['updated_at'] = gmdate( 'Y-m-d H:i:s', time() + 10000 );
+$history_store->runs[ $guest['id'] ]['expires_at'] = gmdate( 'Y-m-d H:i:s', time() + DAY_IN_SECONDS );
+$other = $history_store->create_run( array( 'owner_user_id' => 42, 'request_fingerprint' => hash( 'sha256', 'other-history' ), 'mode' => 'agent', 'locale' => 'en-US', 'input_kind' => 'typed' ) );
+$history_store->runs[ $other['id'] ]['updated_at'] = gmdate( 'Y-m-d H:i:s', time() + 11000 );
+$history_store->runs[ $other['id'] ]['expires_at'] = gmdate( 'Y-m-d H:i:s', time() + DAY_IN_SECONDS );
+
+$history_response = $history_controller->list_runs( new WP_REST_Request( array( 'limit' => 999, 'owner_user_id' => 42 ) ) );
+tv_agent_assert_private_response( $history_response, 'account run list' );
+tv_agent_controller_assert( 20 === count( $history_response->data['runs'] ), 'account run list was not capped at 20' );
+tv_agent_controller_assert( 41 === $history_store->last_list_user_id && 20 === $history_store->last_list_limit, 'account run list accepted a supplied owner or uncapped limit' );
+$returned_history_ids = array_column( $history_response->data['runs'], 'run_id' );
+tv_agent_controller_assert( ! in_array( $expired['run_uuid'], $returned_history_ids, true ) && ! in_array( $guest['run_uuid'], $returned_history_ids, true ) && ! in_array( $other['run_uuid'], $returned_history_ids, true ), 'account run list included expired, guest, or other-account rows' );
+tv_agent_controller_assert( array() === array_diff( $returned_history_ids, array_values( $history_uuids ) ), 'account run list escaped the exact current-user fixture' );
+tv_agent_controller_assert( $history_uuids[22] === $history_response->data['runs'][0]['run_id'] && $history_uuids[21] === $history_response->data['runs'][1]['run_id'], 'account run list lost updated_at DESC, id DESC ordering' );
+$summary_fields = array( 'run_id', 'status', 'mode', 'locale', 'summary', 'planning_context', 'readiness', 'request_revision', 'proposal_count', 'created_at', 'updated_at', 'expires_at', 'resume_available' );
+tv_agent_controller_assert( $summary_fields === array_keys( $history_response->data['runs'][0] ), 'account run summary is not the exact closed DTO' );
+tv_agent_controller_assert( 2 === $history_response->data['runs'][0]['proposal_count'] && true === $history_response->data['runs'][0]['resume_available'], 'account run summary lost truthful proposal count or resume state' );
+$unicode_summary = $history_response->data['runs'][0]['summary'];
+$unicode_blocker = $history_response->data['runs'][0]['readiness']['blockers'][0] ?? '';
+tv_agent_controller_assert( 1 === preg_match( '//u', $unicode_summary ) && preg_match_all( '/./us', $unicode_summary ) <= 500, 'account run summary truncation produced invalid or overlong UTF-8' );
+tv_agent_controller_assert( 1 === preg_match( '//u', $unicode_blocker ) && preg_match_all( '/./us', $unicode_blocker ) <= 200, 'account run blocker truncation produced invalid or overlong UTF-8' );
+foreach ( array( 'id', 'owner_user_id', 'owner_token_hash', 'trip_request', 'proposals', 'provider', 'provider_state', 'events', 'approvals', 'input_text', 'raw_prompt', 'raw_body' ) as $private_field ) {
+	tv_agent_controller_assert( ! array_key_exists( $private_field, $history_response->data['runs'][0] ), "account run summary exposed {$private_field}" );
+}
+tv_agent_controller_assert( false === strpos( wp_json_encode( $history_response->data ), 'hidden-a' ) && false === strpos( wp_json_encode( $history_response->data ), 'hidden-b' ), 'account run summary exposed proposal bodies' );
+$default_history = $history_controller->list_runs( new WP_REST_Request() );
+tv_agent_controller_assert( 12 === count( $default_history->data['runs'] ) && 12 === $history_store->last_list_limit, 'account run collection default limit is not 12' );
+$summary_schema_response = $history_controller->get_run_summary_schema();
+tv_agent_controller_assert( $summary_schema_response instanceof WP_REST_Response && $summary_fields === array_keys( $summary_schema_response->data['properties'] ), 'public account-run schema diverges from the runtime DTO' );
+
+$history_store->list_read_error = 'simulated read failure';
+$failed_history = $history_controller->list_runs( new WP_REST_Request( array( 'limit' => 5 ) ) );
+tv_agent_controller_assert( is_wp_error( $failed_history ) && 'tra_vel_agent_runs_read_failed' === $failed_history->get_error_code() && 503 === $failed_history->get_error_data()['status'], 'account run SELECT failure did not surface as 503' );
 
 tv_agent_controller_reset( '192.0.2.10' );
 $ready_store      = new Tra_Vel_Test_Agent_Store();

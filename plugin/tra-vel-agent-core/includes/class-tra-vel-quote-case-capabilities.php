@@ -8,7 +8,7 @@
 defined( 'ABSPATH' ) || exit;
 
 class Tra_Vel_Quote_Case_Capabilities {
-	const VERSION = '1.0.0';
+	const VERSION = '1.2.0';
 
 	const VERSION_OPTION = 'tra_vel_quote_case_capabilities_version';
 
@@ -19,6 +19,10 @@ class Tra_Vel_Quote_Case_Capabilities {
 	const MANAGE_CASES = 'tra_vel_manage_quote_cases';
 
 	const ASSIGN_CASES = 'tra_vel_assign_quote_cases';
+
+	const PUBLISH_PROPOSALS = 'tra_vel_publish_assisted_proposals';
+
+	const INGEST_PROPOSALS = 'tra_vel_ingest_canonical_assisted_proposals';
 
 	const DISPATCH_SUPPLIER_REQUESTS = 'tra_vel_dispatch_supplier_requests';
 
@@ -54,6 +58,7 @@ class Tra_Vel_Quote_Case_Capabilities {
 			}
 
 			// Enforce the boundary even when upgrading an existing role.
+			$operator->remove_cap( self::INGEST_PROPOSALS );
 			$operator->remove_cap( self::DISPATCH_SUPPLIER_REQUESTS );
 		}
 
@@ -93,6 +98,8 @@ class Tra_Vel_Quote_Case_Capabilities {
 			self::VIEW_CASES,
 			self::MANAGE_CASES,
 			self::ASSIGN_CASES,
+			self::PUBLISH_PROPOSALS,
+			self::INGEST_PROPOSALS,
 			self::DISPATCH_SUPPLIER_REQUESTS,
 		);
 	}
@@ -107,6 +114,7 @@ class Tra_Vel_Quote_Case_Capabilities {
 			self::VIEW_CASES,
 			self::MANAGE_CASES,
 			self::ASSIGN_CASES,
+			self::PUBLISH_PROPOSALS,
 		);
 	}
 }

@@ -1,0 +1,48 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://tra-vel.co.il/schemas/private/israel-local-operations-stress-matrix-v1.0.0.json",
+  "title": "Tra-Vel Israel local operations stress matrix",
+  "description": "Synthetic Jerusalem and Eilat corridor recovery expectations. Every row preserves unaffected components and performs zero supplier or processor dispatch.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract_version", "environment", "data_mode", "suite_ref", "scenarios"],
+  "properties": {
+    "contract_version": {"const": "1.0.0"},
+    "environment": {"const": "sandbox"},
+    "data_mode": {"const": "synthetic_demo"},
+    "suite_ref": {"type": "string", "pattern": "^tv_local_stress_matrix_[A-Za-z0-9_-]{16,96}$"},
+    "scenarios": {
+      "type": "array",
+      "minItems": 36,
+      "maxItems": 128,
+      "items": {"$ref": "#/definitions/scenario"},
+      "allOf": [
+        {"contains": {"required": ["corridor"], "properties": {"corridor": {"const": "jerusalem_corridor"}}}},
+        {"contains": {"required": ["corridor"], "properties": {"corridor": {"const": "eilat_corridor"}}}}
+      ]
+    }
+  },
+  "definitions": {
+    "trigger": {"enum": ["occupancy_total_exceeded", "child_age_band_changed", "room_allocation_invalid", "accessible_unit_unavailable", "step_free_route_changed", "late_arrival", "key_handoff_failed", "check_in_window_changed", "check_out_window_changed", "vat_eligibility_changed", "deposit_terms_changed", "cancellation_deadline_near", "shabbat_check_in_conflict", "shabbat_key_conflict", "kosher_certificate_expired", "kosher_scope_conflict", "rail_service_disrupted", "road_corridor_closed", "domestic_flight_disrupted", "extreme_heat", "flash_flood", "wildfire_smoke", "security_restriction", "evacuation_order", "utility_outage", "venue_closed", "parking_unavailable", "ev_charging_unavailable", "accessible_route_blocked", "attraction_group_minimum_changed", "guide_unavailable", "equipment_unavailable", "activity_weather_cancelled", "partial_party_reduced", "partial_party_extended", "supplier_revision_superseded", "supplier_replacement_required", "partial_refund_observed", "replacement_payment_required", "benefit_source_stale", "benefit_eligibility_changed", "benefit_expired", "benefit_reversed"]},
+    "strategy": {"enum": ["reallocate_party", "find_capacity_match", "preserve_access_requirements", "reconfirm_arrival_and_keys", "revalidate_local_terms", "protect_deadline", "revalidate_shabbat_fit", "revalidate_kosher_evidence", "reroute_local_transport", "replace_domestic_segment", "safety_hold_and_human_review", "restore_utility_or_replace", "replace_closed_service", "replace_parking_or_access_route", "reconfigure_activity", "preserve_partial_party", "revalidate_supplier_revision", "propose_supplier_replacement", "reconcile_refund_separately", "authorize_replacement_payment_separately", "refresh_benefit_evidence", "reconcile_benefit_reversal"]},
+    "scenario": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scenario_id", "corridor", "trigger", "disruption_type", "expected_strategy", "expected_supplier_change_approval", "expected_financial_approval", "expected_safety_handoff", "expected_benefit_state", "preserve_unaffected_components", "supplier_dispatched", "processor_called"],
+      "properties": {
+        "scenario_id": {"type": "string", "pattern": "^tv_local_stress_[a-z0-9_]{8,96}$"},
+        "corridor": {"enum": ["jerusalem_corridor", "eilat_corridor"]},
+        "trigger": {"$ref": "#/definitions/trigger"},
+        "disruption_type": {"enum": ["occupancy", "accessibility", "arrival", "commercial_terms", "shabbat", "party_change", "supplier_revision", "financial", "benefit", "weather", "fire", "flood", "security", "evacuation", "road", "rail", "utility", "closure", "certificate_expiry"]},
+        "expected_strategy": {"$ref": "#/definitions/strategy"},
+        "expected_supplier_change_approval": {"type": "boolean"},
+        "expected_financial_approval": {"type": "boolean"},
+        "expected_safety_handoff": {"type": "boolean"},
+        "expected_benefit_state": {"enum": ["not_applicable", "refresh_required", "eligibility_recheck_required", "expired", "reversal_reconciliation_required"]},
+        "preserve_unaffected_components": {"const": true},
+        "supplier_dispatched": {"const": false},
+        "processor_called": {"const": false}
+      }
+    }
+  }
+}

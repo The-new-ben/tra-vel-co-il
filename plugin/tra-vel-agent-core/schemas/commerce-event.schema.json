@@ -1,0 +1,161 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://tra-vel.co.il/schemas/commerce-event-v1.schema.json",
+  "title": "Tra-Vel commerce sandbox event",
+  "description": "An ordered, immutable, bounded event projection without raw provider or payment payloads.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "environment",
+    "event_ref",
+    "aggregate_type",
+    "aggregate_ref",
+    "sequence",
+    "aggregate_version",
+    "type",
+    "phase",
+    "status",
+    "actor",
+    "visibility",
+    "message",
+    "payload_digest",
+    "data",
+    "occurred_at",
+    "sandbox_truth",
+    "data_boundary"
+  ],
+  "properties": {
+    "contract_version": { "const": "1.0.0" },
+    "environment": { "const": "sandbox" },
+    "event_ref": { "$ref": "#/definitions/eventRef" },
+    "aggregate_type": { "enum": ["search_session", "package", "order", "operation", "settlement"] },
+    "aggregate_ref": { "$ref": "#/definitions/aggregateRef" },
+    "sequence": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+    "aggregate_version": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+    "type": {
+      "enum": [
+        "search.accepted",
+        "provider.search.started",
+        "provider.search.succeeded",
+        "provider.search.failed",
+        "search.completed",
+        "search.partial",
+        "offer.revalidated",
+        "package.composed",
+        "package.revalidation_required",
+        "order.created",
+        "checkout.state_changed",
+        "approval.recorded",
+        "side_effect.started",
+        "operation.succeeded",
+        "operation.failed",
+        "operation.uncertain",
+        "operation.reconciled",
+        "payment.state_changed",
+        "fulfillment.state_changed",
+        "refund.recorded",
+        "settlement.state_changed"
+      ]
+    },
+    "phase": { "enum": ["search", "quote", "package", "checkout", "approval", "payment", "fulfillment", "settlement", "recovery"] },
+    "status": { "enum": ["queued", "running", "waiting", "succeeded", "failed", "uncertain", "cancelled"] },
+    "actor": { "enum": ["system", "traveler", "operator", "provider_adapter", "payment_adapter", "affiliate_adapter"] },
+    "visibility": { "enum": ["private", "operator"] },
+    "message": { "type": "string", "minLength": 1, "maxLength": 500 },
+    "payload_digest": { "$ref": "#/definitions/digest" },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reason_code", "from_state", "to_state", "simulated_side_effect_executed", "real_side_effect_executed"],
+      "properties": {
+        "vertical": {
+          "type": ["string", "null"],
+          "enum": ["flight", "accommodation", "package", "transfer", "activity", "dining", "insurance", "connectivity", "equipment", null]
+        },
+        "provider_id": {
+          "type": ["string", "null"],
+          "pattern": "^[a-z0-9]+(?:[-_][a-z0-9]+)*$",
+          "maxLength": 64
+        },
+        "offer_ref": { "$ref": "#/definitions/nullableOfferRef" },
+        "order_ref": { "$ref": "#/definitions/nullableOrderRef" },
+        "operation_ref": { "$ref": "#/definitions/nullableOperationRef" },
+        "settlement_ref": { "$ref": "#/definitions/nullableSettlementRef" },
+        "reason_code": {
+          "type": ["string", "null"],
+          "pattern": "^[a-z0-9]+(?:[._-][a-z0-9]+)*$",
+          "maxLength": 80
+        },
+        "from_state": { "type": ["string", "null"], "pattern": "^[a-z][a-z0-9_]{0,47}$" },
+        "to_state": { "type": ["string", "null"], "pattern": "^[a-z][a-z0-9_]{0,47}$" },
+        "currency": { "type": ["string", "null"], "pattern": "^[A-Z]{3}$" },
+        "amount_minor": { "type": ["integer", "null"], "minimum": 0, "maximum": 1000000000000 },
+        "receipt_digest": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" },
+        "simulated_side_effect_executed": { "type": "boolean" },
+        "real_side_effect_executed": { "const": false }
+      }
+    },
+    "occurred_at": { "$ref": "#/definitions/dateTime" },
+    "sandbox_truth": { "$ref": "#/definitions/sandboxTruth" },
+    "data_boundary": { "$ref": "#/definitions/dataBoundary" }
+  },
+  "definitions": {
+    "eventRef": {
+      "type": "string",
+      "pattern": "^tv_event_[A-Za-z0-9_-]{16,96}$",
+      "maxLength": 120
+    },
+    "aggregateRef": {
+      "type": "string",
+      "pattern": "^tv_(?:session|package|order|operation|settlement)_[A-Za-z0-9_-]{16,96}$",
+      "maxLength": 120
+    },
+    "nullableOfferRef": {
+      "type": ["string", "null"],
+      "pattern": "^tv_offer_[A-Za-z0-9_-]{16,96}$",
+      "maxLength": 120
+    },
+    "nullableOrderRef": {
+      "type": ["string", "null"],
+      "pattern": "^tv_order_[A-Za-z0-9_-]{16,96}$",
+      "maxLength": 120
+    },
+    "nullableOperationRef": {
+      "type": ["string", "null"],
+      "pattern": "^tv_operation_[A-Za-z0-9_-]{16,96}$",
+      "maxLength": 120
+    },
+    "nullableSettlementRef": {
+      "type": ["string", "null"],
+      "pattern": "^tv_settlement_[A-Za-z0-9_-]{16,96}$",
+      "maxLength": 120
+    },
+    "digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "dateTime": { "type": "string", "format": "date-time", "pattern": "Z$" },
+    "sandboxTruth": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["simulated_inventory", "real_supplier_request", "real_inventory_hold", "real_charge", "real_booking", "real_policy_issuance", "real_settlement"],
+      "properties": {
+        "simulated_inventory": { "const": true },
+        "real_supplier_request": { "const": false },
+        "real_inventory_hold": { "const": false },
+        "real_charge": { "const": false },
+        "real_booking": { "const": false },
+        "real_policy_issuance": { "const": false },
+        "real_settlement": { "const": false }
+      }
+    },
+    "dataBoundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["raw_supplier_reference_exposed", "raw_payment_data_exposed", "medical_data_exposed"],
+      "properties": {
+        "raw_supplier_reference_exposed": { "const": false },
+        "raw_payment_data_exposed": { "const": false },
+        "medical_data_exposed": { "const": false }
+      }
+    }
+  }
+}

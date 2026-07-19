@@ -111,6 +111,7 @@ class Tra_Vel_V2_Insurance_Quote_Controller extends WP_REST_Controller {
 		$plans = array_map( array( $this, 'prepare_plan' ), $plans );
 		$recommended = $plans ? $plans[0]['id'] : null;
 		$requires_assessment = $query['medical_condition'] || $query['pregnancy'];
+		$regulated_sale_ready = 'live' === $data['data_mode'] && true === ( isset( $data['regulated_sale_ready'] ) ? $data['regulated_sale_ready'] : false );
 		$disclaimer = 'live' === $data['data_mode']
 			? 'Supplier prices are preliminary until declarations, underwriting and policy documents are accepted.'
 			: 'Fictional demo plans only. No insurer, valid premium, coverage, policy or purchasing option is connected.';
@@ -120,6 +121,7 @@ class Tra_Vel_V2_Insurance_Quote_Controller extends WP_REST_Controller {
 					'contract_version' => $data['contract_version'], 'data_mode' => $data['data_mode'], 'generated_at' => $resolved['runtime']['generated_at'],
 					'cache_state' => $resolved['runtime']['cache_state'], 'cache_ttl' => $resolved['runtime']['cache_ttl'], 'result_count' => count( $plans ),
 					'disclaimer' => $disclaimer, 'policy_wording_controls' => true, 'medical_assessment_required' => $requires_assessment,
+					'regulated_sale_ready' => $regulated_sale_ready,
 				),
 				'query' => $query,
 				'provider_status' => $data['provider_status'],
@@ -134,10 +136,11 @@ class Tra_Vel_V2_Insurance_Quote_Controller extends WP_REST_Controller {
 		);
 		$response->header( 'Cache-Control', $contains_sensitive_flags ? 'private, no-store' : sprintf( 'public, max-age=%d, stale-while-revalidate=300', (int) $resolved['runtime']['cache_ttl'] ) );
 		$response->header( 'X-Tra-Vel-Data-Mode', $data['data_mode'] );
+		$response->header( 'X-Tra-Vel-Regulated-Sale-Ready', $regulated_sale_ready ? '1' : '0' );
 		$response->header( 'X-Tra-Vel-Cache', $resolved['runtime']['cache_state'] );
 		$response->add_link( 'self', rest_url( $this->namespace . '/' . $this->rest_base ) );
 		$response->add_link( 'https://tra-vel.co.il/rels/map', home_url( '/travel-map/?layer=insurance' ) );
-		$response->add_link( 'https://tra-vel.co.il/rels/guide', home_url( '/travel-insurance-europe/' ) );
+		$response->add_link( 'https://tra-vel.co.il/rels/guide', home_url( '/travel-insurance/' ) );
 		return $response;
 	}
 

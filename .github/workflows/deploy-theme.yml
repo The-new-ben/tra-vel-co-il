@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - "theme/tra-vel-v2/**"
+      - "content/seo/**"
       - "plugin/tra-vel-deploy-gateway/**"
       - "scripts/ci/**"
       - "scripts/deploy/**"
@@ -55,29 +56,47 @@ jobs:
           set -euo pipefail
           node scripts/ci/validate-theme.mjs
           node scripts/ci/validate-theme-runtime.mjs
+          node scripts/ci/validate-public-copy.mjs
           node scripts/ci/validate-discovery-contract.mjs
           node scripts/ci/validate-flight-search-contract.mjs
           node scripts/ci/validate-hotel-search-contract.mjs
           node scripts/ci/validate-insurance-quote-contract.mjs
           node scripts/ci/validate-trip-package-contract.mjs
           node scripts/ci/validate-traveler-workspace-contract.mjs
+          node scripts/ci/validate-assisted-proposal-theme.mjs
           node scripts/ci/validate-supplier-handoff-contract.mjs
           node scripts/ci/validate-quote-case-theme.mjs
           node scripts/ci/validate-guide-packets.mjs
+          node scripts/ci/validate-content-opportunity-registry.mjs
+          node scripts/ci/validate-seo-opportunity-provisioning.mjs
+          node scripts/ci/validate-assisted-proposal-release-contract.mjs
+          node scripts/ci/validate-commercial-intent-contract.mjs
           node scripts/ci/validate-theme-deploy-contract.mjs
+          python3 scripts/ci/verify_theme_preflight.py --requirements theme/tra-vel-v2/release-requirements.json --validate-only
           php scripts/ci/validate-supplier-runtime.php
           php scripts/ci/validate-flight-search-runtime.php
           php scripts/ci/validate-hotel-search-runtime.php
           php scripts/ci/validate-insurance-quote-runtime.php
           php scripts/ci/validate-trip-package-runtime.php
+          php scripts/ci/validate-commercial-provenance-runtime.php
+          php scripts/ci/validate-guide-publication-runtime.php
+          php scripts/ci/validate-seo-opportunity-runtime.php
+          php scripts/ci/validate-commercial-intent-runtime.php
           php scripts/ci/validate-traveler-workspace-runtime.php
           php scripts/ci/validate-supplier-handoff-runtime.php
           php scripts/ci/validate-home-hero-queue-runtime.php
           php scripts/ci/validate-open-meteo-adapter.php
+          bash scripts/deploy/smoke-test.sh --validate-manifest
           node --check theme/tra-vel-v2/assets/js/app.js
           node --check theme/tra-vel-v2/assets/js/globe-3d.js
           while IFS= read -r -d '' file; do php -l "$file"; done < <(find theme/tra-vel-v2 plugin/tra-vel-deploy-gateway -type f -name '*.php' -print0)
           for file in scripts/ci/*.sh scripts/deploy/*.sh; do bash -n "$file"; done
+
+      - name: Validate SEO provisioning contract
+        shell: pwsh
+        run: |
+          [scriptblock]::Create((Get-Content -Raw scripts/wp/provision-seo-registry-pages.ps1)) | Out-Null
+          & scripts/wp/provision-seo-registry-pages.ps1 -ContractTest
 
       - name: Build deployment artifact
         run: bash scripts/ci/build-theme.sh
@@ -93,7 +112,7 @@ jobs:
   deploy:
     needs: package
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     if: ${{ github.event_name == 'workflow_dispatch' || vars.AUTO_DEPLOY_PRODUCTION == 'true' }}
     environment:
       name: production
@@ -106,8 +125,8 @@ jobs:
       DEPLOY_ENABLED: ${{ vars.DEPLOY_ENABLED }}
       WP_SITE_URL: ${{ vars.WP_SITE_URL }}
       SITE_URL: ${{ vars.WP_SITE_URL }}
-      SMOKE_PATHS: ${{ vars.SMOKE_PATHS }}
       EXPECT_THEME_MARKER: ${{ vars.EXPECT_THEME_MARKER }}
+      THEME_RELEASE_REQUIREMENTS_FILE: theme/tra-vel-v2/release-requirements.json
       THEME_DEPLOY_RESULT_FILE: theme-deploy-result.json
       THEME_DEPLOY_PRESTATE_FILE: theme-deploy-prestate.json
       REQUIRE_EXISTING_THEME: true
@@ -134,21 +153,41 @@ jobs:
           version = str(data.get("version", ""))
           sha256 = str(data.get("sha256", ""))
           archive = str(data.get("archive", ""))
+          requirements = str(data.get("release_requirements", ""))
+          requirements_sha256 = str(data.get("release_requirements_sha256", ""))
+          seo_registry = str(data.get("seo_registry", ""))
+          seo_registry_sha256 = str(data.get("seo_registry_sha256", ""))
           if not re.fullmatch(r"\d+\.\d+\.\d+(?:[-+][A-Za-z0-9.-]+)?", version):
               raise SystemExit("Manifest contains an invalid version.")
           if not re.fullmatch(r"[a-f0-9]{64}", sha256):
               raise SystemExit("Manifest contains an invalid SHA-256 digest.")
           if not re.fullmatch(r"tra-vel-v2-[A-Za-z0-9.+-]+-[a-f0-9]{7}\.zip", archive):
               raise SystemExit("Manifest contains an invalid archive name.")
-          print(f"{archive}|{version}|{sha256}")
+          if requirements != "tra-vel-v2/release-requirements.json":
+              raise SystemExit("Manifest contains an unexpected release-requirements path.")
+          if not re.fullmatch(r"[a-f0-9]{64}", requirements_sha256):
+              raise SystemExit("Manifest contains an invalid release-requirements digest.")
+          if seo_registry != "tra-vel-v2/content/seo/content-opportunity-registry.json":
+              raise SystemExit("Manifest contains an unexpected SEO registry path.")
+          if not re.fullmatch(r"[a-f0-9]{64}", seo_registry_sha256):
+              raise SystemExit("Manifest contains an invalid SEO registry digest.")
+          print(f"{archive}|{version}|{sha256}|{requirements}|{requirements_sha256}|{seo_registry}|{seo_registry_sha256}")
           PY
           )"
-          IFS='|' read -r manifest_archive manifest_version expected <<< "$manifest_identity"
+          IFS='|' read -r manifest_archive manifest_version expected manifest_requirements expected_requirements_sha256 manifest_seo_registry expected_seo_registry_sha256 <<< "$manifest_identity"
           archive="dist/${manifest_archive}"
           test -f "$archive"
           unzip -t "$archive"
           actual="$(sha256sum "$archive" | cut -d' ' -f1)"
           [[ "$expected" == "$actual" ]]
+          actual_requirements_sha256="$(unzip -p "$archive" "$manifest_requirements" | sha256sum | cut -d' ' -f1)"
+          [[ "$expected_requirements_sha256" == "$actual_requirements_sha256" ]] || { echo "Packaged release requirements do not match the manifest." >&2; exit 1; }
+          source_requirements_sha256="$(sha256sum theme/tra-vel-v2/release-requirements.json | cut -d' ' -f1)"
+          [[ "$expected_requirements_sha256" == "$source_requirements_sha256" ]] || { echo "Packaged release requirements do not match the checked-out source." >&2; exit 1; }
+          actual_seo_registry_sha256="$(unzip -p "$archive" "$manifest_seo_registry" | sha256sum | cut -d' ' -f1)"
+          [[ "$expected_seo_registry_sha256" == "$actual_seo_registry_sha256" ]] || { echo "Packaged SEO registry does not match the manifest." >&2; exit 1; }
+          source_seo_registry_sha256="$(sha256sum content/seo/content-opportunity-registry.json | cut -d' ' -f1)"
+          [[ "$expected_seo_registry_sha256" == "$source_seo_registry_sha256" ]] || { echo "Packaged SEO registry does not match the checked-out source." >&2; exit 1; }
           echo "Verified packaged theme ${manifest_version} at ${expected}."
 
       - name: Report dry run
@@ -171,6 +210,11 @@ jobs:
           [[ "$WP_SITE_URL" =~ ^https:// ]] || { echo "WP_SITE_URL must use HTTPS." >&2; exit 1; }
           [[ -n "$WP_USERNAME" && -n "$WP_APP_PASSWORD" ]] || { echo "WordPress deployment secrets are missing." >&2; exit 1; }
           [[ "$ACTIVATE_THEME" == "false" ]] || { echo "Protected automatic-recovery deployments are upload-only because the current rollback endpoint cannot restore a different previously active theme." >&2; exit 1; }
+
+      - name: Verify live dependencies and missing-route semantics
+        if: ${{ env.DRY_RUN != 'true' }}
+        shell: bash
+        run: python3 scripts/ci/verify_theme_preflight.py --requirements "$THEME_RELEASE_REQUIREMENTS_FILE" --site-url "$WP_SITE_URL"
 
       - name: Upload isolated theme through WordPress REST
         id: deploy_theme
@@ -223,9 +267,11 @@ jobs:
         run: |
           set -uo pipefail
           verified=false
+          identity_verified=false
+          verification_budget_seconds=360
+          verification_started=$SECONDS
           if bash scripts/deploy/get-theme-status.sh theme-status.json \
-            && python3 - <<'PY' \
-            && bash scripts/deploy/smoke-test.sh "$WP_SITE_URL"
+            && python3 - <<'PY'
           import json
           import os
           import re
@@ -243,6 +289,7 @@ jobs:
           require(bool(re.fullmatch(r"\d+\.\d+\.\d+(?:[-+][A-Za-z0-9.-]+)?", str(manifest.get("version", "")))), "Manifest version is invalid.")
           require(bool(re.fullmatch(r"[a-f0-9]{64}", str(manifest.get("sha256", "")))), "Manifest checksum is invalid.")
           require(prestate.get("theme") == manifest["theme"], "Pre-deployment theme identity mismatch.")
+          require(bool(re.fullmatch(r"\d+\.\d+\.\d+(?:[-+][A-Za-z0-9.-]+)?", str(prestate.get("gateway_version", "")))), "Pre-deployment gateway version is invalid.")
           require(prestate.get("installed") is True, "Pre-deployment theme was not installed.")
           require(bool(re.fullmatch(r"\d+\.\d+\.\d+(?:[-+][A-Za-z0-9.-]+)?", str(prestate.get("installed_version", "")))), "Pre-deployment version is invalid.")
           require(bool(re.fullmatch(r"[a-f0-9]{64}", str(prestate.get("installed_fingerprint", "")))), "Pre-deployment content fingerprint is invalid.")
@@ -253,6 +300,7 @@ jobs:
           require(deployed.get("sha256") == manifest["sha256"], "Deployment receipt checksum mismatch.")
           require(bool(re.fullmatch(r"[a-f0-9]{64}", str(deployed.get("content_sha256", "")))), "Deployment receipt content fingerprint is invalid.")
           require(status.get("theme") == manifest["theme"], "Remote theme identity mismatch.")
+          require(status.get("gateway_version") == prestate["gateway_version"], "Deployment gateway identity changed during the release.")
           require(status.get("installed") is True, "Remote theme is not installed.")
           require(status.get("installed_version") == manifest["version"], "Remote installed version mismatch.")
           require(status.get("installed_fingerprint") == deployed["content_sha256"], "Remote installed content fingerprint mismatch.")
@@ -288,7 +336,22 @@ jobs:
           print(f"Verified deployed theme {manifest['version']} at {manifest['sha256']}; backup={backup or 'none'}")
           PY
           then
-            verified=true
+            identity_verified=true
+          fi
+
+          verification_elapsed=$((SECONDS - verification_started))
+          verification_remaining=$((verification_budget_seconds - verification_elapsed))
+          if [[ "$identity_verified" == "true" && "$verification_remaining" -gt 0 ]]; then
+            expected_theme_version="$(python3 -c 'import json; print(json.load(open("dist/manifest.json", encoding="utf-8"))["version"])')"
+            if timeout --signal=TERM --kill-after=5s "${verification_remaining}s" \
+              env EXPECTED_THEME_VERSION="$expected_theme_version" \
+              bash scripts/deploy/smoke-test.sh "$WP_SITE_URL"; then
+              verified=true
+            else
+              echo "Post-deploy route verification failed or exceeded the remaining ${verification_remaining}s verification budget; starting recovery checks." >&2
+            fi
+          elif [[ "$identity_verified" == "true" ]]; then
+            echo "Post-deploy identity verification exhausted the ${verification_budget_seconds}s verification budget; starting recovery checks without route smoke." >&2
           fi
 
           if [[ "$verified" != "true" ]]; then
@@ -457,7 +520,10 @@ jobs:
                 echo "The rollback endpoint returned success, but the restored release identity did not match pre-deployment state." >&2
                 exit 1
               fi
-              if ! bash scripts/deploy/smoke-test.sh "$WP_SITE_URL"; then
+              restored_theme_version="$(python3 -c 'import json; print(json.load(open("theme-deploy-prestate.json", encoding="utf-8"))["installed_version"])')"
+              if ! timeout --signal=TERM --kill-after=5s 360s \
+                env ALLOW_LEGACY_RELEASE_MARKER=true EXPECTED_THEME_VERSION="$restored_theme_version" \
+                bash scripts/deploy/smoke-test.sh "$WP_SITE_URL"; then
                 echo "The exact backup was restored and identity-verified, but the post-rollback smoke test still failed." >&2
                 exit 1
               fi

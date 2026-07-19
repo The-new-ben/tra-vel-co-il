@@ -1,0 +1,470 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://tra-vel.co.il/schemas/private/service-breadth-registry-v1.1.0.json",
+  "title": "Private Tra-Vel 360 service breadth registry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "environment",
+    "data_mode",
+    "registry_ref",
+    "registry_revision",
+    "family_count",
+    "scenario_count",
+    "families",
+    "scenarios",
+    "truth_boundary",
+    "fixture_digest"
+  ],
+  "properties": {
+    "contract_version": { "const": "1.1.0" },
+    "environment": { "const": "sandbox" },
+    "data_mode": { "const": "synthetic_demo" },
+    "registry_ref": { "$ref": "#/definitions/registryRef" },
+    "registry_revision": { "const": 1 },
+    "family_count": { "const": 17 },
+    "scenario_count": { "const": 34 },
+    "families": {
+      "type": "array",
+      "minItems": 17,
+      "maxItems": 17,
+      "uniqueItems": true,
+      "items": { "$ref": "#/definitions/familyProfile" }
+    },
+    "scenarios": {
+      "type": "array",
+      "minItems": 34,
+      "maxItems": 34,
+      "uniqueItems": true,
+      "items": { "$ref": "#/definitions/scenario" }
+    },
+    "truth_boundary": { "$ref": "#/definitions/truthBoundary" },
+    "fixture_digest": { "$ref": "#/definitions/digest" }
+  },
+  "definitions": {
+    "code": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{2,95}$"
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "registryRef": { "type": "string", "pattern": "^rg_syn_[a-f0-9]{32}$" },
+    "familyRef": { "type": "string", "pattern": "^fm_syn_[a-f0-9]{32}$" },
+    "scenarioRef": { "type": "string", "pattern": "^sc_syn_[a-f0-9]{32}$" },
+    "routeRef": { "type": "string", "pattern": "^rt_syn_[a-f0-9]{32}$" },
+    "partitionScopeRef": { "type": "string", "pattern": "^sp_syn_[a-f0-9]{32}$" },
+    "partyRef": { "type": "string", "pattern": "^pt_syn_[a-f0-9]{32}$" },
+    "serviceRef": { "type": "string", "pattern": "^sv_syn_[a-f0-9]{32}$" },
+    "serviceFamily": {
+      "enum": [
+        "air_transport",
+        "lodging",
+        "dynamic_package",
+        "organized_tour",
+        "cruise",
+        "ferry",
+        "rail",
+        "coach_bus",
+        "ground_transfer",
+        "car_rental",
+        "airport_ancillary",
+        "experience",
+        "dining",
+        "travel_protection",
+        "connectivity",
+        "equipment",
+        "entry_document_assistance"
+      ]
+    },
+    "canonicalVertical": {
+      "enum": [
+        "flight",
+        "accommodation",
+        "package",
+        "transfer",
+        "activity",
+        "dining",
+        "insurance",
+        "connectivity",
+        "equipment"
+      ]
+    },
+    "codeList": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/definitions/code" }
+    },
+    "crosswalk": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "canonical_taxonomy",
+        "mapping_kind",
+        "operation_routing",
+        "orchestration_adapter",
+        "equivalence_claimed",
+        "subtype_preserved"
+      ],
+      "properties": {
+        "canonical_taxonomy": { "const": "commerce_core_v1" },
+        "mapping_kind": { "const": "orchestration_bucket_only" },
+        "operation_routing": { "const": "dedicated_service_family_adapter" },
+        "orchestration_adapter": { "$ref": "#/definitions/code" },
+        "equivalence_claimed": { "const": false },
+        "subtype_preserved": { "const": true }
+      }
+    },
+    "lifecycle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "search",
+        "revalidate",
+        "hold_reserve",
+        "confirm",
+        "fulfill",
+        "change",
+        "cancel",
+        "refund",
+        "incident",
+        "reconciliation",
+        "settlement",
+        "post_service_evidence"
+      ],
+      "properties": {
+        "search": { "$ref": "#/definitions/applicability" },
+        "revalidate": { "$ref": "#/definitions/applicability" },
+        "hold_reserve": { "$ref": "#/definitions/applicability" },
+        "confirm": { "$ref": "#/definitions/applicability" },
+        "fulfill": { "$ref": "#/definitions/applicability" },
+        "change": { "$ref": "#/definitions/applicability" },
+        "cancel": { "$ref": "#/definitions/applicability" },
+        "refund": { "$ref": "#/definitions/applicability" },
+        "incident": { "$ref": "#/definitions/applicability" },
+        "reconciliation": { "$ref": "#/definitions/applicability" },
+        "settlement": { "$ref": "#/definitions/applicability" },
+        "post_service_evidence": { "$ref": "#/definitions/applicability" }
+      }
+    },
+    "applicability": {
+      "enum": ["required", "conditional", "not_applicable"]
+    },
+    "israelLocal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["applicable", "scope", "required_fact_codes"],
+      "properties": {
+        "applicable": { "const": true },
+        "scope": {
+          "enum": [
+            "domestic",
+            "domestic_and_outbound",
+            "outbound_gateway",
+            "cross_border_gateway",
+            "nationwide",
+            "destination_and_domestic"
+          ]
+        },
+        "required_fact_codes": {
+          "type": "array",
+          "minItems": 3,
+          "uniqueItems": true,
+          "items": { "$ref": "#/definitions/code" }
+        }
+      }
+    },
+    "map": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "overview_zoom",
+        "decision_zoom",
+        "operational_zoom",
+        "cluster_until_zoom",
+        "geometry",
+        "resolution_path",
+        "detail_surface",
+        "operational_anchor_codes",
+        "selection_to_plan_required",
+        "viewport_padding_required",
+        "rtl_mobile_safe_area_required",
+        "source_freshness_required",
+        "reduced_motion_alternative_required"
+      ],
+      "properties": {
+        "overview_zoom": { "type": "integer", "minimum": 1, "maximum": 20 },
+        "decision_zoom": { "type": "integer", "minimum": 2, "maximum": 21 },
+        "operational_zoom": { "type": "integer", "minimum": 3, "maximum": 22 },
+        "cluster_until_zoom": { "type": "integer", "minimum": 1, "maximum": 20 },
+        "geometry": { "enum": ["route", "point", "multi_point", "corridor", "polygon", "terminal", "venue"] },
+        "resolution_path": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "uniqueItems": true,
+          "items": { "enum": ["overview", "decision", "operational"] }
+        },
+        "detail_surface": { "const": "attached_non_occluding_context_panel" },
+        "operational_anchor_codes": {
+          "type": "array",
+          "minItems": 3,
+          "uniqueItems": true,
+          "items": { "$ref": "#/definitions/code" }
+        },
+        "selection_to_plan_required": { "const": true },
+        "viewport_padding_required": { "const": true },
+        "rtl_mobile_safe_area_required": { "const": true },
+        "source_freshness_required": { "const": true },
+        "reduced_motion_alternative_required": { "const": true }
+      }
+    },
+    "familyProfile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "family_ref",
+        "service_family",
+        "canonical_vertical",
+        "family_subtypes",
+        "crosswalk",
+        "lifecycle",
+        "critical_facts",
+        "critical_deadlines",
+        "required_handoffs",
+        "israel_local",
+        "map"
+      ],
+      "properties": {
+        "family_ref": { "$ref": "#/definitions/familyRef" },
+        "service_family": { "$ref": "#/definitions/serviceFamily" },
+        "canonical_vertical": { "$ref": "#/definitions/canonicalVertical" },
+        "family_subtypes": { "$ref": "#/definitions/codeList" },
+        "crosswalk": { "$ref": "#/definitions/crosswalk" },
+        "lifecycle": { "$ref": "#/definitions/lifecycle" },
+        "critical_facts": {
+          "type": "array",
+          "minItems": 5,
+          "uniqueItems": true,
+          "items": { "$ref": "#/definitions/code" }
+        },
+        "critical_deadlines": {
+          "type": "array",
+          "minItems": 3,
+          "uniqueItems": true,
+          "items": { "$ref": "#/definitions/code" }
+        },
+        "required_handoffs": {
+          "type": "array",
+          "minItems": 3,
+          "uniqueItems": true,
+          "items": { "$ref": "#/definitions/code" }
+        },
+        "israel_local": { "$ref": "#/definitions/israelLocal" },
+        "map": { "$ref": "#/definitions/map" }
+      }
+    },
+    "afterHours": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "required",
+        "route_ref",
+        "fallback_route_ref",
+        "coverage_state",
+        "timezone",
+        "deadline_code",
+        "primary_handoff_code",
+        "acknowledgement_sla_seconds",
+        "customer_update_sla_seconds",
+        "fallback_after_seconds",
+        "escalation_tier",
+        "safety_check_required",
+        "evidence_required",
+        "escalation_state",
+        "supplier_dispatched"
+      ],
+      "properties": {
+        "required": { "type": "boolean" },
+        "route_ref": { "$ref": "#/definitions/routeRef" },
+        "fallback_route_ref": { "$ref": "#/definitions/routeRef" },
+        "coverage_state": { "enum": ["within_declared_window", "outside_declared_window"] },
+        "timezone": { "const": "Asia/Jerusalem" },
+        "deadline_code": { "$ref": "#/definitions/code" },
+        "primary_handoff_code": { "$ref": "#/definitions/code" },
+        "acknowledgement_sla_seconds": { "type": "integer", "minimum": 60, "maximum": 1800 },
+        "customer_update_sla_seconds": { "type": "integer", "minimum": 300, "maximum": 7200 },
+        "fallback_after_seconds": { "type": "integer", "minimum": 120, "maximum": 3600 },
+        "escalation_tier": { "type": "integer", "minimum": 0, "maximum": 3 },
+        "safety_check_required": { "type": "boolean" },
+        "evidence_required": { "const": true },
+        "escalation_state": { "enum": ["standby", "planned"] },
+        "supplier_dispatched": { "const": false }
+      }
+    },
+    "preservation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "partition_scope_ref",
+        "party_scope_refs",
+        "affected_party_refs",
+        "unaffected_party_refs",
+        "service_scope_refs",
+        "affected_service_refs",
+        "preserved_service_refs",
+        "preserve_unaffected",
+        "partition_complete"
+      ],
+      "properties": {
+        "partition_scope_ref": { "$ref": "#/definitions/partitionScopeRef" },
+        "party_scope_refs": { "$ref": "#/definitions/nonEmptyPartyRefList" },
+        "affected_party_refs": { "$ref": "#/definitions/partyRefList" },
+        "unaffected_party_refs": { "$ref": "#/definitions/partyRefList" },
+        "service_scope_refs": { "$ref": "#/definitions/nonEmptyServiceRefList" },
+        "affected_service_refs": { "$ref": "#/definitions/serviceRefList" },
+        "preserved_service_refs": { "$ref": "#/definitions/serviceRefList" },
+        "preserve_unaffected": { "const": true },
+        "partition_complete": { "const": true }
+      }
+    },
+    "partyRefList": {
+      "type": "array",
+      "minItems": 0,
+      "uniqueItems": true,
+      "items": { "$ref": "#/definitions/partyRef" }
+    },
+    "nonEmptyPartyRefList": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/definitions/partyRef" }
+    },
+    "serviceRefList": {
+      "type": "array",
+      "minItems": 0,
+      "uniqueItems": true,
+      "items": { "$ref": "#/definitions/serviceRef" }
+    },
+    "nonEmptyServiceRefList": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/definitions/serviceRef" }
+    },
+    "financialAxes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["payment", "refund", "settlement", "netting_prohibited", "independent_ledgers_required"],
+      "properties": {
+        "payment": { "enum": ["not_started", "existing_authorization_observed", "requires_separate_authorization", "uncertain"] },
+        "refund": { "enum": ["not_started", "quote_required", "request_planned", "existing_partial_observed", "existing_full_observed", "uncertain"] },
+        "settlement": { "enum": ["not_started", "accrual_review", "reconciliation_required", "disputed", "uncertain"] },
+        "netting_prohibited": { "const": true },
+        "independent_ledgers_required": { "const": true }
+      }
+    },
+    "scenarioBoundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "planning_only",
+        "public_serialization_allowed",
+        "supplier_dispatched",
+        "processor_called",
+        "order_created",
+        "payment_created",
+        "refund_created",
+        "settlement_created",
+        "raw_pii_stored",
+        "raw_secret_stored",
+        "raw_provider_payload_stored",
+        "real_commercial_claimed"
+      ],
+      "properties": {
+        "planning_only": { "const": true },
+        "public_serialization_allowed": { "const": false },
+        "supplier_dispatched": { "const": false },
+        "processor_called": { "const": false },
+        "order_created": { "const": false },
+        "payment_created": { "const": false },
+        "refund_created": { "const": false },
+        "settlement_created": { "const": false },
+        "raw_pii_stored": { "const": false },
+        "raw_secret_stored": { "const": false },
+        "raw_provider_payload_stored": { "const": false },
+        "real_commercial_claimed": { "const": false }
+      }
+    },
+    "scenario": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scenario_ref",
+        "scenario_number",
+        "scenario_slot",
+        "service_family",
+        "family_subtype",
+        "canonical_vertical",
+        "trigger",
+        "event_state",
+        "after_hours",
+        "preservation",
+        "expected_actions",
+        "required_deadline_code",
+        "required_handoff_code",
+        "financial_axes",
+        "expected_outcome",
+        "boundary"
+      ],
+      "properties": {
+        "scenario_ref": { "$ref": "#/definitions/scenarioRef" },
+        "scenario_number": { "type": "integer", "minimum": 1 },
+        "scenario_slot": { "enum": [1, 2] },
+        "service_family": { "$ref": "#/definitions/serviceFamily" },
+        "family_subtype": { "$ref": "#/definitions/code" },
+        "canonical_vertical": { "$ref": "#/definitions/canonicalVertical" },
+        "trigger": { "$ref": "#/definitions/code" },
+        "event_state": { "enum": ["current", "stale", "missed"] },
+        "after_hours": { "$ref": "#/definitions/afterHours" },
+        "preservation": { "$ref": "#/definitions/preservation" },
+        "expected_actions": {
+          "type": "array",
+          "minItems": 3,
+          "uniqueItems": true,
+          "items": { "$ref": "#/definitions/code" }
+        },
+        "required_deadline_code": { "$ref": "#/definitions/code" },
+        "required_handoff_code": { "$ref": "#/definitions/code" },
+        "financial_axes": { "$ref": "#/definitions/financialAxes" },
+        "expected_outcome": { "enum": ["evidence_required", "operator_review", "approval_required", "replan_required", "after_hours_escalation", "safety_escalation", "reconciliation_required"] },
+        "boundary": { "$ref": "#/definitions/scenarioBoundary" }
+      }
+    },
+    "truthBoundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "private_server_only",
+        "synthetic_fixture",
+        "live_availability_claimed",
+        "real_price_claimed",
+        "real_supplier_identity_stored",
+        "commercial_authority_granted",
+        "dispatch_allowed"
+      ],
+      "properties": {
+        "private_server_only": { "const": true },
+        "synthetic_fixture": { "const": true },
+        "live_availability_claimed": { "const": false },
+        "real_price_claimed": { "const": false },
+        "real_supplier_identity_stored": { "const": false },
+        "commercial_authority_granted": { "const": false },
+        "dispatch_allowed": { "const": false }
+      }
+    }
+  }
+}

@@ -1,0 +1,74 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://tra-vel.co.il/schemas/vip-capability-grant-v1.schema.json",
+  "title": "Tra-Vel stored capability-link grant projection",
+  "description": "A digest-only projection. A bearer capability value is never represented by this contract.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract_version", "capability_ref", "capability_digest", "trip_ref", "case_ref", "account_ref", "issue_reason", "channel", "allowed_scopes", "disclosure_classes", "one_time", "consumed_at", "issued_at", "expires_at", "revoked_at", "rotation_generation", "scanner_safe_initial_get", "session_exchange_required", "security", "data_boundary"],
+  "properties": {
+    "contract_version": { "const": "1.0.0" },
+    "capability_ref": { "$ref": "#/definitions/capabilityRef" },
+    "capability_digest": { "$ref": "#/definitions/digest" },
+    "trip_ref": { "$ref": "#/definitions/tripRef" },
+    "case_ref": { "$ref": "#/definitions/nullableCaseRef" },
+    "account_ref": { "$ref": "#/definitions/nullableAccountRef" },
+    "issue_reason": { "enum": ["trip_access", "incident_intake", "case_progress", "lost_phone_recovery", "operator_contact"] },
+    "channel": { "enum": ["email", "sms", "whatsapp", "manual_recovery"] },
+    "allowed_scopes": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "enum": ["trip_view_redacted", "incident_report", "ordinary_evidence_add", "safe_contact_update", "case_progress_view", "operator_contact_approve", "decision_view"] }
+    },
+    "disclosure_classes": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "enum": ["public_emergency_guidance", "trip_redacted", "case_progress", "ordinary_evidence_metadata", "safe_contact_location"] }
+    },
+    "one_time": { "const": true },
+    "consumed_at": { "$ref": "#/definitions/nullableDateTime" },
+    "issued_at": { "$ref": "#/definitions/dateTime" },
+    "expires_at": { "$ref": "#/definitions/dateTime" },
+    "revoked_at": { "$ref": "#/definitions/nullableDateTime" },
+    "rotation_generation": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+    "scanner_safe_initial_get": { "const": true },
+    "session_exchange_required": { "const": true },
+    "security": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["http_only", "secure", "same_site", "referrer_policy", "third_party_scripts", "indexable"],
+      "properties": {
+        "http_only": { "const": true },
+        "secure": { "const": true },
+        "same_site": { "const": "Strict" },
+        "referrer_policy": { "const": "no-referrer" },
+        "third_party_scripts": { "const": false },
+        "indexable": { "const": false }
+      }
+    },
+    "data_boundary": { "$ref": "#/definitions/dataBoundary" }
+  },
+  "definitions": {
+    "capabilityRef": { "type": "string", "pattern": "^tv_capability_[A-Za-z0-9_-]{16,96}$" },
+    "tripRef": { "type": "string", "pattern": "^tv_trip_[A-Za-z0-9_-]{16,96}$" },
+    "nullableCaseRef": { "type": ["string", "null"], "pattern": "^tv_case_[A-Za-z0-9_-]{16,96}$" },
+    "nullableAccountRef": { "type": ["string", "null"], "pattern": "^tv_account_[A-Za-z0-9_-]{16,96}$" },
+    "digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "dateTime": { "type": "string", "format": "date-time", "pattern": "Z$" },
+    "nullableDateTime": { "type": ["string", "null"], "format": "date-time", "pattern": "Z$" },
+    "dataBoundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["raw_identity_data_exposed", "raw_payment_data_exposed", "raw_medical_data_exposed", "raw_provider_payload_exposed", "bearer_secret_exposed"],
+      "properties": {
+        "raw_identity_data_exposed": { "const": false },
+        "raw_payment_data_exposed": { "const": false },
+        "raw_medical_data_exposed": { "const": false },
+        "raw_provider_payload_exposed": { "const": false },
+        "bearer_secret_exposed": { "const": false }
+      }
+    }
+  }
+}

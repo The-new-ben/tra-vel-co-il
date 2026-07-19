@@ -38,6 +38,7 @@ const publicCaseFields = [
   'source',
   'summary',
   'next_action',
+  'resume_available',
   'events',
   'created_at',
   'updated_at',
@@ -51,6 +52,7 @@ const publicEventDataFields = [
   'previous_status',
   'channel',
   'provider',
+  'target_digest',
   'expires_at',
   'dispatched',
 ];
@@ -140,6 +142,7 @@ assertRequired(quoteCase, [
   'source',
   'summary',
   'next_action',
+  'resume_available',
   'events',
   'created_at',
   'updated_at',
@@ -148,13 +151,14 @@ assertRequired(quoteCase, [
 if (!sameMembers(Object.keys(quoteCase.properties || {}), publicCaseFields)) {
   fail(`QuoteCase properties must match the public wrapper exactly: ${publicCaseFields.join(', ')}.`);
 }
-if (quoteCase.properties?.contract_version?.const !== '1.0.0') fail('QuoteCase contract version must remain 1.0.0.');
+if (quoteCase.properties?.contract_version?.const !== '1.1.0' || !String(quoteCase.$id || '').endsWith('/schema/quote-case#1.1.0')) fail('QuoteCase resume contract must be versioned as 1.1.0.');
 if (quoteCase.properties?.case_id?.format !== 'uuid') fail('QuoteCase.case_id must be a UUID.');
 if (quoteCase.properties?.reference?.pattern !== '^TV-[A-Z0-9]{8}$') fail('QuoteCase.reference must be an opaque TV-XXXXXXXX reference.');
 if (quoteCase.properties?.version?.minimum !== 1) fail('QuoteCase.version must start at one for optimistic concurrency.');
 assertStatusEnum(quoteCase.properties?.status?.enum, 'QuoteCase.status');
 if (quoteCase.properties?.status_label?.type !== 'string' || quoteCase.properties?.status_label?.minLength !== 1) fail('QuoteCase.status_label must be a non-empty traveler-facing label.');
 if (!sameMembers(quoteCase.properties?.ownership?.enum, ['account', 'private_browser_owner'])) fail('QuoteCase.ownership must distinguish exact account and private-browser ownership.');
+if (quoteCase.properties?.resume_available?.type !== 'boolean') fail('QuoteCase.resume_available must be an explicit boolean.');
 
 const source = quoteCase.properties?.source;
 assertClosedObject(source, 'QuoteCase.source');
@@ -190,7 +194,7 @@ assertClosedObject(nextAction, 'QuoteCase.next_action');
 assertRequired(nextAction, ['actor', 'code', 'label'], 'QuoteCase.next_action');
 if (!sameMembers(nextAction?.properties?.actor?.enum, ['tra-vel', 'traveler', 'none'])) fail('QuoteCase.next_action.actor must make ownership explicit.');
 if (nextAction?.properties?.code?.pattern !== '^[a-z]+(?:_[a-z]+)*$') fail('QuoteCase.next_action.code must be a canonical machine-readable action.');
-if (quoteCase.properties?.events?.type !== 'array' || quoteCase.properties?.events?.items?.$ref !== quoteEvent.$id || !String(quoteEvent.$id || '').includes('/wp-json/tra-vel-agent/v1/schema/quote-case-event#1.0.0')) {
+if (quoteCase.properties?.events?.type !== 'array' || quoteCase.properties?.events?.items?.$ref !== quoteEvent.$id || !String(quoteEvent.$id || '').includes('/wp-json/tra-vel-agent/v1/schema/quote-case-event#1.1.0')) {
   fail('QuoteCase.events must reference the exact resolvable QuoteCaseEvent schema id.');
 }
 if (quoteCase.properties?.events?.minItems !== 1) fail('QuoteCase.events must include the creation event.');
@@ -213,7 +217,7 @@ assertRequired(quoteEvent, [
   'data',
   'occurred_at',
 ], 'QuoteCaseEvent');
-if (quoteEvent.properties?.contract_version?.const !== '1.0.0') fail('QuoteCaseEvent contract version must remain 1.0.0.');
+if (quoteEvent.properties?.contract_version?.const !== '1.1.0') fail('QuoteCaseEvent contract version must be 1.1.0.');
 if (quoteEvent.properties?.event_id?.format !== 'uuid') fail('QuoteCaseEvent.event_id must be a UUID.');
 if (quoteEvent.properties?.sequence?.minimum !== 1) fail('QuoteCaseEvent.sequence must be one-based.');
 if (quoteEvent.properties?.type?.pattern !== '^[a-z]+(?:[._][a-z]+)+$') fail('QuoteCaseEvent.type must use a canonical namespaced event name.');
@@ -230,9 +234,10 @@ assertClosedObject(eventData, 'QuoteCaseEvent.data');
 if (!sameMembers(Object.keys(eventData?.properties || {}), publicEventDataFields)) {
   fail(`QuoteCaseEvent.data must expose only the bounded event payload allowlist: ${publicEventDataFields.join(', ')}.`);
 }
-if (eventData?.maxProperties !== 4) fail('QuoteCaseEvent.data must remain bounded to four allowlisted properties.');
+if (eventData?.maxProperties !== 5) fail('QuoteCaseEvent.data must remain bounded to five allowlisted properties.');
 if (eventData?.properties?.service_mode?.const !== 'assisted_quote') fail('QuoteCaseEvent.data.service_mode must not imply a bookable service.');
 if (eventData?.properties?.channel?.const !== 'whatsapp' || eventData?.properties?.dispatched?.const !== false) fail('QuoteCaseEvent handoff data must identify the verified channel and explicitly deny dispatch.');
+if (eventData?.properties?.target_digest?.pattern !== '^[a-f0-9]{64}$') fail('QuoteCaseEvent handoff data must bind the audit event to the exact returned target URL digest.');
 if (!sameMembers(eventData?.properties?.owner_scope?.enum, ['account', 'private_browser_owner'])) fail('QuoteCaseEvent.data.owner_scope must use the public ownership modes.');
 assertStatusEnum(eventData?.properties?.previous_status?.enum, 'QuoteCaseEvent.data.previous_status');
 if (quoteEvent.properties?.occurred_at?.format !== 'date-time') fail('QuoteCaseEvent.occurred_at must use a date-time value.');
@@ -297,11 +302,15 @@ if (storePhp !== null) {
     fail('Quote case store must keep event pages at 50 by default and embedded histories at 20.');
   }
   if (!/LIMIT\s+%d/.test(storePhp) || !/\$limit\s*\+\s*1/.test(storePhp)) fail('Quote case event pages must fetch one look-ahead row for has_more.');
+  if ((storePhp.match(/Tra_Vel_Quote_Case_Policy::EVENT_CONTRACT_VERSION/g) || []).length !== 2) fail('QuoteCaseEvent emitters must use the independent event contract version.');
   if (!/const\s+HANDOFF_REUSE_SECONDS\s*=\s*300\s*;/.test(storePhp) || !/const\s+HANDOFF_MIN_REMAINING_SECONDS\s*=\s*30\s*;/.test(storePhp) || !/const\s+HANDOFF_WINDOW_SECONDS\s*=\s*3600\s*;/.test(storePhp) || !/const\s+HANDOFF_WINDOW_LIMIT\s*=\s*6\s*;/.test(storePhp)) {
     fail('Quote case handoffs must reuse for five minutes with 30 seconds remaining and allow no more than six new preparations per rolling hour.');
   }
   if (!/function\s+find_reusable_handoff\s*\([^)]*\$case_version/.test(storePhp) || !/\$row\[['"]case_version['"]\][\s\S]{0,120}\$case_version/.test(storePhp)) {
     fail('Quote case handoff reuse must be constrained to the current aggregate version.');
+  }
+  if (!/function\s+find_reusable_handoff\s*\([^)]*\$target_digest/.test(storePhp) || !/hash_equals\(\s*\$target_digest/.test(storePhp) || !/target_digest/.test(storePhp)) {
+    fail('Quote case handoff reuse and events must be bound to the exact target URL digest.');
   }
   const syncPhp = extractBetween(storePhp, 'public function sync_from_run', 'public static function cleanup');
   if ((syncPhp.match(/schedule_sync_retry/g) || []).length < 6 || !/0 === \(int\) \( \$run\['owner_user_id'\][\s\S]{0,220}schedule_sync_retry/.test(syncPhp)) {
@@ -313,6 +322,25 @@ if (storePhp !== null) {
   if (!/hash_equals/.test(syncDecisionPhp) || !/snapshot\[['"]revision['"]\][\s\S]{0,120}>[\s\S]{0,120}case\[['"]source_request_revision['"]\]/.test(syncDecisionPhp)) {
     fail('Quote synchronization must no-op exact duplicate digests and accept only strictly newer source revisions, independent of operator status.');
   }
+  const travelerListPhp = extractBetween(storePhp, 'public function list_owned', 'public function list_operator');
+  if (!/public function list_owned\s*\([^)]*&\$read_error/.test(travelerListPhp)) {
+    fail('Quote-case traveler list storage must expose authoritative SELECT uncertainty separately from a true empty account.');
+  }
+  requireMarkers(travelerListPhp, 'Quote-case traveler list storage', [
+    ['$wpdb->suppress_errors', 'must capture database errors without leaking them to the response.'],
+    ['$wpdb->last_error', 'must inspect the authoritative SELECT result.'],
+    ["'' !== $read_error", 'must fail closed when the authoritative list read is uncertain.'],
+    ['attach_creation_events( $cases, false, $read_error )', 'must propagate creation-event read uncertainty to the REST list gate.'],
+  ]);
+  const attachCreationEventsPhp = extractBetween(storePhp, 'private function attach_creation_events', 'private function hydrate_event');
+  if (!/private function attach_creation_events\s*\([^)]*&\$read_error/.test(attachCreationEventsPhp)) {
+    fail('Quote-case creation-event hydration must expose read uncertainty to its caller.');
+  }
+  requireMarkers(attachCreationEventsPhp, 'Quote-case creation-event hydration', [
+    ['$wpdb->suppress_errors', 'must prevent database details from leaking while retaining error state.'],
+    ['$wpdb->last_error', 'must inspect the creation-event SELECT result.'],
+    ["'missing quote creation event'", 'must fail closed if a quote aggregate has lost its required first event.'],
+  ]);
   const retentionPhp = extractBetween(storePhp, 'public static function cleanup', 'private function mutate_case');
   requireMarkers(retentionPhp, 'Quote case retention cleanup', [
     ['CLEANUP_BATCH_SIZE', 'must enforce a bounded deletion batch.'],
@@ -325,6 +353,9 @@ if (storePhp !== null) {
     ['legal_hold', 'must exclude cases under legal hold.'],
     ['case_uuid', 'must remove same-case replay records with the retained aggregate.'],
     ['idempotency_table', 'must clean same-case and stale replay records.'],
+	['Tra_Vel_Assisted_Proposal_Store::is_ready()', 'must stop parent cleanup when assisted-proposal storage is uncertain.'],
+	['tra_vel_quote_cleanup_proposal_store_unavailable', 'must report the fail-closed proposal-child guard.'],
+	['NOT EXISTS (SELECT 1 FROM ', 'must preserve quote parents until every assisted-proposal child is removed.'],
     ['deleted_orphan_revisions', 'must report historical orphan request-snapshot cleanup.'],
     ['deleted_orphan_events', 'must report historical orphan event cleanup.'],
   ]);
@@ -349,6 +380,7 @@ if (policyPhp !== null) {
     fail('Quote case policy must explicitly model ready-for-assistance and terminal outcomes.');
   }
   if (!/public_summary/.test(policyPhp) || !/next_action/.test(policyPhp)) fail('Quote case policy must derive the public summary and next action server-side.');
+  if (!/const\s+CONTRACT_VERSION\s*=\s*'1\.1\.0'/.test(policyPhp) || !/const\s+EVENT_CONTRACT_VERSION\s*=\s*'1\.1\.0'/.test(policyPhp)) fail('QuoteCase and QuoteCaseEvent must each publish their explicit 1.1.0 identities.');
   const snapshotPhp = extractBetween(policyPhp, 'public static function snapshot', 'public static function digest');
   for (const unsafeField of ['hard_constraints', 'preferences', 'vibes', 'material_questions', 'assumptions', 'input_text', 'raw_prompt', 'provider_trace', 'source_trace', 'contact', 'email', 'phone', 'passport', 'payment', 'medical']) {
     if (snapshotPhp.includes(unsafeField)) fail(`Quote case durable snapshot must not retain free-form ${unsafeField}.`);
@@ -386,6 +418,8 @@ if (controllerPhp !== null) {
     ['consume_create_limit', 'must bound quote creation and lost-cookie ownership recovery before writes.'],
     ['tra_vel_quote_case_create_limit_per_run', 'must retain a small configurable per-source-run retry allowance.'],
     ['tra_vel_quote_case_create_limit_per_visitor', 'must limit fan-out across source runs.'],
+    ['resume_availability', 'must derive source-run resume truth server-side.'],
+    ['get_run_ownership_by_uuids', 'must batch source-run ownership reads.'],
   ]);
   if (!/["']limit["']\s*=>\s*array\([\s\S]*?["']maximum["']\s*=>\s*Tra_Vel_Quote_Case_Store::EVENT_PAGE_SIZE/.test(controllerPhp)) fail('Quote case event REST pages must enforce the store page-size maximum.');
   if (!/can_access_run|authorize_run|access_run|agent_store->can_access/i.test(controllerPhp)) fail('Quote case controller must reuse or enforce run-owner access for traveler routes.');
@@ -393,6 +427,15 @@ if (controllerPhp !== null) {
   if (!/consume_create_limit\([\s\S]{0,260}principal\( true \)/.test(controllerPhp)) fail('Quote creation must reserve its atomic retry allowance before generating or rotating an owner token.');
   if (!/tra_vel_manage_quote_cases/.test(controllerPhp)) fail('Quote case controller must protect operator routes with the dedicated capability.');
   if (/input_text|raw_prompt|passport|payment_card/i.test(controllerPhp)) fail('Quote case controller must not persist or expose raw prompts, passports, or payment-card data.');
+  const resumePhp = extractBetween(controllerPhp, 'private function resume_availability', 'private function principal');
+  if (!resumePhp.includes("$availability[ (string) $case['case_uuid'] ] = false") || !/'' !== \$read_error/.test(resumePhp)) fail('Quote-case resume must default false and fail false on source read uncertainty.');
+  if (!/owner_user_id[\s\S]{0,180}!={1,2}[\s\S]{0,180}owner_user_id/.test(resumePhp) || !/agent_store->can_access/.test(resumePhp)) fail('Quote-case resume must require exact source/case ownership and current source-run access.');
+  const listOwnedPhp = extractBetween(controllerPhp, 'public function list_owned_cases', 'public function can_access_case');
+  if ((listOwnedPhp.match(/resume_availability/g) || []).length !== 1 || !/resume_availability\( \$cases \)[\s\S]{0,500}array_map/.test(listOwnedPhp)) fail('Quote-case list must batch resume availability before presenting cases.');
+  if (!/list_owned\([\s\S]{0,260}\$read_error\s*\)/.test(listOwnedPhp) || !/if \( '' !== \$read_error \)[\s\S]{0,240}tra_vel_quote_case_list_read_failed[\s\S]{0,160}503/.test(listOwnedPhp)) {
+    fail('Quote-case traveler list REST must return 503 on storage uncertainty instead of presenting an empty account.');
+  }
+  if (!/public function public_case\([^)]*\$resume_available\s*=\s*false/.test(controllerPhp)) fail('QuoteCase public summaries must fail resume_available false when no verified source result is supplied.');
 
   const publicCasePhp = extractBetween(controllerPhp, 'public function public_case', 'private function operator_case');
   if (!publicCasePhp) {

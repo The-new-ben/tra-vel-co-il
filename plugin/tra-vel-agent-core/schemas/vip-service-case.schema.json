@@ -1,0 +1,129 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://tra-vel.co.il/schemas/vip-service-case-v1.schema.json",
+  "title": "Tra-Vel VIP service case projection",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract_version", "case_ref", "public_case_ref", "trip_ref", "intake_access", "incident", "lifecycle", "severity", "operational_health", "owner_ref", "deadline_refs", "decision_refs", "operation_refs", "outcomes", "resolution", "version", "opened_at", "updated_at", "data_boundary"],
+  "properties": {
+    "contract_version": { "const": "1.0.0" },
+    "case_ref": { "$ref": "#/definitions/caseRef" },
+    "public_case_ref": { "type": "string", "pattern": "^TV-[A-Z0-9]{8}$" },
+    "trip_ref": { "$ref": "#/definitions/nullableTripRef" },
+    "intake_access": { "enum": ["public_emergency_intake", "scoped_trip_link", "step_up_session", "operator"] },
+    "incident": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "affected_services", "people_at_risk", "current_location_ref", "next_critical_event_ref", "evidence_status", "authorization_status", "supplier_contactability", "financial_exposure"],
+      "properties": {
+        "type": { "$ref": "#/definitions/incidentType" },
+        "affected_services": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 9,
+          "uniqueItems": true,
+          "items": { "$ref": "#/definitions/vertical" }
+        },
+        "people_at_risk": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["traveler_count", "minor_count", "vulnerable_count", "stranded_count", "immediate_danger"],
+          "properties": {
+            "traveler_count": { "type": "integer", "minimum": 0, "maximum": 10000 },
+            "minor_count": { "type": "integer", "minimum": 0, "maximum": 10000 },
+            "vulnerable_count": { "type": "integer", "minimum": 0, "maximum": 10000 },
+            "stranded_count": { "type": "integer", "minimum": 0, "maximum": 10000 },
+            "immediate_danger": { "type": "boolean" }
+          }
+        },
+        "current_location_ref": { "$ref": "#/definitions/nullableLocationRef" },
+        "next_critical_event_ref": { "$ref": "#/definitions/nullableEventRef" },
+        "evidence_status": { "enum": ["none", "needed", "collecting", "complete", "restricted"] },
+        "authorization_status": { "enum": ["unknown", "not_required", "pending", "verified", "conflicted", "expired"] },
+        "supplier_contactability": { "enum": ["unknown", "reachable", "degraded", "unreachable", "not_applicable"] },
+        "financial_exposure": { "enum": ["none", "unknown", "low", "material", "severe"] }
+      }
+    },
+    "lifecycle": { "$ref": "#/definitions/lifecycle" },
+    "severity": { "$ref": "#/definitions/severity" },
+    "operational_health": { "enum": ["healthy", "at_risk", "disrupted", "stranded", "recovery_in_progress", "recovered", "closed_with_loss"] },
+    "owner_ref": { "$ref": "#/definitions/nullablePrincipalRef" },
+    "deadline_refs": { "type": "array", "maxItems": 250, "uniqueItems": true, "items": { "$ref": "#/definitions/deadlineRef" } },
+    "decision_refs": { "type": "array", "maxItems": 250, "uniqueItems": true, "items": { "$ref": "#/definitions/decisionRef" } },
+    "operation_refs": { "type": "array", "maxItems": 500, "uniqueItems": true, "items": { "$ref": "#/definitions/operationRef" } },
+    "outcomes": { "$ref": "#/definitions/outcomes" },
+    "resolution": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["reason_code", "evidence_digests", "resolved_at"],
+          "properties": {
+            "reason_code": { "enum": ["traveler_continuity_restored", "safety_handoff_verified", "service_replaced", "authorized_loss_accepted", "financial_tail_monitored", "closed_with_verified_loss"] },
+            "evidence_digests": { "type": "array", "minItems": 1, "maxItems": 100, "uniqueItems": true, "items": { "$ref": "#/definitions/digest" } },
+            "resolved_at": { "$ref": "#/definitions/dateTime" }
+          }
+        }
+      ]
+    },
+    "version": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+    "opened_at": { "$ref": "#/definitions/dateTime" },
+    "updated_at": { "$ref": "#/definitions/dateTime" },
+    "data_boundary": { "$ref": "#/definitions/dataBoundary" }
+  },
+  "definitions": {
+    "caseRef": { "type": "string", "pattern": "^tv_case_[A-Za-z0-9_-]{16,96}$" },
+    "nullableTripRef": { "type": ["string", "null"], "pattern": "^tv_trip_[A-Za-z0-9_-]{16,96}$" },
+    "nullablePrincipalRef": { "type": ["string", "null"], "pattern": "^tv_principal_[A-Za-z0-9_-]{16,96}$" },
+    "nullableLocationRef": { "type": ["string", "null"], "pattern": "^tv_location_[A-Za-z0-9_-]{16,96}$" },
+    "nullableEventRef": { "type": ["string", "null"], "pattern": "^tv_event_[A-Za-z0-9_-]{16,96}$" },
+    "deadlineRef": { "type": "string", "pattern": "^tv_deadline_[A-Za-z0-9_-]{16,96}$" },
+    "decisionRef": { "type": "string", "pattern": "^tv_decision_[A-Za-z0-9_-]{16,96}$" },
+    "operationRef": { "type": "string", "pattern": "^tv_operation_[A-Za-z0-9_-]{16,96}$" },
+    "vertical": { "enum": ["flight", "accommodation", "package", "transfer", "activity", "dining", "insurance", "connectivity", "equipment"] },
+    "lifecycle": { "enum": ["received", "verified", "triaged", "plan_building", "approval_needed", "executing", "supplier_pending", "uncertain", "monitoring", "evidence_needed", "traveler_pending", "escalated", "safety_handoff", "resolved", "closed", "reopened", "closed_with_loss"] },
+    "severity": { "enum": ["P0", "P1", "P2", "P3", "P4"] },
+    "incidentType": {
+      "enum": [
+        "cross_trip.contact_channel_lost", "cross_trip.document_admissibility_problem", "cross_trip.document_wallet_lost_stolen", "cross_trip.guardian_authority_dispute", "cross_trip.medical_family_emergency", "cross_trip.accessibility_assistance_missing", "cross_trip.destination_mass_disruption", "cross_trip.payment_problem", "cross_trip.multi_service_change", "cross_trip.supplier_platform_outage", "cross_trip.fraud_conflicting_instructions",
+        "flight.schedule_change", "flight.cancellation", "flight.delay", "flight.denied_boarding", "flight.missed_connection_single_ticket", "flight.self_transfer_failure", "flight.ticket_not_issued", "flight.duplicate_booking", "flight.name_document_mismatch", "flight.seat_ssr_loss", "flight.baggage_delayed", "flight.baggage_lost", "flight.baggage_damaged", "flight.carrier_insolvency",
+        "accommodation.booking_not_found", "accommodation.property_cancellation", "accommodation.overbooking_walk", "accommodation.room_unavailable", "accommodation.invalid_payment_card", "accommodation.unexpected_deposit_tax", "accommodation.wrong_occupancy", "accommodation.bed_mismatch", "accommodation.inaccessible_room", "accommodation.cleanliness_safety_issue", "accommodation.late_arrival", "accommodation.early_departure", "accommodation.no_show_dispute", "accommodation.key_collection_failure", "accommodation.host_unreachable", "accommodation.refund_disagreement",
+        "package.component_failure", "package.cascading_change", "package.partial_confirmation", "package.price_policy_mismatch", "package.independent_supplier_conflict", "package.itinerary_dependency_break", "package.partial_cancellation", "package.organizer_nonresponse",
+        "transfer.driver_no_show", "transfer.traveler_no_show", "transfer.late_inbound_flight", "transfer.wrong_terminal", "transfer.bad_meeting_point", "transfer.driver_unreachable", "transfer.traveler_unreachable", "transfer.vehicle_too_small", "transfer.child_seat_missing", "transfer.accessibility_incompatible", "transfer.unsafe_vehicle_driver", "transfer.border_crossing_issue", "transfer.address_error", "transfer.cancellation_cutoff",
+        "activity.stale_availability", "activity.manual_confirmation_overdue", "activity.supplier_rejection", "activity.supplier_cancellation", "activity.weather_cancellation", "activity.minimum_participant_failure", "activity.pickup_failure", "activity.voucher_not_accepted", "activity.language_mismatch", "activity.accessibility_failure", "activity.participant_eligibility_issue", "activity.customer_illness", "activity.partial_party_cancellation", "activity.post_service_complaint",
+        "dining.venue_closed", "dining.reservation_missing", "dining.late_arrival", "dining.deposit_no_show_charge", "dining.party_size_change", "dining.dietary_certification_mismatch", "dining.allergy_concern", "dining.accessibility_failure", "dining.special_occasion_request", "dining.replacement_needed",
+        "insurance.immediate_danger", "insurance.assistance_unreachable", "insurance.preauthorization_pending", "insurance.preauthorization_declined", "insurance.guarantee_of_payment_missing", "insurance.claim_evidence_needed", "insurance.claim_declined", "insurance.claim_payment_delayed", "insurance.policy_document_missing", "insurance.coverage_question", "insurance.medical_provider_change", "insurance.supplier_refund_offset",
+        "connectivity.device_incompatible", "connectivity.device_locked", "connectivity.activation_code_consumed", "connectivity.delivery_delayed", "connectivity.activated_too_early", "connectivity.installed_inactive", "connectivity.no_coverage", "connectivity.wrong_apn", "connectivity.roaming_disabled", "connectivity.wrong_network", "connectivity.primary_sim_roaming_risk", "connectivity.data_exhausted", "connectivity.device_lost", "connectivity.traveler_offline",
+        "equipment.size_model_unavailable", "equipment.substitution_consent_needed", "equipment.delivery_missed", "equipment.pickup_location_closed", "equipment.unsafe_damaged_item", "equipment.certification_mismatch", "equipment.deposit_issue", "equipment.item_lost_stolen", "equipment.return_delayed", "equipment.damage_claim"
+      ]
+    },
+    "outcomes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["safety", "continuity", "supplier", "financial", "evidence", "communication"],
+      "properties": {
+        "safety": { "enum": ["unassessed", "at_risk", "handoff_in_progress", "handed_off", "stable", "closed_with_loss"] },
+        "continuity": { "enum": ["unassessed", "healthy", "at_risk", "disrupted", "recovery_in_progress", "restored", "closed_with_loss"] },
+        "supplier": { "enum": ["not_started", "pending", "succeeded", "failed", "uncertain", "reconciled"] },
+        "financial": { "enum": ["not_started", "pending", "balanced", "attention_required", "disputed", "closed_with_loss"] },
+        "evidence": { "enum": ["none", "needed", "collecting", "complete", "restricted"] },
+        "communication": { "enum": ["not_started", "queued", "delivered", "acknowledged", "failed", "uncertain"] }
+      }
+    },
+    "digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "dateTime": { "type": "string", "format": "date-time", "pattern": "Z$" },
+    "dataBoundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["raw_identity_data_exposed", "raw_payment_data_exposed", "raw_medical_data_exposed", "raw_provider_payload_exposed", "bearer_secret_exposed"],
+      "properties": {
+        "raw_identity_data_exposed": { "const": false },
+        "raw_payment_data_exposed": { "const": false },
+        "raw_medical_data_exposed": { "const": false },
+        "raw_provider_payload_exposed": { "const": false },
+        "bearer_secret_exposed": { "const": false }
+      }
+    }
+  }
+}

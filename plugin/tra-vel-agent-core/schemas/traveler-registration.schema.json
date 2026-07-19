@@ -1,0 +1,79 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://tra-vel.co.il/schemas/traveler-registration-v1.schema.json",
+  "title": "Tra-Vel progressive traveler registration projection",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract_version", "registration_ref", "trip_ref", "account_ref", "gate", "party_flags", "requirements", "role_manifest_ref", "version", "created_at", "updated_at", "data_boundary"],
+  "properties": {
+    "contract_version": { "const": "1.0.0" },
+    "registration_ref": { "$ref": "#/definitions/registrationRef" },
+    "trip_ref": { "$ref": "#/definitions/tripRef" },
+    "account_ref": { "$ref": "#/definitions/accountRef" },
+    "gate": { "enum": ["discover", "personalize", "ready_to_quote", "ready_to_reserve", "ready_to_fulfill", "ready_to_travel"] },
+    "party_flags": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["minor_present", "dependent_adult_present", "accessibility_required"],
+      "properties": {
+        "minor_present": { "type": "boolean" },
+        "dependent_adult_present": { "type": "boolean" },
+        "accessibility_required": { "type": "boolean" }
+      }
+    },
+    "requirements": {
+      "type": "array",
+      "maxItems": 32,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["code", "status", "evidence_digest", "verified_at"],
+        "properties": {
+          "code": {
+            "enum": [
+              "intent_recorded", "travel_window_recorded", "party_size_recorded", "contact_verified", "traveler_roles_declared",
+              "traveler_preferences_recorded", "loyalty_preferences_recorded", "exact_occupancy_recorded", "rules_identity_facts_recorded",
+              "accessibility_requirements_recorded", "dependent_support_plan_recorded", "reachable_contact_verified",
+              "travel_document_snapshot_verified", "guardian_authority_verified", "dependent_authority_verified", "terms_accepted",
+              "booking_questions_complete", "payment_session_owner_verified", "payment_state_sufficient", "supplier_confirmation_verified",
+              "mandatory_traveler_data_accepted", "traveler_manifest_snapshot_verified", "document_admissibility_current",
+              "checkin_pickup_instructions_ready", "accessibility_supplier_acknowledged", "emergency_contacts_offline",
+              "service_contact_pack_offline", "itinerary_offline", "dependency_health_checked"
+            ]
+          },
+          "status": { "enum": ["self_asserted", "verified", "not_applicable"] },
+          "evidence_digest": { "$ref": "#/definitions/nullableDigest" },
+          "verified_at": { "$ref": "#/definitions/nullableDateTime" }
+        }
+      }
+    },
+    "role_manifest_ref": { "$ref": "#/definitions/manifestRef" },
+    "version": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+    "created_at": { "$ref": "#/definitions/dateTime" },
+    "updated_at": { "$ref": "#/definitions/dateTime" },
+    "data_boundary": { "$ref": "#/definitions/dataBoundary" }
+  },
+  "definitions": {
+    "registrationRef": { "type": "string", "pattern": "^tv_registration_[A-Za-z0-9_-]{16,96}$" },
+    "tripRef": { "type": "string", "pattern": "^tv_trip_[A-Za-z0-9_-]{16,96}$" },
+    "accountRef": { "type": "string", "pattern": "^tv_account_[A-Za-z0-9_-]{16,96}$" },
+    "manifestRef": { "type": "string", "pattern": "^tv_manifest_[A-Za-z0-9_-]{16,96}$" },
+    "digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "nullableDigest": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" },
+    "dateTime": { "type": "string", "format": "date-time", "pattern": "Z$" },
+    "nullableDateTime": { "type": ["string", "null"], "format": "date-time", "pattern": "Z$" },
+    "dataBoundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["raw_identity_data_exposed", "raw_payment_data_exposed", "raw_medical_data_exposed", "raw_provider_payload_exposed", "bearer_secret_exposed"],
+      "properties": {
+        "raw_identity_data_exposed": { "const": false },
+        "raw_payment_data_exposed": { "const": false },
+        "raw_medical_data_exposed": { "const": false },
+        "raw_provider_payload_exposed": { "const": false },
+        "bearer_secret_exposed": { "const": false }
+      }
+    }
+  }
+}

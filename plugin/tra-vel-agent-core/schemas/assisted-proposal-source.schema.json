@@ -1,0 +1,92 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://tra-vel.co.il/schemas/agent/assisted-proposal-source-1.0.0.json",
+  "title": "Tra-Vel AssistedProposalSource",
+  "description": "An immutable normalized evidence record with a bounded revalidation deadline.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "source_id",
+    "provider_code",
+    "source_type",
+    "relationship",
+    "public_label",
+    "supplier_name",
+    "seller_name",
+    "source_reference",
+    "source_url",
+    "observed_at",
+    "fresh_until",
+    "evidence_digest",
+    "requires_revalidation"
+  ],
+  "properties": {
+    "contract_version": { "const": "1.0.0" },
+    "source_id": { "type": "string", "format": "uuid" },
+    "provider_code": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[a-z0-9]+(?:[-_][a-z0-9]+)*$"
+    },
+    "source_type": {
+      "enum": [
+        "connected_api",
+        "supplier_portal",
+        "supplier_written_quote",
+        "public_supplier_page",
+        "official_information"
+      ]
+    },
+    "relationship": {
+      "enum": ["operator_attested", "public_reference"]
+    },
+    "public_label": { "type": "string", "minLength": 1, "maxLength": 190 },
+    "supplier_name": { "type": "string", "maxLength": 190 },
+    "seller_name": { "type": "string", "maxLength": 190 },
+    "source_reference": {
+      "type": "string",
+      "maxLength": 190,
+      "pattern": "^(?:[A-Za-z0-9._:-]{1,190})?$"
+    },
+    "source_url": {
+      "type": ["string", "null"],
+      "format": "uri",
+      "maxLength": 500,
+      "pattern": "^https://[^?#]+$"
+    },
+    "observed_at": { "type": "string", "format": "date-time" },
+    "fresh_until": { "type": "string", "format": "date-time" },
+    "evidence_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "requires_revalidation": { "const": true }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "source_type": { "enum": ["public_supplier_page", "official_information"] }
+        },
+        "required": ["source_type"]
+      },
+      "then": {
+        "properties": {
+          "relationship": { "const": "public_reference" },
+          "source_url": { "type": "string", "format": "uri", "pattern": "^https://[^?#]+$" }
+        }
+      },
+      "else": {
+        "properties": {
+          "relationship": { "const": "operator_attested" },
+          "source_reference": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 190,
+            "pattern": "^[A-Za-z0-9._:-]{1,190}$"
+          },
+          "source_url": { "type": "null" }
+        }
+      }
+    }
+  ]
+}

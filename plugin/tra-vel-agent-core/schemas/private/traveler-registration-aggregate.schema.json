@@ -1,0 +1,62 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://tra-vel.co.il/schemas/private/traveler-registration-aggregate-v1.schema.json",
+  "title": "Tra-Vel private durable traveler registration aggregate",
+  "description": "A pointer-only durable registration revision. It contains readiness evidence, never raw traveler/provider/payment material, and grants registration-only authority.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract_version", "registration", "bindings", "authorization_effect", "executable_scopes", "side_effects", "data_boundary"],
+  "properties": {
+    "contract_version": { "const": "1.0.0" },
+    "registration": { "$ref": "../traveler-registration.schema.json" },
+    "bindings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role_manifest_ref", "profile_refs", "vault_item_refs"],
+      "properties": {
+        "role_manifest_ref": { "type": "string", "pattern": "^tv_manifest_[A-Za-z0-9_-]{16,96}$" },
+        "profile_refs": {
+          "type": "array",
+          "maxItems": 100,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^tv_profile_[A-Za-z0-9_-]{16,96}$" }
+        },
+        "vault_item_refs": {
+          "type": "array",
+          "maxItems": 100,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^tv_vault_item_[A-Za-z0-9_-]{16,96}$" }
+        }
+      }
+    },
+    "authorization_effect": { "const": "registration_only" },
+    "executable_scopes": { "type": "array", "maxItems": 0 },
+    "side_effects": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["supplier_action_started", "payment_action_started", "booking_action_started", "cancellation_action_started", "refund_action_started"],
+      "properties": {
+        "supplier_action_started": { "const": false },
+        "payment_action_started": { "const": false },
+        "booking_action_started": { "const": false },
+        "cancellation_action_started": { "const": false },
+        "refund_action_started": { "const": false }
+      }
+    },
+    "data_boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["opaque_references_only", "raw_identity_data_stored", "raw_contact_data_stored", "raw_document_data_stored", "raw_payment_data_stored", "raw_medical_data_stored", "raw_provider_payload_stored", "bearer_secret_stored"],
+      "properties": {
+        "opaque_references_only": { "const": true },
+        "raw_identity_data_stored": { "const": false },
+        "raw_contact_data_stored": { "const": false },
+        "raw_document_data_stored": { "const": false },
+        "raw_payment_data_stored": { "const": false },
+        "raw_medical_data_stored": { "const": false },
+        "raw_provider_payload_stored": { "const": false },
+        "bearer_secret_stored": { "const": false }
+      }
+    }
+  }
+}

@@ -38,6 +38,9 @@ requireMarkers(saved, 'Traveler workspace quote-case section', [
   'data-workspace-quote-grid',
   'data-workspace-quote-empty',
 ]);
+if (!/data-workspace-quote-cases data-state="idle"[^>]+aria-busy="false"/.test(saved)) {
+  failures.push('Workspace assistance must default to a calm non-busy state without JavaScript.');
+}
 
 requireMarkers(app, 'Quote-case browser client', [
   "agentRuntime.status === 'request_ready'",
@@ -58,6 +61,9 @@ requireMarkers(app, 'Quote-case browser client', [
   'item?.source?.run_id === runId',
   'await loadQuoteCaseForRun(root)',
   'quoteCaseProgressState',
+  'quoteCaseStepStateLabel',
+  'quoteCaseCanResume',
+  'isConfirmedQuoteCaseRecovery',
   'quoteCaseActiveStatuses',
   'quoteCaseTerminalStatuses',
   'const quoteCaseEventDomLimit = 100',
@@ -80,7 +86,7 @@ requireMarkers(app, 'Quote-case browser client', [
   'if (added > 0 && !hasMore)',
   'const retryDelay = Math.min(120000',
   "[data-quote-case-error][data-source=\"poll\"]",
-  "setQuoteCaseError(root, 'העדכון החי של בקשת הסיוע אינו זמין כרגע. המצב האחרון שאושר נשאר מוצג וננסה שוב אוטומטית.', 'poll')",
+  "setQuoteCaseError(root, 'העדכון החי של הבדיקה האישית אינו זמין כרגע. המצב האחרון שאושר נשאר מוצג וננסה שוב אוטומטית.', 'poll')",
   'isConfirmedQuoteCaseForward(previousCase, caseData)',
   "nextCase.status === 'needs_information'",
   "progress.mode === 'terminal'",
@@ -97,6 +103,61 @@ if (!/quoteCaseActiveStatuses\s*=\s*new Set\(\['queued', 'in_review', 'needs_inf
 }
 if (!/quoteCaseTerminalStatuses\s*=\s*new Set\(\['closed_no_quote', 'cancelled', 'expired'\]\)/.test(app)) {
   failures.push('The browser terminal-state set must match the server contract exactly.');
+}
+if (!/quoteCaseTerminalStatuses\.has\(status\)\) return \{current: 1, completed: 1, mode: 'terminal'\}/.test(app)
+  || !/progress\.mode === 'terminal'[\s\S]*?index === progress\.current\) return 'terminal';[\s\S]*?return 'pending'/.test(app)) {
+  failures.push('Terminal cases without event history may confirm only the initial structured request, never review or assistance.');
+}
+const workspaceCaseStart = app.indexOf('function renderWorkspaceQuoteCaseCard(');
+const workspaceCaseEnd = app.indexOf('\nfunction renderWorkspaceQuoteCases(', workspaceCaseStart);
+const workspaceCaseBody = workspaceCaseStart >= 0 && workspaceCaseEnd > workspaceCaseStart ? app.slice(workspaceCaseStart, workspaceCaseEnd) : '';
+if (!/createElement\('ol'\)[\s\S]*?setAttribute\('aria-current', 'step'\)/.test(workspaceCaseBody)) {
+  failures.push('Workspace assistance progress must use a semantic ordered list with aria-current.');
+}
+if (!/caseData\?\.resume_available === true && validWorkspaceAgentRunId\(caseData\?\.source\?\.run_id\)/.test(app)
+  || !/if \(quoteCaseCanResume\(caseData\) && !storeAgentRunSession\(caseData\.source\.run_id\)\)/.test(workspaceCaseBody)) {
+  failures.push('Workspace assistance may resume only a server-enabled case with a valid UUID run id.');
+}
+if (!/quoteCaseTerminalStatuses\.has\(caseData\.status\)[\s\S]*?\.slice\(0, 12\)/.test(app)
+  || !/if \(!terminal\) actions\.append\(handoff\)/.test(workspaceCaseBody)) {
+  failures.push('Workspace assistance must retain at most twelve recent terminal cases without an active handoff claim.');
+}
+if (!/function isConfirmedQuoteCaseRecovery\([\s\S]*?Number\(nextCase\.version\) <= Number\(previousCase\.version\)[\s\S]*?previousCase\.status === 'needs_information'/.test(app)) {
+  failures.push('Workspace recovery motion must require a higher server version from a blocked case.');
+}
+if (!/workspaceQuoteCaseRuntime\.authRequired[\s\S]*?error\?\.status === 401 \|\| error\?\.status === 403[\s\S]*?reauth_required/.test(app)
+  || !/if \(!workspaceQuoteCaseRuntime\.authRequired\) scheduleWorkspaceQuoteCasePoll/.test(app)) {
+  failures.push('Workspace assistance polling must enter a terminal re-authentication state on 401/403.');
+}
+if (!/workspaceQuoteCaseMutationRegistry\.set\(mutationCaseId, \{idempotencyKey\}\)[\s\S]*?await reconcileWorkspaceQuoteCases\(\)[\s\S]*?workspaceQuoteCaseMutationRegistry\.delete\(mutationCaseId\)/.test(workspaceCaseBody)) {
+  failures.push('A workspace assistance 409 must reconcile the list while its handoff action remains serialized.');
+}
+const workspaceTimeoutStart = workspaceCaseBody.indexOf("if (error?.code === 'quote_case_handoff_timeout')");
+const workspaceConflictStart = workspaceCaseBody.indexOf("} else if (error?.status === 409)", workspaceTimeoutStart);
+const workspaceTimeoutBody = workspaceTimeoutStart >= 0 && workspaceConflictStart > workspaceTimeoutStart
+  ? workspaceCaseBody.slice(workspaceTimeoutStart, workspaceConflictStart)
+  : '';
+if (!/requestWithDeadline\([\s\S]*?'quote_case_handoff_timeout'/.test(app)
+  || !workspaceTimeoutBody.includes('await reconcileWorkspaceQuoteCases()')
+  || workspaceTimeoutBody.includes('delete handoff.dataset.idempotencyKey')) {
+  failures.push('QuoteCase handoff must time out after the shared deadline, reconcile, and retain its idempotency key when outcome is ambiguous.');
+}
+if (!/const workspaceQuoteCaseRetryKeys = new Map\(\)/.test(app)
+  || !/retainedIdempotencyKey[\s\S]*?handoff\.dataset\.idempotencyKey/.test(workspaceCaseBody)
+  || !/function mergeWorkspaceQuoteCases\([\s\S]*?workspaceQuoteCasePrecedes/.test(app)
+  || !/function reconcileWorkspaceQuoteCases\([\s\S]*?reconcileWaiters\.push/.test(app)) {
+  failures.push('QuoteCase handoff keys and monotonic case versions must survive card replacement and overlapping list polls.');
+}
+if (!/quoteCaseCanResume\(caseData\) && !storeAgentRunSession\(caseData\.source\.run_id\)[\s\S]*?return;[\s\S]*?window\.location\.assign/.test(workspaceCaseBody)) {
+  failures.push('Saved QuoteCase resume must not navigate when private session storage fails.');
+}
+if (!/attentionTransitionIds\.add\(caseData\.case_id\)/.test(app)
+  || !/terminalTransitionIds\.add\(caseData\.case_id\)/.test(app)
+  || !/attentionCase[\s\S]*?מידע נוסף[\s\S]*?terminalCase[\s\S]*?מצב סיום מאומת/.test(app)) {
+  failures.push('Existing QuoteCase transitions into attention or terminal state need calm traveler-facing confirmed announcements.');
+}
+if (!/newlyPositive = !previous && \['queued', 'in_review', 'ready_for_assistance'\]/.test(app)) {
+  failures.push('Only newly confirmed active assistance cases may receive positive addition motion.');
 }
 
 const resetStart = app.indexOf('function resetAgentRuntime(');
@@ -182,7 +243,7 @@ requireMarkers(css, 'Quote-case presentation', [
   '.workspace-quote-action-status[data-state="reused"]',
   '@keyframes agent-action-confirm',
   '.workspace-quote-grid',
-  '.workspace-quote-card-progress span[data-state="current"]',
+  '.workspace-quote-card-progress li[data-state="current"]',
   '@media (prefers-reduced-motion: reduce)',
 ]);
 if (!/@media \(max-width: 680px\)[\s\S]*?\.workspace-quote-grid \{ grid-template-columns: 1fr; \}/.test(css)) {

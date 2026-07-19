@@ -9,6 +9,8 @@ Agent Core 0.3.0 separates two different lifecycles:
 
 Creating a case does not search a supplier, produce a live price, send a message, reserve inventory, charge a card, or book travel. The public health contract continues to report supplier search, proposal generation, and booking execution as disabled.
 
+The traveler-facing QuoteCase DTO is version 1.1.0 because it requires `resume_available`; its schema identity is distinct from QuoteCase 1.0.0. QuoteCaseEvent 1.1.0 adds an integrity-only SHA-256 digest that binds each prepared contact event to the exact short-lived URL returned to the traveler without storing that URL in the event. These representation changes do not alter the route namespace, stored aggregate, active-service window, or retention boundary.
+
 ## Data model
 
 The module owns four dedicated tables:
@@ -102,6 +104,11 @@ Operator routes:
 - `GET /tra-vel-agent/v1/operator/quote-cases/{case_id}`
 - `GET /tra-vel-agent/v1/operator/quote-cases/{case_id}/events?after={sequence}&limit={1..50}`
 - `POST /tra-vel-agent/v1/operator/quote-cases/{case_id}/transitions`
+- `GET|POST /tra-vel-agent/v1/operator/quote-cases/{case_id}/assisted-proposals`
+- `POST /tra-vel-agent/v1/operator/quote-cases/{case_id}/assisted-proposals/evidence-attestation`
+- `POST /tra-vel-agent/v1/operator/quote-cases/{case_id}/assisted-proposals/compose`
+- `POST /tra-vel-agent/v1/operator/quote-cases/{case_id}/assisted-proposals/{proposal_id}/compose`
+- `POST /tra-vel-agent/v1/operator/quote-cases/{case_id}/assisted-proposals/{proposal_id}/withdraw`
 
 Mutations require an idempotency key. State mutations also require the exact expected case version.
 
@@ -112,9 +119,27 @@ Event pages default to 50 records, fetch one look-ahead row, and return `events`
 - `tra_vel_view_quote_cases` reads the queue.
 - `tra_vel_manage_quote_cases` records legal state changes.
 - `tra_vel_assign_quote_cases` is required to claim a case for review.
+- `tra_vel_publish_assisted_proposals` publishes or withdraws a source-bound, non-binding proposal only for the assigned operator. Administrators are the explicit oversight override.
+- `tra_vel_ingest_canonical_assisted_proposals` is reserved for administrators or a separately reviewed service identity. It is explicitly excluded from the quote-operator role and is never the human composer capability.
 - `tra_vel_dispatch_supplier_requests` is a separate consequential capability and is not granted to the quote-operator role.
 
-Administrators receive all four capabilities. `tra_vel_quote_operator` receives read, view, manage, and assign, but never supplier dispatch.
+Administrators receive all six module capabilities. `tra_vel_quote_operator` receives WordPress read plus case view, manage, assign, and assisted-proposal publication, but never canonical ingestion or supplier dispatch.
+
+## Operator proposal workflow
+
+The queue exposes an explicit **Open proposals** action rather than making the whole row clickable. The in-flow workspace shows the minimized consented request, retained proposal history, and a five-part editor for proposal direction, evidence, trip components, itinerary, and final review.
+
+The operator enters only traveler-facing content and real source references. Agent Core generates identities, binds the exact case version, latest case revision, and request digest, computes evidence and source-set digests, derives freshness, recomputes the one-currency minor-unit ledger, adds mandatory unresolved gaps, and fixes the final-quote disclosure. Public evidence links must also match a server-registered provider, source type, relationship, and hostname. Private connected or written evidence stores only an opaque reference.
+
+The final review step issues a five-minute signed attestation only after the operator confirms every cited source was rechecked. The signature binds the operator and entire composition to the exact case context; any edit requires another check. Publication remains impossible for an unassigned operator, stale case, stale source, missing or invalid attestation, unsourced amount, mixed currency, unknown field, unsafe or unregistered public URL, or terminal case.
+
+Connected, portal, and written source identities are operator-attested in this release, not provider-verified. Their canonical relationship is forced to the neutral `operator_attested` value, and no commercial-relationship field reaches traveler JSON. Default public providers are registered as public references only. Do not claim an affiliate or contracted relationship in traveler copy until an approved production registry and immutable integration evidence establish it.
+
+Composition writes are replay-safe under a principal-bound idempotency key. The exact committed command can be recovered after a later reassignment or case change, but is returned as historical/superseded when it no longer addresses the current request. Reusing a key with changed content fails closed. The aggregate `version` advances for every durable state event, while commercial `revision` advances only for a new immutable proposal revision.
+
+The UI never claims that a source was dispatched, inventory was held, payment was accepted, or travel was booked. Loading and publication motion represent only the corresponding network request and confirmed server result.
+
+Traveler contact authorization is a separate one-click, versioned consent operation available only to a signed-in owner with a valid account email. The notice identifies the Tra-Vel assistance team, email channel, proposal-specific purpose, and exclusions for marketing, supplier sharing, booking, and charging. Agent Core persists only an HMAC-bound email target and rechecks the current target immediately before future dispatch; an account-email change invalidates the old dispatch authority without breaking exact idempotent action replay.
 
 ## Assisted WhatsApp boundary
 

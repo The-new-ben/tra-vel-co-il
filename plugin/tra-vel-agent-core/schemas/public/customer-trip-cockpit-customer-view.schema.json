@@ -1,0 +1,369 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://tra-vel.co.il/schemas/public/customer-trip-cockpit-customer-view.schema.json",
+  "title": "Tra-Vel customer Trip Cockpit view",
+  "description": "A customer-serializable, non-authorizing projection derived only from a validated private Trip Cockpit read model. It exposes calm trip status and customer-safe aliases without private ownership, raw identity, payment, medical, provider, operator-routing, settlement, commission, secret, or execution data.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version", "environment", "audience", "trip_headline", "current", "next_safe_action",
+    "protections", "changes", "attention_items", "service_timeline", "customer_money", "case_progress_disclosure", "trip_care_cases",
+    "trip_care_receipts", "traveler_readiness_disclosure", "traveler_readiness", "loyalty", "offline_pack", "freshness", "authority", "data_boundary"
+  ],
+  "properties": {
+    "contract_version": { "const": "1.0.0" },
+    "environment": { "const": "sandbox" },
+    "audience": { "$ref": "#/definitions/audience" },
+    "trip_headline": { "enum": ["Trip plan", "Upcoming trip", "Outbound journey", "Trip in progress", "Return journey", "Completed trip"] },
+    "current": { "$ref": "#/definitions/current" },
+    "next_safe_action": { "$ref": "#/definitions/nullableAction" },
+    "protections": { "type": "array", "maxItems": 128, "items": { "$ref": "#/definitions/protection" } },
+    "changes": { "type": "array", "maxItems": 512, "items": { "$ref": "#/definitions/change" } },
+    "attention_items": { "type": "array", "maxItems": 256, "items": { "$ref": "#/definitions/attention" } },
+    "service_timeline": { "type": "array", "minItems": 1, "maxItems": 64, "items": { "$ref": "#/definitions/service" } },
+    "customer_money": { "$ref": "#/definitions/customerMoney" },
+    "case_progress_disclosure": { "enum": ["case_progress_redacted", "withheld_scope_missing"] },
+    "trip_care_cases": { "type": "array", "maxItems": 64, "items": { "$ref": "#/definitions/tripCareCase" } },
+    "trip_care_receipts": { "type": "array", "maxItems": 128, "items": { "$ref": "#/definitions/tripCareReceipt" } },
+    "traveler_readiness_disclosure": { "enum": ["signed_in_redacted", "withheld_scoped_session"] },
+    "traveler_readiness": { "type": "array", "maxItems": 32, "items": { "$ref": "#/definitions/travelerReadiness" } },
+    "loyalty": { "$ref": "#/definitions/loyalty" },
+    "offline_pack": { "$ref": "#/definitions/offlinePack" },
+    "freshness": { "$ref": "#/definitions/freshness" },
+    "authority": { "$ref": "#/definitions/authority" },
+    "data_boundary": { "$ref": "#/definitions/dataBoundary" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "audience": { "properties": { "mode": { "const": "scoped_session" } } } } },
+      "then": {
+        "properties": {
+          "customer_money": { "properties": { "disclosure": { "const": "withheld_scoped_session" }, "payments": { "maxItems": 0 }, "refunds": { "maxItems": 0 } } },
+          "traveler_readiness_disclosure": { "const": "withheld_scoped_session" },
+          "traveler_readiness": { "maxItems": 0 },
+          "loyalty": { "properties": { "disclosure": { "const": "withheld_scoped_session" }, "status": { "const": "withheld" }, "filter_readiness": { "const": "withheld" }, "affected_service_keys": { "maxItems": 0 }, "next_safe_action": { "const": null }, "verified_at": { "const": null } } },
+          "current": { "properties": { "registration_readiness": { "const": "withheld" } } },
+          "freshness": { "properties": { "basis": { "const": "scoped_visible_only" } } }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "audience": { "properties": { "mode": { "const": "signed_in" } } } } },
+      "then": {
+        "properties": {
+          "customer_money": { "properties": { "disclosure": { "const": "signed_in_redacted" } } },
+          "traveler_readiness_disclosure": { "const": "signed_in_redacted" },
+          "traveler_readiness": { "minItems": 1 },
+          "loyalty": { "properties": { "disclosure": { "const": "signed_in_redacted" }, "status": { "enum": ["not_requested", "planning", "member_connection_needed", "benefits_checking", "options_ready", "stale", "unavailable"] }, "filter_readiness": { "enum": ["not_requested", "checking", "connection_required", "ready", "refresh_required", "unavailable"] }, "verified_at": { "$ref": "#/definitions/dateTime" } } },
+          "current": { "properties": { "registration_readiness": { "enum": ["ready", "attention_required", "blocked"] } } },
+          "freshness": { "properties": { "basis": { "const": "signed_in_redacted" } } }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "audience": { "properties": { "follow_up_allowed": { "const": false } } } } },
+      "then": { "properties": { "case_progress_disclosure": { "const": "withheld_scope_missing" }, "trip_care_cases": { "maxItems": 0 }, "trip_care_receipts": { "maxItems": 0 } } }
+    },
+    {
+      "if": { "properties": { "audience": { "properties": { "follow_up_allowed": { "const": true } } } } },
+      "then": { "properties": { "case_progress_disclosure": { "const": "case_progress_redacted" } } }
+    }
+  ],
+  "definitions": {
+    "dateTime": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$" },
+    "nullableDateTime": { "type": ["string", "null"], "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$" },
+    "code": { "enum": [
+      "flight.confirmed", "stay.confirmed", "confirmed", "schedule.change", "trip.insurance", "schedule.monitoring", "late.arrival.monitoring",
+      "approve.flight.change", "confirm.preference", "provide.trip.update", "provide.trip.details", "change.flight", "cancel.flight", "payment.authorize", "refund.request",
+      "issue.ticket", "redeem.points", "upgrade.service", "swap.service", "report.issue", "case.follow_up", "question.follow_up", "view.trip_status", "view.offline_itinerary", "refresh.offline_pack",
+      "service.event", "status.updated", "protection.status", "service.change", "traveler.requirement", "registration.review", "trip.review", "service.review", "approval.review", "question.review", "payment.review",
+      "loyalty.review", "traveler_readiness.review", "offline_pack.review", "trip.status", "trip_care.follow_up", "registration", "trip_health", "service", "approval", "question", "vip_case", "trip_care", "commerce", "loyalty", "traveler", "offline_pack"
+    ] },
+    "label100": { "type": "string", "minLength": 1, "maxLength": 100, "pattern": "^[^<>\\r\\n]+$" },
+    "label160": { "type": "string", "minLength": 1, "maxLength": 160, "pattern": "^[^<>\\r\\n]+$" },
+    "serviceKey": { "type": "string", "pattern": "^service-[a-f0-9]{32}$" },
+    "travelerSlot": { "type": "string", "pattern": "^traveler-[a-f0-9]{32}$" },
+    "purchaseKey": { "type": "string", "pattern": "^purchase-[a-f0-9]{32}$" },
+    "caseKey": { "type": "string", "pattern": "^case-[a-f0-9]{32}$" },
+    "receiptKey": { "type": "string", "pattern": "^receipt-[a-f0-9]{32}$" },
+    "attentionKey": { "type": "string", "pattern": "^attention-[a-f0-9]{32}$" },
+    "serviceKeys": { "type": "array", "maxItems": 64, "uniqueItems": true, "items": { "$ref": "#/definitions/serviceKey" } },
+    "travelerSlots": { "type": "array", "maxItems": 32, "uniqueItems": true, "items": { "$ref": "#/definitions/travelerSlot" } },
+    "codes": { "type": "array", "maxItems": 64, "uniqueItems": true, "items": { "$ref": "#/definitions/code" } },
+    "truthState": { "enum": ["verified_current", "observed_unverified", "stale", "uncertain", "conflict"] },
+    "priority": { "enum": ["urgent", "high", "normal", "low"] },
+    "health": { "enum": ["on_track", "watching", "action_required", "disrupted", "recovery_in_progress", "uncertain", "completed_with_issue"] },
+    "audience": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "view_allowed", "report_issue_allowed", "follow_up_allowed", "high_impact_step_up_required", "mutation_authorized"],
+      "properties": {
+        "mode": { "enum": ["signed_in", "scoped_session"] },
+        "view_allowed": { "const": true },
+        "report_issue_allowed": { "type": "boolean" },
+        "follow_up_allowed": { "type": "boolean" },
+        "high_impact_step_up_required": { "const": true },
+        "mutation_authorized": { "const": false }
+      }
+    },
+    "current": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["phase", "health", "registration_readiness", "affected_service_count", "unaffected_service_count", "declared_affected_service_keys", "partition_detail", "action_required", "verified_at"],
+      "properties": {
+        "phase": { "enum": ["planning", "pre_trip", "outbound", "in_trip", "return_trip", "post_trip"] },
+        "health": { "$ref": "#/definitions/health" },
+        "registration_readiness": { "enum": ["ready", "attention_required", "blocked", "withheld"] },
+        "affected_service_count": { "type": "integer", "minimum": 0, "maximum": 64 },
+        "unaffected_service_count": { "type": "integer", "minimum": 0, "maximum": 64 },
+        "declared_affected_service_keys": { "$ref": "#/definitions/serviceKeys" },
+        "partition_detail": { "enum": ["complete", "partial", "aggregate_only"] },
+        "action_required": { "type": "boolean" },
+        "verified_at": { "$ref": "#/definitions/dateTime" }
+      }
+    },
+    "action": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "source", "priority", "service_keys", "traveler_slots", "deadline", "truth_state", "requested_effect", "interaction_mode", "execution_effect"],
+      "properties": {
+        "code": { "$ref": "#/definitions/code" },
+        "source": { "$ref": "#/definitions/code" },
+        "priority": { "$ref": "#/definitions/priority" },
+        "service_keys": { "$ref": "#/definitions/serviceKeys" },
+        "traveler_slots": { "$ref": "#/definitions/travelerSlots" },
+        "deadline": { "$ref": "#/definitions/nullableDateTime" },
+        "truth_state": { "$ref": "#/definitions/truthState" },
+        "requested_effect": { "enum": ["review", "follow_up", "change", "cancel", "pay", "refund", "approve", "account_update", "commerce_review", "issue", "redeem", "upgrade", "swap", "unknown_high_impact"] },
+        "interaction_mode": { "enum": ["view", "follow_up", "step_up_required"] },
+        "execution_effect": { "const": "none" }
+      }
+    },
+    "nullableAction": { "anyOf": [{ "type": "null" }, { "$ref": "#/definitions/action" }] },
+    "fulfillment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "truth_state"],
+      "properties": {
+        "state": { "enum": ["selected", "hold_pending", "held", "confirmation_pending", "confirmed", "fulfillment_pending", "fulfilled", "change_pending", "changed", "cancellation_pending", "cancelled", "failed", "reconciliation_required"] },
+        "truth_state": { "$ref": "#/definitions/truthState" }
+      }
+    },
+    "event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["event_code", "state", "truth_state", "occurred_at"],
+      "properties": {
+        "event_code": { "$ref": "#/definitions/code" },
+        "state": { "$ref": "#/definitions/code" },
+        "truth_state": { "$ref": "#/definitions/truthState" },
+        "occurred_at": { "$ref": "#/definitions/dateTime" }
+      }
+    },
+    "service": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["service_key", "sequence", "vertical", "label", "phase", "health", "fulfillment", "change_state", "impact_state", "protected_codes", "next_safe_action", "events", "verified_at"],
+      "properties": {
+        "service_key": { "$ref": "#/definitions/serviceKey" },
+        "sequence": { "type": "integer", "minimum": 1, "maximum": 64 },
+        "vertical": { "enum": ["flight", "accommodation", "package", "transfer", "activity", "dining", "insurance", "connectivity", "equipment"] },
+        "label": { "type": "string", "pattern": "^(Flight|Stay|Package|Transfer|Activity|Dining|Insurance|Connectivity|Equipment) - (planned|on hold|confirmed|ready for travel|in progress|completed|cancelled|support in progress)$" },
+        "phase": { "enum": ["planned", "held", "confirmed", "travel_ready", "in_progress", "completed", "cancelled", "recovery"] },
+        "health": { "$ref": "#/definitions/health" },
+        "fulfillment": { "$ref": "#/definitions/fulfillment" },
+        "change_state": { "enum": ["unchanged", "change_observed", "change_pending", "changed", "cancellation_pending", "cancelled", "uncertain"] },
+        "impact_state": { "enum": ["affected", "unaffected", "not_individually_declared"] },
+        "protected_codes": { "$ref": "#/definitions/codes" },
+        "next_safe_action": { "$ref": "#/definitions/nullableAction" },
+        "events": { "type": "array", "maxItems": 24, "items": { "$ref": "#/definitions/event" } },
+        "verified_at": { "$ref": "#/definitions/dateTime" }
+      }
+    },
+    "protection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["protection_code", "service_keys", "state", "verified_at"],
+      "properties": {
+        "protection_code": { "$ref": "#/definitions/code" },
+        "service_keys": { "$ref": "#/definitions/serviceKeys" },
+        "state": { "enum": ["active", "at_risk", "unverified", "expired", "not_applicable"] },
+        "verified_at": { "$ref": "#/definitions/dateTime" }
+      }
+    },
+    "change": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["change_code", "affected_service_keys", "truth_state", "observed_at"],
+      "properties": {
+        "change_code": { "$ref": "#/definitions/code" },
+        "affected_service_keys": { "$ref": "#/definitions/serviceKeys" },
+        "truth_state": { "$ref": "#/definitions/truthState" },
+        "observed_at": { "$ref": "#/definitions/dateTime" }
+      }
+    },
+    "attention": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["attention_key", "kind", "code", "status", "priority", "service_keys", "traveler_slots", "deadline", "truth_state", "verified_at", "interaction_mode"],
+      "properties": {
+        "attention_key": { "$ref": "#/definitions/attentionKey" },
+        "kind": { "enum": ["approval", "question"] },
+        "code": { "$ref": "#/definitions/code" },
+        "status": { "enum": ["pending", "expired", "reopened"] },
+        "priority": { "$ref": "#/definitions/priority" },
+        "service_keys": { "$ref": "#/definitions/serviceKeys" },
+        "traveler_slots": { "$ref": "#/definitions/travelerSlots" },
+        "deadline": { "$ref": "#/definitions/nullableDateTime" },
+        "truth_state": { "$ref": "#/definitions/truthState" },
+        "verified_at": { "$ref": "#/definitions/dateTime" },
+        "interaction_mode": { "const": "step_up_required" }
+      }
+    },
+    "paymentItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["purchase_key", "state", "truth_state", "verified_at"],
+      "properties": {
+        "purchase_key": { "$ref": "#/definitions/purchaseKey" },
+        "state": { "enum": ["not_started", "pending", "requires_action", "authorized", "captured", "failed", "voided", "partially_refunded", "refunded", "uncertain", "disputed", "charged_back"] },
+        "truth_state": { "$ref": "#/definitions/truthState" },
+        "verified_at": { "$ref": "#/definitions/dateTime" }
+      }
+    },
+    "refundItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["purchase_key", "state", "truth_state", "verified_at"],
+      "properties": {
+        "purchase_key": { "$ref": "#/definitions/purchaseKey" },
+        "state": { "enum": ["not_requested", "requested", "pending", "partially_refunded", "refunded", "failed", "uncertain", "disputed"] },
+        "truth_state": { "$ref": "#/definitions/truthState" },
+        "verified_at": { "$ref": "#/definitions/dateTime" }
+      }
+    },
+    "customerMoney": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["disclosure", "payments", "refunds"],
+      "properties": {
+        "disclosure": { "enum": ["signed_in_redacted", "withheld_scoped_session"] },
+        "payments": { "type": "array", "maxItems": 64, "items": { "$ref": "#/definitions/paymentItem" } },
+        "refunds": { "type": "array", "maxItems": 64, "items": { "$ref": "#/definitions/refundItem" } }
+      }
+    },
+    "tripCareCase": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["case_key", "customer_state", "service_keys", "next_safe_action", "deadline", "verified_at"],
+      "properties": {
+        "case_key": { "$ref": "#/definitions/caseKey" },
+        "customer_state": { "enum": ["case_received", "immediate_safety_help", "action_required", "recovery_underway", "attention_needed", "recovered", "resolved_with_loss"] },
+        "service_keys": { "$ref": "#/definitions/serviceKeys" },
+        "next_safe_action": { "$ref": "#/definitions/nullableAction" },
+        "deadline": { "$ref": "#/definitions/nullableDateTime" },
+        "verified_at": { "$ref": "#/definitions/dateTime" }
+      }
+    },
+    "tripCareReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["receipt_key", "customer_state", "service_keys", "next_safe_action", "deadline", "verified_at"],
+      "properties": {
+        "receipt_key": { "$ref": "#/definitions/receiptKey" },
+        "customer_state": { "enum": ["received", "checking", "need_information", "human_review"] },
+        "service_keys": { "$ref": "#/definitions/serviceKeys" },
+        "next_safe_action": { "$ref": "#/definitions/nullableAction" },
+        "deadline": { "$ref": "#/definitions/nullableDateTime" },
+        "verified_at": { "$ref": "#/definitions/dateTime" }
+      }
+    },
+    "travelerReadiness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["traveler_slot", "subject_kind", "readiness", "pending_requirement_codes", "next_safe_action", "deadline", "verified_at"],
+      "properties": {
+        "traveler_slot": { "$ref": "#/definitions/travelerSlot" },
+        "subject_kind": { "enum": ["adult", "minor", "dependent_adult"] },
+        "readiness": { "enum": ["ready", "attention_required", "blocked", "unknown"] },
+        "pending_requirement_codes": { "$ref": "#/definitions/codes" },
+        "next_safe_action": { "$ref": "#/definitions/nullableAction" },
+        "deadline": { "$ref": "#/definitions/nullableDateTime" },
+        "verified_at": { "$ref": "#/definitions/dateTime" }
+      }
+    },
+    "loyalty": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["disclosure", "status", "filter_readiness", "affected_service_keys", "next_safe_action", "verified_at"],
+      "properties": {
+        "disclosure": { "enum": ["signed_in_redacted", "withheld_scoped_session"] },
+        "status": { "enum": ["not_requested", "planning", "member_connection_needed", "benefits_checking", "options_ready", "stale", "unavailable", "withheld"] },
+        "filter_readiness": { "enum": ["not_requested", "checking", "connection_required", "ready", "refresh_required", "unavailable", "withheld"] },
+        "affected_service_keys": { "$ref": "#/definitions/serviceKeys" },
+        "next_safe_action": { "$ref": "#/definitions/nullableAction" },
+        "verified_at": { "$ref": "#/definitions/nullableDateTime" }
+      }
+    },
+    "offlinePack": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "itinerary", "service_contacts", "emergency_contacts", "next_safe_action", "verified_at"],
+      "properties": {
+        "status": { "enum": ["not_requested", "building", "ready", "stale", "unavailable"] },
+        "itinerary": { "enum": ["ready", "stale", "missing", "not_applicable"] },
+        "service_contacts": { "enum": ["ready", "stale", "missing", "not_applicable"] },
+        "emergency_contacts": { "enum": ["ready", "stale", "missing", "not_applicable"] },
+        "next_safe_action": { "$ref": "#/definitions/nullableAction" },
+        "verified_at": { "$ref": "#/definitions/dateTime" }
+      }
+    },
+    "freshness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "source_verified_at", "projected_at", "basis", "resolution_inferred"],
+      "properties": {
+        "status": { "$ref": "#/definitions/truthState" },
+        "source_verified_at": { "$ref": "#/definitions/dateTime" },
+        "projected_at": { "$ref": "#/definitions/dateTime" },
+        "basis": { "enum": ["signed_in_redacted", "scoped_visible_only"] },
+        "resolution_inferred": { "const": false }
+      }
+    },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["authorization_effect", "view_projection_only", "change_started", "cancellation_started", "payment_started", "refund_started", "supplier_action_started", "processor_action_started", "resolution_inferred"],
+      "properties": {
+        "authorization_effect": { "const": "none" },
+        "view_projection_only": { "const": true },
+        "change_started": { "const": false },
+        "cancellation_started": { "const": false },
+        "payment_started": { "const": false },
+        "refund_started": { "const": false },
+        "supplier_action_started": { "const": false },
+        "processor_action_started": { "const": false },
+        "resolution_inferred": { "const": false }
+      }
+    },
+    "dataBoundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["customer_serialization_allowed", "validated_private_read_model_only", "owner_scope_exposed", "internal_refs_exposed", "raw_identity_data_exposed", "raw_payment_data_exposed", "raw_medical_data_exposed", "raw_provider_data_exposed", "bearer_secret_exposed", "internal_operator_routing_exposed", "settlement_data_exposed", "commission_data_exposed"],
+      "properties": {
+        "customer_serialization_allowed": { "const": true },
+        "validated_private_read_model_only": { "const": true },
+        "owner_scope_exposed": { "const": false },
+        "internal_refs_exposed": { "const": false },
+        "raw_identity_data_exposed": { "const": false },
+        "raw_payment_data_exposed": { "const": false },
+        "raw_medical_data_exposed": { "const": false },
+        "raw_provider_data_exposed": { "const": false },
+        "bearer_secret_exposed": { "const": false },
+        "internal_operator_routing_exposed": { "const": false },
+        "settlement_data_exposed": { "const": false },
+        "commission_data_exposed": { "const": false }
+      }
+    }
+  }
+}

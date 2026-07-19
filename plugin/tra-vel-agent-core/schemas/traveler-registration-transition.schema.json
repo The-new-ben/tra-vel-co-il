@@ -1,0 +1,51 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://tra-vel.co.il/schemas/traveler-registration-transition-v1.schema.json",
+  "title": "Tra-Vel traveler registration successor transition",
+  "description": "Immutable evidence that one progressive registration revision succeeded another. It records every changed and invalidated readiness requirement without containing raw traveler data or granting supplier/payment authority.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract_version", "transition_ref", "registration_ref", "trip_ref", "from_version", "to_version", "from_gate", "to_gate", "reason", "changed_requirements", "invalidated_requirements", "actor_ref", "authority_digest", "evidence_digest", "occurred_at", "authorization_effect", "data_boundary"],
+  "properties": {
+    "contract_version": {"const": "1.0.0"},
+    "transition_ref": {"$ref": "#/definitions/transitionRef"},
+    "registration_ref": {"$ref": "#/definitions/registrationRef"},
+    "trip_ref": {"$ref": "#/definitions/tripRef"},
+    "from_version": {"type": "integer", "minimum": 1, "maximum": 2147483646},
+    "to_version": {"type": "integer", "minimum": 2, "maximum": 2147483647},
+    "from_gate": {"$ref": "#/definitions/gate"},
+    "to_gate": {"$ref": "#/definitions/gate"},
+    "reason": {"enum": ["progress", "profile_correction", "party_change", "document_change", "guardian_change", "accessibility_change", "supplier_change", "itinerary_change", "policy_refresh", "incident_recovery"]},
+    "changed_requirements": {"$ref": "#/definitions/requirements"},
+    "invalidated_requirements": {"$ref": "#/definitions/requirements"},
+    "actor_ref": {"$ref": "#/definitions/principalRef"},
+    "authority_digest": {"$ref": "#/definitions/digest"},
+    "evidence_digest": {"$ref": "#/definitions/digest"},
+    "occurred_at": {"$ref": "#/definitions/dateTime"},
+    "authorization_effect": {"const": "registration_only"},
+    "data_boundary": {"$ref": "#/definitions/dataBoundary"}
+  },
+  "definitions": {
+    "transitionRef": {"type": "string", "pattern": "^tv_registration_transition_[A-Za-z0-9_-]{16,96}$"},
+    "registrationRef": {"type": "string", "pattern": "^tv_registration_[A-Za-z0-9_-]{16,96}$"},
+    "tripRef": {"type": "string", "pattern": "^tv_trip_[A-Za-z0-9_-]{16,96}$"},
+    "principalRef": {"type": "string", "pattern": "^tv_principal_[A-Za-z0-9_-]{16,96}$"},
+    "digest": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "dateTime": {"type": "string", "format": "date-time", "pattern": "Z$"},
+    "gate": {"enum": ["discover", "personalize", "ready_to_quote", "ready_to_reserve", "ready_to_fulfill", "ready_to_travel"]},
+    "requirement": {"enum": ["intent_recorded", "travel_window_recorded", "party_size_recorded", "contact_verified", "traveler_roles_declared", "traveler_preferences_recorded", "loyalty_preferences_recorded", "exact_occupancy_recorded", "rules_identity_facts_recorded", "accessibility_requirements_recorded", "dependent_support_plan_recorded", "reachable_contact_verified", "travel_document_snapshot_verified", "guardian_authority_verified", "dependent_authority_verified", "terms_accepted", "booking_questions_complete", "payment_session_owner_verified", "payment_state_sufficient", "supplier_confirmation_verified", "mandatory_traveler_data_accepted", "traveler_manifest_snapshot_verified", "document_admissibility_current", "checkin_pickup_instructions_ready", "accessibility_supplier_acknowledged", "emergency_contacts_offline", "service_contact_pack_offline", "itinerary_offline", "dependency_health_checked"]},
+    "requirements": {"type": "array", "maxItems": 32, "uniqueItems": true, "items": {"$ref": "#/definitions/requirement"}},
+    "dataBoundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["raw_identity_data_exposed", "raw_payment_data_exposed", "raw_medical_data_exposed", "raw_provider_payload_exposed", "bearer_secret_exposed"],
+      "properties": {
+        "raw_identity_data_exposed": {"const": false},
+        "raw_payment_data_exposed": {"const": false},
+        "raw_medical_data_exposed": {"const": false},
+        "raw_provider_payload_exposed": {"const": false},
+        "bearer_secret_exposed": {"const": false}
+      }
+    }
+  }
+}

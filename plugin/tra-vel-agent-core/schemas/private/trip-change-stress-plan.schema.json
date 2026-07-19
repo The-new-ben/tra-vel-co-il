@@ -1,0 +1,487 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://tra-vel.co.il/schemas/private/trip-change-stress-plan.schema.json",
+  "title": "Tra-Vel private trip-change stress plan",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "environment",
+    "plan_ref",
+    "plan_digest",
+    "scenario_ref",
+    "trip_ref",
+    "scenario_type",
+    "observed_at",
+    "dependency_order",
+    "component_partition",
+    "traveler_partition",
+    "recovery_candidates",
+    "selected_candidate_ref",
+    "actions",
+    "required_rechecks",
+    "transit_source_gate",
+    "summary",
+    "private_boundary"
+  ],
+  "properties": {
+    "contract_version": { "const": "1.0.0" },
+    "environment": { "const": "private_simulation" },
+    "plan_ref": { "$ref": "#/definitions/stressPlanRef" },
+    "plan_digest": { "$ref": "#/definitions/digest" },
+    "scenario_ref": { "$ref": "#/definitions/stressScenarioRef" },
+    "trip_ref": { "$ref": "#/definitions/tripRef" },
+    "scenario_type": { "$ref": "#/definitions/scenarioType" },
+    "observed_at": { "$ref": "#/definitions/utc" },
+    "dependency_order": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 48,
+      "uniqueItems": true,
+      "items": { "$ref": "#/definitions/componentRef" }
+    },
+    "component_partition": { "$ref": "#/definitions/componentPartition" },
+    "traveler_partition": { "$ref": "#/definitions/travelerPartition" },
+    "recovery_candidates": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 2,
+      "items": { "$ref": "#/definitions/recoveryCandidate" }
+    },
+    "selected_candidate_ref": { "$ref": "#/definitions/recoveryCandidateRef" },
+    "actions": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 24,
+      "items": { "$ref": "#/definitions/action" }
+    },
+    "required_rechecks": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 5,
+      "items": { "$ref": "#/definitions/recheck" }
+    },
+    "transit_source_gate": { "$ref": "#/definitions/transitSourceGate" },
+    "summary": { "$ref": "#/definitions/summary" },
+    "private_boundary": { "$ref": "#/definitions/privateBoundary" }
+  },
+  "definitions": {
+    "digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "nullableDigest": {
+      "anyOf": [
+        { "$ref": "#/definitions/digest" },
+        { "type": "null" }
+      ]
+    },
+    "utc": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"
+    },
+    "nullableUtc": {
+      "anyOf": [
+        { "$ref": "#/definitions/utc" },
+        { "type": "null" }
+      ]
+    },
+    "stressPlanRef": {
+      "type": "string",
+      "pattern": "^tv_stress_plan_[a-z0-9]{8,48}$"
+    },
+    "stressScenarioRef": {
+      "type": "string",
+      "pattern": "^tv_stress_scenario_[a-z0-9]{8,48}$"
+    },
+    "tripRef": {
+      "type": "string",
+      "pattern": "^tv_trip_[a-z0-9]{8,48}$"
+    },
+    "componentRef": {
+      "type": "string",
+      "pattern": "^tv_component_[a-z0-9]{8,48}$"
+    },
+    "travelerRef": {
+      "type": "string",
+      "pattern": "^tv_traveler_[a-z0-9]{8,48}$"
+    },
+    "recoveryCandidateRef": {
+      "type": "string",
+      "pattern": "^tv_recovery_candidate_[a-z0-9]{8,48}$"
+    },
+    "stressActionRef": {
+      "type": "string",
+      "pattern": "^tv_stress_action_[a-z0-9]{8,48}$"
+    },
+    "scenarioType": {
+      "type": "string",
+      "enum": [
+        "overlapping_connection_disruptions",
+        "flight_only_change",
+        "five_person_package_constraints",
+        "aircraft_or_terminal_change",
+        "israel_gtfs_degraded"
+      ]
+    },
+    "componentPartition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["universe_refs", "affected_refs", "preserved_refs", "blocked_refs"],
+      "properties": {
+        "universe_refs": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 48,
+          "uniqueItems": true,
+          "items": { "$ref": "#/definitions/componentRef" }
+        },
+        "affected_refs": {
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 48,
+          "uniqueItems": true,
+          "items": { "$ref": "#/definitions/componentRef" }
+        },
+        "preserved_refs": {
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 48,
+          "uniqueItems": true,
+          "items": { "$ref": "#/definitions/componentRef" }
+        },
+        "blocked_refs": {
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 48,
+          "uniqueItems": true,
+          "items": { "$ref": "#/definitions/componentRef" }
+        }
+      }
+    },
+    "travelerPartition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["universe_refs", "affected_refs", "preserved_refs", "blocked_refs"],
+      "properties": {
+        "universe_refs": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 12,
+          "uniqueItems": true,
+          "items": { "$ref": "#/definitions/travelerRef" }
+        },
+        "affected_refs": {
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 12,
+          "uniqueItems": true,
+          "items": { "$ref": "#/definitions/travelerRef" }
+        },
+        "preserved_refs": {
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 12,
+          "uniqueItems": true,
+          "items": { "$ref": "#/definitions/travelerRef" }
+        },
+        "blocked_refs": {
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 12,
+          "uniqueItems": true,
+          "items": { "$ref": "#/definitions/travelerRef" }
+        }
+      }
+    },
+    "strategy": {
+      "type": "string",
+      "enum": [
+        "protected_connection_resequence",
+        "independent_connection_rebook_review",
+        "preserve_unaffected_and_revalidate_flight",
+        "split_constrained_party_scope",
+        "hold_package_for_party_clearance",
+        "protected_aircraft_terminal_revalidation",
+        "official_channel_and_human_transit_fallback"
+      ]
+    },
+    "recoveryCandidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidate_ref",
+        "strategy",
+        "target_component_refs",
+        "state",
+        "execution_authorized",
+        "supplier_action_claimed",
+        "commercial_fact_claimed",
+        "authorization_effect"
+      ],
+      "properties": {
+        "candidate_ref": { "$ref": "#/definitions/recoveryCandidateRef" },
+        "strategy": { "$ref": "#/definitions/strategy" },
+        "target_component_refs": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 48,
+          "uniqueItems": true,
+          "items": { "$ref": "#/definitions/componentRef" }
+        },
+        "state": {
+          "type": "string",
+          "enum": ["selected_for_review", "planning_alternative"]
+        },
+        "execution_authorized": { "const": false },
+        "supplier_action_claimed": { "const": false },
+        "commercial_fact_claimed": { "const": false },
+        "authorization_effect": { "const": "none" }
+      }
+    },
+    "actionCode": {
+      "type": "string",
+      "enum": [
+        "assess_connection_dependency_chain",
+        "compare_connection_recovery",
+        "revalidate_changed_flight_only",
+        "review_party_eligibility",
+        "review_party_consent",
+        "review_guardian_authority",
+        "review_accessibility_acknowledgement",
+        "recheck_seat_assignment",
+        "recheck_special_service_request",
+        "recheck_wheelchair_assistance",
+        "recheck_baggage_allowance",
+        "recheck_minimum_connection_time",
+        "withhold_unverified_transit_route",
+        "consult_official_route_planner",
+        "route_to_human_transit_review"
+      ]
+    },
+    "blockerCode": {
+      "type": "string",
+      "enum": [
+        "eligibility_not_verified",
+        "consent_pending",
+        "guardian_authority_missing",
+        "accessibility_ack_pending",
+        "official_source_stale",
+        "official_source_unavailable",
+        "supplier_verification_pending"
+      ]
+    },
+    "action": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "action_ref",
+        "code",
+        "component_refs",
+        "traveler_refs",
+        "state",
+        "blocker_codes",
+        "authorization_effect",
+        "supplier_action_claimed"
+      ],
+      "properties": {
+        "action_ref": { "$ref": "#/definitions/stressActionRef" },
+        "code": { "$ref": "#/definitions/actionCode" },
+        "component_refs": {
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 48,
+          "uniqueItems": true,
+          "items": { "$ref": "#/definitions/componentRef" }
+        },
+        "traveler_refs": {
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 12,
+          "uniqueItems": true,
+          "items": { "$ref": "#/definitions/travelerRef" }
+        },
+        "state": {
+          "type": "string",
+          "enum": ["planned", "blocked", "informational"]
+        },
+        "blocker_codes": {
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 7,
+          "uniqueItems": true,
+          "items": { "$ref": "#/definitions/blockerCode" }
+        },
+        "authorization_effect": { "const": "none" },
+        "supplier_action_claimed": { "const": false }
+      }
+    },
+    "recheckCode": {
+      "type": "string",
+      "enum": [
+        "seat_assignment",
+        "special_service_request",
+        "wheelchair_assistance",
+        "baggage_allowance",
+        "minimum_connection_time"
+      ]
+    },
+    "recheck": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "component_refs",
+        "traveler_refs",
+        "state",
+        "truth_state",
+        "execution_authorized",
+        "supplier_action_claimed"
+      ],
+      "properties": {
+        "code": { "$ref": "#/definitions/recheckCode" },
+        "component_refs": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 48,
+          "uniqueItems": true,
+          "items": { "$ref": "#/definitions/componentRef" }
+        },
+        "traveler_refs": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 12,
+          "uniqueItems": true,
+          "items": { "$ref": "#/definitions/travelerRef" }
+        },
+        "state": { "const": "required" },
+        "truth_state": { "const": "pending_supplier_verification" },
+        "execution_authorized": { "const": false },
+        "supplier_action_claimed": { "const": false }
+      }
+    },
+    "transitSourceGate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "applicability",
+        "source_code",
+        "source_state",
+        "checked_at",
+        "expires_at",
+        "evidence_digest",
+        "freshness_gate_state",
+        "route_claim_allowed",
+        "current_route_claim_present",
+        "fallback_channels",
+        "human_review_required"
+      ],
+      "properties": {
+        "applicability": {
+          "type": "string",
+          "enum": ["required", "not_applicable"]
+        },
+        "source_code": {
+          "type": "string",
+          "enum": ["israel_ministry_transport_gtfs", "not_applicable"]
+        },
+        "source_state": {
+          "type": "string",
+          "enum": ["stale", "unavailable", "not_applicable"]
+        },
+        "checked_at": { "$ref": "#/definitions/utc" },
+        "expires_at": { "$ref": "#/definitions/nullableUtc" },
+        "evidence_digest": { "$ref": "#/definitions/nullableDigest" },
+        "freshness_gate_state": {
+          "type": "string",
+          "enum": ["failed_closed", "not_applicable"]
+        },
+        "route_claim_allowed": { "const": false },
+        "current_route_claim_present": { "const": false },
+        "fallback_channels": {
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 3,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": [
+              "israel_official_route_planner",
+              "official_transport_operator_channel",
+              "human_travel_agent"
+            ]
+          }
+        },
+        "human_review_required": { "type": "boolean" }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "component_count",
+        "affected_component_count",
+        "preserved_component_count",
+        "blocked_component_count",
+        "traveler_count",
+        "affected_traveler_count",
+        "preserved_traveler_count",
+        "blocked_traveler_count",
+        "candidate_count",
+        "selected_candidate_count",
+        "required_recheck_count",
+        "side_effect_count"
+      ],
+      "properties": {
+        "component_count": { "type": "integer", "minimum": 1, "maximum": 48 },
+        "affected_component_count": { "type": "integer", "minimum": 0, "maximum": 48 },
+        "preserved_component_count": { "type": "integer", "minimum": 0, "maximum": 48 },
+        "blocked_component_count": { "type": "integer", "minimum": 0, "maximum": 48 },
+        "traveler_count": { "type": "integer", "minimum": 1, "maximum": 12 },
+        "affected_traveler_count": { "type": "integer", "minimum": 0, "maximum": 12 },
+        "preserved_traveler_count": { "type": "integer", "minimum": 0, "maximum": 12 },
+        "blocked_traveler_count": { "type": "integer", "minimum": 0, "maximum": 12 },
+        "candidate_count": { "type": "integer", "minimum": 1, "maximum": 2 },
+        "selected_candidate_count": { "const": 1 },
+        "required_recheck_count": { "type": "integer", "minimum": 0, "maximum": 5 },
+        "side_effect_count": { "const": 0 }
+      }
+    },
+    "privateBoundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "server_only",
+        "planning_only",
+        "public_serialization_allowed",
+        "storage_written",
+        "rest_route_registered",
+        "network_called",
+        "provider_called",
+        "supplier_dispatched",
+        "payment_executed",
+        "booking_modified",
+        "route_availability_claimed",
+        "commercial_authority",
+        "authorization_effect",
+        "side_effect_count"
+      ],
+      "properties": {
+        "server_only": { "const": true },
+        "planning_only": { "const": true },
+        "public_serialization_allowed": { "const": false },
+        "storage_written": { "const": false },
+        "rest_route_registered": { "const": false },
+        "network_called": { "const": false },
+        "provider_called": { "const": false },
+        "supplier_dispatched": { "const": false },
+        "payment_executed": { "const": false },
+        "booking_modified": { "const": false },
+        "route_availability_claimed": { "const": false },
+        "commercial_authority": { "const": false },
+        "authorization_effect": { "const": "none" },
+        "side_effect_count": { "const": 0 }
+      }
+    }
+  }
+}

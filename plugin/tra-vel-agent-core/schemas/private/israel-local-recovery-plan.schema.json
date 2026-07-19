@@ -1,0 +1,119 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://tra-vel.co.il/schemas/private/israel-local-recovery-plan-v1.0.0.json",
+  "title": "Tra-Vel private Israel local recovery plan",
+  "description": "Deterministic local recovery assessment that preserves unaffected trip components, separates refund from replacement payment, requires approvals, and dispatches nothing.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract_version", "environment", "data_mode", "recovery_ref", "recovery_digest", "context_binding", "event_binding", "affected_service_refs", "affected_trip_node_refs", "preserved_service_refs", "preserved_trip_node_refs", "strategy", "severity", "state", "required_approvals", "actions", "financial_separation", "benefit_reconciliation", "dispatch", "boundary"],
+  "properties": {
+    "contract_version": {"const": "1.0.0"},
+    "environment": {"const": "sandbox"},
+    "data_mode": {"const": "synthetic_demo"},
+    "recovery_ref": {"type": "string", "pattern": "^tv_local_recovery_[A-Za-z0-9_-]{16,96}$"},
+    "recovery_digest": {"$ref": "#/definitions/digest"},
+    "context_binding": {"$ref": "#/definitions/contextBinding"},
+    "event_binding": {"$ref": "#/definitions/eventBinding"},
+    "affected_service_refs": {"$ref": "#/definitions/serviceRefsNonempty"},
+    "affected_trip_node_refs": {"$ref": "#/definitions/nodeRefsNonempty"},
+    "preserved_service_refs": {"$ref": "#/definitions/serviceRefs"},
+    "preserved_trip_node_refs": {"$ref": "#/definitions/nodeRefs"},
+    "strategy": {"$ref": "#/definitions/strategy"},
+    "severity": {"enum": ["P0", "P1", "P2", "P3"]},
+    "state": {"enum": ["evidence_required", "human_safety_review", "ready_for_review"]},
+    "required_approvals": {"type": "array", "minItems": 1, "maxItems": 4, "uniqueItems": true, "items": {"$ref": "#/definitions/approval"}},
+    "actions": {"type": "array", "minItems": 3, "maxItems": 8, "items": {"$ref": "#/definitions/action"}},
+    "financial_separation": {"$ref": "#/definitions/financialSeparation"},
+    "benefit_reconciliation": {"$ref": "#/definitions/benefitReconciliation"},
+    "dispatch": {"$ref": "#/definitions/dispatch"},
+    "boundary": {"$ref": "#/definitions/boundary"}
+  },
+  "definitions": {
+    "digest": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "serviceRef": {"type": "string", "pattern": "^tv_local_service_[A-Za-z0-9_-]{16,96}$"},
+    "nodeRef": {"type": "string", "pattern": "^tv_node_[A-Za-z0-9_-]{16,96}$"},
+    "serviceRefs": {"type": "array", "maxItems": 128, "uniqueItems": true, "items": {"$ref": "#/definitions/serviceRef"}},
+    "serviceRefsNonempty": {"type": "array", "minItems": 1, "maxItems": 128, "uniqueItems": true, "items": {"$ref": "#/definitions/serviceRef"}},
+    "nodeRefs": {"type": "array", "maxItems": 128, "uniqueItems": true, "items": {"$ref": "#/definitions/nodeRef"}},
+    "nodeRefsNonempty": {"type": "array", "minItems": 1, "maxItems": 128, "uniqueItems": true, "items": {"$ref": "#/definitions/nodeRef"}},
+    "strategy": {"enum": ["reallocate_party", "find_capacity_match", "preserve_access_requirements", "reconfirm_arrival_and_keys", "revalidate_local_terms", "protect_deadline", "revalidate_shabbat_fit", "revalidate_kosher_evidence", "reroute_local_transport", "replace_domestic_segment", "safety_hold_and_human_review", "restore_utility_or_replace", "replace_closed_service", "replace_parking_or_access_route", "reconfigure_activity", "preserve_partial_party", "revalidate_supplier_revision", "propose_supplier_replacement", "reconcile_refund_separately", "authorize_replacement_payment_separately", "refresh_benefit_evidence", "reconcile_benefit_reversal"]},
+    "approval": {"enum": ["customer_approval", "financial_approval", "human_operator_review", "supplier_change_approval"]},
+    "contextBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["context_ref", "context_version", "context_digest"],
+      "properties": {
+        "context_ref": {"type": "string", "pattern": "^tv_local_search_[A-Za-z0-9_-]{16,96}$"},
+        "context_version": {"type": "integer", "minimum": 1, "maximum": 2147483647},
+        "context_digest": {"$ref": "#/definitions/digest"}
+      }
+    },
+    "eventBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["event_ref", "event_version", "event_digest"],
+      "properties": {
+        "event_ref": {"type": "string", "pattern": "^tv_local_event_[A-Za-z0-9_-]{16,96}$"},
+        "event_version": {"type": "integer", "minimum": 1, "maximum": 2147483647},
+        "event_digest": {"$ref": "#/definitions/digest"}
+      }
+    },
+    "action": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["action_type", "target_service_refs", "required_approval_codes", "requires_financial_approval", "requires_supplier_change_approval", "execution_state", "supplier_dispatched", "processor_called"],
+      "properties": {
+        "action_type": {"enum": ["preserve_unaffected_components", "verify_disruption_evidence", "reconcile_original_refund_separately", "refresh_exact_benefit_axes", "reallocate_party", "find_capacity_match", "preserve_access_requirements", "reconfirm_arrival_and_keys", "revalidate_local_terms", "protect_deadline", "revalidate_shabbat_fit", "revalidate_kosher_evidence", "reroute_local_transport", "replace_domestic_segment", "safety_hold_and_human_review", "restore_utility_or_replace", "replace_closed_service", "replace_parking_or_access_route", "reconfigure_activity", "preserve_partial_party", "revalidate_supplier_revision", "propose_supplier_replacement", "reconcile_refund_separately", "authorize_replacement_payment_separately", "refresh_benefit_evidence", "reconcile_benefit_reversal"]},
+        "target_service_refs": {"$ref": "#/definitions/serviceRefs"},
+        "required_approval_codes": {"type": "array", "maxItems": 4, "uniqueItems": true, "items": {"$ref": "#/definitions/approval"}},
+        "requires_financial_approval": {"type": "boolean"},
+        "requires_supplier_change_approval": {"type": "boolean"},
+        "execution_state": {"const": "planned"},
+        "supplier_dispatched": {"const": false},
+        "processor_called": {"const": false}
+      }
+    },
+    "financialSeparation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["original_refund_state", "replacement_payment_state", "netting_prohibited", "existing_commerce_engine_authoritative"],
+      "properties": {
+        "original_refund_state": {"enum": ["not_applicable", "review_required", "observed_pending_reconciliation"]},
+        "replacement_payment_state": {"enum": ["not_required", "separate_authorization_required"]},
+        "netting_prohibited": {"const": true},
+        "existing_commerce_engine_authoritative": {"const": true}
+      }
+    },
+    "benefitReconciliation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "eligibility_created", "checkout_effect", "redemption_dispatched"],
+      "properties": {
+        "state": {"enum": ["not_applicable", "refresh_required", "eligibility_recheck_required", "expired", "reversal_reconciliation_required"]},
+        "eligibility_created": {"const": false},
+        "checkout_effect": {"const": "none"},
+        "redemption_dispatched": {"const": false}
+      }
+    },
+    "dispatch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "supplier_dispatched", "processor_called"],
+      "properties": {"state": {"const": "not_dispatched"}, "supplier_dispatched": {"const": false}, "processor_called": {"const": false}}
+    },
+    "boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["server_only", "public_serialization_allowed", "planning_only", "creates_order", "creates_payment", "creates_refund", "changes_supplier_booking"],
+      "properties": {
+        "server_only": {"const": true},
+        "public_serialization_allowed": {"const": false},
+        "planning_only": {"const": true},
+        "creates_order": {"const": false},
+        "creates_payment": {"const": false},
+        "creates_refund": {"const": false},
+        "changes_supplier_booking": {"const": false}
+      }
+    }
+  }
+}

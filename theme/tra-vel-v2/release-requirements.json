@@ -1,0 +1,40 @@
+{
+  "contract_version": "1.0.0",
+  "theme": {
+    "slug": "tra-vel-v2",
+    "version": "1.20.0",
+    "requires_wordpress": "6.6",
+    "requires_php": "7.4"
+  },
+  "deploy_gateway": {
+    "min_version": "0.3.0"
+  },
+  "public_http": {
+    "unknown_path_prefix": "/tra-vel-release-missing-",
+    "unknown_status": 404,
+    "redirects_allowed": false
+  },
+  "dependencies": [
+    {
+      "id": "tra-vel-agent-core",
+      "health_path": "/wp-json/tra-vel-agent/v1/health",
+      "min_version": "0.7.0",
+      "contract_version": "1.0.0",
+      "required_capabilities": [
+        "account_plan_history",
+        "assisted_quote_cases",
+        "audited_proposal_actions",
+        "commercial_intents",
+        "durable_commercial_handoffs",
+        "operator_queue",
+        "sourced_assisted_proposals"
+      ],
+      "required_stores": [
+        "agent_store",
+        "assisted_proposal_store",
+        "commercial_intent_store",
+        "quote_case_store"
+      ]
+    }
+  ]
+}

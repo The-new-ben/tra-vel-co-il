@@ -22,6 +22,7 @@ $GLOBALS['tvq_registered_routes'] = array();
 $GLOBALS['tvq_uuid_counter']      = 100;
 $GLOBALS['tvq_scheduled_events']  = array();
 $GLOBALS['tvq_options']           = array( 'tra_vel_quote_case_db_version' => '1.0.1', 'tra_vel_agent_db_version' => '1.2.0' );
+$GLOBALS['tvq_assisted_proposal_ready'] = true;
 
 class WP_REST_Controller {
 	protected $namespace;
@@ -246,6 +247,15 @@ function sanitize_text_field( $value ) {
 	return trim( strip_tags( (string) $value ) );
 }
 
+function wp_list_pluck( $list, $field ) {
+	return array_map(
+		static function ( $item ) use ( $field ) {
+			return is_array( $item ) && array_key_exists( $field, $item ) ? $item[ $field ] : null;
+		},
+		(array) $list
+	);
+}
+
 function absint( $value ) {
 	return abs( (int) $value );
 }
@@ -349,6 +359,16 @@ function __return_true() {
 	return true;
 }
 
+class Tra_Vel_Assisted_Proposal_Store {
+	public static function is_ready() {
+		return ! empty( $GLOBALS['tvq_assisted_proposal_ready'] );
+	}
+
+	public static function proposals_table() {
+		return $GLOBALS['wpdb']->prefix . 'tra_vel_assisted_proposals';
+	}
+}
+
 require TRA_VEL_AGENT_PATH . '/includes/class-tra-vel-agent-store.php';
 require TRA_VEL_AGENT_PATH . '/includes/class-tra-vel-quote-case-policy.php';
 require TRA_VEL_AGENT_PATH . '/includes/class-tra-vel-quote-case-store.php';
@@ -358,17 +378,21 @@ class Tra_Vel_Test_Quote_Agent_Store {
 	public $runs = array();
 	public $tokens = array();
 	public $limit_counts = array();
+	public $resume_read_error = '';
+	public $resume_read_calls = 0;
 
 	public function seed_ready_run( $suffix ) {
 		$run_uuid     = sprintf( '10000000-0000-4000-8000-%012d', (int) $suffix );
 		$request_uuid = sprintf( '20000000-0000-4000-8000-%012d', (int) $suffix );
 		$token        = 'run-owner-token-' . str_pad( (string) $suffix, 32, '0', STR_PAD_LEFT );
 		$run          = array(
-			'id'            => (int) $suffix,
-			'run_uuid'      => $run_uuid,
-			'owner_user_id' => 0,
-			'status'        => 'request_ready',
-			'trip_request'  => array(
+			'id'               => (int) $suffix,
+			'run_uuid'         => $run_uuid,
+			'owner_user_id'    => 0,
+			'owner_token_hash' => hash( 'sha256', $token ),
+			'expires_at'      => gmdate( 'Y-m-d H:i:s', time() + DAY_IN_SECONDS ),
+			'status'          => 'request_ready',
+			'trip_request'     => array(
 				'contract_version' => '1.0.0',
 				'request_id'      => $request_uuid,
 				'revision'        => 1,
@@ -401,8 +425,30 @@ class Tra_Vel_Test_Quote_Agent_Store {
 		return $this->runs[ $run_uuid ] ?? null;
 	}
 
+	public function get_run_ownership_by_uuids( $run_uuids, &$read_error = null ) {
+		$this->resume_read_calls++;
+		$read_error = (string) $this->resume_read_error;
+		if ( '' !== $read_error ) {
+			return array();
+		}
+		$rows = array();
+		foreach ( array_unique( (array) $run_uuids ) as $run_uuid ) {
+			if ( ! isset( $this->runs[ $run_uuid ] ) ) {
+				continue;
+			}
+			$run = $this->runs[ $run_uuid ];
+			$rows[ $run_uuid ] = array(
+				'run_uuid'        => (string) $run_uuid,
+				'owner_user_id'   => (int) $run['owner_user_id'],
+				'owner_token_hash'=> (string) ( $run['owner_token_hash'] ?? '' ),
+				'expires_at'      => (string) ( $run['expires_at'] ?? '' ),
+			);
+		}
+		return $rows;
+	}
+
 	public function can_access( $run, $token, $user_id ) {
-		if ( ! is_array( $run ) ) {
+		if ( ! is_array( $run ) || empty( $run['expires_at'] ) || strtotime( $run['expires_at'] . ' UTC' ) < time() ) {
 			return false;
 		}
 		if ( $user_id > 0 && (int) $run['owner_user_id'] === (int) $user_id ) {
@@ -429,6 +475,7 @@ class Tra_Vel_Test_Quote_Case_Store {
 	public $events = array();
 	public $create_calls = 0;
 	public $handoff_calls = 0;
+	public $list_read_error = '';
 
 	private $next_id = 1;
 
@@ -491,7 +538,11 @@ class Tra_Vel_Test_Quote_Case_Store {
 			&& hash_equals( (string) $case['owner_token_hash'], (string) $guest_token_hash );
 	}
 
-	public function list_owned( $user_id, $guest_token_hash, $limit = 30 ) {
+	public function list_owned( $user_id, $guest_token_hash, $limit = 30, &$read_error = null ) {
+		$read_error = (string) $this->list_read_error;
+		if ( '' !== $read_error ) {
+			return array();
+		}
 		$owned = array_filter(
 			$this->cases,
 			function ( $case ) use ( $user_id, $guest_token_hash ) {
@@ -540,7 +591,7 @@ class Tra_Vel_Test_Quote_Case_Store {
 		return array_merge( $creation, $tail );
 	}
 
-	public function record_handoff( $case_uuid, $expected_version, $principal, $channel, $provider, $expires_at, $idempotency_key ) {
+	public function record_handoff( $case_uuid, $expected_version, $principal, $channel, $provider, $target_digest, $expires_at, $idempotency_key ) {
 		unset( $idempotency_key );
 		$case = $this->get_case_by_uuid( $case_uuid );
 		if ( ! $this->can_access( $case, (int) ( $principal['user_id'] ?? 0 ), (string) ( $principal['token_hash'] ?? '' ) ) ) {
@@ -555,7 +606,7 @@ class Tra_Vel_Test_Quote_Case_Store {
 			'traveler',
 			'web',
 			(int) ( $principal['user_id'] ?? 0 ),
-			array( 'channel' => $channel, 'provider' => $provider, 'expires_at' => $expires_at, 'dispatched' => false )
+			array( 'channel' => $channel, 'provider' => $provider, 'target_digest' => $target_digest, 'expires_at' => $expires_at, 'dispatched' => false )
 		);
 	}
 
@@ -643,7 +694,7 @@ class Tra_Vel_Test_Quote_Case_Store {
 	private function append_event( $case, $type, $from_status, $to_status, $actor_type, $source, $visibility, $message, $data ) {
 		$sequence = count( $this->events[ $case['case_uuid'] ] ) + 1;
 		$event    = array(
-			'contract_version' => '1.0.0',
+			'contract_version' => Tra_Vel_Quote_Case_Policy::EVENT_CONTRACT_VERSION,
 			'event_id'        => wp_generate_uuid4(),
 			'sequence'        => $sequence,
 			'type'            => $type,
@@ -701,8 +752,10 @@ function tvq_assert_public_contract( $case, $label ) {
 	sort( $actual );
 	sort( $expected );
 	tvq_assert( $expected === $actual, "{$label} fields diverge from quote-case.schema.json" );
+	tvq_assert( '1.1.0' === $case['contract_version'] && $case_schema['properties']['contract_version']['const'] === $case['contract_version'] && Tra_Vel_Quote_Case_Policy::CONTRACT_VERSION === $case['contract_version'], "{$label} did not emit the versioned QuoteCase 1.1.0 contract" );
 	tvq_assert( preg_match( '/^TV-[A-Z0-9]{8}$/', $case['reference'] ), "{$label} reference is not opaque" );
 	tvq_assert( $case['version'] >= 1 && 64 === strlen( $case['source']['request_digest'] ), "{$label} lost version or request digest" );
+	tvq_assert( is_bool( $case['resume_available'] ), "{$label} resume_available is not boolean" );
 	tvq_assert( ! isset( $case['owner_token_hash'], $case['owner_user_id'], $case['snapshot'], $case['consent_version'] ), "{$label} leaked internal ownership or consent data" );
 	tvq_assert( ! empty( $case['events'] ), "{$label} omitted its creation event" );
 	foreach ( $case['events'] as $event ) {
@@ -711,6 +764,7 @@ function tvq_assert_public_contract( $case, $label ) {
 		sort( $actual_event );
 		sort( $expected_event );
 		tvq_assert( $expected_event === $actual_event, "{$label} event fields diverge from quote-case-event.schema.json" );
+		tvq_assert( '1.1.0' === $event['contract_version'] && $event_schema['properties']['contract_version']['const'] === $event['contract_version'] && Tra_Vel_Quote_Case_Policy::EVENT_CONTRACT_VERSION === $event['contract_version'], "{$label} did not emit the versioned QuoteCaseEvent 1.1.0 contract" );
 		tvq_assert( in_array( $event['actor_type'], $event_schema['properties']['actor_type']['enum'], true ), "{$label} event actor provenance is invalid" );
 		tvq_assert( in_array( $event['source'], $event_schema['properties']['source']['enum'], true ), "{$label} event source provenance is invalid" );
 		tvq_assert( in_array( $event['visibility'], $event_schema['properties']['visibility']['enum'], true ), "{$label} event visibility is invalid" );
@@ -751,7 +805,7 @@ function tvq_fixture( $suffix ) {
 	$seed        = $agent_store->seed_ready_run( $suffix );
 	$case_store  = new Tra_Vel_Test_Quote_Case_Store();
 	$controller  = new Tra_Vel_Quote_Case_Controller( $case_store, $agent_store );
-	return array( $controller, $case_store, $seed['run'], $seed['token'] );
+	return array( $controller, $case_store, $seed['run'], $seed['token'], $agent_store );
 }
 
 function tvq_create_guest_case( $controller, $run, $run_token ) {
@@ -840,6 +894,19 @@ $restored_health = Tra_Vel_Quote_Case_Store::schema_health();
 tvq_assert( true === $restored_health['tables_ready'] && Tra_Vel_Quote_Case_Store::is_ready(), 'schema readiness did not recover after a complete shape was restored' );
 
 $quote_cleanup_store = new Tra_Vel_Quote_Case_Store();
+$attach_creation_events = new ReflectionMethod( 'Tra_Vel_Quote_Case_Store', 'attach_creation_events' );
+$attach_creation_events->setAccessible( true );
+$event_read_error = '';
+$GLOBALS['wpdb']->read_fail_pattern = 'FROM wp_tra_vel_quote_case_events';
+$event_args = array( array( array( 'id' => 71 ) ), false, &$event_read_error );
+$failed_event_attach = $attach_creation_events->invokeArgs( $quote_cleanup_store, $event_args );
+tvq_assert( array() === $failed_event_attach && 'simulated read failure' === $event_read_error, 'quote list mistook a failed creation-event read for an event-free case' );
+$GLOBALS['wpdb']->read_fail_pattern = '';
+$event_read_error = '';
+$missing_event_args = array( array( array( 'id' => 71 ) ), false, &$event_read_error );
+$missing_event_attach = $attach_creation_events->invokeArgs( $quote_cleanup_store, $missing_event_args );
+tvq_assert( array() === $missing_event_attach && 'missing quote creation event' === $event_read_error, 'quote list exposed an aggregate without its schema-required creation event' );
+
 $quote_expiry_cleanup = new ReflectionMethod( 'Tra_Vel_Quote_Case_Store', 'expire_service_batch' );
 $quote_expiry_cleanup->setAccessible( true );
 $GLOBALS['wpdb']->read_fail_pattern = 'service_expires_at <';
@@ -848,6 +915,12 @@ tvq_assert( is_wp_error( $failed_quote_expiry_read ) && 'tra_vel_quote_cleanup_e
 
 $quote_retention_cleanup = new ReflectionMethod( 'Tra_Vel_Quote_Case_Store', 'delete_retention_batch' );
 $quote_retention_cleanup->setAccessible( true );
+$GLOBALS['tvq_assisted_proposal_ready'] = false;
+$GLOBALS['wpdb']->transaction_log = array();
+$guarded_quote_retention = $quote_retention_cleanup->invoke( $quote_cleanup_store, '2030-04-03 00:00:00', 0, 100 );
+tvq_assert( is_wp_error( $guarded_quote_retention ) && 'tra_vel_quote_cleanup_proposal_store_unavailable' === $guarded_quote_retention->get_error_code(), 'quote retention cleanup did not fail closed while assisted-proposal child storage was uncertain' );
+tvq_assert( empty( $GLOBALS['wpdb']->transaction_log ), 'quote retention cleanup opened a transaction before verifying assisted-proposal child storage' );
+$GLOBALS['tvq_assisted_proposal_ready'] = true;
 $GLOBALS['wpdb']->transaction_log = array();
 $GLOBALS['wpdb']->read_fail_pattern = 'retention_until <';
 $failed_quote_retention_read = $quote_retention_cleanup->invoke( $quote_cleanup_store, '2030-04-03 00:00:00', 0, 100 );
@@ -1013,6 +1086,7 @@ $GLOBALS['tvq_current_user'] = 77;
 $_COOKIE['__Host-tra_vel_quote_owner'] = 'existing-guest-owner-token-abcdefghijklmnopqrstuvwxyz0123456789';
 $account_created = $account_controller->create_case( tvq_request( $account_run, array( 'idempotency_key' => 'quote-create-account-0001' ) ) );
 tvq_assert_private( $account_created, 'account quote create' );
+tvq_assert( true === $account_created->data['case']['resume_available'], 'live exact-owner account source was not resumable' );
 $account_case_id = $account_created->data['case']['case_id'];
 $account_raw_case = $account_store->get_case_by_uuid( $account_case_id );
 tvq_assert( 77 === $account_raw_case['owner_user_id'] && '' === $account_raw_case['owner_token_hash'], 'account quote creation retained bearer ownership' );
@@ -1023,7 +1097,7 @@ tvq_assert_error( $logged_out_access, 'tra_vel_quote_case_forbidden', 'logged-ou
 // Guest creation: run ownership, fresh request binding, explicit consent,
 // protected quote ownership, idempotent replay, list/read, and denial paths.
 tvq_reset_runtime();
-list( $controller, $case_store, $run, $run_token ) = tvq_fixture( 1 );
+list( $controller, $case_store, $run, $run_token, $source_agent_store ) = tvq_fixture( 1 );
 $controller->register_routes();
 tvq_assert( 13 === count( $GLOBALS['tvq_registered_routes'] ), 'quote controller route count changed unexpectedly' );
 
@@ -1044,6 +1118,7 @@ tvq_assert( 0 === $case_store->create_calls, 'missing consent reached durable ca
 list( $created, $owner_token ) = tvq_create_guest_case( $controller, $run, $run_token );
 $case_id = $created->data['case']['case_id'];
 tvq_assert_public_contract( $created->data['case'], 'created quote case' );
+tvq_assert( true === $created->data['case']['resume_available'], 'live exact-owner guest source was not resumable' );
 tvq_assert( false === $created->data['replayed'], 'first quote create was marked as replay' );
 
 $replay = $controller->create_case( tvq_request( $run ) );
@@ -1051,14 +1126,41 @@ tvq_assert_private( $replay, 'idempotent quote replay' );
 tvq_assert( 200 === $replay->status && true === $replay->data['replayed'], 'idempotent quote replay changed state' );
 tvq_assert( 1 === count( $case_store->cases ) && 1 === count( $created->data['case']['events'] ), 'idempotent replay duplicated a case or creation event' );
 
+$source_agent_store->resume_read_calls = 0;
 $owned = $controller->list_owned_cases( new WP_REST_Request( array( 'per_page' => 30 ) ) );
 tvq_assert_private( $owned, 'owned quote list' );
 tvq_assert( 1 === count( $owned->data['cases'] ) && 'private_browser_owner' === $owned->data['meta']['storage'], 'guest-owned list lost its private case' );
+tvq_assert( 1 === $source_agent_store->resume_read_calls && true === $owned->data['cases'][0]['resume_available'], 'quote list used N+1 source reads or lost live resume truth' );
+$case_store->list_read_error = 'simulated quote list failure';
+$failed_owned_list = $controller->list_owned_cases( new WP_REST_Request( array( 'per_page' => 30 ) ) );
+tvq_assert_error( $failed_owned_list, 'tra_vel_quote_case_list_read_failed', 'quote list database uncertainty' );
+tvq_assert( 503 === $failed_owned_list->get_error_data()['status'], 'quote list database uncertainty did not return 503' );
+$case_store->list_read_error = '';
 $read_request = new WP_REST_Request( array( 'case_id' => $case_id ) );
 tvq_assert( true === $controller->can_access_case( $read_request ), 'correct guest quote owner was rejected' );
 $read = $controller->get_case( $read_request );
 tvq_assert_private( $read, 'owned quote read' );
 tvq_assert_public_contract( $read->data['case'], 'owned quote read' );
+
+// Resume truth is derived from the current source AgentRun on every traveler
+// projection and fails false for expiry, absence, owner mismatch, or read error.
+$source_run_snapshot = $source_agent_store->runs[ $run['run_uuid'] ];
+$source_agent_store->runs[ $run['run_uuid'] ]['expires_at'] = gmdate( 'Y-m-d H:i:s', time() - 60 );
+$expired_source = $controller->get_case( $read_request );
+tvq_assert( false === $expired_source->data['case']['resume_available'], 'expired source AgentRun remained resumable' );
+unset( $source_agent_store->runs[ $run['run_uuid'] ] );
+$missing_source = $controller->get_case( $read_request );
+tvq_assert( false === $missing_source->data['case']['resume_available'], 'missing source AgentRun remained resumable' );
+$source_agent_store->runs[ $run['run_uuid'] ] = $source_run_snapshot;
+$source_agent_store->runs[ $run['run_uuid'] ]['owner_user_id'] = 77;
+$source_agent_store->runs[ $run['run_uuid'] ]['owner_token_hash'] = '';
+$wrong_source_owner = $controller->get_case( $read_request );
+tvq_assert( false === $wrong_source_owner->data['case']['resume_available'], 'wrong-owner source AgentRun remained resumable' );
+$source_agent_store->runs[ $run['run_uuid'] ] = $source_run_snapshot;
+$source_agent_store->resume_read_error = 'simulated source read failure';
+$uncertain_source = $controller->get_case( $read_request );
+tvq_assert( false === $uncertain_source->data['case']['resume_available'], 'source read uncertainty did not fail resume false' );
+$source_agent_store->resume_read_error = '';
 
 $_COOKIE['__Host-tra_vel_quote_owner'] = 'wrong-owner-token-abcdefghijklmnopqrstuvwxyz0123456789';
 $wrong_guest = $controller->can_access_case( $read_request );
@@ -1103,6 +1205,7 @@ tvq_assert_private( $prepared, 'owned assisted handoff' );
 tvq_assert( 0 === strpos( $prepared->data['handoff_url'], 'https://api.whatsapp.com/send?' ), 'owned handoff changed its allowlisted host' );
 tvq_assert( 1 === $case_store->handoff_calls && 2 === $prepared->data['case']['version'], 'owned handoff was not recorded exactly once' );
 tvq_assert( 'handoff.prepared' === $prepared->data['event']['type'] && false === $prepared->data['event']['data']['dispatched'], 'handoff event falsely claims a sent message' );
+tvq_assert( hash( 'sha256', $prepared->data['handoff_url'] ) === $prepared->data['event']['data']['target_digest'], 'handoff event is not bound to the exact returned URL' );
 tvq_assert( 'TV-RT000001' === $GLOBALS['tvq_handoff_context']['reference'], 'handoff lost the opaque case reference' );
 
 // Every mutation is optimistic: stale versions fail without another event.
@@ -1154,7 +1257,7 @@ $operator_list = $claim_controller->list_operator_cases( new WP_REST_Request( ar
 tvq_assert_private( $operator_list, 'operator quote list' );
 tvq_assert( 1 === $operator_list->data['meta']['total'], 'operator queue omitted the persistent case' );
 $operator_case = $operator_list->data['cases'][0];
-tvq_assert( isset( $operator_case['assigned_user_id'], $operator_case['consent_version'], $operator_case['consented_at'], $operator_case['allowed_transitions'] ), 'operator projection lacks operational metadata' );
+tvq_assert( isset( $operator_case['case_revision'], $operator_case['assigned_user_id'], $operator_case['consent_version'], $operator_case['consented_at'], $operator_case['allowed_transitions'] ) && (int) $claim_store->cases[ $claim_case_id ]['current_revision'] === (int) $operator_case['case_revision'], 'operator projection lacks the exact quote-case revision or operational metadata' );
 tvq_assert( ! isset( $operator_case['owner_token_hash'], $operator_case['snapshot'] ), 'operator projection leaked owner token or raw snapshot' );
 $operator_events = $claim_controller->get_operator_case_events( new WP_REST_Request( array( 'case_id' => $claim_case_id, 'after' => 0, 'limit' => 50 ) ) );
 tvq_assert_private( $operator_events, 'operator quote event page' );

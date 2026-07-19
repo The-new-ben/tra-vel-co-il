@@ -227,7 +227,7 @@ class Tra_Vel_Quote_Case_Controller extends WP_REST_Controller {
 		}
 		$response = $this->private_response(
 			array(
-				'case'     => $this->public_case( $result['case'] ),
+				'case'     => $this->traveler_case( $result['case'] ),
 				'replayed' => (bool) $result['replayed'],
 			),
 			$result['created'] ? 201 : 200
@@ -237,12 +237,17 @@ class Tra_Vel_Quote_Case_Controller extends WP_REST_Controller {
 
 	public function list_owned_cases( WP_REST_Request $request ) {
 		$principal = $this->principal( false );
-		$cases     = $this->store->list_owned( get_current_user_id(), $principal['token_hash'], (int) $request->get_param( 'per_page' ) );
+		$read_error = '';
+		$cases     = $this->store->list_owned( get_current_user_id(), $principal['token_hash'], (int) $request->get_param( 'per_page' ), $read_error );
+		if ( '' !== $read_error ) {
+			return new WP_Error( 'tra_vel_quote_case_list_read_failed', 'Assistance requests are temporarily unavailable.', array( 'status' => 503 ) );
+		}
+		$resume    = $this->resume_availability( $cases );
 		return $this->private_response(
 			array(
 				'cases' => array_map(
-					function ( $case ) {
-						return $this->public_case( $case, 1 );
+					function ( $case ) use ( $resume ) {
+						return $this->public_case( $case, 1, ! empty( $resume[ $case['case_uuid'] ] ) );
 					},
 					$cases
 				),
@@ -275,7 +280,7 @@ class Tra_Vel_Quote_Case_Controller extends WP_REST_Controller {
 		if ( ! $case || ! $this->store->can_access( $case, get_current_user_id(), $principal['token_hash'] ) ) {
 			return new WP_Error( 'tra_vel_quote_case_forbidden', 'This private quote case changed owner before it could be read.', array( 'status' => 403 ) );
 		}
-		return $this->private_response( array( 'case' => $this->public_case( $case ) ) );
+		return $this->private_response( array( 'case' => $this->traveler_case( $case ) ) );
 	}
 
 	public function get_case_events( WP_REST_Request $request ) {
@@ -321,7 +326,7 @@ class Tra_Vel_Quote_Case_Controller extends WP_REST_Controller {
 	public function prepare_handoff( WP_REST_Request $request ) {
 		$case    = $this->store->get_case_by_uuid( $request->get_param( 'case_id' ) );
 		$context = $this->handoff_context( $case );
-		$prepared = apply_filters( 'tra_vel_agent_quote_case_prepare_handoff', null, $context, $this->public_case( $case ) );
+		$prepared = apply_filters( 'tra_vel_agent_quote_case_prepare_handoff', null, $context, $this->traveler_case( $case ) );
 		if ( is_wp_error( $prepared ) ) {
 			return $prepared;
 		}
@@ -330,13 +335,20 @@ class Tra_Vel_Quote_Case_Controller extends WP_REST_Controller {
 		}
 		$url      = esc_url_raw( (string) $prepared['handoff_url'], array( 'https' ) );
 		$host     = strtolower( (string) wp_parse_url( $url, PHP_URL_HOST ) );
+		$user     = wp_parse_url( $url, PHP_URL_USER );
+		$password = wp_parse_url( $url, PHP_URL_PASS );
 		$provider = sanitize_key( (string) ( $prepared['provider'] ?? '' ) );
-		if ( 'https' !== wp_parse_url( $url, PHP_URL_SCHEME ) || 'api.whatsapp.com' !== $host || 'tra-vel-concierge' !== $provider ) {
+		if ( 'https' !== strtolower( (string) wp_parse_url( $url, PHP_URL_SCHEME ) ) || 'api.whatsapp.com' !== $host || $user || $password || 'tra-vel-concierge' !== $provider ) {
 			return new WP_Error( 'tra_vel_quote_case_handoff_rejected', 'The assisted-contact channel failed the owned-provider allowlist.', array( 'status' => 502 ) );
 		}
-		$expires_at = ! empty( $prepared['expires_at'] ) ? (string) $prepared['expires_at'] : gmdate( 'c', time() + 300 );
+		$expires_timestamp = strtotime( ! empty( $prepared['expires_at'] ) ? (string) $prepared['expires_at'] : '' );
+		if ( false === $expires_timestamp || $expires_timestamp < time() + 30 || $expires_timestamp > time() + 600 ) {
+			$expires_timestamp = time() + 300;
+		}
+		$expires_at    = gmdate( 'c', $expires_timestamp );
+		$target_digest = hash( 'sha256', $url );
 		$principal = $this->principal( false );
-		$result = $this->store->record_handoff( $case['case_uuid'], (int) $request->get_param( 'expected_version' ), $principal, 'whatsapp', $provider, $expires_at, $request->get_param( 'idempotency_key' ) );
+		$result = $this->store->record_handoff( $case['case_uuid'], (int) $request->get_param( 'expected_version' ), $principal, 'whatsapp', $provider, $target_digest, $expires_at, $request->get_param( 'idempotency_key' ) );
 		if ( is_wp_error( $result ) ) {
 			return $result;
 		}
@@ -416,7 +428,7 @@ class Tra_Vel_Quote_Case_Controller extends WP_REST_Controller {
 		return $this->schema_response( 'quote-case-event.schema.json' );
 	}
 
-	public function public_case( $case, $event_limit = Tra_Vel_Quote_Case_Store::EMBEDDED_EVENTS ) {
+	public function public_case( $case, $event_limit = Tra_Vel_Quote_Case_Store::EMBEDDED_EVENTS, $resume_available = false ) {
 		$events = 1 === (int) $event_limit && isset( $case['_embedded_events'] )
 			? (array) $case['_embedded_events']
 			: ( $event_limit > 0 ? $this->store->get_recent_events( $case['id'], false, $event_limit ) : array() );
@@ -436,6 +448,7 @@ class Tra_Vel_Quote_Case_Controller extends WP_REST_Controller {
 			),
 			'summary'          => Tra_Vel_Quote_Case_Policy::public_summary( $case['snapshot'] ),
 			'next_action'      => Tra_Vel_Quote_Case_Policy::next_action( $case['status'] ),
+			'resume_available' => (bool) $resume_available,
 			'events'           => $events,
 			'created_at'       => gmdate( 'c', strtotime( $case['created_at'] . ' UTC' ) ),
 			'updated_at'       => gmdate( 'c', strtotime( $case['updated_at'] . ' UTC' ) ),
@@ -445,6 +458,7 @@ class Tra_Vel_Quote_Case_Controller extends WP_REST_Controller {
 
 	private function operator_case( $case, $event_limit = Tra_Vel_Quote_Case_Store::EMBEDDED_EVENTS ) {
 		$public = $this->public_case( $case, 0 );
+		$public['case_revision']     = (int) $case['current_revision'];
 		$public['assigned_user_id']  = (int) $case['assigned_user_id'];
 		$public['consent_version']   = (string) $case['consent_version'];
 		$public['consented_at']      = gmdate( 'c', strtotime( $case['consented_at'] . ' UTC' ) );
@@ -461,7 +475,7 @@ class Tra_Vel_Quote_Case_Controller extends WP_REST_Controller {
 
 	private function mutation_payload( $result ) {
 		$payload = array(
-			'case'     => $this->public_case( $result['case'] ),
+			'case'     => $this->traveler_case( $result['case'] ),
 			'event'    => $result['event'],
 			'replayed' => (bool) $result['replayed'],
 		);
@@ -469,6 +483,51 @@ class Tra_Vel_Quote_Case_Controller extends WP_REST_Controller {
 			$payload['reused'] = (bool) $result['reused'];
 		}
 		return $payload;
+	}
+
+	private function traveler_case( $case, $event_limit = Tra_Vel_Quote_Case_Store::EMBEDDED_EVENTS ) {
+		$resume = $this->resume_availability( array( $case ) );
+		return $this->public_case( $case, $event_limit, ! empty( $resume[ $case['case_uuid'] ] ) );
+	}
+
+	/**
+	 * Resolve source-run resume in one bounded read. Any uncertainty is false.
+	 *
+	 * @param array $cases Already-authorized quote cases.
+	 * @return array Availability keyed by quote-case UUID.
+	 */
+	private function resume_availability( $cases ) {
+		$availability = array();
+		$source_ids   = array();
+		foreach ( is_array( $cases ) ? $cases : array() as $case ) {
+			if ( ! is_array( $case ) || empty( $case['case_uuid'] ) ) {
+				continue;
+			}
+			$availability[ (string) $case['case_uuid'] ] = false;
+			if ( ! empty( $case['source_run_uuid'] ) ) {
+				$source_ids[] = (string) $case['source_run_uuid'];
+			}
+		}
+		if ( ! $source_ids || ! method_exists( $this->agent_store, 'get_run_ownership_by_uuids' ) ) {
+			return $availability;
+		}
+
+		$read_error = '';
+		$runs       = $this->agent_store->get_run_ownership_by_uuids( $source_ids, $read_error );
+		if ( '' !== $read_error || ! is_array( $runs ) ) {
+			return $availability;
+		}
+		$user_id = get_current_user_id();
+		foreach ( $cases as $case ) {
+			$case_uuid = (string) ( $case['case_uuid'] ?? '' );
+			$run_uuid  = (string) ( $case['source_run_uuid'] ?? '' );
+			$run       = $runs[ $run_uuid ] ?? null;
+			if ( ! $case_uuid || ! is_array( $run ) || (int) ( $run['owner_user_id'] ?? -1 ) !== (int) ( $case['owner_user_id'] ?? -2 ) ) {
+				continue;
+			}
+			$availability[ $case_uuid ] = (bool) $this->agent_store->can_access( $run, $this->run_cookie_token( $run_uuid ), $user_id );
+		}
+		return $availability;
 	}
 
 	private function principal( $create ) {

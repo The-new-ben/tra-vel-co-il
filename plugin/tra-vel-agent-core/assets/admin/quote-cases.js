@@ -19,6 +19,9 @@
 		page: 1,
 		meta: { count: 0, total: 0, page: 1, per_page: 50 },
 		knownTotals: {},
+		proposalCase: null,
+		proposalReturnId: '',
+		proposalWorkspaceStates: {},
 	};
 
 	var fallbackStatuses = {
@@ -319,21 +322,55 @@
 		var container = element('div', 'tra-vel-quote-case-actions');
 		var identifier = caseId(item);
 		var transitioning = Boolean(state.transitioning[identifier]);
+		var hasAction = false;
 		var nextStatuses = Array.isArray(item.allowed_transitions)
 			? item.allowed_transitions
 			: statusDefinition(item.status).next;
 
+		if (config.proposalReady && identifier && window.TraVelAssistedProposalComposer) {
+			var proposalLabel = config.proposalStrings && config.proposalStrings.open
+				? config.proposalStrings.open
+				: 'Open proposals';
+			var proposalButton = element('button', 'button tra-vel-quote-case-proposals', proposalLabel);
+			proposalButton.type = 'button';
+			proposalButton.id = 'tra-vel-proposals-' + identifier.replace(/[^a-z0-9]/gi, '');
+			proposalButton.setAttribute('aria-expanded', state.proposalCase && caseId(state.proposalCase) === identifier ? 'true' : 'false');
+			proposalButton.setAttribute('aria-controls', 'tra-vel-proposal-workspace-' + identifier.replace(/[^a-z0-9]/gi, ''));
+			proposalButton.setAttribute('aria-label', proposalLabel + ' for ' + caseReference(item));
+			proposalButton.addEventListener('click', function () {
+				if (state.proposalCase && caseId(state.proposalCase) === identifier) {
+					var triggerId = proposalButton.id;
+					state.proposalCase = null;
+					render();
+					window.requestAnimationFrame(function () {
+						var trigger = document.getElementById(triggerId);
+						if (trigger) { trigger.focus(); }
+					});
+					return;
+				}
+				state.proposalCase = item;
+				state.proposalReturnId = proposalButton.id;
+				render();
+			});
+			container.appendChild(proposalButton);
+			hasAction = true;
+		}
+
 		if (!config.canManage) {
-			container.appendChild(element('span', 'tra-vel-quote-case-actions__complete', 'View only'));
+			if (!hasAction) {
+				container.appendChild(element('span', 'tra-vel-quote-case-actions__complete', 'View only'));
+			}
 			return container;
 		}
 
 		if (!nextStatuses.length) {
-			container.appendChild(element('span', 'tra-vel-quote-case-actions__complete', 'No further operator action'));
+			if (!hasAction) {
+				container.appendChild(element('span', 'tra-vel-quote-case-actions__complete', 'No further operator action'));
+			}
 			return container;
 		}
 
-		nextStatuses.forEach(function (nextStatus, index) {
+			nextStatuses.forEach(function (nextStatus, index) {
 			var label = statusDefinition(nextStatus).label;
 			var button = element('button', 'button tra-vel-quote-case-action', transitioning ? 'Updating...' : label);
 			button.type = 'button';
@@ -345,6 +382,7 @@
 				transitionCase(item, nextStatus);
 			});
 			container.appendChild(button);
+			hasAction = true;
 		});
 
 		return container;
@@ -414,7 +452,9 @@
 		var header = document.createElement('thead');
 		var headerRow = document.createElement('tr');
 		['Reference', 'Traveler request', 'Status', 'Assignment', 'Updated', 'Next step'].forEach(function (label) {
-			headerRow.appendChild(element('th', '', label));
+			var heading = element('th', '', label);
+			heading.scope = 'col';
+			headerRow.appendChild(heading);
 		});
 		header.appendChild(headerRow);
 		table.appendChild(header);
@@ -445,6 +485,43 @@
 		parent.appendChild(tableWrap);
 	}
 
+	function renderProposalWorkspace(parent) {
+		if (!state.proposalCase) {
+			return;
+		}
+		if (!window.TraVelAssistedProposalComposer || typeof window.TraVelAssistedProposalComposer.mount !== 'function') {
+			var unavailable = element('div', 'notice notice-error inline', 'The proposal composer could not be loaded.');
+			unavailable.setAttribute('role', 'alert');
+			parent.appendChild(unavailable);
+			return;
+		}
+		var identifier = caseId(state.proposalCase);
+		state.proposalWorkspaceStates[identifier] = window.TraVelAssistedProposalComposer.mount(parent, state.proposalCase, config, {
+			restoreState: state.proposalWorkspaceStates[identifier] || null,
+			onClose: function () {
+				var returnId = state.proposalReturnId;
+				state.proposalCase = null;
+				state.proposalReturnId = '';
+				render();
+				window.requestAnimationFrame(function () {
+					var trigger = returnId ? document.getElementById(returnId) : null;
+					if (trigger) {
+						trigger.focus();
+					}
+				});
+			},
+			onPublished: function () {
+				announce('A sourced non-binding proposal was published.');
+			},
+			onCaseUpdated: function (updated) {
+				state.proposalCase = updated;
+				state.cases = state.cases.map(function (candidate) {
+					return caseId(candidate) === caseId(updated) ? updated : candidate;
+				});
+			},
+		});
+	}
+
 	function render() {
 		root.replaceChildren();
 
@@ -464,6 +541,7 @@
 		renderNotice(shell);
 		renderFilters(shell);
 		renderTable(shell);
+		renderProposalWorkspace(shell);
 		renderPagination(shell);
 
 		liveRegion = element('p', 'screen-reader-text');
@@ -506,6 +584,14 @@
 			var payload = await request(url.toString());
 			var cases = Array.isArray(payload) ? payload : (payload.cases || payload.items || []);
 			state.cases = Array.isArray(cases) ? cases : [];
+			if (state.proposalCase) {
+				var refreshedProposalCase = state.cases.find(function (item) {
+					return caseId(item) === caseId(state.proposalCase);
+				});
+				if (refreshedProposalCase) {
+					state.proposalCase = refreshedProposalCase;
+				}
+			}
 			state.meta = payload && payload.meta ? payload.meta : {
 				count: state.cases.length,
 				total: state.cases.length,

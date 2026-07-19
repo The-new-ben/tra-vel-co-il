@@ -1,0 +1,76 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://tra-vel.co.il/schemas/redemption-operation-v1.schema.json",
+  "title": "Tra-Vel simulated benefit redemption operation",
+  "description": "An idempotent state and reconciliation envelope for sandbox simulation. It cannot submit a provider debit or claim a real redemption.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "redemption_operation_id",
+    "idempotency_reference_digest",
+    "benefit_quote_id",
+    "connection_id",
+    "program_id",
+    "campaign_id",
+    "campaign_version",
+    "state",
+    "reconciliation_state",
+    "authorization_reference_digest",
+    "provider_operation_reference_digest",
+    "points_debits",
+    "cash_effect",
+    "requested_at_utc",
+    "updated_at_utc",
+    "commercial_truth"
+  ],
+  "properties": {
+    "contract_version": { "const": "1.0.0" },
+    "redemption_operation_id": { "type": "string", "pattern": "^redemption_[a-z0-9][a-z0-9_]{2,51}$", "maxLength": 64 },
+    "idempotency_reference_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "benefit_quote_id": { "type": "string", "pattern": "^benefit_quote_[a-z0-9][a-z0-9_]{2,47}$", "maxLength": 64 },
+    "connection_id": { "type": "string", "pattern": "^connection_[a-z0-9][a-z0-9_]{2,51}$", "maxLength": 64 },
+    "program_id": { "type": "string", "pattern": "^program_[a-z0-9][a-z0-9_]{2,55}$", "maxLength": 64 },
+    "campaign_id": { "type": "string", "pattern": "^campaign_[a-z0-9][a-z0-9_]{2,53}$", "maxLength": 64 },
+    "campaign_version": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+    "state": { "enum": ["queued", "step_up_required", "authorized", "submitted", "operation_uncertain", "provider_reconciliation_required", "succeeded", "failed", "reversed"] },
+    "reconciliation_state": { "enum": ["not_required", "pending", "required", "matched", "mismatch", "reversed"] },
+    "authorization_reference_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "provider_operation_reference_digest": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" },
+    "points_debits": {
+      "type": "array",
+      "maxItems": 20,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["unit_code", "amount_integer"],
+        "properties": {
+          "unit_code": { "type": "string", "pattern": "^[a-z][a-z0-9_]{1,31}$", "maxLength": 32 },
+          "amount_integer": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "cash_effect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["currency", "discount_minor", "fees_minor"],
+      "properties": {
+        "currency": { "type": "string", "pattern": "^[A-Z]{3}$" },
+        "discount_minor": { "type": "integer", "minimum": 0 },
+        "fees_minor": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "requested_at_utc": { "type": "string", "format": "date-time" },
+    "updated_at_utc": { "type": "string", "format": "date-time" },
+    "commercial_truth": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["simulated", "provider_submission", "real_debit"],
+      "properties": {
+        "simulated": { "const": true },
+        "provider_submission": { "const": false },
+        "real_debit": { "const": false }
+      }
+    }
+  }
+}

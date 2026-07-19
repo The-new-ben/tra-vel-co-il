@@ -68,6 +68,15 @@ for (const [needle, message] of [
   ["tra_vel_agent_bootstrap_existing", 'Bootstrap can overwrite an existing Agent Core installation.'],
   ["cleanup_failed_install", 'Bootstrap cannot remove a fresh install after health failure.'],
   ["fresh_install_removed", 'Bootstrap install failures do not report verified fresh-install cleanup.'],
+  ["$health.capabilities.no_login_scoped_sessions", 'Bootstrap does not require no-login scoped-session capability readiness.'],
+  ["$capabilityHealth.schema_version -ne '1.1.0'", 'Bootstrap does not require the exact capability-session schema version.'],
+  ["[int]$capabilityHealth.expected_tables -ne 4", 'Bootstrap does not require exactly four capability-session tables.'],
+  ["[int]$capabilityHealth.required_indexes -ne 7", 'Bootstrap does not require exactly seven capability-session race indexes.'],
+  ["$health.capabilities.customer_trip_cockpit", 'Bootstrap does not require Customer Trip Cockpit capability readiness.'],
+  ["$cockpitHealth.schema_version -ne '1.0.0'", 'Bootstrap does not require the exact Customer Trip Cockpit schema version.'],
+  ["[int]$cockpitHealth.expected_tables -ne 3", 'Bootstrap does not require exactly three Customer Trip Cockpit tables.'],
+  ["[int]$cockpitHealth.required_indexes -ne 13", 'Bootstrap does not require exactly thirteen Customer Trip Cockpit indexes.'],
+  ["@($cockpitHealth.inspection_errors).Count -ne 0", 'Bootstrap does not fail closed on Customer Trip Cockpit schema inspection errors.'],
 ]) requireText(bootstrap, needle, message);
 
 for (const [needle, message] of [
@@ -117,6 +126,7 @@ for (const [needle, message] of [
   ['timeout --signal=TERM --kill-after=5s 330s python3 scripts/ci/verify_agent_deploy.py', 'Agent Core workflow does not enforce a total watchdog around the bounded production verifier.'],
   ['--attempts 6', 'Agent Core workflow does not use a bounded multi-attempt health gate.'],
   ['python3 scripts/ci/validate_agent_health_verification.py', 'Agent Core package job does not exercise the health gate validator.'],
+  ['node scripts/ci/validate-assisted-proposal-release-contract.mjs', 'Agent Core package job does not exercise the assisted-proposal release gate.'],
   ['bash scripts/deploy/rollback-agent-core.sh "$backup"', 'Exhausted Agent Core health verification no longer triggers rollback.'],
 ]) requireText(workflow, needle, message);
 
@@ -137,6 +147,17 @@ for (const [needle, message] of [
   ['basic_authorization(config.username, config.app_password)', 'Operator queue verification is not authenticated in memory.'],
   ['config.base_delay_seconds * (2 ** (attempt - 1))', 'Health verification does not use bounded exponential backoff.'],
   ['health.get("plugin_version") == manifest.get("version")', 'Health verification can accept a stale plugin version.'],
+  ['expected_proposal_store', 'Health verification does not enforce the exact assisted-proposal schema contract.'],
+  ['capabilities.get("sourced_assisted_proposals") is True', 'Health verification does not require sourced assisted proposals.'],
+  ['capabilities.get("audited_proposal_actions") is True', 'Health verification does not require audited proposal actions.'],
+  ['capabilities.get("no_login_scoped_sessions") is True', 'Health verification does not require no-login scoped sessions.'],
+  ['capabilities.get("customer_trip_cockpit") is True', 'Health verification does not require Customer Trip Cockpit readiness.'],
+  ['expected_capability_store', 'Health verification does not enforce the exact capability-session schema health.'],
+  ['"expected_tables": 4', 'Health verification does not require exactly four capability-session tables.'],
+  ['"required_indexes": 7', 'Health verification does not require exactly seven capability-session indexes.'],
+  ['expected_customer_cockpit_store', 'Health verification does not enforce the exact Customer Trip Cockpit schema health.'],
+  ['"expected_tables": 3', 'Health verification does not require exactly three Customer Trip Cockpit tables.'],
+  ['"required_indexes": 13', 'Health verification does not require exactly thirteen Customer Trip Cockpit indexes.'],
   ['except Exception as error:  # Fail closed without rendering request headers or response bodies.', 'Unexpected verifier failures may expose protected response data.'],
 ]) requireText(healthVerifier, needle, message);
 
@@ -145,6 +166,15 @@ for (const [needle, message] of [
   ['failed_attempts == [1, 2, 3, 4]', 'Health validator does not prove retry exhaustion is bounded.'],
   ['Exhausted verification did not fail closed for rollback.', 'Health validator does not prove rollback signaling after exhaustion.'],
   ['"not-printed" not in line', 'Health validator does not check secret-safe retry diagnostics.'],
+  ['A missing audited-proposal capability passed deployment verification.', 'Health validator does not prove a missing proposal capability fails closed.'],
+  ['An incomplete assisted-proposal index set passed deployment verification.', 'Health validator does not prove a proposal schema mismatch fails closed.'],
+  ['A missing no-login scoped-session capability passed deployment verification.', 'Health validator does not independently reject a missing no-login capability.'],
+  ['A false no-login scoped-session capability passed deployment verification.', 'Health validator does not independently reject a false no-login capability.'],
+  ['capability_store_negative_values', 'Health validator does not independently exercise every capability-session health field.'],
+  ['A missing Customer Trip Cockpit capability passed deployment verification.', 'Health validator does not independently reject a missing Customer Trip Cockpit capability.'],
+  ['A false Customer Trip Cockpit capability passed deployment verification.', 'Health validator does not independently reject a false Customer Trip Cockpit capability.'],
+  ['A missing Customer Trip Cockpit store passed deployment verification.', 'Health validator does not independently reject a missing Customer Trip Cockpit store.'],
+  ['customer_cockpit_store_negative_values', 'Health validator does not independently exercise every Customer Trip Cockpit schema-health field.'],
 ]) requireText(healthValidator, needle, message);
 
 if (failures.length) {

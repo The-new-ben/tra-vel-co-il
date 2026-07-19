@@ -1,0 +1,98 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://tra-vel.co.il/schemas/vip-intake-receipt.schema.json",
+  "title": "Tra-Vel private-browser VIP intake receipt",
+  "description": "A deliberately small owner-scoped receipt. It confirms only intake and review state; it never claims that a supplier, payment, reservation, cancellation, refund, insurance, or other consequential action occurred.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "receipt_ref",
+    "state",
+    "message_code",
+    "accepted",
+    "duplicate",
+    "login_required",
+    "ownership",
+    "received_at",
+    "updated_at",
+    "expires_at",
+    "message_disposition",
+    "resume",
+    "verification",
+    "human_review_required",
+    "supplier_action_started",
+    "payment_action_started"
+  ],
+  "properties": {
+    "contract_version": {"const": "1.0.0"},
+    "receipt_ref": {"type": "string", "pattern": "^TVR-[A-Z0-9]{10}$"},
+    "state": {
+      "type": "string",
+      "enum": ["received", "checking", "need_information", "human_review"]
+    },
+    "message_code": {
+      "type": "string",
+      "enum": [
+        "request_received",
+        "request_already_received",
+        "request_is_being_checked",
+        "more_information_needed",
+        "verification_required",
+        "specialist_review_required"
+      ]
+    },
+    "accepted": {"const": true},
+    "duplicate": {"type": "boolean"},
+    "login_required": {"const": false},
+    "ownership": {"type": "string", "enum": ["account", "private_browser_owner"]},
+    "received_at": {"$ref": "#/definitions/utc"},
+    "updated_at": {"$ref": "#/definitions/utc"},
+    "expires_at": {"$ref": "#/definitions/utc"},
+    "message_disposition": {"$ref": "#/definitions/messageDisposition"},
+    "resume": {"$ref": "#/definitions/resume"},
+    "verification": {"$ref": "#/definitions/verification"},
+    "human_review_required": {"type": "boolean"},
+    "supplier_action_started": {"const": false},
+    "payment_action_started": {"const": false}
+  },
+  "definitions": {
+    "utc": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$"
+    },
+    "resume": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["available", "allowed_operations"],
+      "properties": {
+        "available": {"type": "boolean"},
+        "allowed_operations": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"type": "string", "enum": ["receipt_view", "incident_follow_up"]}
+        }
+      }
+    },
+    "messageDisposition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["raw_message_received_by_bridge", "normalized_vault_reference_received", "classifier_claim_verified"],
+      "properties": {
+        "raw_message_received_by_bridge": {"const": false},
+        "normalized_vault_reference_received": {"const": true},
+        "classifier_claim_verified": {"const": true}
+      }
+    },
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["step_up_required", "authorization_effect", "executable_scopes"],
+      "properties": {
+        "step_up_required": {"type": "boolean"},
+        "authorization_effect": {"const": "none"},
+        "executable_scopes": {"type": "array", "maxItems": 0}
+      }
+    }
+  }
+}

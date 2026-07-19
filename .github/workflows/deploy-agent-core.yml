@@ -14,6 +14,41 @@ on:
       - "scripts/ci/validate_agent_health_verification.py"
       - "scripts/ci/validate-quote-case-*.mjs"
       - "scripts/ci/validate-quote-case-*.php"
+      - "scripts/ci/validate-commercial-intent-*.mjs"
+      - "scripts/ci/validate-commercial-intent-*.php"
+      - "scripts/ci/validate-assisted-proposal-*.mjs"
+      - "scripts/ci/validate-assisted-proposal-*.php"
+      - "scripts/ci/validate-commerce-*.mjs"
+      - "scripts/ci/validate-commerce-*.php"
+      - "scripts/ci/validate-traveler-profile-*.mjs"
+      - "scripts/ci/validate-traveler-profile-*.php"
+      - "scripts/ci/validate-traveler-registration-*.mjs"
+      - "scripts/ci/validate-traveler-registration-*.php"
+      - "scripts/ci/validate-customer-trip-cockpit-*.mjs"
+      - "scripts/ci/validate-customer-trip-cockpit-*.php"
+      - "scripts/ci/validate-post-booking-servicing-*.mjs"
+      - "scripts/ci/validate-post-booking-servicing-*.php"
+      - "scripts/ci/validate-service-breadth-registry-*.mjs"
+      - "scripts/ci/validate-service-breadth-registry-*.php"
+      - "scripts/ci/validate-local-tourism-*.mjs"
+      - "scripts/ci/validate-local-tourism-*.php"
+      - "scripts/ci/validate-local-operations-*.mjs"
+      - "scripts/ci/validate-local-operations-*.php"
+      - "scripts/ci/validate-benefit-engine-*.mjs"
+      - "scripts/ci/validate-benefit-engine-*.php"
+      - "scripts/ci/validate-israel-benefit-*.mjs"
+      - "scripts/ci/validate-israel-benefit-*.php"
+      - "scripts/ci/validate-loyalty-value-stress-*.mjs"
+      - "scripts/ci/validate-loyalty-value-stress-*.php"
+      - "scripts/ci/validate-supplier-operations-*.mjs"
+      - "scripts/ci/validate-supplier-operations-*.php"
+      - "scripts/ci/validate-supplier-profile-*.php"
+      - "scripts/ci/validate-trip-dependency-recovery-*.mjs"
+      - "scripts/ci/validate-trip-dependency-recovery-*.php"
+      - "scripts/ci/validate-trip-change-stress-*.mjs"
+      - "scripts/ci/validate-trip-change-stress-*.php"
+      - "scripts/ci/validate-vip-*.mjs"
+      - "scripts/ci/validate-vip-*.php"
       - "scripts/deploy/deploy-agent-core.sh"
       - "scripts/deploy/rollback-agent-core.sh"
       - "scripts/deploy/remove-failed-agent-core.sh"
@@ -50,7 +85,78 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  php-compatibility:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ["7.4", "8.3"]
+    steps:
+      - name: Check out selected revision
+        uses: actions/checkout@v7
+
+      - name: Set up PHP ${{ matrix.php-version }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          coverage: none
+          tools: none
+
+      - name: Validate Agent Core PHP runtime and syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          php scripts/ci/validate-agent-policy-runtime.php
+          php scripts/ci/validate-agent-controller-runtime.php
+          php scripts/ci/validate-quote-case-runtime.php
+          php scripts/ci/validate-quote-case-capabilities-runtime.php
+          php scripts/ci/validate-commercial-intent-runtime.php
+          php scripts/ci/validate-assisted-proposal-runtime.php
+          php scripts/ci/validate-assisted-proposal-controller-runtime.php
+          php scripts/ci/validate-assisted-proposal-composer-runtime.php
+          php scripts/ci/validate-commerce-core-runtime.php
+          php scripts/ci/validate-commerce-state-machine-runtime.php
+          php scripts/ci/validate-commerce-sandbox-network-runtime.php
+          php scripts/ci/validate-commerce-search-runtime.php
+          php scripts/ci/validate-commerce-package-runtime.php
+          php scripts/ci/validate-commerce-revalidation-runtime.php
+          php scripts/ci/validate-commerce-order-runtime.php
+          php scripts/ci/validate-commerce-operation-runtime.php
+          php scripts/ci/validate-commerce-private-routing-runtime.php
+          php scripts/ci/validate-commerce-funds-flow-runtime.php
+          php scripts/ci/validate-commerce-funds-flow-factory-runtime.php
+          php scripts/ci/validate-commerce-fx-reconciliation-runtime.php
+          php scripts/ci/validate-commerce-currency-reconciliation-bridge-runtime.php
+          php scripts/ci/validate-commerce-search-schema-conformance.php
+          php scripts/ci/validate-benefit-engine-runtime.php
+          php scripts/ci/validate-israel-benefit-catalog-runtime.php
+          php scripts/ci/validate-israel-benefit-controller-runtime.php
+          php scripts/ci/validate-loyalty-value-stress-runtime.php
+          php scripts/ci/validate-vip-service-runtime.php
+          php scripts/ci/validate-vip-intake-runtime.php
+          php scripts/ci/validate-vip-intake-fanout-runtime.php
+          php scripts/ci/validate-vip-intake-rest-runtime.php
+          php scripts/ci/validate-vip-capability-session-runtime.php
+          php scripts/ci/validate-traveler-profile-runtime.php
+          php scripts/ci/validate-traveler-registration-rest-runtime.php
+          php scripts/ci/validate-trip-dependency-recovery-runtime.php
+          php scripts/ci/validate-trip-change-stress-runtime.php
+          php scripts/ci/validate-customer-trip-cockpit-runtime.php
+          php scripts/ci/validate-customer-trip-cockpit-customer-view-runtime.php
+          php scripts/ci/validate-customer-trip-cockpit-bridge-runtime.php
+          php scripts/ci/validate-customer-trip-cockpit-store-runtime.php
+          php scripts/ci/validate-customer-trip-cockpit-source-assembler-runtime.php
+          php scripts/ci/validate-post-booking-servicing-runtime.php
+          php scripts/ci/validate-service-breadth-registry-runtime.php
+          php scripts/ci/validate-local-tourism-runtime.php
+          php scripts/ci/validate-local-operations-runtime.php
+          php scripts/ci/validate-supplier-operations-runtime.php
+          php scripts/ci/validate-supplier-profile-seeds-runtime.php
+          while IFS= read -r -d '' file; do php -l "$file"; done < <(find plugin/tra-vel-agent-core plugin/tra-vel-deploy-gateway -type f -name '*.php' -print0)
+
   package:
+    needs: php-compatibility
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -63,11 +169,90 @@ jobs:
           set -euo pipefail
           node scripts/ci/validate-agent-contract.mjs
           node scripts/ci/validate-quote-case-contract.mjs
+          node scripts/ci/validate-commercial-intent-contract.mjs
+          node scripts/ci/validate-assisted-proposal-contract.mjs
+          node scripts/ci/validate-assisted-proposal-store-contract.mjs
+          node scripts/ci/validate-assisted-proposal-controller-contract.mjs
+          node scripts/ci/validate-assisted-proposal-admin.mjs
+          node scripts/ci/validate-assisted-proposal-release-contract.mjs
+          node scripts/ci/validate-commerce-core-contract.mjs
+          node scripts/ci/validate-commerce-schema-contract.mjs
+          node scripts/ci/validate-commerce-private-routing-contract.mjs
+          node scripts/ci/validate-commerce-funds-flow-contract.mjs
+          node scripts/ci/validate-commerce-funds-flow-factory-contract.mjs
+          node scripts/ci/validate-commerce-fx-reconciliation-contract.mjs
+          node scripts/ci/validate-commerce-currency-reconciliation-bridge-contract.mjs
+          node scripts/ci/validate-benefit-engine-contract.mjs
+          node scripts/ci/validate-israel-benefit-catalog-contract.mjs
+          node scripts/ci/validate-israel-benefit-controller-contract.mjs
+          node scripts/ci/validate-loyalty-value-stress-contract.mjs
+          node scripts/ci/validate-vip-service-contract.mjs
+          node scripts/ci/validate-vip-intake-contract.mjs
+          node scripts/ci/validate-vip-intake-fanout-contract.mjs
+          node scripts/ci/validate-vip-intake-rest-contract.mjs
+          node scripts/ci/validate-vip-capability-session-contract.mjs
+          node scripts/ci/validate-traveler-profile-contract.mjs
+          node scripts/ci/validate-traveler-registration-rest-contract.mjs
+          node scripts/ci/validate-trip-dependency-recovery-contract.mjs
+          node scripts/ci/validate-trip-change-stress-contract.mjs
+          node scripts/ci/validate-customer-trip-cockpit-contract.mjs
+          node scripts/ci/validate-customer-trip-cockpit-customer-view-contract.mjs
+          node scripts/ci/validate-customer-trip-cockpit-bridge-contract.mjs
+          node scripts/ci/validate-customer-trip-cockpit-source-assembler-contract.mjs
+          node scripts/ci/validate-post-booking-servicing-contract.mjs
+          node scripts/ci/validate-service-breadth-registry-contract.mjs
+          node scripts/ci/validate-local-tourism-contract.mjs
+          node scripts/ci/validate-local-operations-contract.mjs
+          node scripts/ci/validate-supplier-operations-contract.mjs
           node scripts/ci/validate-agent-deploy-contract.mjs
           python3 scripts/ci/validate_agent_health_verification.py
           php scripts/ci/validate-agent-policy-runtime.php
           php scripts/ci/validate-agent-controller-runtime.php
           php scripts/ci/validate-quote-case-runtime.php
+          php scripts/ci/validate-quote-case-capabilities-runtime.php
+          php scripts/ci/validate-commercial-intent-runtime.php
+          php scripts/ci/validate-assisted-proposal-runtime.php
+          php scripts/ci/validate-assisted-proposal-controller-runtime.php
+          php scripts/ci/validate-assisted-proposal-composer-runtime.php
+          php scripts/ci/validate-commerce-core-runtime.php
+          php scripts/ci/validate-commerce-state-machine-runtime.php
+          php scripts/ci/validate-commerce-sandbox-network-runtime.php
+          php scripts/ci/validate-commerce-search-runtime.php
+          php scripts/ci/validate-commerce-package-runtime.php
+          php scripts/ci/validate-commerce-revalidation-runtime.php
+          php scripts/ci/validate-commerce-order-runtime.php
+          php scripts/ci/validate-commerce-operation-runtime.php
+          php scripts/ci/validate-commerce-private-routing-runtime.php
+          php scripts/ci/validate-commerce-funds-flow-runtime.php
+          php scripts/ci/validate-commerce-funds-flow-factory-runtime.php
+          php scripts/ci/validate-commerce-fx-reconciliation-runtime.php
+          php scripts/ci/validate-commerce-currency-reconciliation-bridge-runtime.php
+          php scripts/ci/validate-commerce-search-schema-conformance.php
+          php scripts/ci/validate-benefit-engine-runtime.php
+          php scripts/ci/validate-israel-benefit-catalog-runtime.php
+          php scripts/ci/validate-israel-benefit-controller-runtime.php
+          php scripts/ci/validate-loyalty-value-stress-runtime.php
+          php scripts/ci/validate-vip-service-runtime.php
+          php scripts/ci/validate-vip-intake-runtime.php
+          php scripts/ci/validate-vip-intake-fanout-runtime.php
+          php scripts/ci/validate-vip-intake-rest-runtime.php
+          php scripts/ci/validate-vip-capability-session-runtime.php
+          php scripts/ci/validate-traveler-profile-runtime.php
+          php scripts/ci/validate-traveler-registration-rest-runtime.php
+          php scripts/ci/validate-trip-dependency-recovery-runtime.php
+          php scripts/ci/validate-trip-change-stress-runtime.php
+          php scripts/ci/validate-customer-trip-cockpit-runtime.php
+          php scripts/ci/validate-customer-trip-cockpit-customer-view-runtime.php
+          php scripts/ci/validate-customer-trip-cockpit-bridge-runtime.php
+          php scripts/ci/validate-customer-trip-cockpit-store-runtime.php
+          php scripts/ci/validate-customer-trip-cockpit-source-assembler-runtime.php
+          php scripts/ci/validate-post-booking-servicing-runtime.php
+          php scripts/ci/validate-service-breadth-registry-runtime.php
+          php scripts/ci/validate-local-tourism-runtime.php
+          php scripts/ci/validate-local-operations-runtime.php
+          php scripts/ci/validate-supplier-operations-runtime.php
+          php scripts/ci/validate-supplier-profile-seeds-runtime.php
+          node --check plugin/tra-vel-agent-core/assets/admin/assisted-proposal-composer.js
           node --check plugin/tra-vel-agent-core/assets/admin/quote-cases.js
           while IFS= read -r -d '' file; do php -l "$file"; done < <(find plugin/tra-vel-agent-core plugin/tra-vel-deploy-gateway -type f -name '*.php' -print0)
           bash -n scripts/deploy/deploy-agent-core.sh
@@ -113,8 +298,6 @@ jobs:
       AGENT_ACTIVATION_CONFIRMATION: ${{ inputs.activation_confirmation }}
       DEPLOY_ENABLED: ${{ vars.DEPLOY_ENABLED }}
       WP_SITE_URL: ${{ vars.WP_SITE_URL }}
-      WP_USERNAME: ${{ secrets.WP_USERNAME }}
-      WP_APP_PASSWORD: ${{ secrets.WP_APP_PASSWORD }}
       AGENT_DEPLOY_RESULT_FILE: agent-deploy-result.json
     steps:
       - name: Check out repository scripts
@@ -126,6 +309,36 @@ jobs:
           name: tra-vel-agent-core-${{ github.run_id }}
           path: dist
 
+      - name: Verify downloaded Agent Core artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          manifest_identity="$(python3 - <<'PY'
+          import json
+          import re
+          data = json.load(open("dist/agent-core-manifest.json", encoding="utf-8"))
+          archive = str(data.get("archive", ""))
+          version = str(data.get("version", ""))
+          sha256 = str(data.get("sha256", ""))
+          content_sha256 = str(data.get("content_sha256", ""))
+          if data.get("plugin") != "tra-vel-agent-core":
+              raise SystemExit("Agent Core manifest identity is invalid.")
+          if not re.fullmatch(r"tra-vel-agent-core-[A-Za-z0-9.+-]+-[a-f0-9]{7}\.zip", archive):
+              raise SystemExit("Agent Core manifest archive is invalid.")
+          if not re.fullmatch(r"\d+\.\d+\.\d+(?:[-+][A-Za-z0-9.-]+)?", version):
+              raise SystemExit("Agent Core manifest version is invalid.")
+          if not re.fullmatch(r"[a-f0-9]{64}", sha256) or not re.fullmatch(r"[a-f0-9]{64}", content_sha256):
+              raise SystemExit("Agent Core manifest fingerprints are invalid.")
+          print(f"{archive}|{sha256}")
+          PY
+          )"
+          IFS='|' read -r manifest_archive expected_sha256 <<< "$manifest_identity"
+          archive="dist/${manifest_archive}"
+          test -f "$archive"
+          unzip -t "$archive"
+          actual_sha256="$(sha256sum "$archive" | cut -d' ' -f1)"
+          [[ "$actual_sha256" == "$expected_sha256" ]] || { echo "Downloaded Agent Core checksum mismatch." >&2; exit 1; }
+
       - name: Report dry run
         if: ${{ env.DRY_RUN == 'true' }}
         run: cat dist/agent-core-manifest.json
@@ -133,6 +346,9 @@ jobs:
       - name: Validate production gate
         if: ${{ env.DRY_RUN != 'true' }}
         shell: bash
+        env:
+          WP_USERNAME: ${{ secrets.WP_USERNAME }}
+          WP_APP_PASSWORD: ${{ secrets.WP_APP_PASSWORD }}
         run: |
           set -euo pipefail
           [[ "$DEPLOY_ENABLED" == "true" ]]
@@ -145,15 +361,22 @@ jobs:
           fi
 
       - name: Deploy Agent Core through restricted WordPress REST
+        id: deploy_agent
         if: ${{ env.DRY_RUN != 'true' }}
         shell: bash
+        env:
+          WP_USERNAME: ${{ secrets.WP_USERNAME }}
+          WP_APP_PASSWORD: ${{ secrets.WP_APP_PASSWORD }}
         run: |
           archive="$(python3 -c 'import json; print("dist/" + json.load(open("dist/agent-core-manifest.json"))["archive"])')"
           bash scripts/deploy/deploy-agent-core.sh "$archive"
 
       - name: Verify public health contract
-        if: ${{ env.DRY_RUN != 'true' }}
+        if: ${{ always() && !cancelled() && env.DRY_RUN != 'true' && steps.deploy_agent.outcome != 'skipped' }}
         shell: bash
+        env:
+          WP_USERNAME: ${{ secrets.WP_USERNAME }}
+          WP_APP_PASSWORD: ${{ secrets.WP_APP_PASSWORD }}
         run: |
           set -u
           verified=false
@@ -166,6 +389,10 @@ jobs:
             verified=true
           fi
           if [[ "$verified" != "true" ]]; then
+            if [[ ! -s "$AGENT_DEPLOY_RESULT_FILE" ]]; then
+              echo "Agent Core verification failed without a validated deployment receipt. Recovery is withheld because the remote mutation state is ambiguous." >&2
+              exit 1
+            fi
             backup="$(python3 - <<'PY'
           import json
           import re
@@ -226,3 +453,12 @@ jobs:
             fi
             exit 1
           fi
+
+      - name: Preserve Agent Core deployment receipt
+        if: ${{ always() && !cancelled() && env.DRY_RUN != 'true' && hashFiles('agent-deploy-result.json') != '' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: tra-vel-agent-core-deploy-receipt-${{ github.run_id }}
+          path: agent-deploy-result.json
+          if-no-files-found: error
+          retention-days: 90

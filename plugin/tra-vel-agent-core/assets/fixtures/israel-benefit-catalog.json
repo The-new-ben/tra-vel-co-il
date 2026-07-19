@@ -1,0 +1,668 @@
+{
+  "contract_version": "1.0.0",
+  "catalog_id": "israel_benefits_2026_07_19",
+  "observed_at_utc": "2026-07-19T08:00:00Z",
+  "fresh_until_utc": "2026-07-20T08:00:00Z",
+  "airline_inventory": [
+    {
+      "airline_inventory_id": "airline_el_al",
+      "display_name": "EL AL",
+      "iata_code": "LY",
+      "source": {
+        "authority": "official_product_page",
+        "official_source_url": "https://www.elal.com/",
+        "source_content_digest": "c43da5c37492d946920f6b70ffa54db03ca4763bc391548169d3355b6f91149b",
+        "observed_at_utc": "2026-07-19T08:00:00Z",
+        "fresh_until_utc": "2026-07-20T08:00:00Z",
+        "locale": "he-IL",
+        "review_state": "reviewed"
+      },
+      "commercial_truth": {
+        "live_inventory": false,
+        "loyalty_eligibility_implied": false
+      }
+    },
+    {
+      "airline_inventory_id": "airline_arkia",
+      "display_name": "Arkia",
+      "iata_code": "IZ",
+      "source": {
+        "authority": "official_product_page",
+        "official_source_url": "https://www.arkia.co.il/",
+        "source_content_digest": "66039b95a8c31fda30160e1238e5b45b28ebc49446ae54c704d27c90a5e3a738",
+        "observed_at_utc": "2026-07-19T08:00:00Z",
+        "fresh_until_utc": "2026-07-20T08:00:00Z",
+        "locale": "he-IL",
+        "review_state": "reviewed"
+      },
+      "commercial_truth": {
+        "live_inventory": false,
+        "loyalty_eligibility_implied": false
+      }
+    },
+    {
+      "airline_inventory_id": "airline_israir",
+      "display_name": "Israir",
+      "iata_code": "6H",
+      "source": {
+        "authority": "official_product_page",
+        "official_source_url": "https://www.israir.co.il/Passengers_Info/Seating_Policy",
+        "source_content_digest": "6467d7b97743bc01c9d51c8582acf1323d161995ca2be721b0d23079c9764270",
+        "observed_at_utc": "2026-07-19T08:00:00Z",
+        "fresh_until_utc": "2026-07-20T08:00:00Z",
+        "locale": "he-IL",
+        "review_state": "reviewed"
+      },
+      "commercial_truth": {
+        "live_inventory": false,
+        "loyalty_eligibility_implied": false
+      }
+    }
+  ],
+  "programs": [
+    {
+      "contract_version": "1.0.0",
+      "program_id": "program_elal_matmid",
+      "owner_id": "owner_el_al_matmid",
+      "display_name": "EL AL Matmid",
+      "unit_code": "matmid_points",
+      "unit_type": "points",
+      "supported_operations": ["quote", "read_balance", "redeem"],
+      "status": "catalogued",
+      "integration_state": "source_catalogued",
+      "source": {
+        "authority": "official_rules",
+        "official_source_url": "https://www.elal.com/media/kphn1vnt/hebrew0207.pdf",
+        "source_content_digest": "735bd25b40d69c427d43ef8649f6783c8aa629755bfd3f478479998764defb38",
+        "observed_at_utc": "2026-07-19T08:00:00Z",
+        "fresh_until_utc": "2026-07-20T08:00:00Z",
+        "locale": "he-IL",
+        "review_state": "reviewed"
+      },
+      "commercial_truth": {
+        "live_connection": false,
+        "live_redemption": false
+      }
+    },
+    {
+      "contract_version": "1.0.0",
+      "program_id": "program_cal_flyall",
+      "owner_id": "owner_cal",
+      "display_name": "Cal FlyAll",
+      "unit_code": "flyall_value",
+      "unit_type": "program_value_minor",
+      "supported_operations": ["earn", "quote", "read_balance", "redeem"],
+      "status": "catalogued",
+      "integration_state": "source_catalogued",
+      "source": {
+        "authority": "official_product_page",
+        "official_source_url": "https://www.cal-online.co.il/cards/flyall?ti=1",
+        "source_content_digest": "3a04baf9056cf3f0496807ece41f39d1590a927c5e874570dd86ca3814f13c5f",
+        "observed_at_utc": "2026-07-19T08:00:00Z",
+        "fresh_until_utc": "2026-07-20T08:00:00Z",
+        "locale": "he-IL",
+        "review_state": "reviewed"
+      },
+      "commercial_truth": {
+        "live_connection": false,
+        "live_redemption": false
+      }
+    },
+    {
+      "contract_version": "1.0.0",
+      "program_id": "program_max_skymax",
+      "owner_id": "owner_max",
+      "display_name": "MAX SKYMAX",
+      "unit_code": "sky_points",
+      "unit_type": "points",
+      "supported_operations": ["earn", "quote", "read_balance", "redeem"],
+      "status": "catalogued",
+      "integration_state": "source_catalogued",
+      "source": {
+        "authority": "official_product_page",
+        "official_source_url": "https://www.max.co.il/benefits/clubbenefits/skymaxexe",
+        "source_content_digest": "8f6e0e5543076bf3e9387d1b1a9db76e747318b47fa99418e07b8997ea2351c0",
+        "observed_at_utc": "2026-07-19T08:00:00Z",
+        "fresh_until_utc": "2026-07-20T08:00:00Z",
+        "locale": "he-IL",
+        "review_state": "reviewed"
+      },
+      "commercial_truth": {
+        "live_connection": false,
+        "live_redemption": false
+      }
+    }
+  ],
+  "payment_networks": [
+    {
+      "payment_network_id": "network_mastercard",
+      "display_name": "Mastercard",
+      "scope": "exact_product_rail",
+      "source": {
+        "authority": "official_product_page",
+        "official_source_url": "https://www.isracard.co.il/flycard/private",
+        "source_content_digest": "1da6718c29686ce490edb93b1969ee303fe84cd01e3362ea0464c5086d0ba59a",
+        "observed_at_utc": "2026-07-19T08:00:00Z",
+        "fresh_until_utc": "2026-07-20T08:00:00Z",
+        "locale": "he-IL",
+        "review_state": "reviewed"
+      },
+      "commercial_truth": {
+        "issuer_eligibility_proven": false,
+        "campaign_eligibility_proven": false
+      }
+    },
+    {
+      "payment_network_id": "network_american_express",
+      "display_name": "American Express",
+      "scope": "exact_product_rail",
+      "source": {
+        "authority": "official_product_page",
+        "official_source_url": "https://www.isracard.co.il/flycard/private",
+        "source_content_digest": "1da6718c29686ce490edb93b1969ee303fe84cd01e3362ea0464c5086d0ba59a",
+        "observed_at_utc": "2026-07-19T08:00:00Z",
+        "fresh_until_utc": "2026-07-20T08:00:00Z",
+        "locale": "he-IL",
+        "review_state": "reviewed"
+      },
+      "commercial_truth": {
+        "issuer_eligibility_proven": false,
+        "campaign_eligibility_proven": false
+      }
+    },
+    {
+      "payment_network_id": "network_diners_mastercard_combined",
+      "display_name": "Diners combined Mastercard",
+      "scope": "exact_dual_rail_product",
+      "source": {
+        "authority": "official_product_page",
+        "official_source_url": "https://www.cal-online.co.il/cards/flyall?ti=1",
+        "source_content_digest": "3a04baf9056cf3f0496807ece41f39d1590a927c5e874570dd86ca3814f13c5f",
+        "observed_at_utc": "2026-07-19T08:00:00Z",
+        "fresh_until_utc": "2026-07-20T08:00:00Z",
+        "locale": "he-IL",
+        "review_state": "reviewed"
+      },
+      "commercial_truth": {
+        "issuer_eligibility_proven": false,
+        "campaign_eligibility_proven": false
+      }
+    },
+    {
+      "payment_network_id": "network_visa",
+      "display_name": "Visa",
+      "scope": "network_identity_only",
+      "source": {
+        "authority": "official_product_page",
+        "official_source_url": "https://www.visa.co.il/support/consumer/travel-support.html",
+        "source_content_digest": "8af7174db478d50b79b8a8049e60c31601caa53eb23e516621e7d1cee92aabb1",
+        "observed_at_utc": "2026-07-19T08:00:00Z",
+        "fresh_until_utc": "2026-07-20T08:00:00Z",
+        "locale": "he-IL",
+        "review_state": "reviewed"
+      },
+      "commercial_truth": {
+        "issuer_eligibility_proven": false,
+        "campaign_eligibility_proven": false
+      }
+    }
+  ],
+  "credential_products": [
+    {
+      "contract_version": "1.0.0",
+      "credential_product_id": "credential_isracard_fly_card_mastercard",
+      "issuer_id": "issuer_isracard",
+      "network_id": "network_mastercard",
+      "product_code": "fly_card_mastercard",
+      "display_name": "Isracard FLY CARD Mastercard",
+      "tier": "standard",
+      "residency_scopes": ["IL"],
+      "effective_window": {"from_utc": null, "to_utc": null},
+      "status": "catalogued",
+      "integration_state": "source_catalogued",
+      "source": {
+        "authority": "official_product_page",
+        "official_source_url": "https://www.isracard.co.il/flycard/private",
+        "source_content_digest": "1da6718c29686ce490edb93b1969ee303fe84cd01e3362ea0464c5086d0ba59a",
+        "observed_at_utc": "2026-07-19T08:00:00Z",
+        "fresh_until_utc": "2026-07-20T08:00:00Z",
+        "locale": "he-IL",
+        "review_state": "reviewed"
+      },
+      "commercial_truth": {"live_eligibility_verification": false}
+    },
+    {
+      "contract_version": "1.0.0",
+      "credential_product_id": "credential_isracard_fly_card_premium_mastercard",
+      "issuer_id": "issuer_isracard",
+      "network_id": "network_mastercard",
+      "product_code": "fly_card_premium_mastercard",
+      "display_name": "Isracard FLY CARD Premium Mastercard",
+      "tier": "premium",
+      "residency_scopes": ["IL"],
+      "effective_window": {"from_utc": null, "to_utc": null},
+      "status": "catalogued",
+      "integration_state": "source_catalogued",
+      "source": {
+        "authority": "official_product_page",
+        "official_source_url": "https://digital.isracard.co.il/globalassets/flycard_taarifon.pdf",
+        "source_content_digest": "317559c9ad80781448ca1952930273053af55c625287d869b8a044d9d32ff2e9",
+        "observed_at_utc": "2026-07-19T08:00:00Z",
+        "fresh_until_utc": "2026-07-20T08:00:00Z",
+        "locale": "he-IL",
+        "review_state": "reviewed"
+      },
+      "commercial_truth": {"live_eligibility_verification": false}
+    },
+    {
+      "contract_version": "1.0.0",
+      "credential_product_id": "credential_isracard_fly_card_premium_select_mastercard",
+      "issuer_id": "issuer_isracard",
+      "network_id": "network_mastercard",
+      "product_code": "fly_card_premium_select_mastercard",
+      "display_name": "Isracard FLY CARD Premium Select Mastercard",
+      "tier": "premium_select",
+      "residency_scopes": ["IL"],
+      "effective_window": {"from_utc": null, "to_utc": null},
+      "status": "catalogued",
+      "integration_state": "source_catalogued",
+      "source": {
+        "authority": "official_product_page",
+        "official_source_url": "https://digital.isracard.co.il/globalassets/flycard_taarifon.pdf",
+        "source_content_digest": "317559c9ad80781448ca1952930273053af55c625287d869b8a044d9d32ff2e9",
+        "observed_at_utc": "2026-07-19T08:00:00Z",
+        "fresh_until_utc": "2026-07-20T08:00:00Z",
+        "locale": "he-IL",
+        "review_state": "reviewed"
+      },
+      "commercial_truth": {"live_eligibility_verification": false}
+    },
+    {
+      "contract_version": "1.0.0",
+      "credential_product_id": "credential_premium_express_fly_card_premium_amex",
+      "issuer_id": "issuer_premium_express",
+      "network_id": "network_american_express",
+      "product_code": "fly_card_premium_amex",
+      "display_name": "Premium Express FLY CARD Premium American Express",
+      "tier": "premium",
+      "residency_scopes": ["IL"],
+      "effective_window": {"from_utc": null, "to_utc": null},
+      "status": "catalogued",
+      "integration_state": "source_catalogued",
+      "source": {
+        "authority": "official_product_page",
+        "official_source_url": "https://www.isracard.co.il/flycard/private",
+        "source_content_digest": "1da6718c29686ce490edb93b1969ee303fe84cd01e3362ea0464c5086d0ba59a",
+        "observed_at_utc": "2026-07-19T08:00:00Z",
+        "fresh_until_utc": "2026-07-20T08:00:00Z",
+        "locale": "he-IL",
+        "review_state": "reviewed"
+      },
+      "commercial_truth": {"live_eligibility_verification": false}
+    },
+    {
+      "contract_version": "1.0.0",
+      "credential_product_id": "credential_cal_flyall_mastercard",
+      "issuer_id": "issuer_cal",
+      "network_id": "network_mastercard",
+      "product_code": "flyall_mastercard",
+      "display_name": "Cal FlyAll Mastercard",
+      "tier": "standard",
+      "residency_scopes": ["IL"],
+      "effective_window": {"from_utc": null, "to_utc": null},
+      "status": "catalogued",
+      "integration_state": "source_catalogued",
+      "source": {
+        "authority": "official_product_page",
+        "official_source_url": "https://www.cal-online.co.il/cards/flyall?ti=1",
+        "source_content_digest": "3a04baf9056cf3f0496807ece41f39d1590a927c5e874570dd86ca3814f13c5f",
+        "observed_at_utc": "2026-07-19T08:00:00Z",
+        "fresh_until_utc": "2026-07-20T08:00:00Z",
+        "locale": "he-IL",
+        "review_state": "reviewed"
+      },
+      "commercial_truth": {"live_eligibility_verification": false}
+    },
+    {
+      "contract_version": "1.0.0",
+      "credential_product_id": "credential_cal_flyall_diners_mastercard",
+      "issuer_id": "issuer_cal",
+      "network_id": "network_diners_mastercard_combined",
+      "product_code": "flyall_diners_mastercard",
+      "display_name": "Cal FlyAll Diners combined Mastercard",
+      "tier": "standard",
+      "residency_scopes": ["IL"],
+      "effective_window": {"from_utc": null, "to_utc": null},
+      "status": "catalogued",
+      "integration_state": "source_catalogued",
+      "source": {
+        "authority": "official_product_page",
+        "official_source_url": "https://www.cal-online.co.il/cards/flyall?ti=1",
+        "source_content_digest": "3a04baf9056cf3f0496807ece41f39d1590a927c5e874570dd86ca3814f13c5f",
+        "observed_at_utc": "2026-07-19T08:00:00Z",
+        "fresh_until_utc": "2026-07-20T08:00:00Z",
+        "locale": "he-IL",
+        "review_state": "reviewed"
+      },
+      "commercial_truth": {"live_eligibility_verification": false}
+    },
+    {
+      "contract_version": "1.0.0",
+      "credential_product_id": "credential_cal_flyall_premium_mastercard",
+      "issuer_id": "issuer_cal",
+      "network_id": "network_mastercard",
+      "product_code": "flyall_premium_mastercard",
+      "display_name": "Cal FlyAll Premium Mastercard",
+      "tier": "premium",
+      "residency_scopes": ["IL"],
+      "effective_window": {"from_utc": null, "to_utc": null},
+      "status": "catalogued",
+      "integration_state": "source_catalogued",
+      "source": {
+        "authority": "official_product_page",
+        "official_source_url": "https://www.cal-online.co.il/cards/flyall?ti=1",
+        "source_content_digest": "3a04baf9056cf3f0496807ece41f39d1590a927c5e874570dd86ca3814f13c5f",
+        "observed_at_utc": "2026-07-19T08:00:00Z",
+        "fresh_until_utc": "2026-07-20T08:00:00Z",
+        "locale": "he-IL",
+        "review_state": "reviewed"
+      },
+      "commercial_truth": {"live_eligibility_verification": false}
+    },
+    {
+      "contract_version": "1.0.0",
+      "credential_product_id": "credential_cal_flyall_premium_diners_mastercard",
+      "issuer_id": "issuer_cal",
+      "network_id": "network_diners_mastercard_combined",
+      "product_code": "flyall_premium_diners_mastercard",
+      "display_name": "Cal FlyAll Premium Diners combined Mastercard",
+      "tier": "premium",
+      "residency_scopes": ["IL"],
+      "effective_window": {"from_utc": null, "to_utc": null},
+      "status": "catalogued",
+      "integration_state": "source_catalogued",
+      "source": {
+        "authority": "official_product_page",
+        "official_source_url": "https://www.cal-online.co.il/cards/flyall?ti=1",
+        "source_content_digest": "3a04baf9056cf3f0496807ece41f39d1590a927c5e874570dd86ca3814f13c5f",
+        "observed_at_utc": "2026-07-19T08:00:00Z",
+        "fresh_until_utc": "2026-07-20T08:00:00Z",
+        "locale": "he-IL",
+        "review_state": "reviewed"
+      },
+      "commercial_truth": {"live_eligibility_verification": false}
+    }
+  ],
+  "redemption_portals": [
+    {
+      "redemption_portal_id": "portal_elal_matmid",
+      "operator_id": "operator_el_al",
+      "display_name": "EL AL Matmid redemption",
+      "source": {
+        "authority": "official_rules",
+        "official_source_url": "https://www.elal.com/media/kphn1vnt/hebrew0207.pdf",
+        "source_content_digest": "735bd25b40d69c427d43ef8649f6783c8aa629755bfd3f478479998764defb38",
+        "observed_at_utc": "2026-07-19T08:00:00Z",
+        "fresh_until_utc": "2026-07-20T08:00:00Z",
+        "locale": "he-IL",
+        "review_state": "reviewed"
+      },
+      "commercial_truth": {"live_quote": false, "live_redemption": false}
+    },
+    {
+      "redemption_portal_id": "portal_flyall",
+      "operator_id": "operator_flyall",
+      "display_name": "FlyAll travel portal",
+      "source": {
+        "authority": "official_product_page",
+        "official_source_url": "https://www.cal-online.co.il/cards/flyall?ti=1",
+        "source_content_digest": "3a04baf9056cf3f0496807ece41f39d1590a927c5e874570dd86ca3814f13c5f",
+        "observed_at_utc": "2026-07-19T08:00:00Z",
+        "fresh_until_utc": "2026-07-20T08:00:00Z",
+        "locale": "he-IL",
+        "review_state": "reviewed"
+      },
+      "commercial_truth": {"live_quote": false, "live_redemption": false}
+    },
+    {
+      "redemption_portal_id": "portal_max_travel",
+      "operator_id": "operator_max_travel",
+      "display_name": "MAX Travel",
+      "source": {
+        "authority": "official_product_page",
+        "official_source_url": "https://www.max.co.il/benefits/abroadbenefits/maxtravel",
+        "source_content_digest": "6e1ce89f56693535d1f7cc42785cdc7e8daca03c2db5e201f25e842a461d8dac",
+        "observed_at_utc": "2026-07-19T08:00:00Z",
+        "fresh_until_utc": "2026-07-20T08:00:00Z",
+        "locale": "he-IL",
+        "review_state": "reviewed"
+      },
+      "commercial_truth": {"live_quote": false, "live_redemption": false}
+    }
+  ],
+  "campaign_versions": [
+    {
+      "contract_version": "1.0.0",
+      "campaign_id": "campaign_isracard_flycard_join_2026",
+      "version": 1,
+      "provider_id": "issuer_isracard",
+      "program_ids": ["program_elal_matmid"],
+      "credential_product_ids": [
+        "credential_isracard_fly_card_mastercard",
+        "credential_isracard_fly_card_premium_mastercard",
+        "credential_isracard_fly_card_premium_select_mastercard",
+        "credential_premium_express_fly_card_premium_amex"
+      ],
+      "benefit_types": ["activation_offer"],
+      "windows": {
+        "effective": {"from_utc": "2026-07-05T00:00:00Z", "to_utc": "2027-03-31T23:59:59Z"},
+        "enrollment": {"from_utc": "2026-07-05T00:00:00Z", "to_utc": "2026-08-05T23:59:59Z"},
+        "booking": {"from_utc": "2026-07-05T00:00:00Z", "to_utc": "2026-12-31T23:59:59Z"},
+        "travel": {"from_utc": "2026-11-01T00:00:00Z", "to_utc": "2027-03-31T23:59:59Z"}
+      },
+      "inventory_cap_state": "unknown",
+      "ruleset_digest": "cb1e60cfcc981b28867bddd701466b9f9e1fbcd50a661759e80ecb88ff72e030",
+      "review_state": "reviewed",
+      "status": "active",
+      "supersedes_version": null,
+      "integration_state": "source_catalogued",
+      "source": {
+        "authority": "official_product_page",
+        "official_source_url": "https://www.isracard.co.il/flycard/private",
+        "source_content_digest": "1da6718c29686ce490edb93b1969ee303fe84cd01e3362ea0464c5086d0ba59a",
+        "observed_at_utc": "2026-07-19T08:00:00Z",
+        "fresh_until_utc": "2026-07-20T08:00:00Z",
+        "locale": "he-IL",
+        "review_state": "reviewed"
+      },
+      "commercial_truth": {"provider_quote_available": false, "checkout_application_available": false}
+    },
+    {
+      "contract_version": "1.0.0",
+      "campaign_id": "campaign_cal_flycard_matmid_transition_2026",
+      "version": 1,
+      "provider_id": "issuer_cal",
+      "program_ids": ["program_elal_matmid"],
+      "credential_product_ids": [],
+      "benefit_types": ["earn_for_later"],
+      "windows": {
+        "effective": {"from_utc": null, "to_utc": "2026-12-31T23:59:59Z"},
+        "enrollment": {"from_utc": null, "to_utc": null},
+        "booking": {"from_utc": null, "to_utc": null},
+        "travel": {"from_utc": null, "to_utc": null}
+      },
+      "inventory_cap_state": "not_stated",
+      "ruleset_digest": "bb703b6e0115042e0f72368345ee228f9024fff48b6f71147237b56dd8da1a4e",
+      "review_state": "reviewed",
+      "status": "active",
+      "supersedes_version": null,
+      "integration_state": "source_catalogued",
+      "source": {
+        "authority": "official_product_page",
+        "official_source_url": "https://www.cal-online.co.il/cards/flyall?ti=1",
+        "source_content_digest": "3a04baf9056cf3f0496807ece41f39d1590a927c5e874570dd86ca3814f13c5f",
+        "observed_at_utc": "2026-07-19T08:00:00Z",
+        "fresh_until_utc": "2026-07-20T08:00:00Z",
+        "locale": "he-IL",
+        "review_state": "reviewed"
+      },
+      "commercial_truth": {"provider_quote_available": false, "checkout_application_available": false}
+    },
+    {
+      "contract_version": "1.0.0",
+      "campaign_id": "campaign_cal_flyall_catalog_2026",
+      "version": 1,
+      "provider_id": "issuer_cal",
+      "program_ids": ["program_cal_flyall"],
+      "credential_product_ids": [
+        "credential_cal_flyall_mastercard",
+        "credential_cal_flyall_diners_mastercard",
+        "credential_cal_flyall_premium_mastercard",
+        "credential_cal_flyall_premium_diners_mastercard"
+      ],
+      "benefit_types": ["cashback_future", "earn_for_later"],
+      "windows": {
+        "effective": {"from_utc": null, "to_utc": null},
+        "enrollment": {"from_utc": null, "to_utc": null},
+        "booking": {"from_utc": null, "to_utc": null},
+        "travel": {"from_utc": null, "to_utc": null}
+      },
+      "inventory_cap_state": "unknown",
+      "ruleset_digest": "c4a0ac1d87818266b401f9f89d21a52cda27f0199fe06e8190e4fa4d718887eb",
+      "review_state": "reviewed",
+      "status": "active",
+      "supersedes_version": null,
+      "integration_state": "source_catalogued",
+      "source": {
+        "authority": "official_product_page",
+        "official_source_url": "https://www.cal-online.co.il/cards/flyall?ti=1",
+        "source_content_digest": "3a04baf9056cf3f0496807ece41f39d1590a927c5e874570dd86ca3814f13c5f",
+        "observed_at_utc": "2026-07-19T08:00:00Z",
+        "fresh_until_utc": "2026-07-20T08:00:00Z",
+        "locale": "he-IL",
+        "review_state": "reviewed"
+      },
+      "commercial_truth": {"provider_quote_available": false, "checkout_application_available": false}
+    },
+    {
+      "contract_version": "1.0.0",
+      "campaign_id": "campaign_max_skymax_catalog_2026",
+      "version": 1,
+      "provider_id": "issuer_max",
+      "program_ids": ["program_max_skymax"],
+      "credential_product_ids": [],
+      "benefit_types": ["earn_for_later", "points_redemption"],
+      "windows": {
+        "effective": {"from_utc": null, "to_utc": null},
+        "enrollment": {"from_utc": null, "to_utc": null},
+        "booking": {"from_utc": null, "to_utc": null},
+        "travel": {"from_utc": null, "to_utc": null}
+      },
+      "inventory_cap_state": "unknown",
+      "ruleset_digest": "0b48ce36370fa4530c3604855b44d4a3b7518d14e6947fd7e86c75f61bd365ba",
+      "review_state": "reviewed",
+      "status": "active",
+      "supersedes_version": null,
+      "integration_state": "source_catalogued",
+      "source": {
+        "authority": "official_product_page",
+        "official_source_url": "https://www.max.co.il/benefits/clubbenefits/skymaxexe",
+        "source_content_digest": "8f6e0e5543076bf3e9387d1b1a9db76e747318b47fa99418e07b8997ea2351c0",
+        "observed_at_utc": "2026-07-19T08:00:00Z",
+        "fresh_until_utc": "2026-07-20T08:00:00Z",
+        "locale": "he-IL",
+        "review_state": "reviewed"
+      },
+      "commercial_truth": {"provider_quote_available": false, "checkout_application_available": false}
+    }
+  ],
+  "program_portal_links": [
+    {
+      "program_id": "program_elal_matmid",
+      "redemption_portal_id": "portal_elal_matmid",
+      "relationship": "provider_redemption_channel",
+      "eligibility_effect": "none"
+    },
+    {
+      "program_id": "program_cal_flyall",
+      "redemption_portal_id": "portal_flyall",
+      "relationship": "provider_redemption_channel",
+      "eligibility_effect": "none"
+    },
+    {
+      "program_id": "program_max_skymax",
+      "redemption_portal_id": "portal_max_travel",
+      "relationship": "provider_redemption_channel",
+      "eligibility_effect": "none"
+    }
+  ],
+  "credential_program_links": [
+    {"credential_product_id": "credential_isracard_fly_card_mastercard", "program_id": "program_elal_matmid", "relationship": "earns_program_value", "eligibility_effect": "none"},
+    {"credential_product_id": "credential_isracard_fly_card_premium_mastercard", "program_id": "program_elal_matmid", "relationship": "earns_program_value", "eligibility_effect": "none"},
+    {"credential_product_id": "credential_isracard_fly_card_premium_select_mastercard", "program_id": "program_elal_matmid", "relationship": "earns_program_value", "eligibility_effect": "none"},
+    {"credential_product_id": "credential_premium_express_fly_card_premium_amex", "program_id": "program_elal_matmid", "relationship": "earns_program_value", "eligibility_effect": "none"},
+    {"credential_product_id": "credential_cal_flyall_mastercard", "program_id": "program_cal_flyall", "relationship": "earns_program_value", "eligibility_effect": "none"},
+    {"credential_product_id": "credential_cal_flyall_diners_mastercard", "program_id": "program_cal_flyall", "relationship": "earns_program_value", "eligibility_effect": "none"},
+    {"credential_product_id": "credential_cal_flyall_premium_mastercard", "program_id": "program_cal_flyall", "relationship": "earns_program_value", "eligibility_effect": "none"},
+    {"credential_product_id": "credential_cal_flyall_premium_diners_mastercard", "program_id": "program_cal_flyall", "relationship": "earns_program_value", "eligibility_effect": "none"}
+  ],
+  "portal_inventory_links": [
+    {
+      "redemption_portal_id": "portal_flyall",
+      "airline_inventory_id": "airline_el_al",
+      "relationship": "source_catalogued_inventory_scope",
+      "commercial_truth": {"live_availability": false, "airline_loyalty_program_implied": false}
+    },
+    {
+      "redemption_portal_id": "portal_flyall",
+      "airline_inventory_id": "airline_arkia",
+      "relationship": "source_catalogued_inventory_scope",
+      "commercial_truth": {"live_availability": false, "airline_loyalty_program_implied": false}
+    },
+    {
+      "redemption_portal_id": "portal_flyall",
+      "airline_inventory_id": "airline_israir",
+      "relationship": "source_catalogued_inventory_scope",
+      "commercial_truth": {"live_availability": false, "airline_loyalty_program_implied": false}
+    }
+  ],
+  "migrations": [
+    {
+      "migration_id": "migration_cal_flycard_to_flyall_2026",
+      "from_issuer_id": "issuer_cal",
+      "from_card_family_id": "card_family_cal_flycard",
+      "from_program_id": "program_elal_matmid",
+      "to_program_id": "program_cal_flyall",
+      "to_credential_product_ids": [
+        "credential_cal_flyall_mastercard",
+        "credential_cal_flyall_diners_mastercard",
+        "credential_cal_flyall_premium_mastercard",
+        "credential_cal_flyall_premium_diners_mastercard"
+      ],
+      "transition_window": {"from_utc": null, "to_utc": "2026-12-31T23:59:59Z"},
+      "accrual_cutover_at_utc": "2027-01-01T00:00:00Z",
+      "migration_mode": "customer_choice_before_cutover",
+      "post_cutover_state": "requires_current_provider_terms",
+      "source": {
+        "authority": "official_product_page",
+        "official_source_url": "https://www.cal-online.co.il/cards/flyall?ti=1",
+        "source_content_digest": "3a04baf9056cf3f0496807ece41f39d1590a927c5e874570dd86ca3814f13c5f",
+        "observed_at_utc": "2026-07-19T08:00:00Z",
+        "fresh_until_utc": "2026-07-20T08:00:00Z",
+        "locale": "he-IL",
+        "review_state": "reviewed"
+      },
+      "commercial_truth": {"automatic_migration": false, "eligibility_proven": false}
+    }
+  ],
+  "commercial_truth": {
+    "live_provider_connection": false,
+    "live_balance": false,
+    "live_eligibility": false,
+    "live_inventory": false,
+    "live_price": false,
+    "live_discount": false,
+    "live_redemption": false,
+    "live_checkout": false
+  }
+}

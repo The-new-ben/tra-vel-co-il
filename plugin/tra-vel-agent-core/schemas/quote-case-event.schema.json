@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://tra-vel.co.il/wp-json/tra-vel-agent/v1/schema/quote-case-event#1.0.0",
+  "$id": "https://tra-vel.co.il/wp-json/tra-vel-agent/v1/schema/quote-case-event#1.1.0",
   "title": "Tra-Vel QuoteCaseEvent",
   "description": "A traveler-safe, append-only event in an assisted quote case timeline.",
   "type": "object",
@@ -21,7 +21,7 @@
   ],
   "properties": {
     "contract_version": {
-      "const": "1.0.0"
+      "const": "1.1.0"
     },
     "event_id": {
       "type": "string",
@@ -94,7 +94,7 @@
     "data": {
       "type": "object",
       "additionalProperties": false,
-      "maxProperties": 4,
+      "maxProperties": 5,
       "properties": {
         "request_revision": {
           "type": "integer",
@@ -127,6 +127,10 @@
           "type": "string",
           "pattern": "^[a-z0-9]+(?:[-_][a-z0-9]+)*$",
           "maxLength": 64
+        },
+        "target_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
         },
         "expires_at": {
           "type": "string",

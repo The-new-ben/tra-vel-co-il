@@ -1,0 +1,405 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://tra-vel.co.il/schemas/agent/assisted-proposal-1.0.0.json",
+  "title": "Tra-Vel AssistedProposal",
+  "description": "A sourced, expiring and non-binding personal travel proposal revision.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "proposal_id",
+    "case_id",
+    "reference",
+    "status",
+    "version",
+    "revision",
+    "published_revision",
+    "position",
+    "addresses",
+    "title",
+    "summary",
+    "why_it_fits",
+    "trade_offs",
+    "route",
+    "itinerary",
+    "components",
+    "ledger",
+    "sources",
+    "source_set_digest",
+    "freshness",
+    "unresolved_items",
+    "traveler_disposition",
+    "next_actions",
+    "disclosure",
+    "created_at",
+    "published_at",
+    "expires_at"
+  ],
+  "properties": {
+    "contract_version": { "const": "1.0.0" },
+    "proposal_id": { "type": "string", "format": "uuid" },
+    "case_id": { "type": "string", "format": "uuid" },
+    "reference": { "type": "string", "pattern": "^TVP-[A-Z0-9]{8}([A-Z0-9]{4})?$" },
+    "status": { "enum": ["draft", "available", "withdrawn", "expired", "superseded"] },
+    "version": { "type": "integer", "minimum": 1 },
+    "revision": { "type": "integer", "minimum": 1 },
+    "published_revision": { "type": "integer", "minimum": 0 },
+    "position": {
+      "enum": ["best_value", "lowest_friction", "most_flexible", "most_memorable", "custom"]
+    },
+    "addresses": { "$ref": "#/definitions/addresses" },
+    "title": { "type": "string", "minLength": 1, "maxLength": 160 },
+    "summary": { "type": "string", "minLength": 1, "maxLength": 800 },
+    "why_it_fits": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 6,
+      "items": { "type": "string", "minLength": 1, "maxLength": 240 }
+    },
+    "trade_offs": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 6,
+      "items": { "type": "string", "minLength": 1, "maxLength": 240 }
+    },
+    "route": { "$ref": "#/definitions/route" },
+    "itinerary": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 31,
+      "items": { "$ref": "#/definitions/itinerary_day" }
+    },
+    "components": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 16,
+      "items": { "$ref": "#/definitions/component" }
+    },
+    "ledger": { "$ref": "#/definitions/ledger" },
+    "sources": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 32,
+      "items": { "$ref": "assisted-proposal-source.schema.json" }
+    },
+    "source_set_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "freshness": { "$ref": "#/definitions/freshness" },
+    "unresolved_items": {
+      "type": "array",
+      "maxItems": 16,
+      "items": { "$ref": "#/definitions/unresolved_item" }
+    },
+    "traveler_disposition": {
+      "enum": ["unavailable", "awaiting_review", "reviewed", "changes_requested", "contact_authorized", "declined"]
+    },
+    "next_actions": {
+      "type": "array",
+      "maxItems": 4,
+      "uniqueItems": true,
+      "items": { "enum": ["review", "request_changes", "authorize_contact", "decline"] }
+    },
+    "disclosure": { "$ref": "#/definitions/disclosure" },
+    "created_at": { "type": "string", "format": "date-time" },
+    "published_at": { "type": ["string", "null"], "format": "date-time" },
+    "expires_at": { "type": ["string", "null"], "format": "date-time" }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "status": { "const": "available" } },
+        "required": ["status"]
+      },
+      "then": {
+        "properties": {
+          "published_revision": { "type": "integer", "minimum": 1 },
+          "published_at": { "type": "string", "format": "date-time" },
+          "expires_at": { "type": "string", "format": "date-time" },
+          "traveler_disposition": {
+            "enum": ["awaiting_review", "reviewed", "changes_requested", "contact_authorized", "declined"]
+          },
+          "next_actions": { "type": "array", "maxItems": 4 }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": { "const": "available" },
+          "traveler_disposition": { "const": "awaiting_review" }
+        },
+        "required": ["status", "traveler_disposition"]
+      },
+      "then": {
+        "properties": {
+          "next_actions": { "type": "array", "minItems": 4, "maxItems": 4 }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": { "const": "available" },
+          "traveler_disposition": { "const": "reviewed" }
+        },
+        "required": ["status", "traveler_disposition"]
+      },
+      "then": {
+        "properties": {
+          "next_actions": {
+            "type": "array",
+            "minItems": 3,
+            "maxItems": 3,
+            "items": { "enum": ["request_changes", "authorize_contact", "decline"] }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": { "const": "available" },
+          "traveler_disposition": { "enum": ["changes_requested", "contact_authorized", "declined"] }
+        },
+        "required": ["status", "traveler_disposition"]
+      },
+      "then": {
+        "properties": {
+          "next_actions": { "type": "array", "maxItems": 0 }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "status": { "const": "draft" } },
+        "required": ["status"]
+      },
+      "then": {
+        "properties": {
+          "published_revision": { "const": 0 },
+          "traveler_disposition": { "const": "unavailable" },
+          "next_actions": { "type": "array", "maxItems": 0 },
+          "published_at": { "type": "null" },
+          "expires_at": { "type": "null" }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "status": { "enum": ["withdrawn", "expired", "superseded"] } },
+        "required": ["status"]
+      },
+      "then": {
+        "properties": {
+          "next_actions": { "type": "array", "maxItems": 0 }
+        }
+      }
+    }
+  ],
+  "definitions": {
+    "addresses": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["case_revision", "request_digest"],
+      "properties": {
+        "case_revision": { "type": "integer", "minimum": 1 },
+        "request_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+      }
+    },
+    "route": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["origin", "destinations", "legs"],
+      "properties": {
+        "origin": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "destinations": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1, "maxLength": 80 }
+        },
+        "legs": {
+          "type": "array",
+          "maxItems": 12,
+          "items": { "$ref": "#/definitions/route_leg" }
+        }
+      }
+    },
+    "route_leg": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sequence", "from", "to", "mode"],
+      "properties": {
+        "sequence": { "type": "integer", "minimum": 1, "maximum": 12 },
+        "from": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "to": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "mode": { "enum": ["flight", "rail", "road", "ferry", "walk", "other"] }
+      }
+    },
+    "itinerary_day": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["day", "place", "title", "component_keys"],
+      "properties": {
+        "day": { "type": "integer", "minimum": 1, "maximum": 365 },
+        "place": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "component_keys": {
+          "type": "array",
+          "maxItems": 16,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "maxLength": 64,
+            "pattern": "^[a-z0-9]+(?:[-_][a-z0-9]+)*$"
+          }
+        }
+      }
+    },
+    "component": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "component_key",
+        "category",
+        "title",
+        "description",
+        "price",
+        "conditions",
+        "source_ids",
+        "requires_revalidation"
+      ],
+      "properties": {
+        "component_key": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[a-z0-9]+(?:[-_][a-z0-9]+)*$"
+        },
+        "category": {
+          "enum": ["flights", "accommodation", "transfers", "activities", "dining", "insurance", "connectivity", "equipment"]
+        },
+        "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "description": { "type": "string", "minLength": 1, "maxLength": 800 },
+        "price": { "$ref": "#/definitions/price" },
+        "conditions": { "$ref": "#/definitions/conditions" },
+        "source_ids": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": { "type": "string", "format": "uuid" }
+        },
+        "requires_revalidation": { "const": true }
+      }
+    },
+    "price": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["priced", "total_for_party_minor", "currency", "basis", "taxes", "fees"],
+      "properties": {
+        "priced": { "type": "boolean" },
+        "total_for_party_minor": { "type": ["integer", "null"], "minimum": 0, "maximum": 1000000000000 },
+        "currency": { "enum": ["ILS", "USD", "EUR", null] },
+        "basis": { "enum": ["trip_total", "stay_total", "ticket_total", "activity_total", "item_total", "not_priced"] },
+        "taxes": { "enum": ["included", "excluded", "unknown"] },
+        "fees": { "enum": ["included", "excluded", "unknown"] }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "priced": { "const": true } }, "required": ["priced"] },
+          "then": {
+            "properties": {
+              "total_for_party_minor": { "type": "integer", "minimum": 0, "maximum": 1000000000000 },
+              "currency": { "enum": ["ILS", "USD", "EUR"] },
+              "basis": { "enum": ["trip_total", "stay_total", "ticket_total", "activity_total", "item_total"] }
+            }
+          },
+          "else": {
+            "properties": {
+              "total_for_party_minor": { "type": "null" },
+              "currency": { "type": "null" },
+              "basis": { "const": "not_priced" },
+              "taxes": { "const": "unknown" },
+              "fees": { "const": "unknown" }
+            }
+          }
+        }
+      ]
+    },
+    "conditions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cancellation", "changes", "baggage_or_inclusions"],
+      "properties": {
+        "cancellation": { "type": "string", "minLength": 1, "maxLength": 500 },
+        "changes": { "type": "string", "minLength": 1, "maxLength": 500 },
+        "baggage_or_inclusions": { "type": "string", "minLength": 1, "maxLength": 500 }
+      }
+    },
+    "ledger": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract_version",
+        "currency",
+        "priced_total_minor",
+        "priced_component_count",
+        "unpriced_component_keys",
+        "complete_pricing",
+        "calculation_digest"
+      ],
+      "properties": {
+        "contract_version": { "const": "1.0.0" },
+        "currency": { "enum": ["ILS", "USD", "EUR", null] },
+        "priced_total_minor": { "type": "integer", "minimum": 0, "maximum": 1000000000000 },
+        "priced_component_count": { "type": "integer", "minimum": 0, "maximum": 16 },
+        "unpriced_component_keys": {
+          "type": "array",
+          "maxItems": 16,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "maxLength": 64,
+            "pattern": "^[a-z0-9]+(?:[-_][a-z0-9]+)*$"
+          }
+        },
+        "complete_pricing": { "type": "boolean" },
+        "calculation_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+      }
+    },
+    "freshness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["checked_at", "expires_at", "requires_revalidation"],
+      "properties": {
+        "checked_at": { "type": "string", "format": "date-time" },
+        "expires_at": { "type": "string", "format": "date-time" },
+        "requires_revalidation": { "const": true }
+      }
+    },
+    "unresolved_item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "label"],
+      "properties": {
+        "code": {
+          "enum": ["unpriced_component", "taxes_unknown", "fees_unknown", "availability_revalidation", "policy_revalidation", "schedule_revalidation", "other"]
+        },
+        "label": { "type": "string", "minLength": 1, "maxLength": 240 }
+      }
+    },
+    "disclosure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["commercial_state", "final_quote_required", "message"],
+      "properties": {
+        "commercial_state": { "const": "non_binding_assisted_proposal" },
+        "final_quote_required": { "const": true },
+        "message": {
+          "const": "Final price, availability, and terms are provided only after revalidation in a personal quote."
+        }
+      }
+    }
+  }
+}

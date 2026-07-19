@@ -2,7 +2,7 @@
 Contributors: tra-vel
 Requires at least: 6.5
 Requires PHP: 7.4
-Stable tag: 0.4.0
+Stable tag: 0.7.0
 License: Proprietary
 
 Private AI travel planning, durable assisted-quote cases, operator progress, and protected approval foundations for Tra-Vel.
@@ -13,13 +13,43 @@ This plugin is the server-side control plane for Tra-Vel agent runs. It stores p
 
 Raw natural-language prompts are processed in memory and are not persisted. Anonymous ownership secrets are held in Secure, HttpOnly, SameSite cookies and are not returned to JavaScript. Atomic database counters cap live provider requests per visitor and per UTC day, while owner-token leases limit concurrent provider work to two requests by default.
 
-Version 0.4.0 publishes TripRequest 1.1.0 and binds destination and arbitrary Earth selections to its validated planning context. Exact coordinates, intent, and the eight-domain planning scope survive natural-language revisions, while public events retain only the stable selection identity. The traveler interface derives its seven-stage progress display from real run and event states. It never treats waiting, failure, cancellation, supplier search, price, or booking as completed without corresponding evidence.
+Version 0.7.0 adds the end-to-end sandbox commerce, supplier operations, VIP servicing, traveler registration, local tourism, loyalty value, and private Trip Cockpit foundations. Customer-safe views are owner-bound, capability-scoped, no-store, and revisioned; simulated commercial facts remain explicitly sandboxed until a validated provider response supplies live availability, price, and terms.
 
 == Security ==
 
 Use a hosting environment variable or wp-config.php constant for the OpenAI key when possible. The administrator-only encrypted-option fallback requires sodium. Keys are never returned by REST.
 
 == Changelog ==
+
+= 0.7.0 =
+
+* Added seeded generic supplier profiles, deterministic sandbox search, offer, package, order, funds-flow, settlement, servicing, local-tourism, and loyalty contracts.
+* Added secure traveler registration, no-login capability sessions, VIP intake routing, disruption recovery, and a private customer Trip Cockpit with immutable server projections.
+* Added release health, schema, PHP 7.4/8.3, mobile RTL, privacy, and adversarial deployment gates for the new system.
+
+= 0.6.0 =
+* Added the closed AssistedProposal and AssistedProposalSource 1.0.0 contracts with immutable revisions, normalized evidence, append-only actions, and principal-scoped idempotency.
+* Added a five-table InnoDB store bound to exact QuoteCase ownership, revision, request digest, retention, and legal-hold state.
+* Added dedicated publication authorization plus traveler review, change-request, contact-authorization, and decline transitions without transactional claims.
+* Added a mobile-responsive, safe-DOM operator composer whose reduced command is converted into a complete canonical proposal by the server.
+* Added assignment checks before mutation and again under the locked parent case, exact major-to-minor money conversion, and mandatory source/gap derivation.
+* Added exact case-version/request preconditions, signed five-minute evidence recheck attestations, registered public-provider host binding, and receipt-first composition replay.
+* Separated human publication from canonical service ingestion and scoped operator proposal reads to current assignment.
+* Added truthful capability and schema health, exact deployment gates, bounded child-first cleanup, and opt-in uninstall ordering.
+
+= 0.5.0 =
+* Added the closed CommercialIntent 1.0.0 contract and three-table InnoDB aggregate.
+* Added exact account or private-browser ownership, same-origin guest mutations, rate limits, optimistic versions, and idempotent create/resume behavior.
+* Added durable-before-navigation handoff events and a strict owned WhatsApp host/provider boundary.
+* Added recursive sensitive-field rejection and explicit non-binding final-quote language without removing useful planning cards.
+* Added schema health, bounded retention cleanup, deployment gates, and adversarial PHP and JavaScript validation.
+
+= 0.4.1 =
+* Added an authenticated, exact-owner GET /runs account history with a 12-plan default and a 20-plan cap.
+* Added a closed AgentRun account-summary schema and private no-store collection responses.
+* Added deterministic updated-time and primary-key ordering plus explicit 503 read-failure handling.
+* Versioned the closed traveler QuoteCase DTO as 1.1.0 and added batched, fail-false source-run resume availability; QuoteCaseEvent 1.1.0 binds prepared contact events to the exact returned URL digest without retaining that URL.
+* Added adversarial runtime and contract coverage for ownership isolation, expiry, ordering, DTO closure, cache policy, and source-run uncertainty.
 
 = 0.4.0 =
 * Added a closed, range-bounded planning context for destination and arbitrary Earth selections.

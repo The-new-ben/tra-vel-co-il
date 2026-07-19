@@ -1,0 +1,139 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://tra-vel.co.il/schemas/supplier-inventory-revision.schema.json",
+  "title": "Tra-Vel immutable supplier inventory revision",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version", "supplier_id", "vertical", "revision_id", "revision_number",
+    "previous_revision_digest", "state", "environment", "created_at", "effective_at",
+    "valid_until", "source", "artifacts", "revalidation", "rollback", "commercial_truth",
+    "data_boundary"
+  ],
+  "properties": {
+    "contract_version": { "const": "1.0.0" },
+    "supplier_id": { "type": "string", "pattern": "^[a-z][a-z0-9_]{2,63}$" },
+    "vertical": { "$ref": "#/definitions/vertical" },
+    "revision_id": { "type": "string", "pattern": "^invrev_[a-z0-9]{12,64}$" },
+    "revision_number": { "type": "integer", "minimum": 1 },
+    "previous_revision_digest": { "$ref": "#/definitions/nullableDigest" },
+    "state": { "enum": ["draft", "certified", "active", "superseded", "rolled_back", "retired"] },
+    "environment": { "enum": ["sandbox", "live"] },
+    "created_at": { "$ref": "#/definitions/dateTime" },
+    "effective_at": { "$ref": "#/definitions/dateTime" },
+    "valid_until": { "$ref": "#/definitions/dateTime" },
+    "source": { "$ref": "#/definitions/source" },
+    "artifacts": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/artifact" }
+    },
+    "revalidation": { "$ref": "#/definitions/revalidation" },
+    "rollback": { "$ref": "#/definitions/rollback" },
+    "commercial_truth": { "$ref": "#/definitions/commercialTruth" },
+    "data_boundary": { "$ref": "#/definitions/dataBoundary" }
+  },
+  "definitions": {
+    "digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "nullableDigest": {
+      "anyOf": [
+        { "$ref": "#/definitions/digest" },
+        { "type": "null" }
+      ]
+    },
+    "dateTime": { "type": "string", "format": "date-time" },
+    "nullableDateTime": {
+      "anyOf": [
+        { "$ref": "#/definitions/dateTime" },
+        { "type": "null" }
+      ]
+    },
+    "nullableToken": {
+      "anyOf": [
+        { "type": "string", "pattern": "^[a-z][a-z0-9_]{2,63}$" },
+        { "type": "null" }
+      ]
+    },
+    "vertical": {
+      "enum": ["flight", "accommodation", "package", "transfer", "activity", "dining", "insurance", "connectivity", "equipment"]
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_revision", "source_digest", "captured_at", "channel"],
+      "properties": {
+        "source_revision": { "type": "string", "pattern": "^source_[a-z0-9][a-z0-9_-]{7,95}$" },
+        "source_digest": { "$ref": "#/definitions/digest" },
+        "captured_at": { "$ref": "#/definitions/dateTime" },
+        "channel": { "enum": ["api", "feed", "portal", "manual_contract"] }
+      }
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "product_ref", "product_revision", "product_digest", "rate_revision", "rate_digest",
+        "availability_revision", "availability_digest", "terms_revision", "terms_digest",
+        "terms_effective_at", "terms_valid_until", "blackout_revision", "blackout_digest"
+      ],
+      "properties": {
+        "product_ref": { "type": "string", "pattern": "^product_[a-z0-9][a-z0-9_-]{7,95}$" },
+        "product_revision": { "type": "string", "pattern": "^productrev_[a-z0-9][a-z0-9_-]{7,95}$" },
+        "product_digest": { "$ref": "#/definitions/digest" },
+        "rate_revision": { "type": "string", "pattern": "^raterev_[a-z0-9][a-z0-9_-]{7,95}$" },
+        "rate_digest": { "$ref": "#/definitions/digest" },
+        "availability_revision": { "type": "string", "pattern": "^availrev_[a-z0-9][a-z0-9_-]{7,95}$" },
+        "availability_digest": { "$ref": "#/definitions/digest" },
+        "terms_revision": { "type": "string", "pattern": "^termsrev_[a-z0-9][a-z0-9_-]{7,95}$" },
+        "terms_digest": { "$ref": "#/definitions/digest" },
+        "terms_effective_at": { "$ref": "#/definitions/dateTime" },
+        "terms_valid_until": { "$ref": "#/definitions/dateTime" },
+        "blackout_revision": { "type": "string", "pattern": "^blackoutrev_[a-z0-9][a-z0-9_-]{7,95}$" },
+        "blackout_digest": { "$ref": "#/definitions/digest" }
+      }
+    },
+    "revalidation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["required", "max_cache_age_seconds", "last_verified_at", "next_refresh_at", "evidence_digest"],
+      "properties": {
+        "required": { "const": true },
+        "max_cache_age_seconds": { "type": "integer", "minimum": 0, "maximum": 2592000 },
+        "last_verified_at": { "$ref": "#/definitions/dateTime" },
+        "next_refresh_at": { "$ref": "#/definitions/dateTime" },
+        "evidence_digest": { "$ref": "#/definitions/digest" }
+      }
+    },
+    "rollback": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["allowed", "target_revision_digest", "reason_code", "requested_at"],
+      "properties": {
+        "allowed": { "type": "boolean" },
+        "target_revision_digest": { "$ref": "#/definitions/nullableDigest" },
+        "reason_code": { "$ref": "#/definitions/nullableToken" },
+        "requested_at": { "$ref": "#/definitions/nullableDateTime" }
+      }
+    },
+    "commercialTruth": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["simulated", "real_booking", "real_charge"],
+      "properties": {
+        "simulated": { "type": "boolean" },
+        "real_booking": { "type": "boolean" },
+        "real_charge": { "type": "boolean" }
+      }
+    },
+    "dataBoundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contains_raw_secrets", "contains_raw_pii", "restricted_payload_refs_only"],
+      "properties": {
+        "contains_raw_secrets": { "const": false },
+        "contains_raw_pii": { "const": false },
+        "restricted_payload_refs_only": { "const": true }
+      }
+    }
+  }
+}
