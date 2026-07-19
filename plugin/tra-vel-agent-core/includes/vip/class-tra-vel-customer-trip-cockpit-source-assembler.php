@@ -29,6 +29,7 @@ final class Tra_Vel_Customer_Trip_Cockpit_Source_Assembler {
 		'loyalty_changed',
 		'offline_pack_changed',
 		'local_service_changed',
+		'assisted_case_changed',
 	);
 
 	const SNAPSHOT_KEYS = array(

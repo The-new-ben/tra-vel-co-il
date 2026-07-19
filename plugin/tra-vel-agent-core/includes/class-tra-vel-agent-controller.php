@@ -146,6 +146,26 @@ class Tra_Vel_Agent_Controller extends WP_REST_Controller {
 				),
 			)
 		);
+		register_rest_route(
+			$this->namespace,
+			'/settings/notification-webhook',
+			array(
+				array(
+					'methods'             => WP_REST_Server::CREATABLE,
+					'callback'            => array( $this, 'store_notification_webhook' ),
+					'permission_callback' => array( $this, 'can_manage_agent' ),
+					'args'                => array(
+						'webhook_url'  => array( 'type' => 'string', 'required' => true, 'format' => 'uri', 'maxLength' => 500, 'sanitize_callback' => array( $this, 'sanitize_secret' ), 'validate_callback' => 'rest_validate_request_arg' ),
+						'confirmation' => array( 'type' => 'string', 'required' => true, 'sanitize_callback' => 'sanitize_text_field' ),
+					),
+				),
+				array(
+					'methods'             => WP_REST_Server::DELETABLE,
+					'callback'            => array( $this, 'clear_notification_webhook' ),
+					'permission_callback' => array( $this, 'can_manage_agent' ),
+				),
+			)
+		);
 	}
 
 	public function create_run( WP_REST_Request $request ) {
@@ -539,8 +559,8 @@ class Tra_Vel_Agent_Controller extends WP_REST_Controller {
 	}
 
 	public function get_health() {
-		$daily_limit      = max( 1, (int) apply_filters( 'tra_vel_agent_daily_request_limit', 20 ) );
-		$visitor_limit    = max( 1, (int) apply_filters( 'tra_vel_agent_visitor_request_limit', 5 ) );
+		$daily_limit      = max( 1, (int) apply_filters( 'tra_vel_agent_daily_request_limit', 200 ) );
+		$visitor_limit    = max( 1, (int) apply_filters( 'tra_vel_agent_visitor_request_limit', 8 ) );
 		$concurrency_limit = min( 5, max( 1, (int) apply_filters( 'tra_vel_agent_provider_concurrency_limit', 2 ) ) );
 		$proposal_store_loaded = class_exists( 'Tra_Vel_Assisted_Proposal_Store' );
 		$proposal_store_health = $proposal_store_loaded
@@ -634,6 +654,13 @@ class Tra_Vel_Agent_Controller extends WP_REST_Controller {
 					'global_requests_per_utc_day'=> $daily_limit,
 					'provider_concurrency'        => $concurrency_limit,
 				),
+				'notifications'    => class_exists( 'Tra_Vel_Agent_Notifier' )
+					? Tra_Vel_Agent_Notifier::health()
+					: array(
+						'operator_email'     => false,
+						'webhook_configured' => false,
+						'customer_email'     => false,
+					),
 				'agent_store'      => class_exists( 'Tra_Vel_Agent_Store' )
 					? Tra_Vel_Agent_Store::schema_health()
 					: array(
@@ -709,6 +736,29 @@ class Tra_Vel_Agent_Controller extends WP_REST_Controller {
 	public function clear_credential() {
 		Tra_Vel_Agent_Credential_Vault::clear_stored_key();
 		return $this->private_response( array( 'ok' => true, 'credential' => Tra_Vel_Agent_Credential_Vault::status() ) );
+	}
+
+	/**
+	 * Store the encrypted operator notification webhook. The endpoint URL is
+	 * never echoed back; only safe configuration state is returned.
+	 *
+	 * @param WP_REST_Request $request REST request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function store_notification_webhook( WP_REST_Request $request ) {
+		if ( 'STORE TRA-VEL NOTIFICATION WEBHOOK' !== $request->get_param( 'confirmation' ) ) {
+			return new WP_Error( 'tra_vel_agent_webhook_confirmation', 'Webhook confirmation did not match.', array( 'status' => 400 ) );
+		}
+		$stored = Tra_Vel_Agent_Notifier::store_webhook_url( $request->get_param( 'webhook_url' ) );
+		if ( is_wp_error( $stored ) ) {
+			return $stored;
+		}
+		return $this->private_response( array( 'ok' => true, 'webhook' => Tra_Vel_Agent_Notifier::webhook_status() ) );
+	}
+
+	public function clear_notification_webhook() {
+		Tra_Vel_Agent_Notifier::clear_webhook_url();
+		return $this->private_response( array( 'ok' => true, 'webhook' => Tra_Vel_Agent_Notifier::webhook_status() ) );
 	}
 
 	public function can_manage_agent() {
@@ -986,7 +1036,7 @@ class Tra_Vel_Agent_Controller extends WP_REST_Controller {
 		$address = isset( $_SERVER['REMOTE_ADDR'] ) ? (string) $_SERVER['REMOTE_ADDR'] : 'unknown';
 		$window_seconds = 10 * MINUTE_IN_SECONDS;
 		$window_id      = (int) floor( time() / $window_seconds );
-		$visitor_limit  = max( 1, (int) apply_filters( 'tra_vel_agent_visitor_request_limit', 5 ) );
+		$visitor_limit  = max( 1, (int) apply_filters( 'tra_vel_agent_visitor_request_limit', 8 ) );
 		$key            = 'visitor:' . substr( hash_hmac( 'sha256', $address, wp_salt( 'nonce' ) ), 0, 40 ) . ':' . $window_id;
 		$allowed        = $this->store->consume_limit( $key, $visitor_limit, ( $window_id + 1 ) * $window_seconds + MINUTE_IN_SECONDS );
 		if ( ! $allowed ) {
@@ -996,7 +1046,7 @@ class Tra_Vel_Agent_Controller extends WP_REST_Controller {
 	}
 
 	private function consume_daily_budget() {
-		$daily_limit = max( 1, (int) apply_filters( 'tra_vel_agent_daily_request_limit', 20 ) );
+		$daily_limit = max( 1, (int) apply_filters( 'tra_vel_agent_daily_request_limit', 200 ) );
 		$daily_key = 'global:' . gmdate( 'Ymd' );
 		$allowed   = $this->store->consume_limit( $daily_key, $daily_limit, time() + DAY_IN_SECONDS + 2 * HOUR_IN_SECONDS );
 		if ( ! $allowed ) {

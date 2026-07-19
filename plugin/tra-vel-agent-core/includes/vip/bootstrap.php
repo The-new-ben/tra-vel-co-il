@@ -37,4 +37,7 @@ require_once __DIR__ . '/interface-tra-vel-customer-trip-cockpit-read-model-prov
 require_once __DIR__ . '/interface-tra-vel-customer-trip-cockpit-source-provider.php';
 require_once __DIR__ . '/class-tra-vel-customer-trip-cockpit-store.php';
 require_once __DIR__ . '/class-tra-vel-customer-trip-cockpit-source-assembler.php';
+require_once __DIR__ . '/class-tra-vel-customer-trip-cockpit-authoritative-source-provider.php';
+require_once __DIR__ . '/class-tra-vel-customer-trip-cockpit-lifecycle-emitter.php';
+require_once __DIR__ . '/class-tra-vel-customer-trip-cockpit-assisted-snapshot-provider.php';
 require_once __DIR__ . '/class-tra-vel-customer-trip-cockpit-controller.php';

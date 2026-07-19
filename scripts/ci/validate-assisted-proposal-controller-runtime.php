@@ -61,8 +61,12 @@ class WP_REST_Response {
 
 $tra_vel_registered_routes = array();
 $tra_vel_registered_filters = array();
+$tra_vel_fired_actions = array();
 function register_rest_route( $namespace, $route, $args ) { global $tra_vel_registered_routes; $tra_vel_registered_routes[ '/' . $namespace . $route ] = $args; return true; }
 function add_filter( $hook, $callback, $priority = 10, $accepted_args = 1 ) { global $tra_vel_registered_filters; $tra_vel_registered_filters[ $hook ][] = array( $callback, $priority, $accepted_args ); return true; }
+function add_action( $hook, $callback, $priority = 10, $accepted_args = 1 ) { return add_filter( $hook, $callback, $priority, $accepted_args ); }
+function do_action( $hook, ...$args ) { global $tra_vel_fired_actions; $tra_vel_fired_actions[] = array( 'hook' => (string) $hook, 'args' => $args ); }
+function tra_vel_controller_fired( $hook, $args = null ) { global $tra_vel_fired_actions; $matches = array(); foreach ( $tra_vel_fired_actions as $fired ) { if ( $fired['hook'] === $hook && ( null === $args || $fired['args'] === $args ) ) { $matches[] = $fired; } } return $matches; }
 function rest_ensure_response( $value ) { return $value instanceof WP_REST_Response ? $value : new WP_REST_Response( $value ); }
 function rest_convert_error_to_response( $error ) { $data = $error->get_error_data(); return new WP_REST_Response( array( 'code' => $error->get_error_code() ), is_array( $data ) && isset( $data['status'] ) ? (int) $data['status'] : 500 ); }
 
@@ -470,12 +474,15 @@ tra_vel_controller_expect( true === $controller->can_access_traveler_case( $good
 $action_response = $controller->record_traveler_action( $good_action );
 tra_vel_controller_expect( $action_response instanceof WP_REST_Response && 'reviewed' === $action_response->get_data()['proposal']['traveler_disposition'], 'Safe traveler action must project its new disposition.' );
 tra_vel_controller_expect( ! tra_vel_controller_contains_key( $action_response->get_data(), array( 'event', 'source_snapshot', 'owner_token_hash' ) ), 'Traveler action response must not leak its raw event.' );
+tra_vel_controller_expect( array() === tra_vel_controller_fired( 'tra_vel_quote_case_traveler_action' ), 'A passive review must not announce a material post-commit traveler decision.' );
 $decline_json = array( 'action' => 'decline', 'expected_version' => 2, 'idempotency_key' => 'action-fixture-0008' );
 $decline_response = $controller->record_traveler_action( new WP_REST_Request( 'POST', $base_params + $decline_json, $decline_json, array( 'Origin' => 'https://tra-vel.co.il' ) ) );
 tra_vel_controller_expect( $decline_response instanceof WP_REST_Response && 'available' === $decline_response->get_data()['proposal']['status'] && 'declined' === $decline_response->get_data()['proposal']['traveler_disposition'] && array() === $decline_response->get_data()['proposal']['next_actions'], 'Decline must remain a traveler disposition, not masquerade as operator withdrawal.' );
 tra_vel_controller_expect( true === $controller->validate_traveler_proposal( $decline_response->get_data()['proposal'] ), 'Terminal traveler disposition must still match the traveler response schema.' );
+tra_vel_controller_expect( 1 === count( tra_vel_controller_fired( 'tra_vel_quote_case_traveler_action', array( $case_uuid, $proposal['proposal_id'], 'decline' ) ) ), 'A committed decline must announce exactly one post-commit traveler-action event with opaque identifiers.' );
 $evolved_action_replay = $controller->record_traveler_action( $good_action );
 tra_vel_controller_expect( $evolved_action_replay instanceof WP_REST_Response && true === $evolved_action_replay->get_data()['replayed'] && 'superseded' === $evolved_action_replay->get_data()['proposal']['status'] && 2 === $store->state_event_calls, 'An exact traveler-action retry must recover its committed historical result after the proposal evolves without appending another event.' );
+tra_vel_controller_expect( 1 === count( tra_vel_controller_fired( 'tra_vel_quote_case_traveler_action' ) ), 'A replayed traveler action must not announce another post-commit event.' );
 $changed_action_body = array( 'action' => 'review', 'expected_version' => 2, 'idempotency_key' => 'action-fixture-0005' );
 tra_vel_controller_expect_error( $controller->record_traveler_action( new WP_REST_Request( 'POST', $base_params + $changed_action_body, $changed_action_body, array( 'Origin' => 'https://tra-vel.co.il' ) ) ), 'tra_vel_assisted_proposal_idempotency_conflict', 'The same traveler-action key with a changed canonical body must conflict even after the proposal evolves.', 409 );
 
@@ -550,6 +557,7 @@ $contact_json = array( 'action' => 'authorize_contact', 'contact_consent' => $co
 $contact_request = new WP_REST_Request( 'POST', $base_params + $contact_json, $contact_json, $account_headers );
 $contact_response = $account_controller->record_traveler_action( $contact_request );
 tra_vel_controller_expect( $contact_response instanceof WP_REST_Response && 'contact_authorized' === $contact_response->get_data()['proposal']['traveler_disposition'] && false === $contact_response->get_data()['replayed'], 'Exact signed-in consent must authorize the bounded contact transition once.' );
+tra_vel_controller_expect( 1 === count( tra_vel_controller_fired( 'tra_vel_quote_case_traveler_action', array( $case_uuid, $proposal['proposal_id'], 'authorize_contact' ) ) ), 'A committed contact authorization must announce exactly one post-commit traveler-action event.' );
 $account_receipts = $account_store->state_receipts;
 $contact_receipt = end( $account_receipts );
 $stored_consent = $contact_receipt['result']['event']['contact_consent'] ?? array();
@@ -559,6 +567,7 @@ $account_case_store->case = array_merge( $account_case, array( 'status' => 'canc
 $tra_vel_user_email_available = false;
 $contact_replay = $account_controller->record_traveler_action( $contact_request );
 tra_vel_controller_expect( $contact_replay instanceof WP_REST_Response && true === $contact_replay->get_data()['replayed'] && 'superseded' === $contact_replay->get_data()['proposal']['status'] && 2 === $account_store->state_event_calls, 'Exact consent-bound contact authorization must replay as historical after the target disappears, proposal evolves, and parent closes without another event.' );
+tra_vel_controller_expect( 2 === count( tra_vel_controller_fired( 'tra_vel_quote_case_traveler_action' ) ), 'A replayed contact authorization must not announce another post-commit event.' );
 $changed_contact_body = $contact_json;
 $changed_contact_body['expected_version'] = 3;
 tra_vel_controller_expect_error( $account_controller->record_traveler_action( new WP_REST_Request( 'POST', $base_params + $changed_contact_body, $changed_contact_body, $account_headers ) ), 'tra_vel_assisted_proposal_idempotency_conflict', 'The same contact-action key with a changed canonical body must conflict.', 409 );
@@ -617,13 +626,16 @@ $attestation_response = $compose_controller->attest_composition_evidence( new WP
 tra_vel_controller_expect( $attestation_response instanceof WP_REST_Response && ! empty( $attestation_response->get_data()['attestation_token'] ), 'The assigned operator must receive a short-lived attestation for the exact final evidence command.' );
 $unsigned_composition['evidence_attestation_token'] = $attestation_response->get_data()['attestation_token'];
 $composition_json = array_merge( array( 'composition' => $unsigned_composition, 'expected_version' => 0, 'idempotency_key' => 'compose-fixture-0001' ), $composition_precondition );
+$tra_vel_published_before_compose = count( tra_vel_controller_fired( 'tra_vel_assisted_proposal_published' ) );
 $composition_response = $compose_controller->compose_proposal( new WP_REST_Request( 'POST', array( 'case_id' => $case_uuid ) + $composition_json, $composition_json ) );
 tra_vel_controller_expect( $composition_response instanceof WP_REST_Response && 201 === $composition_response->get_status() && 1 === $compose_store->publish_calls, 'The reduced composer command must produce and publish one server-owned proposal.' );
 $composed = $composition_response->get_data()['proposal'];
 tra_vel_controller_expect( $case_uuid === $composed['case_id'] && 2 === $composed['addresses']['case_revision'] && 'available' === $composed['status'], 'Composition must derive current case binding and lifecycle state.' );
 tra_vel_controller_expect( 'non_binding_assisted_proposal' === $composed['disclosure']['commercial_state'] && array( 'review', 'request_changes', 'authorize_contact', 'decline' ) === $composed['next_actions'], 'Composition must derive the exact non-binding traveler action boundary.' );
+tra_vel_controller_expect( count( tra_vel_controller_fired( 'tra_vel_assisted_proposal_published' ) ) === $tra_vel_published_before_compose + 1 && 1 <= count( tra_vel_controller_fired( 'tra_vel_assisted_proposal_published', array( $case_uuid, $composed['proposal_id'], (int) $composed['published_revision'] ) ) ), 'A committed composed publication must announce exactly one post-commit event with its exact identity.' );
 $composition_replay = $compose_controller->compose_proposal( new WP_REST_Request( 'POST', array( 'case_id' => $case_uuid ) + $composition_json, $composition_json ) );
 tra_vel_controller_expect( $composition_replay instanceof WP_REST_Response && 200 === $composition_replay->get_status() && true === $composition_replay->get_data()['replayed'] && $composed['proposal_id'] === $composition_replay->get_data()['proposal']['proposal_id'] && 1 === $compose_store->publish_calls, 'An exact reduced-command retry must replay the original server-generated identity without a second write.' );
+tra_vel_controller_expect( count( tra_vel_controller_fired( 'tra_vel_assisted_proposal_published' ) ) === $tra_vel_published_before_compose + 1, 'A replayed composition must not announce another publication event.' );
 $compose_receipt_key = hash( 'sha256', 'operator:7' ) . '|compose-fixture-0001';
 $original_live_expiry = $compose_store->head['expires_at'];
 $original_receipt_expiry = $compose_store->compose_receipts[ $compose_receipt_key ]['result']['head']['expires_at'];
@@ -659,12 +671,15 @@ $revision_composition = tra_vel_controller_attest_composition( $revision_composi
 tra_vel_controller_expect( is_array( $revision_composition ), 'A revised commercial command must receive its own fresh attestation.' );
 $revision_json = array_merge( array( 'composition' => $revision_composition, 'expected_version' => 3, 'idempotency_key' => 'compose-revision-0001' ), $composition_precondition );
 $revision_params = array( 'case_id' => $case_uuid, 'proposal_id' => $composed['proposal_id'] ) + $revision_json;
+$tra_vel_published_before_revision = count( tra_vel_controller_fired( 'tra_vel_assisted_proposal_published' ) );
 $revision_response = $compose_controller->compose_proposal_revision( new WP_REST_Request( 'POST', $revision_params, $revision_json ) );
 tra_vel_controller_expect( $revision_response instanceof WP_REST_Response && 4 === $revision_response->get_data()['proposal']['version'] && 2 === $revision_response->get_data()['proposal']['revision'] && $composed['proposal_id'] === $revision_response->get_data()['proposal']['proposal_id'], 'A revision command must preserve identity and advance aggregate version after intervening traveler actions.' );
+tra_vel_controller_expect( count( tra_vel_controller_fired( 'tra_vel_assisted_proposal_published' ) ) === $tra_vel_published_before_revision + 1 && 1 <= count( tra_vel_controller_fired( 'tra_vel_assisted_proposal_published', array( $case_uuid, $composed['proposal_id'], (int) $revision_response->get_data()['proposal']['published_revision'] ) ) ), 'A committed revision must announce exactly one post-commit publication event for its new immutable revision.' );
 $post_revision_create_replay = $compose_controller->compose_proposal( new WP_REST_Request( 'POST', array( 'case_id' => $case_uuid ) + $composition_json, $composition_json ) );
 tra_vel_controller_expect( $post_revision_create_replay instanceof WP_REST_Response && true === $post_revision_create_replay->get_data()['replayed'] && 'superseded' === $post_revision_create_replay->get_data()['proposal']['status'] && 2 === $compose_store->publish_calls, 'The original create receipt must remain historical after a newer commercial revision becomes live.' );
 $revision_replay = $compose_controller->compose_proposal_revision( new WP_REST_Request( 'POST', $revision_params, $revision_json ) );
 tra_vel_controller_expect( $revision_replay instanceof WP_REST_Response && 200 === $revision_replay->get_status() && true === $revision_replay->get_data()['replayed'] && 'available' === $revision_replay->get_data()['proposal']['status'] && 4 === $revision_replay->get_data()['proposal']['version'] && 2 === $revision_replay->get_data()['proposal']['revision'] && 2 === $compose_store->publish_calls, 'The latest exact revision retry may retain its coherent available lifecycle and must not append a third revision.' );
+tra_vel_controller_expect( count( tra_vel_controller_fired( 'tra_vel_assisted_proposal_published' ) ) === $tra_vel_published_before_revision + 1, 'A replayed revision must not announce another publication event.' );
 $changed_revision_retry = $revision_json;
 $changed_revision_retry['composition']['summary'] = 'Different revision command under the same key.';
 tra_vel_controller_expect_error( $compose_controller->compose_proposal_revision( new WP_REST_Request( 'POST', array( 'case_id' => $case_uuid, 'proposal_id' => $composed['proposal_id'] ) + $changed_revision_retry, $changed_revision_retry ) ), 'tra_vel_assisted_proposal_idempotency_conflict', 'Reusing a revision key for changed authored data must fail without another append.' );
@@ -689,8 +704,10 @@ $operator_store = new Tra_Vel_Assisted_Proposal_Store();
 $operator_controller = new Tra_Vel_Assisted_Proposal_Controller( $operator_store, $case_store );
 $valid_publish_json = array( 'proposal' => $proposal, 'expected_version' => 0, 'idempotency_key' => 'publish-fixture-0003' );
 $tra_vel_capabilities[ Tra_Vel_Quote_Case_Capabilities::INGEST_PROPOSALS ] = true;
+$tra_vel_published_before_ingest = count( tra_vel_controller_fired( 'tra_vel_assisted_proposal_published' ) );
 $valid_publish = $operator_controller->publish_proposal( new WP_REST_Request( 'POST', array( 'case_id' => $case_uuid ) + $valid_publish_json, $valid_publish_json ) );
 tra_vel_controller_expect( $valid_publish instanceof WP_REST_Response && 201 === $valid_publish->get_status() && 1 === $operator_store->publish_calls, 'Dedicated operator publication endpoint must call the exact store mutation once.' );
+tra_vel_controller_expect( count( tra_vel_controller_fired( 'tra_vel_assisted_proposal_published' ) ) === $tra_vel_published_before_ingest + 1 && 1 <= count( tra_vel_controller_fired( 'tra_vel_assisted_proposal_published', array( $case_uuid, $proposal['proposal_id'], (int) $proposal['published_revision'] ) ) ), 'A committed canonical ingestion must announce exactly one post-commit publication event.' );
 tra_vel_controller_expect( ! tra_vel_controller_contains_key( $valid_publish->get_data(), array( 'revision_snapshot', 'source_snapshot', 'owner_user_id', 'owner_token_hash', 'internal_id', 'event' ) ), 'Operator publication response must also stay inside the public schema projection.' );
 unset( $tra_vel_capabilities[ Tra_Vel_Quote_Case_Capabilities::INGEST_PROPOSALS ] );
 $withdraw_json = array( 'expected_version' => 1, 'idempotency_key' => 'withdraw-fixture-0001' );
