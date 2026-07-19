@@ -206,6 +206,7 @@ def validate_remote_contract(
     require(capabilities.get("operator_queue") is True, "Operator queue is not ready.")
     require(capabilities.get("commercial_intents") is True, "Commercial intents are not ready.")
     require(capabilities.get("durable_commercial_handoffs") is True, "Durable commercial handoffs are not ready.")
+    require(capabilities.get("lead_contact_capture") is True, "Consent-gated lead contact capture is not ready.")
     require(capabilities.get("sourced_assisted_proposals") is True, "Sourced assisted proposals are not ready.")
     require(capabilities.get("audited_proposal_actions") is True, "Audited proposal actions are not ready.")
     require(capabilities.get("no_login_scoped_sessions") is True, "No-login scoped sessions are not ready.")
@@ -237,8 +238,8 @@ def validate_remote_contract(
     quote_store = health.get("quote_case_store")
     require(isinstance(quote_store, dict), "Quote-case store health is missing.")
     expected_quote_store = {
-        "schema_version": "1.0.1",
-        "installed_schema_version": "1.0.1",
+        "schema_version": "1.1.0",
+        "installed_schema_version": "1.1.0",
         "tables_ready": True,
         "expected_tables": 4,
         "ready_tables": 4,
@@ -277,8 +278,8 @@ def validate_remote_contract(
     commercial_store = health.get("commercial_intent_store")
     require(isinstance(commercial_store, dict), "Commercial-intent store health is missing.")
     expected_commercial_store = {
-        "schema_version": "1.0.0",
-        "installed_schema_version": "1.0.0",
+        "schema_version": "1.1.0",
+        "installed_schema_version": "1.1.0",
         "tables_ready": True,
         "expected_tables": 3,
         "ready_tables": 3,

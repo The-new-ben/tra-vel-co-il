@@ -290,7 +290,18 @@ if (storePhp !== null) {
   }
   if ((storePhp.match(/ENGINE=InnoDB/g) || []).length < 4) fail('All four quote-case tables must explicitly use InnoDB for transactional guarantees.');
   if ((storePhp.match(/UNIQUE\s+KEY/gi) || []).length !== 7) fail('Quote case DDL must declare exactly the seven required unique indexes verified by schema health.');
-  if (!/const\s+DB_VERSION\s*=\s*'1\.0\.1'/.test(storePhp)) fail('Quote case DB version must advance for the revision digest index repair.');
+  if (!/const\s+DB_VERSION\s*=\s*'1\.1\.0'/.test(storePhp)) fail('Quote case DB version must advance for the lead-capture acquisition and contact columns.');
+  requireMarkers(storePhp, 'Quote case lead-capture storage', [
+    ['acquisition longtext NULL', 'must persist the bounded acquisition attribution on a dedicated case column.'],
+    ['contact longtext NULL', 'must persist the bounded consented lead contact on a dedicated case column.'],
+    ["'acquisition', 'contact'", 'must require the lead-capture columns in fail-closed schema inspection and hydrate them as bounded arrays.'],
+  ]);
+  if (!/function create_from_run\([^)]*\$acquisition = array\(\), \$contact = array\(\)/.test(storePhp)) {
+    fail('Quote case creation must accept the policy-bounded acquisition and contact records as optional server-validated inputs.');
+  }
+  if (!/unset\( \$contact_for_digest\['consented_at'\] \)/.test(storePhp)) {
+    fail('Quote case create idempotency must exclude the per-attempt consent timestamp so lost-response replays stay idempotent.');
+  }
   if (!/KEY\s+case_digest\s*\(case_id,request_digest\)/.test(storePhp) || /UNIQUE\s+KEY\s+case_digest/.test(storePhp)) {
     fail('Revision digest history must use a non-unique lookup index so A to B to A plan changes remain valid.');
   }
@@ -401,6 +412,31 @@ if (policyPhp !== null) {
     ['passport', 'must detect passport-like identifiers.'],
     ['diagnosis', 'must detect medical text.'],
   ]);
+  if (!/const\s+CONTACT_CONSENT_VERSION\s*=\s*'2026-07-19'/.test(policyPhp)) fail('Quote case policy must pin the exact lead contact-consent version 2026-07-19.');
+  requireMarkers(policyPhp, 'Quote case lead-capture policy', [
+    ['public static function sanitize_acquisition', 'must centralize the bounded acquisition allowlist server-side.'],
+    ['public static function sanitize_contact', 'must centralize consent-gated contact minimization server-side.'],
+    ['public static function normalize_phone', 'must normalize callback phone numbers to bounded digits.'],
+  ]);
+  const acquisitionPolicyPhp = extractBetween(policyPhp, 'public static function sanitize_acquisition', 'public static function sanitize_contact');
+  requireMarkers(acquisitionPolicyPhp, 'Quote case acquisition sanitizer', [
+    ["array( 'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content' )", 'must allowlist exactly the five UTM fields.'],
+    ['planning_text( $raw[ $field ] ?? \'\', 120 )', 'must bound UTM values to 120 redacted characters.'],
+    ["'/' === substr( $landing_path, 0, 1 )", 'must require a same-site landing path.'],
+    ["'//' !== substr( $landing_path, 0, 2 )", 'must reject protocol-relative landing paths.'],
+    ['bounded_text( $landing_path, 200 )', 'must bound the landing path to 200 characters.'],
+    ['wp_parse_url( $referrer_host, PHP_URL_HOST )', 'must reduce referrer URLs to their host.'],
+    ['contains_sensitive_pattern', 'must run the sensitive-pattern redaction over campaign values.'],
+  ]);
+  const contactPolicyPhp = extractBetween(policyPhp, 'public static function sanitize_contact', 'public static function public_summary');
+  requireMarkers(contactPolicyPhp, 'Quote case contact sanitizer', [
+    ['FILTER_VALIDATE_BOOLEAN', 'must require an explicit consent boolean.'],
+    ['self::CONTACT_CONSENT_VERSION !== (string)', 'must require the exact current contact-consent version.'],
+    ['_contact_consent_required', 'must fail closed with 400 when consent is missing or stale.'],
+    ['_contact_phone_invalid', 'must fail closed with 400 when the callback phone is invalid.'],
+    ['bounded_text( $raw[\'name\'] ?? \'\', 80 )', 'must bound the contact name to 80 characters.'],
+    ['>= 7 && $length <= 15', 'must keep normalized phones between 7 and 15 digits.'],
+  ]);
 }
 
 const controllerPhp = readProductionFile('controller');
@@ -444,11 +480,37 @@ if (controllerPhp !== null) {
     for (const field of publicCaseFields) {
       if (!new RegExp(`['"]${field}['"]\\s*=>`).test(publicCasePhp)) fail(`Quote case public wrapper must emit ${field}.`);
     }
-    for (const internalField of ['id', 'owner_user_id', 'owner_token_hash', 'assigned_user_id', 'consent_version', 'consented_at', 'snapshot', 'legal_hold']) {
+    for (const internalField of ['id', 'owner_user_id', 'owner_token_hash', 'assigned_user_id', 'consent_version', 'consented_at', 'snapshot', 'legal_hold', 'acquisition', 'contact']) {
       if (new RegExp(`['"]${internalField}['"]\\s*=>`).test(publicCasePhp)) fail(`Quote case public wrapper must not expose internal field ${internalField}.`);
     }
   }
+  const operatorCasePhp = extractBetween(controllerPhp, 'private function operator_case', 'private function mutation_response');
+  if (!/['"]acquisition['"]\s*\]\s*=/.test(operatorCasePhp) || !/['"]contact['"]\s*\]\s*=/.test(operatorCasePhp)) {
+    fail('Operator queue detail responses must expose the bounded acquisition attribution and consented contact to the human queue only.');
+  }
 }
+
+const acquisitionSchema = readJson('private/quote-case-acquisition.schema.json');
+const leadContactSchema = readJson('private/lead-contact.schema.json');
+assertClosedObject(acquisitionSchema, 'QuoteCaseAcquisition (private)');
+if (acquisitionSchema?.minProperties !== 1) fail('QuoteCaseAcquisition must never be stored as an empty object.');
+if (!sameMembers(Object.keys(acquisitionSchema?.properties || {}), ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'landing_path', 'referrer_host', 'first_seen_at'])) {
+  fail('QuoteCaseAcquisition must allowlist exactly the five UTM fields plus landing_path, referrer_host, and first_seen_at.');
+}
+for (const utmField of ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content']) {
+  if (acquisitionSchema?.properties?.[utmField]?.maxLength !== 120) fail(`QuoteCaseAcquisition.${utmField} must stay bounded to 120 characters.`);
+}
+if (acquisitionSchema?.properties?.landing_path?.maxLength !== 200 || !String(acquisitionSchema?.properties?.landing_path?.pattern || '').startsWith('^/')) {
+  fail('QuoteCaseAcquisition.landing_path must be a same-site path of at most 200 characters.');
+}
+if (acquisitionSchema?.properties?.referrer_host?.maxLength !== 120) fail('QuoteCaseAcquisition.referrer_host must stay bounded to 120 characters.');
+if (acquisitionSchema?.properties?.first_seen_at?.format !== 'date-time') fail('QuoteCaseAcquisition.first_seen_at must use a date-time value.');
+assertClosedObject(leadContactSchema, 'LeadContact (private)');
+assertRequired(leadContactSchema, ['phone', 'consent_version', 'consented_at'], 'LeadContact (private)');
+if (leadContactSchema?.properties?.phone?.pattern !== '^\\+?[0-9]{7,15}$') fail('LeadContact.phone must be normalized to an optional plus and 7 to 15 digits.');
+if (leadContactSchema?.properties?.name?.maxLength !== 80) fail('LeadContact.name must stay bounded to 80 characters.');
+if (leadContactSchema?.properties?.consent_version?.const !== '2026-07-19') fail('LeadContact.consent_version must equal the exact contact-consent version 2026-07-19.');
+if (leadContactSchema?.properties?.consented_at?.format !== 'date-time') fail('LeadContact.consented_at must use a date-time value.');
 
 const capabilitiesPhp = readProductionFile('capabilities');
 if (capabilitiesPhp !== null) {

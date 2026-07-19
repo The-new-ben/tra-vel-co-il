@@ -75,9 +75,13 @@ class Tra_Vel_Commercial_Intent_Store {
 	public $intent = null;
 	public $record_calls = 0;
 	public $create_calls = 0;
+	public $last_scope = null;
+	public $last_contact = null;
 	public static function is_ready() { return self::$ready; }
-	public function create_or_resume( $scope, $principal, $key ) {
+	public function create_or_resume( $scope, $principal, $key, $contact = array() ) {
 		$this->create_calls++;
+		$this->last_scope = $scope;
+		$this->last_contact = is_array( $contact ) ? $contact : array();
 		$this->intent = array(
 			'id' => 7,
 			'intent_uuid' => '123e4567-e89b-42d3-a456-426614174000',
@@ -89,6 +93,7 @@ class Tra_Vel_Commercial_Intent_Store {
 			'last_event_sequence' => 1,
 			'scope' => $scope,
 			'scope_digest' => Tra_Vel_Commercial_Intent_Policy::digest( $scope ),
+			'contact' => $this->last_contact,
 			'created_at' => '2026-07-18 09:00:00',
 			'updated_at' => '2026-07-18 09:00:00',
 			'expires_at' => '2026-08-17 09:00:00',
@@ -213,6 +218,7 @@ tvc_error( $controller->can_create( $wrong_port ), 'tra_vel_commercial_origin_re
 $create = $controller->create_intent( $request );
 tvc_assert( $create instanceof WP_REST_Response && 201 === $create->status, 'create did not return a durable 201 response' );
 tvc_assert( false === $create->data['side_effect_executed'], 'create claimed a side effect' );
+tvc_assert( false === $create->data['intent']['contact_provided'], 'a contact-free intent claimed a consented contact' );
 tvc_assert( 'private_browser_owner' === $create->data['intent']['ownership'], 'guest ownership was not represented privately' );
 tvc_assert( false !== strpos( $create->headers['Set-Cookie'] ?? '', 'Secure; HttpOnly; SameSite=Lax' ), 'guest owner cookie is not hardened' );
 tvc_assert( 'private, no-store, max-age=0' === ( $create->headers['Cache-Control'] ?? '' ), 'private create response is cacheable' );
@@ -247,4 +253,44 @@ tvc_assert( 1 === $store->record_calls, 'a rejected URL was recorded as a prepar
 unset( $_COOKIE['__Host-tra_vel_commercial'] );
 tvc_error( $controller->can_access( $access ), 'tra_vel_commercial_forbidden', 'guest intent was readable without its HttpOnly owner token' );
 
-echo "Tra-Vel commercial-intent runtime validation passed (sensitive-field rejection, guest ownership, same-origin mutation, durable-before-navigation handoff, owned URL allowlist).\n";
+// Consent-gated lead contact: rejected without provable consent, extracted
+// before sensitive-field scope rejection, stored bounded, and disclosed to
+// the public response as a contact_provided boolean only.
+tvc_error(
+	Tra_Vel_Commercial_Intent_Policy::sanitize_contact( array( 'name' => 'דנה', 'phone' => '0525101555' ) ),
+	'tra_vel_commercial_contact_consent_required',
+	'contact without explicit consent was accepted'
+);
+tvc_error(
+	Tra_Vel_Commercial_Intent_Policy::sanitize_contact( array( 'phone' => '0525101555', 'consent' => true, 'consent_version' => '2026-01-01' ) ),
+	'tra_vel_commercial_contact_consent_required',
+	'contact with a stale consent version was accepted'
+);
+tvc_error(
+	Tra_Vel_Commercial_Intent_Policy::sanitize_contact( array( 'phone' => 'not-a-phone', 'consent' => true, 'consent_version' => Tra_Vel_Commercial_Intent_Policy::CONTACT_CONSENT_VERSION ) ),
+	'tra_vel_commercial_contact_phone_invalid',
+	'an invalid callback phone was accepted'
+);
+tvc_assert( '+972525101555' === Tra_Vel_Commercial_Intent_Policy::normalize_phone( '+972 52-510-1555' ), 'commercial phone normalization lost its international format' );
+tvc_assert( array() === Tra_Vel_Commercial_Intent_Policy::sanitize_contact( array() ), 'an absent contact object did not collapse to nothing stored' );
+
+$contact_store = new Tra_Vel_Commercial_Intent_Store();
+$contact_controller = new Tra_Vel_Commercial_Intent_Controller( $contact_store );
+$unconsented_payload = $raw;
+$unconsented_payload['idempotency_key'] = 'commercial-create-contact-01';
+$unconsented_payload['contact'] = array( 'name' => 'דנה לוי', 'phone' => '0525101555' );
+tvc_error( $contact_controller->create_intent( new WP_REST_Request( 'POST', $unconsented_payload, $headers ) ), 'tra_vel_commercial_contact_consent_required', 'an unconsented commercial contact reached the store' );
+tvc_assert( 0 === $contact_store->create_calls, 'an unconsented contact reached durable intent creation' );
+
+$consented_payload = $raw;
+$consented_payload['idempotency_key'] = 'commercial-create-contact-02';
+$consented_payload['contact'] = array( 'name' => 'דנה לוי', 'phone' => '+972 52-510-1555', 'consent' => true, 'consent_version' => Tra_Vel_Commercial_Intent_Policy::CONTACT_CONSENT_VERSION );
+$contact_create = $contact_controller->create_intent( new WP_REST_Request( 'POST', $consented_payload, $headers ) );
+tvc_assert( $contact_create instanceof WP_REST_Response && 201 === $contact_create->status, 'consented contact create failed' );
+tvc_assert( true === $contact_create->data['intent']['contact_provided'], 'a consented contact was not disclosed as contact_provided' );
+tvc_assert( '+972525101555' === ( $contact_store->last_contact['phone'] ?? '' ) && Tra_Vel_Commercial_Intent_Policy::CONTACT_CONSENT_VERSION === ( $contact_store->last_contact['consent_version'] ?? '' ), 'the store did not receive the normalized consented contact' );
+tvc_assert( false === strpos( wp_json_encode( $contact_store->last_scope ), 'contact' ), 'the contact object leaked into the sensitive-field-guarded scope' );
+$contact_public_json = (string) wp_json_encode( $contact_create->data, JSON_UNESCAPED_UNICODE );
+tvc_assert( false === strpos( $contact_public_json, '525101555' ) && false === strpos( $contact_public_json, 'דנה' ), 'the public intent response leaked the lead name or phone' );
+
+echo "Tra-Vel commercial-intent runtime validation passed (sensitive-field rejection, guest ownership, same-origin mutation, durable-before-navigation handoff, owned URL allowlist, consent-gated contact).\n";

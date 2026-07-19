@@ -23,14 +23,14 @@ def check(condition: bool, message: str) -> None:
 
 
 MANIFEST = {
-    "version": "0.8.0",
+    "version": "0.9.0",
     "sha256": "a" * 64,
     "content_sha256": "b" * 64,
 }
 DEPLOYED = dict(MANIFEST)
 HEALTH = {
     "ok": True,
-    "plugin_version": "0.8.0",
+    "plugin_version": "0.9.0",
     "contract_version": "1.0.0",
     "provider": {"configured": True},
     "capabilities": {
@@ -39,6 +39,7 @@ HEALTH = {
         "operator_queue": True,
         "commercial_intents": True,
         "durable_commercial_handoffs": True,
+        "lead_contact_capture": True,
         "sourced_assisted_proposals": True,
         "audited_proposal_actions": True,
         "no_login_scoped_sessions": True,
@@ -63,8 +64,8 @@ HEALTH = {
         "tables_ready": True,
     },
     "quote_case_store": {
-        "schema_version": "1.0.1",
-        "installed_schema_version": "1.0.1",
+        "schema_version": "1.1.0",
+        "installed_schema_version": "1.1.0",
         "tables_ready": True,
         "expected_tables": 4,
         "ready_tables": 4,
@@ -77,8 +78,8 @@ HEALTH = {
         "supporting_indexes_ready": True,
     },
     "commercial_intent_store": {
-        "schema_version": "1.0.0",
-        "installed_schema_version": "1.0.0",
+        "schema_version": "1.1.0",
+        "installed_schema_version": "1.1.0",
         "tables_ready": True,
         "expected_tables": 3,
         "ready_tables": 3,
@@ -172,6 +173,22 @@ expect_remote_rejection(missing_customer_cockpit_capability, "A missing Customer
 false_customer_cockpit_capability = deepcopy(HEALTH)
 false_customer_cockpit_capability["capabilities"]["customer_trip_cockpit"] = False
 expect_remote_rejection(false_customer_cockpit_capability, "A false Customer Trip Cockpit capability passed deployment verification.")
+
+missing_lead_contact_capability = deepcopy(HEALTH)
+missing_lead_contact_capability["capabilities"].pop("lead_contact_capture")
+expect_remote_rejection(missing_lead_contact_capability, "A missing lead-contact-capture capability passed deployment verification.")
+
+false_lead_contact_capability = deepcopy(HEALTH)
+false_lead_contact_capability["capabilities"]["lead_contact_capture"] = False
+expect_remote_rejection(false_lead_contact_capability, "A false lead-contact-capture capability passed deployment verification.")
+
+stale_quote_lead_schema = deepcopy(HEALTH)
+stale_quote_lead_schema["quote_case_store"]["installed_schema_version"] = "1.0.1"
+expect_remote_rejection(stale_quote_lead_schema, "A quote-case schema without the lead-capture columns passed deployment verification.")
+
+stale_commercial_lead_schema = deepcopy(HEALTH)
+stale_commercial_lead_schema["commercial_intent_store"]["installed_schema_version"] = "1.0.0"
+expect_remote_rejection(stale_commercial_lead_schema, "A commercial-intent schema without the contact column passed deployment verification.")
 
 mismatched_proposal_schema = deepcopy(HEALTH)
 mismatched_proposal_schema["assisted_proposal_store"]["ready_indexes"] = 8
