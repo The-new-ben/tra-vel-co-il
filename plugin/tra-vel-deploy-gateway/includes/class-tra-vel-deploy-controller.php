@@ -272,6 +272,7 @@ class Tra_Vel_Deploy_Controller extends WP_REST_Controller {
 			);
 			update_option( self::OPTION_LAST, $deployment, false );
 			$this->prune_backups();
+			$this->purge_site_caches();
 
 			return new WP_REST_Response(
 				array(
@@ -360,6 +361,8 @@ class Tra_Vel_Deploy_Controller extends WP_REST_Controller {
 				false
 			);
 
+			$this->purge_site_caches();
+
 			return rest_ensure_response(
 				array(
 					'ok'             => true,
@@ -372,6 +375,16 @@ class Tra_Vel_Deploy_Controller extends WP_REST_Controller {
 		} finally {
 			$this->release_lock( $lease );
 		}
+	}
+
+	/**
+	 * Purge page and object caches after a file mutation so visitors receive
+	 * the deployed release immediately. LiteSpeed purge is a no-op when the
+	 * host does not run it.
+	 */
+	private function purge_site_caches() {
+		do_action( 'litespeed_purge_all' );
+		wp_cache_flush();
 	}
 
 	/**
