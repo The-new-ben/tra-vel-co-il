@@ -10,6 +10,10 @@ defined( 'ABSPATH' ) || exit;
 class Tra_Vel_Agent_OpenAI_Provider implements Tra_Vel_Agent_Provider {
 	const ENDPOINT = 'https://api.openai.com/v1/responses';
 	const MAX_OUTPUT_TOKENS = 1600;
+	const MAX_TRANSIENT_RETRIES = 2;
+	const RETRY_BACKOFF_BASE_SECONDS = 1;
+	const RETRY_BACKOFF_CAP_SECONDS = 4;
+	const RETRY_AFTER_MAX_SECONDS = 8;
 
 	/** @var string */
 	private $model;
@@ -31,6 +35,7 @@ class Tra_Vel_Agent_OpenAI_Provider implements Tra_Vel_Agent_Provider {
 			'endpoint'   => 'responses',
 			'live_calls' => $status['configured'],
 			'max_output_tokens' => self::MAX_OUTPUT_TOKENS,
+			'transient_retry_limit' => self::MAX_TRANSIENT_RETRIES,
 		);
 	}
 
@@ -119,19 +124,33 @@ class Tra_Vel_Agent_OpenAI_Provider implements Tra_Vel_Agent_Provider {
 			),
 		);
 
-		$response = wp_remote_post(
-			self::ENDPOINT,
-			array(
-				'timeout'     => 45,
-				'redirection' => 0,
-				'headers'     => array(
-					'Authorization' => 'Bearer ' . $api_key,
-					'Content-Type'  => 'application/json',
-				),
-				'body'        => wp_json_encode( $body, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES ),
-				'data_format' => 'body',
+		$request_args = array(
+			'timeout'     => 45,
+			'redirection' => 0,
+			'headers'     => array(
+				'Authorization' => 'Bearer ' . $api_key,
+				'Content-Type'  => 'application/json',
 			),
+			'body'        => wp_json_encode( $body, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES ),
+			'data_format' => 'body',
 		);
+
+		$response = null;
+		$status   = 0;
+		for ( $attempt = 0; $attempt <= self::MAX_TRANSIENT_RETRIES; $attempt++ ) {
+			$response = wp_remote_post( self::ENDPOINT, $request_args );
+			$status   = is_wp_error( $response ) ? 0 : (int) wp_remote_retrieve_response_code( $response );
+			if ( ! $this->is_transient_failure( $response, $status ) || $attempt >= self::MAX_TRANSIENT_RETRIES ) {
+				break;
+			}
+			$delay_seconds = $this->retry_delay_seconds( $response, $attempt );
+			if ( null === $delay_seconds ) {
+				// The provider requested a pause beyond the bounded retry window.
+				break;
+			}
+			usleep( (int) round( $delay_seconds * 1000000 ) );
+		}
+		unset( $request_args );
 		if ( function_exists( 'sodium_memzero' ) ) {
 			sodium_memzero( $api_key );
 		} else {
@@ -142,8 +161,7 @@ class Tra_Vel_Agent_OpenAI_Provider implements Tra_Vel_Agent_Provider {
 			return new WP_Error( 'tra_vel_agent_provider_transport', 'The live request interpreter could not be reached.', array( 'status' => 502, 'provider_code' => $response->get_error_code() ) );
 		}
 
-		$status = (int) wp_remote_retrieve_response_code( $response );
-		$data   = json_decode( (string) wp_remote_retrieve_body( $response ), true );
+		$data = json_decode( (string) wp_remote_retrieve_body( $response ), true );
 		if ( $status < 200 || $status >= 300 || ! is_array( $data ) ) {
 			$provider_code = is_array( $data ) && isset( $data['error']['code'] ) ? sanitize_key( (string) $data['error']['code'] ) : 'http_' . $status;
 			return new WP_Error( 'tra_vel_agent_provider_rejected', 'The live request interpreter rejected the request.', array( 'status' => 502, 'provider_code' => $provider_code ) );
@@ -169,6 +187,50 @@ class Tra_Vel_Agent_OpenAI_Provider implements Tra_Vel_Agent_Provider {
 				'usage'       => $this->safe_usage( isset( $data['usage'] ) ? $data['usage'] : array() ),
 			),
 		);
+	}
+
+	/**
+	 * Decide whether one interpretation attempt may be retried safely.
+	 *
+	 * Only transport failures, HTTP 429, and HTTP 5xx are transient. Every other
+	 * 4xx is a deterministic contract rejection and is never retried, so a
+	 * malformed request cannot multiply provider spend.
+	 *
+	 * @param array|WP_Error $response wp_remote_post result.
+	 * @param int            $status   HTTP status, zero for transport errors.
+	 * @return bool
+	 */
+	private function is_transient_failure( $response, $status ) {
+		if ( is_wp_error( $response ) ) {
+			return true;
+		}
+		return 429 === $status || $status >= 500;
+	}
+
+	/**
+	 * Bounded exponential backoff with jitter for one retry attempt.
+	 *
+	 * A numeric Retry-After header is honored only up to eight seconds; a longer
+	 * provider pause aborts the bounded retry window instead of blocking the
+	 * intake request. Jitter keeps concurrent retries from synchronizing.
+	 *
+	 * @param array|WP_Error $response Failed attempt result.
+	 * @param int            $attempt  Zero-based attempt that just failed.
+	 * @return float|null Seconds to sleep, or null to stop retrying.
+	 */
+	private function retry_delay_seconds( $response, $attempt ) {
+		if ( ! is_wp_error( $response ) ) {
+			$retry_after = trim( (string) wp_remote_retrieve_header( $response, 'retry-after' ) );
+			if ( '' !== $retry_after && is_numeric( $retry_after ) ) {
+				$retry_after = (float) $retry_after;
+				if ( $retry_after > self::RETRY_AFTER_MAX_SECONDS ) {
+					return null;
+				}
+				return max( 0.0, $retry_after );
+			}
+		}
+		$ceiling = min( self::RETRY_BACKOFF_CAP_SECONDS, self::RETRY_BACKOFF_BASE_SECONDS * ( 2 ** max( 0, (int) $attempt ) ) );
+		return wp_rand( (int) ( $ceiling * 500 ), (int) ( $ceiling * 1000 ) ) / 1000;
 	}
 
 	/**

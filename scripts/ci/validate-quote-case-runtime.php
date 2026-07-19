@@ -349,10 +349,21 @@ function apply_filters( $hook, $value, ...$args ) {
 	return call_user_func_array( $GLOBALS['tvq_handoff_filter'], array_merge( array( $value ), $args ) );
 }
 
+$GLOBALS['tvq_fired_actions'] = array();
 if ( ! function_exists( 'do_action' ) ) {
 	function do_action( $hook, ...$args ) {
-		unset( $hook, $args );
+		$GLOBALS['tvq_fired_actions'][] = array( 'hook' => (string) $hook, 'args' => $args );
 	}
+}
+
+function tvq_fired( $hook ) {
+	$matches = array();
+	foreach ( $GLOBALS['tvq_fired_actions'] as $fired ) {
+		if ( $fired['hook'] === $hook ) {
+			$matches[] = $fired;
+		}
+	}
+	return $matches;
 }
 
 function __return_true() {
@@ -1115,13 +1126,24 @@ $no_consent = $controller->create_case( tvq_request( $run, array( 'consent' => f
 tvq_assert_error( $no_consent, 'tra_vel_quote_case_consent_required', 'missing explicit consent' );
 tvq_assert( 0 === $case_store->create_calls, 'missing consent reached durable case creation' );
 
+$GLOBALS['tvq_fired_actions'] = array();
 list( $created, $owner_token ) = tvq_create_guest_case( $controller, $run, $run_token );
 $case_id = $created->data['case']['case_id'];
 tvq_assert_public_contract( $created->data['case'], 'created quote case' );
 tvq_assert( true === $created->data['case']['resume_available'], 'live exact-owner guest source was not resumable' );
 tvq_assert( false === $created->data['replayed'], 'first quote create was marked as replay' );
+$tvq_created_announcements = tvq_fired( 'tra_vel_quote_case_created' );
+tvq_assert(
+	1 === count( $tvq_created_announcements )
+		&& $case_id === ( $tvq_created_announcements[0]['args'][0] ?? '' )
+		&& $created->data['case']['reference'] === ( $tvq_created_announcements[0]['args'][1] ?? '' )
+		&& is_array( $tvq_created_announcements[0]['args'][2] ?? null )
+		&& 'queued' === ( $tvq_created_announcements[0]['args'][2]['status'] ?? '' ),
+	'a committed quote case did not announce exactly one post-commit creation event with opaque identifiers'
+);
 
 $replay = $controller->create_case( tvq_request( $run ) );
+tvq_assert( 1 === count( tvq_fired( 'tra_vel_quote_case_created' ) ), 'an idempotent quote-create replay announced a duplicate creation event' );
 tvq_assert_private( $replay, 'idempotent quote replay' );
 tvq_assert( 200 === $replay->status && true === $replay->data['replayed'], 'idempotent quote replay changed state' );
 tvq_assert( 1 === count( $case_store->cases ) && 1 === count( $created->data['case']['events'] ), 'idempotent replay duplicated a case or creation event' );

@@ -218,6 +218,25 @@ class Tra_Vel_Quote_Case_Controller extends WP_REST_Controller {
 		if ( is_wp_error( $result ) ) {
 			return $result;
 		}
+		if ( ! empty( $result['created'] ) ) {
+			/**
+			 * Announce one durably committed assisted-quote case. The store has
+			 * already committed and released its transaction, and idempotent
+			 * replays never reach this branch. Listeners must stay idempotent
+			 * and must never receive traveler personal data from this payload.
+			 */
+			do_action(
+				'tra_vel_quote_case_created',
+				(string) ( $result['case']['case_uuid'] ?? '' ),
+				(string) ( $result['case']['reference_code'] ?? '' ),
+				array(
+					'owner_user_id' => (int) ( $result['case']['owner_user_id'] ?? 0 ),
+					'status'        => (string) ( $result['case']['status'] ?? '' ),
+					'service_mode'  => (string) ( $result['case']['service_mode'] ?? 'assisted_quote' ),
+					'case_version'  => (int) ( $result['case']['case_version'] ?? 1 ),
+				)
+			);
+		}
 		if ( ! $this->store->can_access( $result['case'], get_current_user_id(), $principal['token_hash'] ) ) {
 			$recovered = $this->store->recover_owner_from_run( $result['case'], $run['run_uuid'], $principal );
 			if ( is_wp_error( $recovered ) ) {

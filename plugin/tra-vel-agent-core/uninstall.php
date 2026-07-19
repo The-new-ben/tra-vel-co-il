@@ -21,6 +21,7 @@ foreach ( array( 'tra_vel_customer_trip_cockpit_limits', 'tra_vel_customer_trip_
 }
 delete_option( 'tra_vel_agent_db_version' );
 delete_option( 'tra_vel_agent_openai_credential_v1' );
+delete_option( 'tra_vel_agent_notification_webhook_v1' );
 delete_option( 'tra_vel_quote_case_db_version' );
 delete_option( 'tra_vel_commercial_intent_db_version' );
 delete_option( 'tra_vel_commercial_intent_cleanup_status' );

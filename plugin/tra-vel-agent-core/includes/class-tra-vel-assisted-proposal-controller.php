@@ -395,6 +395,19 @@ class Tra_Vel_Assisted_Proposal_Controller extends WP_REST_Controller {
 		if ( is_wp_error( $result ) ) {
 			return $result;
 		}
+		if ( empty( $result['replayed'] ) && in_array( $action, array( 'authorize_contact', 'request_changes', 'decline' ), true ) ) {
+			/**
+			 * Announce one durably committed material traveler decision. The store
+			 * transaction has already committed; idempotent replays never re-fire
+			 * this action. The payload carries opaque identifiers only.
+			 */
+			do_action(
+				'tra_vel_quote_case_traveler_action',
+				(string) $case['case_uuid'],
+				strtolower( (string) $request->get_param( 'proposal_id' ) ),
+				$action
+			);
+		}
 		$proposal = $this->project_proposal_bundle( $result, true );
 		return is_wp_error( $proposal ) ? $proposal : $this->private_response( array( 'proposal' => $proposal, 'action' => $action, 'replayed' => ! empty( $result['replayed'] ) ) );
 	}
@@ -469,6 +482,7 @@ class Tra_Vel_Assisted_Proposal_Controller extends WP_REST_Controller {
 		if ( is_wp_error( $result ) ) {
 			return $result;
 		}
+		$this->announce_committed_publication( $case, $result );
 		$projected = $this->project_proposal_bundle( $result );
 		if ( is_wp_error( $projected ) ) {
 			return $projected;
@@ -583,6 +597,7 @@ class Tra_Vel_Assisted_Proposal_Controller extends WP_REST_Controller {
 		if ( is_wp_error( $result ) ) {
 			return $result;
 		}
+		$this->announce_committed_publication( $case, $result );
 		$projected = $this->project_proposal_bundle( $result );
 		if ( is_wp_error( $projected ) ) {
 			return $projected;
@@ -679,6 +694,7 @@ class Tra_Vel_Assisted_Proposal_Controller extends WP_REST_Controller {
 		if ( is_wp_error( $result ) ) {
 			return $result;
 		}
+		$this->announce_committed_publication( $case, $result );
 		$projected = $this->project_proposal_bundle( $result );
 		if ( is_wp_error( $projected ) ) {
 			return $projected;
@@ -1067,6 +1083,34 @@ class Tra_Vel_Assisted_Proposal_Controller extends WP_REST_Controller {
 			return array();
 		}
 		return Tra_Vel_Assisted_Proposal_Policy::traveler_actions_for( (string) $status, (string) $disposition );
+	}
+
+	/**
+	 * Announce one durably committed proposal publication or revision.
+	 *
+	 * The store returns only after its transaction has committed, and replayed
+	 * receipts never re-fire the action, so downstream notification and cockpit
+	 * listeners observe each published revision exactly once per commit. The
+	 * payload carries opaque identifiers only, never traveler or price data.
+	 *
+	 * @param array $case   Verified parent quote case.
+	 * @param array $result Committed store bundle.
+	 * @return void
+	 */
+	private function announce_committed_publication( $case, $result ) {
+		if ( ! is_array( $result ) || ! empty( $result['replayed'] ) || ! is_array( $result['head'] ?? null ) ) {
+			return;
+		}
+		$head = $result['head'];
+		if ( empty( $head['proposal_uuid'] ) || (int) ( $head['published_revision'] ?? 0 ) < 1 ) {
+			return;
+		}
+		do_action(
+			'tra_vel_assisted_proposal_published',
+			(string) $case['case_uuid'],
+			(string) $head['proposal_uuid'],
+			(int) $head['published_revision']
+		);
 	}
 
 	private function traveler_principal() {

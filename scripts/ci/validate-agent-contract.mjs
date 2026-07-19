@@ -150,7 +150,8 @@ if (!/provider_connected'\s*=>\s*false/.test(controllerPhp) || !/provider_bookab
 if (!/data_mode'\s*=>\s*'not_connected'/.test(controllerPhp)) fail('The not-started event must use the not_connected data mode.');
 if (!/side_effect_executed'\s*=>\s*false/.test(controllerPhp)) fail('Approval decisions must not claim that a side effect ran in the foundation slice.');
 if (!controllerPhp.includes("'tra_vel_agent_approval_owner_required'") || !controllerPhp.includes("(int) $run['owner_user_id'] !== $user_id")) fail('Consequential approvals must require the exact signed-in run owner, not only a bearer token.');
-if (!controllerPhp.includes("'tra_vel_agent_daily_request_limit', 20") || !controllerPhp.includes("'tra_vel_agent_daily_capacity'")) fail('Agent intake must enforce the default global daily balance guard.');
+if (!controllerPhp.includes("'tra_vel_agent_daily_request_limit', 200") || !controllerPhp.includes("'tra_vel_agent_daily_capacity'")) fail('Agent intake must enforce the default global daily balance guard.');
+if (!controllerPhp.includes("'tra_vel_agent_visitor_request_limit', 8")) fail('Agent intake must enforce the default eight-per-window visitor guard.');
 if (!controllerPhp.includes('__Host-tra_vel_agent_run=') || !controllerPhp.includes('Secure; HttpOnly; SameSite=Lax')) fail('Anonymous run ownership must use a Secure HttpOnly SameSite cookie.');
 if (controllerPhp.includes("$data['run_token']")) fail('The private run bearer token must not be exposed in a JSON response.');
 if (!storePhp.includes("'input_text'           => ''")) fail('Raw natural-language intake must not be persisted in the Agent Core database.');
