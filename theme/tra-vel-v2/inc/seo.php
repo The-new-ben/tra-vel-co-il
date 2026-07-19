@@ -97,7 +97,7 @@ add_filter( 'wpseo_schema_website', 'tra_vel_v2_enrich_yoast_website_schema' );
  */
 function tra_vel_v2_should_noindex_public_request() {
 	$private_page = is_page_template( 'page-saved.php' ) || is_page_template( 'page-account.php' ) || is_page( array( 'saved', 'account' ) );
-	$thin_archive = is_author() || is_category() || is_tag() || is_date() || is_search();
+	$thin_archive = function_exists( 'is_author' ) && ( is_author() || is_category() || is_tag() || is_date() || is_search() );
 	$incomplete_guide = is_singular() && tra_vel_v2_is_destination_guide() && ! tra_vel_v2_is_guide_publication_ready();
 	$facet_keys   = array(
 		'q', 'origin', 'destination', 'destination_mode', 'selection_destination', 'product', 'focus', 'layer', 'depart', 'departure', 'return', 'departure_date', 'return_date', 'date', 'dates', 'route', 'checkin', 'checkout', 'check_in', 'check_out', 'start_date', 'end_date', 'adults', 'children', 'infants', 'rooms', 'travelers', 'party',
