@@ -8,7 +8,7 @@
 defined( 'ABSPATH' ) || exit;
 
 class Tra_Vel_Commercial_Intent_Store {
-	const DB_VERSION        = '1.0.0';
+	const DB_VERSION        = '1.1.0';
 	const DB_VERSION_OPTION = 'tra_vel_commercial_intent_db_version';
 	const CLEANUP_STATUS_OPTION = 'tra_vel_commercial_intent_cleanup_status';
 	const ACTIVE_DAYS       = 30;
@@ -45,6 +45,7 @@ class Tra_Vel_Commercial_Intent_Store {
 			last_event_sequence bigint(20) unsigned NOT NULL DEFAULT 1,
 			scope longtext NOT NULL,
 			scope_digest char(64) NOT NULL,
+			contact longtext NULL,
 			created_at datetime NOT NULL,
 			updated_at datetime NOT NULL,
 			expires_at datetime NOT NULL,
@@ -137,13 +138,19 @@ class Tra_Vel_Commercial_Intent_Store {
 	 * @param array  $scope Normalized policy scope.
 	 * @param array  $principal Owner data.
 	 * @param string $idempotency_key Client operation key.
+	 * @param array  $contact Policy-bounded consented lead contact.
 	 * @return array|WP_Error
 	 */
-	public function create_or_resume( $scope, $principal, $idempotency_key ) {
+	public function create_or_resume( $scope, $principal, $idempotency_key, $contact = array() ) {
 		global $wpdb;
+		$contact          = is_array( $contact ) ? $contact : array();
+		// The consent timestamp is generated per attempt and must not break
+		// an idempotent replay of the same logical request.
+		$contact_for_digest = $contact;
+		unset( $contact_for_digest['consented_at'] );
 		$scope_digest     = Tra_Vel_Commercial_Intent_Policy::digest( $scope );
 		$principal_hash   = (string) ( $principal['principal_hash'] ?? '' );
-		$operation_digest = Tra_Vel_Commercial_Intent_Policy::digest( array( 'scope' => $scope, 'operation' => 'intent.create' ) );
+		$operation_digest = Tra_Vel_Commercial_Intent_Policy::digest( array( 'scope' => $scope, 'contact' => $contact_for_digest, 'operation' => 'intent.create' ) );
 		$replay           = $this->idempotent_result( 'intent.create', $principal_hash, $idempotency_key, $operation_digest );
 		if ( $replay ) {
 			return is_wp_error( $replay ) ? $replay : array( 'intent' => $replay['intent'], 'event' => $replay['event'], 'replayed' => true, 'reused' => false, 'created' => false );
@@ -161,6 +168,24 @@ class Tra_Vel_Commercial_Intent_Store {
 
 		$existing = $this->find_active_by_scope( $principal, $scope_digest, true );
 		if ( $existing ) {
+			if ( $contact ) {
+				// A traveler who re-runs the same safe scope and now explicitly
+				// consents to contact must not have that consent silently
+				// dropped by scope reuse. The parent row is already locked.
+				$contact_saved = $wpdb->query(
+					$wpdb->prepare(
+						'UPDATE ' . self::intents_table() . ' SET contact = %s, updated_at = %s WHERE id = %d',
+						Tra_Vel_Commercial_Intent_Policy::canonical_json( $contact ),
+						current_time( 'mysql', true ),
+						(int) $existing['id']
+					)
+				);
+				if ( false === $contact_saved ) {
+					$wpdb->query( 'ROLLBACK' );
+					return new WP_Error( 'tra_vel_commercial_transaction_failed', 'The consented contact could not be recorded safely.', array( 'status' => 500 ) );
+				}
+				$existing['contact'] = $contact;
+			}
 			if ( ! $this->insert_idempotency( 'intent.create', $principal_hash, $idempotency_key, $operation_digest, $existing['intent_uuid'], $existing['intent_version'], '', 200 ) ) {
 				$wpdb->query( 'ROLLBACK' );
 				$recovered = $this->idempotent_result( 'intent.create', $principal_hash, $idempotency_key, $operation_digest );
@@ -199,13 +224,14 @@ class Tra_Vel_Commercial_Intent_Store {
 				'last_event_sequence'=> 1,
 				'scope'              => $encoded,
 				'scope_digest'       => $scope_digest,
+				'contact'            => $contact ? Tra_Vel_Commercial_Intent_Policy::canonical_json( $contact ) : null,
 				'created_at'         => $now,
 				'updated_at'         => $now,
 				'expires_at'         => gmdate( 'Y-m-d H:i:s', time() + self::ACTIVE_DAYS * DAY_IN_SECONDS ),
 				'retention_until'    => gmdate( 'Y-m-d H:i:s', time() + self::RETENTION_DAYS * DAY_IN_SECONDS ),
 				'legal_hold'         => 0,
 			),
-			array( '%s', '%s', '%d', '%s', '%s', '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%d' )
+			array( '%s', '%s', '%d', '%s', '%s', '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d' )
 		);
 		if ( false === $inserted ) {
 			$wpdb->query( 'ROLLBACK' );
@@ -578,6 +604,8 @@ class Tra_Vel_Commercial_Intent_Store {
 		}
 		$scope       = json_decode( (string) $row['scope'], true );
 		$row['scope'] = is_array( $scope ) ? $scope : array();
+		$contact        = array_key_exists( 'contact', $row ) ? json_decode( (string) $row['contact'], true ) : null;
+		$row['contact'] = is_array( $contact ) ? $contact : array();
 		return $row;
 	}
 
@@ -699,7 +727,7 @@ class Tra_Vel_Commercial_Intent_Store {
 		global $wpdb;
 		$requirements = array(
 			self::intents_table() => array(
-				'columns' => array( 'id', 'intent_uuid', 'reference_code', 'owner_user_id', 'owner_token_hash', 'vertical', 'intent_version', 'last_event_sequence', 'scope', 'scope_digest', 'created_at', 'updated_at', 'expires_at', 'retention_until', 'legal_hold' ),
+				'columns' => array( 'id', 'intent_uuid', 'reference_code', 'owner_user_id', 'owner_token_hash', 'vertical', 'intent_version', 'last_event_sequence', 'scope', 'scope_digest', 'contact', 'created_at', 'updated_at', 'expires_at', 'retention_until', 'legal_hold' ),
 				'unique'  => array( array( 'intent_uuid' ), array( 'reference_code' ) ),
 			),
 			self::events_table() => array(

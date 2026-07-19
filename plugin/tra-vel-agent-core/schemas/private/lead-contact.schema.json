@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://tra-vel.co.il/schemas/private/lead-contact.schema.json",
+  "title": "Tra-Vel private consented lead contact",
+  "description": "The closed, bounded, explicitly consented callback-contact record stored with an assisted quote case or commercial intent. It exists only because the traveler sent consent=true with the exact current contact-consent version; anything else is rejected with 400 before storage. It is operator-readable only: traveler-visible responses expose at most a contact_provided boolean, and events, logs, and webhook payloads never carry the name or phone. The record is deleted with its parent aggregate by the existing retention cleanup.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["phone", "consent_version", "consented_at"],
+  "properties": {
+    "name": { "type": "string", "minLength": 1, "maxLength": 80 },
+    "phone": { "type": "string", "pattern": "^\\+?[0-9]{7,15}$" },
+    "consent_version": { "const": "2026-07-19" },
+    "consented_at": { "type": "string", "format": "date-time" }
+  }
+}

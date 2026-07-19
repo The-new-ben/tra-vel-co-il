@@ -99,6 +99,15 @@ class Tra_Vel_Commercial_Intent_Controller extends WP_REST_Controller {
 		}
 		$raw = $request->get_json_params();
 		$raw = is_array( $raw ) ? $raw : $request->get_params();
+		// The optional consented contact is extracted before the scope passes
+		// the recursive sensitive-field rejection, so a phone number can only
+		// ever exist in the dedicated policy-bounded contact record.
+		$contact_raw = isset( $raw['contact'] ) ? $raw['contact'] : $request->get_param( 'contact' );
+		unset( $raw['contact'] );
+		$contact = Tra_Vel_Commercial_Intent_Policy::sanitize_contact( $contact_raw );
+		if ( is_wp_error( $contact ) ) {
+			return $contact;
+		}
 		$scope = Tra_Vel_Commercial_Intent_Policy::normalize_scope( $raw );
 		if ( is_wp_error( $scope ) ) {
 			return $scope;
@@ -107,7 +116,7 @@ class Tra_Vel_Commercial_Intent_Controller extends WP_REST_Controller {
 		if ( 0 === (int) $principal['user_id'] && 64 !== strlen( (string) $principal['token_hash'] ) ) {
 			return new WP_Error( 'tra_vel_commercial_owner_unavailable', 'A private browser owner could not be established.', array( 'status' => 500 ) );
 		}
-		$result = $this->store->create_or_resume( $scope, $principal, (string) $request->get_param( 'idempotency_key' ) );
+		$result = $this->store->create_or_resume( $scope, $principal, (string) $request->get_param( 'idempotency_key' ), $contact );
 		if ( is_wp_error( $result ) ) {
 			return $result;
 		}
@@ -216,6 +225,9 @@ class Tra_Vel_Commercial_Intent_Controller extends WP_REST_Controller {
 			'ownership'        => (int) $intent['owner_user_id'] > 0 ? 'account' : 'private_browser_owner',
 			'vertical'         => (string) $intent['vertical'],
 			'scope'            => (array) $intent['scope'],
+			// Public responses disclose only that a consented contact exists.
+			// The bounded name and phone stay in operator-readable storage.
+			'contact_provided' => ! empty( $intent['contact'] ),
 			'created_at'       => gmdate( 'c', strtotime( $intent['created_at'] . ' UTC' ) ),
 			'updated_at'       => gmdate( 'c', strtotime( $intent['updated_at'] . ' UTC' ) ),
 			'expires_at'       => gmdate( 'c', strtotime( $intent['expires_at'] . ' UTC' ) ),
@@ -334,6 +346,7 @@ class Tra_Vel_Commercial_Intent_Controller extends WP_REST_Controller {
 			'offer_id'         => array( 'type' => 'string', 'required' => true, 'pattern' => '^[A-Za-z0-9._:-]{1,80}$', 'sanitize_callback' => 'sanitize_text_field', 'validate_callback' => 'rest_validate_request_arg' ),
 			'candidate'        => array( 'type' => 'object', 'default' => array(), 'validate_callback' => 'rest_validate_request_arg' ),
 			'trip'             => array( 'type' => 'object', 'required' => true, 'validate_callback' => 'rest_validate_request_arg' ),
+			'contact'          => array( 'type' => 'object', 'default' => array(), 'validate_callback' => 'rest_validate_request_arg' ),
 		);
 	}
 

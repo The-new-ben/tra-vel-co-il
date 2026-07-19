@@ -8,9 +8,10 @@
 defined( 'ABSPATH' ) || exit;
 
 class Tra_Vel_Quote_Case_Policy {
-	const CONTRACT_VERSION       = '1.1.0';
-	const EVENT_CONTRACT_VERSION = '1.1.0';
-	const CONSENT_VERSION        = '2026-07-17';
+	const CONTRACT_VERSION        = '1.1.0';
+	const EVENT_CONTRACT_VERSION  = '1.1.0';
+	const CONSENT_VERSION         = '2026-07-17';
+	const CONTACT_CONSENT_VERSION = '2026-07-19';
 
 	/**
 	 * States deliberately stop before supplier search, proposal, or booking.
@@ -136,6 +137,111 @@ class Tra_Vel_Quote_Case_Policy {
 
 	public static function digest( $snapshot ) {
 		return hash( 'sha256', wp_json_encode( self::canonicalize( $snapshot ), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES ) );
+	}
+
+	/**
+	 * Bound the optional marketing-acquisition attribution object.
+	 *
+	 * Only the allowlisted UTM, landing-path, referrer-host, and first-seen
+	 * fields survive; every other key is stripped. UTM values pass the same
+	 * sensitive-pattern redaction as retained planning text so contact,
+	 * medical, or URL payloads can never ride into the 90-day aggregate
+	 * through a campaign parameter. An empty result means nothing is stored.
+	 *
+	 * @param mixed $raw Raw traveler-supplied acquisition object.
+	 * @return array<string,string> Bounded attribution, possibly empty.
+	 */
+	public static function sanitize_acquisition( $raw ) {
+		if ( ! is_array( $raw ) || array() === $raw ) {
+			return array();
+		}
+		$acquisition = array();
+		foreach ( array( 'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content' ) as $field ) {
+			$value = self::planning_text( $raw[ $field ] ?? '', 120 );
+			if ( '' !== $value ) {
+				$acquisition[ $field ] = $value;
+			}
+		}
+		$landing_path = sanitize_text_field( (string) ( $raw['landing_path'] ?? '' ) );
+		if ( '' !== $landing_path
+			&& '/' === substr( $landing_path, 0, 1 )
+			&& '//' !== substr( $landing_path, 0, 2 )
+			&& ! preg_match( '/\s/u', $landing_path )
+			&& ! self::contains_sensitive_pattern( $landing_path ) ) {
+			$acquisition['landing_path'] = self::bounded_text( $landing_path, 200 );
+		}
+		$referrer_host = strtolower( sanitize_text_field( (string) ( $raw['referrer_host'] ?? '' ) ) );
+		if ( false !== strpos( $referrer_host, '/' ) ) {
+			$referrer_host = strtolower( (string) wp_parse_url( $referrer_host, PHP_URL_HOST ) );
+		}
+		if ( '' !== $referrer_host && strlen( $referrer_host ) <= 120 && preg_match( '/^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$/', $referrer_host ) ) {
+			$acquisition['referrer_host'] = $referrer_host;
+		}
+		$first_seen_raw = sanitize_text_field( (string) ( $raw['first_seen_at'] ?? '' ) );
+		if ( '' !== $first_seen_raw && preg_match( '/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})$/', $first_seen_raw ) ) {
+			$first_seen = strtotime( $first_seen_raw );
+			if ( false !== $first_seen ) {
+				$acquisition['first_seen_at'] = gmdate( 'c', $first_seen );
+			}
+		}
+		return $acquisition;
+	}
+
+	/**
+	 * Validate and minimize the optional consented lead-contact object.
+	 *
+	 * A present contact is retained only with an explicit consent boolean and
+	 * the exact current contact-consent version; anything else fails closed
+	 * with a 400 so a phone number is never stored without provable consent.
+	 * The bounded record is operator-readable storage only and must never be
+	 * echoed into traveler payloads, events, logs, or webhook bodies.
+	 *
+	 * @param mixed  $raw         Raw traveler-supplied contact object.
+	 * @param string $error_scope WP_Error code prefix for the calling surface.
+	 * @return array|WP_Error Bounded contact record, empty array when absent.
+	 */
+	public static function sanitize_contact( $raw, $error_scope = 'tra_vel_quote_case' ) {
+		if ( ! is_array( $raw ) || array() === $raw ) {
+			return array();
+		}
+		$error_scope = sanitize_key( $error_scope );
+		if ( true !== filter_var( $raw['consent'] ?? false, FILTER_VALIDATE_BOOLEAN ) || self::CONTACT_CONSENT_VERSION !== (string) ( $raw['consent_version'] ?? '' ) ) {
+			return new WP_Error( $error_scope . '_contact_consent_required', 'Explicit contact consent with the current contact-consent version is required.', array( 'status' => 400 ) );
+		}
+		$phone = self::normalize_phone( $raw['phone'] ?? '' );
+		if ( '' === $phone ) {
+			return new WP_Error( $error_scope . '_contact_phone_invalid', 'A valid callback phone number is required for consented contact.', array( 'status' => 400 ) );
+		}
+		$name    = self::bounded_text( $raw['name'] ?? '', 80 );
+		$contact = array(
+			'phone'           => $phone,
+			'consent_version' => self::CONTACT_CONSENT_VERSION,
+			'consented_at'    => gmdate( 'c' ),
+		);
+		if ( '' !== $name ) {
+			$contact['name'] = $name;
+		}
+		return $contact;
+	}
+
+	/**
+	 * Normalize a traveler-entered phone number to digits with an optional
+	 * leading plus. Input may use +, digits, spaces, and dashes; the stored
+	 * value keeps 7 to 15 digits so Israeli and international callback
+	 * numbers both fit without retaining free-form text.
+	 *
+	 * @param mixed $raw Raw phone input.
+	 * @return string Normalized phone, or empty string when invalid.
+	 */
+	public static function normalize_phone( $raw ) {
+		$raw = trim( (string) $raw );
+		if ( '' === $raw || strlen( $raw ) > 32 || ! preg_match( '/^\+?[0-9][0-9 \-]*$/', $raw ) ) {
+			return '';
+		}
+		$normalized = ( '+' === $raw[0] ? '+' : '' ) . preg_replace( '/[^0-9]/', '', $raw );
+		$digits     = ltrim( $normalized, '+' );
+		$length     = strlen( $digits );
+		return $length >= 7 && $length <= 15 ? $normalized : '';
 	}
 
 	/**

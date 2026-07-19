@@ -8,9 +8,11 @@
 defined( 'ABSPATH' ) || exit;
 
 final class Tra_Vel_Commercial_Intent_Policy {
-	const CONTRACT_VERSION       = '1.0.0';
+	const CONTRACT_VERSION       = '1.1.0';
+	const SCOPE_CONTRACT_VERSION = '1.0.0';
 	const EVENT_CONTRACT_VERSION = '1.0.0';
 	const HANDOFF_PROVIDER       = 'tra-vel-concierge';
+	const CONTACT_CONSENT_VERSION = '2026-07-19';
 
 	/**
 	 * Reject data that must never enter the commercial-intent store.
@@ -87,7 +89,9 @@ final class Tra_Vel_Commercial_Intent_Policy {
 		}
 
 		$scope = array(
-			'contract_version'  => self::CONTRACT_VERSION,
+			// The stored scope contract is unchanged in 1.1.0; keeping its own
+			// version preserves scope digests so active intents still resume.
+			'contract_version'  => self::SCOPE_CONTRACT_VERSION,
 			'vertical'          => $vertical,
 			'surface'           => self::key( isset( $request['surface'] ) ? $request['surface'] : 'search-results', 32, 'search-results' ),
 			'data_mode'         => $data_mode,
@@ -132,6 +136,62 @@ final class Tra_Vel_Commercial_Intent_Policy {
 
 	public static function digest( $value ) {
 		return hash( 'sha256', self::canonical_json( $value ) );
+	}
+
+	/**
+	 * Validate and minimize the optional consented lead-contact object.
+	 *
+	 * The contact object is extracted by the controller before the scope
+	 * passes reject_forbidden_fields, so a phone number can exist only here,
+	 * only with an explicit consent boolean and the exact current
+	 * contact-consent version. Anything else fails closed with a 400. The
+	 * bounded record is operator-readable storage only: public responses may
+	 * expose a contact_provided boolean and nothing more.
+	 *
+	 * @param mixed $raw Raw traveler-supplied contact object.
+	 * @return array|WP_Error Bounded contact record, empty array when absent.
+	 */
+	public static function sanitize_contact( $raw ) {
+		if ( ! is_array( $raw ) || array() === $raw ) {
+			return array();
+		}
+		if ( true !== filter_var( isset( $raw['consent'] ) ? $raw['consent'] : false, FILTER_VALIDATE_BOOLEAN ) || self::CONTACT_CONSENT_VERSION !== (string) ( isset( $raw['consent_version'] ) ? $raw['consent_version'] : '' ) ) {
+			return new WP_Error( 'tra_vel_commercial_contact_consent_required', 'Explicit contact consent with the current contact-consent version is required.', array( 'status' => 400 ) );
+		}
+		$phone = self::normalize_phone( isset( $raw['phone'] ) ? $raw['phone'] : '' );
+		if ( '' === $phone ) {
+			return new WP_Error( 'tra_vel_commercial_contact_phone_invalid', 'A valid callback phone number is required for consented contact.', array( 'status' => 400 ) );
+		}
+		$name    = self::plain_text( isset( $raw['name'] ) ? $raw['name'] : '', 80 );
+		$contact = array(
+			'phone'           => $phone,
+			'consent_version' => self::CONTACT_CONSENT_VERSION,
+			'consented_at'    => gmdate( 'c' ),
+		);
+		if ( '' !== $name ) {
+			$contact['name'] = $name;
+		}
+		return $contact;
+	}
+
+	/**
+	 * Normalize a traveler-entered phone number to digits with an optional
+	 * leading plus. Input may use +, digits, spaces, and dashes; the stored
+	 * value keeps 7 to 15 digits so Israeli and international callback
+	 * numbers both fit without retaining free-form text.
+	 *
+	 * @param mixed $raw Raw phone input.
+	 * @return string Normalized phone, or empty string when invalid.
+	 */
+	public static function normalize_phone( $raw ) {
+		$raw = trim( (string) $raw );
+		if ( '' === $raw || strlen( $raw ) > 32 || ! preg_match( '/^\+?[0-9][0-9 \-]*$/', $raw ) ) {
+			return '';
+		}
+		$normalized = ( '+' === $raw[0] ? '+' : '' ) . preg_replace( '/[^0-9]/', '', $raw );
+		$digits     = ltrim( $normalized, '+' );
+		$length     = strlen( $digits );
+		return $length >= 7 && $length <= 15 ? $normalized : '';
 	}
 
 	public static function canonical_json( $value ) {
