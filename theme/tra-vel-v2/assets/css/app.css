@@ -1247,7 +1247,7 @@ input[type="range"] { width: 100%; accent-color: #7da000; }
 .package-inclusion-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 6px; margin: 0; padding: 0; border: 0; }
 .package-inclusion-grid legend { grid-column: 1/-1; color: #40565c; font-size: 12px; font-weight: 800; }
 .package-inclusion-grid label { min-width: 0; cursor: pointer; }
-.package-inclusion-grid input { position: absolute; opacity: 0; pointer-events: none; }
+.package-inclusion-grid input { position: absolute; width: 1px; height: 1px; min-height: 0; opacity: 0; pointer-events: none; }
 .package-inclusion-grid label span { min-height: 46px; display: grid; gap: 2px; place-items: center; padding: 5px; color: #5b7075; background: #f2f5f3; border: 1px solid var(--line); border-radius: 10px; font-size: 9px; font-weight: 800; text-align: center; }
 .package-inclusion-grid label span i { width: 16px; }
 .package-inclusion-grid label:has(input:checked) span { color: #4d6800; background: #effbcf; border-color: #9fbd3b; }
@@ -1338,7 +1338,7 @@ input[type="range"] { width: 100%; accent-color: #7da000; }
 .insurance-addon-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 6px; margin: 0; padding: 0; border: 0; }
 .insurance-addon-grid legend { grid-column: 1/-1; margin-bottom: 3px; color: #40565c; font-size: 12px; font-weight: 800; }
 .insurance-addon-grid label { min-width: 0; cursor: pointer; }
-.insurance-addon-grid input { position: absolute; opacity: 0; pointer-events: none; }
+.insurance-addon-grid input { position: absolute; width: 1px; height: 1px; min-height: 0; opacity: 0; pointer-events: none; }
 .insurance-addon-grid label span { min-height: 48px; display: grid; gap: 2px; place-items: center; padding: 5px; color: #5c7075; background: #f2f5f3; border: 1px solid var(--line); border-radius: 10px; font-size: 9px; font-weight: 800; text-align: center; }
 .insurance-addon-grid label span i { width: 17px; }
 .insurance-addon-grid label:has(input:checked) span { color: #4e6900; background: #effbcf; border-color: #9fbf3a; }
@@ -2232,7 +2232,7 @@ h3.deal-title { display: block; margin: 6px 0 12px; font-size: 22px; line-height
 .workspace-preferences fieldset { margin: 0; padding: 0; border: 0; }
 .workspace-priority-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 7px; }
 .workspace-priority-grid label { position: relative; }
-.workspace-priority-grid input { position: absolute; opacity: 0; }
+.workspace-priority-grid input { position: absolute; width: 1px; height: 1px; min-height: 0; opacity: 0; }
 .workspace-priority-grid span { min-height: 44px; display: grid; place-items: center; border: 1px solid #d8e0dd; border-radius: 10px; background: #f8faf8; cursor: pointer; }
 .workspace-priority-grid input:checked + span { color: #fff; border-color: var(--ink); background: var(--ink); }
 .workspace-preferences > button { min-height: 46px; border: 0; border-radius: 13px; background: var(--lime); cursor: pointer; font-weight: 900; }
