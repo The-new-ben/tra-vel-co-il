@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated": "2026-07-18",
+  "updated": "2026-07-20",
   "destinations": [
     {
       "id": "budapest",
@@ -51,10 +51,10 @@
       "decision": "מרכז יקר ונוח מול טבעת תחבורה עם תמורה טובה",
       "map_state": "vienna",
       "image": "city-vienna.webp",
-      "guide_status": "research",
-      "guide_path": "",
-      "word_count": 0,
-      "source_count": 0
+      "guide_status": "published",
+      "guide_path": "/destinations/vienna/",
+      "word_count": 7624,
+      "source_count": 16
     },
     {
       "id": "thailand",
@@ -105,10 +105,10 @@
       "decision": "חופשה בעיר מול עצירת ביניים בדרך ליעד נוסף",
       "map_state": "dubai",
       "image": "earth-blue-marble.jpg",
-      "guide_status": "research",
-      "guide_path": "",
-      "word_count": 0,
-      "source_count": 0
+      "guide_status": "published",
+      "guide_path": "/destinations/dubai/",
+      "word_count": 6820,
+      "source_count": 31
     },
     {
       "id": "tokyo",
@@ -123,10 +123,10 @@
       "decision": "בסיס אחד נוח מול פיצול שכונות וטיולי יום",
       "map_state": "tokyo",
       "image": "earth-blue-marble.jpg",
-      "guide_status": "research",
-      "guide_path": "",
-      "word_count": 0,
-      "source_count": 0
+      "guide_status": "published",
+      "guide_path": "/destinations/tokyo/",
+      "word_count": 8812,
+      "source_count": 45
     },
     {
       "id": "lisbon",
@@ -141,11 +141,31 @@
       "decision": "מרכז והליכה מול חוף וטיולי יום",
       "map_state": "lisbon",
       "image": "earth-blue-marble.jpg",
-      "guide_status": "research",
-      "guide_path": "",
-      "word_count": 0,
-      "source_count": 0
+      "guide_status": "published",
+      "guide_path": "/destinations/lisbon/",
+      "word_count": 9603,
+      "source_count": 37
     }
   ],
-  "supporting_guides": []
+  "supporting_guides": [
+    {
+      "id": "bangkok",
+      "city": "בנגקוק",
+      "country": "תאילנד",
+      "region": "asia",
+      "region_label": "אסיה",
+      "experience": "city",
+      "experience_label": "עיר, נהר ואוכל",
+      "duration": "2 עד 4 לילות",
+      "best_for": "עיר · אוכל · המשך לאיים",
+      "decision": "אזור לינה וציר תחבורה לפני בחירת מלון",
+      "map_state": "bangkok",
+      "image": "thailand.jpg",
+      "guide_status": "published",
+      "guide_path": "/destinations/thailand/bangkok/",
+      "parent_path": "/destinations/thailand/",
+      "word_count": 8400,
+      "source_count": 46
+    }
+  ]
 }

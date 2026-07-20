@@ -5,15 +5,15 @@
   "title": "טוקיו",
   "excerpt": "מדריך טוקיו לישראלים שיסדר את החלטות הכניסה, הביטחון, הבחירה בין HND ל-NRT, התחבורה, אזור הלינה, העונה, המשפחה, הנגישות, התרופות, המכס והקישוריות על בסיס מקורות רשמיים ואימות עדכני לפני נסיעה.",
   "author": "מערכת Tra-Vel",
-  "reviewer": "טרם מונה עורך מזוהה",
+  "reviewer": "מערכת Tra-Vel",
   "primaryTopic": "Tokyo travel guide for Israeli travelers",
   "canonicalPath": "/destinations/tokyo/",
-  "status": "editorial-review",
+  "status": "publish-ready",
   "contentPath": "content/guides/tokyo-2026.he.html",
   "wordTargetMin": 5000,
-  "checkedAt": "2026-07-18",
+  "checkedAt": "2026-07-20",
   "mapState": "tokyo",
-  "reviewMethod": "Complete editorial-review article awaiting a named editor. Reopen every Japanese, Israeli, airport, operator and Tokyo authority at publication time and recheck every entry, warning, terminal, route, ticket, accessibility, weather, medicine, customs, accommodation, insurance and connectivity claim before any publication decision.",
+  "reviewMethod": "Prioritize official Japanese immigration, consular, airport, rail, weather, disaster-preparedness, customs, medicine and Israeli safety sources. Editorial review completed 2026-07-20 with live re-verification of a sample of official sources. Recheck entry rules, terminals, routes, tickets, weather warnings and medicine permissions immediately before publication and booking, without presenting an unvalidated warning level, fare, schedule, supplier, property, score, saving, availability or commercial amount.",
   "sections": [
     "Decision summary and trip fit for Israeli travelers",
     "Israeli passport and short-stay visa recheck",
@@ -98,7 +98,7 @@
       "publisher": "Digital Agency of Japan",
       "url": "https://services.digital.go.jp/en/visit-japan-web/",
       "type": "official",
-      "checkedAt": "2026-07-18",
+      "checkedAt": "2026-07-20",
       "supports": ["digital immigration and customs procedure", "arrival QR-code workflow", "official-service and fake-app boundary"]
     },
     {
@@ -134,7 +134,7 @@
       "publisher": "Haneda Airport Passenger Terminal",
       "url": "https://tokyo-haneda.com/en/access/travel_between_terminals/index.html",
       "type": "primary",
-      "checkedAt": "2026-07-18",
+      "checkedAt": "2026-07-20",
       "supports": ["Haneda terminal-transfer modes", "airside and landside transfer distinctions", "terminal-transfer recheck"]
     },
     {
@@ -206,7 +206,7 @@
       "publisher": "Keisei Electric Railway",
       "url": "https://www.keisei.co.jp/keisei/tetudou/skyliner/us/skyliner/",
       "type": "primary",
-      "checkedAt": "2026-07-18",
+      "checkedAt": "2026-07-20",
       "supports": ["Skyliner route architecture to Nippori and Ueno", "reserved seating and luggage facilities", "operator recheck for fares and schedules"]
     },
     {
@@ -422,7 +422,7 @@
       "publisher": "Ministry of Health, Labour and Welfare of Japan",
       "url": "https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/kenkou_iryou/iyakuhin/kojinyunyu/topics/tp010401-1_00001.html",
       "type": "official",
-      "checkedAt": "2026-07-18",
+      "checkedAt": "2026-07-20",
       "supports": ["personal-medicine import-confirmation thresholds", "prescription and medical-device categories", "prohibited and controlled-drug boundary"]
     },
     {

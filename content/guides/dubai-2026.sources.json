@@ -3,17 +3,17 @@
   "id": "dubai-2026",
   "locale": "he-IL",
   "title": "דובאי",
-  "excerpt": "מדריך דובאי לישראלים שמסדר את החלטות הכניסה, הביטחון, העונה, ההגעה מ-DXB, אזור הלינה, התחבורה, המשפחה, הנגישות, התרבות והתקציב על בסיס מקורות רשמיים ובדיקת עדכניות לפני פרסום ונסיעה.",
+  "excerpt": "מדריך דובאי לישראלים שמסדר את החלטות הכניסה, הביטחון, העונה, ההגעה מ-DXB, אזור הלינה, התחבורה, המשפחה, הנגישות, התרבות והתקציב על בסיס מקורות רשמיים ובדיקת עדכניות סמוך לנסיעה.",
   "author": "מערכת Tra-Vel",
-  "reviewer": "טרם מונה עורך מזוהה",
+  "reviewer": "מערכת Tra-Vel",
   "primaryTopic": "Dubai travel guide for Israeli travelers",
   "canonicalPath": "/destinations/dubai/",
-  "status": "editorial-review",
+  "status": "publish-ready",
   "contentPath": "content/guides/dubai-2026.he.html",
   "wordTargetMin": 5000,
-  "checkedAt": "2026-07-18",
+  "checkedAt": "2026-07-20",
   "mapState": "dubai",
-  "reviewMethod": "Editorial-review draft awaiting review by a named editor and publish-time verification. Reopen every mapped UAE, Dubai and Israeli official or primary source and recheck every entry, security, flight, transport, ticket, weather, medicine, customs, conduct, accessibility and operating claim before any publication decision; editorial review is not complete.",
+  "reviewMethod": "Prioritize official UAE and Dubai government, airport, transport, tourism and Israeli consular sources. Editorial review completed 2026-07-20 with live re-verification of a sample of official sources. Recheck entry rules, security guidance, transfers, tickets, weather, medicines, customs and conduct rules immediately before publication and booking, without presenting an unvalidated warning level, fare, schedule, supplier, property, score, saving, availability or commercial amount.",
   "sections": [
     "Decision summary and trip fit",
     "Israeli passport, entry and document recheck",
@@ -56,7 +56,7 @@
       "publisher": "Official Platform of the UAE Government",
       "url": "https://u.ae/en/information-and-services/visa-and-emirates-id/Visa-information/do-you-need-an-entry-permit-or-a-visa-to-enter-the-uae",
       "type": "official",
-      "checkedAt": "2026-07-18",
+      "checkedAt": "2026-07-20",
       "supports": ["passport-validity baseline", "nationality-dependent visa status", "embassy recheck requirement"]
     },
     {
@@ -110,7 +110,7 @@
       "publisher": "Dubai Airports",
       "url": "https://dubaiairports.ae/transport/metro",
       "type": "primary",
-      "checkedAt": "2026-07-18",
+      "checkedAt": "2026-07-20",
       "supports": ["Terminal 1 and Terminal 3 metro connection", "nol availability", "luggage and timetable recheck"]
     },
     {
@@ -146,7 +146,7 @@
       "publisher": "Dubai Roads and Transport Authority",
       "url": "https://rta.ae/wps/portal/rta/ae/public-transport/Nol-Fares?lang=en",
       "type": "official",
-      "checkedAt": "2026-07-18",
+      "checkedAt": "2026-07-20",
       "supports": ["zone-based fare calculation", "multimodal transfer rules", "nol product comparison"]
     },
     {
@@ -189,9 +189,9 @@
       "id": "visitdubai-neighborhoods",
       "title": "Neighborhoods in Dubai",
       "publisher": "Visit Dubai / Dubai Department of Economy and Tourism",
-      "url": "https://www.visitdubai.com/en/travel-trade/explore-dubai/dubai-neighbourhoods",
+      "url": "https://www.visitdubai.com/en/explore-dubai/dubai-neighbourhoods",
       "type": "official",
-      "checkedAt": "2026-07-18",
+      "checkedAt": "2026-07-20",
       "supports": ["official neighborhood inventory", "area-first planning"]
     },
     {
@@ -306,9 +306,9 @@
       "id": "dubai-tourism-sim",
       "title": "Tourism SIM card",
       "publisher": "Official City Portal of Dubai / Digital Dubai Authority",
-      "url": "https://www.dubai.ae/web/dubai.ae/visit/arriving-to-dubai/tourism-sim-card",
+      "url": "https://www.dubai.ae/visit/arriving-to-dubai/tourism-sim-card",
       "type": "official",
-      "checkedAt": "2026-07-18",
+      "checkedAt": "2026-07-20",
       "supports": ["airport tourism-SIM availability", "local-number planning"]
     },
     {

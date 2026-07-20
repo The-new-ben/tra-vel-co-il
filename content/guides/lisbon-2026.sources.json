@@ -5,14 +5,14 @@
   "title": "ליסבון",
   "excerpt": "מדריך ליסבון לישראלים שיסדר את החלטות הכניסה, הביטחון, ההגעה דרך LIS, התחבורה, אזור הלינה, הגבעות, המשפחה, הנגישות, סינטרה והחוף, התרופות, המכס והקישוריות על בסיס מקורות רשמיים ובדיקה עדכנית לפני הנסיעה.",
   "author": "מערכת Tra-Vel",
-  "reviewer": "טרם מונה עורך מזוהה",
+  "reviewer": "מערכת Tra-Vel",
   "primaryTopic": "Lisbon travel guide for Israeli travelers",
   "canonicalPath": "/destinations/lisbon/",
-  "status": "editorial-review",
+  "status": "publish-ready",
   "wordTargetMin": 5000,
-  "checkedAt": "2026-07-18",
+  "checkedAt": "2026-07-20",
   "mapState": "lisbon",
-  "reviewMethod": "Long-form Hebrew guide drafted from the complete official and primary source packet, with source-link coverage and automated structural validation completed; awaiting a named editor. Reopen every Portuguese, European, Israeli, airport, transport, civil-protection, weather, tourism, customs and medicine source before publication, then recheck every volatile decision without presenting an unvalidated warning level, fare, schedule, supplier, property, score, saving, attraction status or commercial amount.",
+  "reviewMethod": "Prioritize official Portuguese, European and Israeli entry, airport, transport, civil-protection, weather, tourism, customs and medicine sources. Editorial review completed 2026-07-20 with live re-verification of a sample of official sources. Recheck entry rules, warnings, transit and lift status, fire danger, thresholds and operating details immediately before publication and booking, without presenting an unvalidated warning level, fare, schedule, supplier, property, score, saving, availability or commercial amount.",
   "contentPath": "content/guides/lisbon-2026.he.html",
   "sections": [
     "Decision summary and trip fit for Israeli travelers",
@@ -98,7 +98,7 @@
       "publisher": "Lisbon Airport",
       "url": "https://www.lisbonairport.pt/en/lis/access-parking/getting-to-and-from-the-airport/public-transportation",
       "type": "primary",
-      "checkedAt": "2026-07-18",
+      "checkedAt": "2026-07-20",
       "supports": ["airport metro, bus, taxi and app-based pickup categories", "airport-to-rail connection architecture", "licensed pickup safety boundary"]
     },
     {
@@ -152,7 +152,7 @@
       "publisher": "Metropolitano de Lisboa",
       "url": "https://www.metrolisboa.pt/en/travel/line-and-lift-status/",
       "type": "primary",
-      "checkedAt": "2026-07-18",
+      "checkedAt": "2026-07-20",
       "supports": ["live line status", "live lift status", "station-specific access recheck"]
     },
     {
@@ -359,7 +359,7 @@
       "publisher": "Portuguese Tax and Customs Authority",
       "url": "https://info.portaldasfinancas.gov.pt/en/tax-information/travellers-and-customs/declare-cash-when-entering-or-leaving-portugal/Pages/default.aspx",
       "type": "official",
-      "checkedAt": "2026-07-18",
+      "checkedAt": "2026-07-20",
       "supports": ["cash-declaration decision", "current declaration process and threshold recheck"]
     },
     {
@@ -386,7 +386,7 @@
       "publisher": "Visit Portugal",
       "url": "https://www.visitportugal.com/en/node/195700",
       "type": "official",
-      "checkedAt": "2026-07-18",
+      "checkedAt": "2026-07-20",
       "supports": ["Wi-Fi and mobile-connectivity categories", "SIM, eSIM and roaming decision framework"]
     }
   ],

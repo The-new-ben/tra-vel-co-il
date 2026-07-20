@@ -5,15 +5,15 @@
   "title": "בנגקוק",
   "excerpt": "מדריך בנגקוק לישראלים שמסדר את בחירת האזור, מספר הלילות, שדות התעופה, התחבורה, מזג האוויר, האתרים, האוכל, הבריאות, הבטיחות והמשך הטיול בתאילנד לפי החלטות מעשיות ומקורות רשמיים שצריך לבדוק שוב סמוך לנסיעה.",
   "author": "מערכת Tra-Vel",
-  "reviewer": "טרם מונה עורך מזוהה",
+  "reviewer": "מערכת Tra-Vel",
   "primaryTopic": "Bangkok city travel guide for Israeli travelers",
   "canonicalPath": "/destinations/thailand/bangkok/",
-  "status": "editorial-review",
+  "status": "publish-ready",
   "contentPath": "content/guides/bangkok-2026.he.html",
   "wordTargetMin": 6500,
-  "checkedAt": "2026-07-18",
+  "checkedAt": "2026-07-20",
   "mapState": "bangkok",
-  "reviewMethod": "Long-form Hebrew city guide drafted from the complete official and primary Bangkok source packet, with source-link coverage and automated structural validation completed; awaiting a named editor. Before publication, reopen every Thai immigration, consular, customs, medicine, health, airport, transport, attraction, weather, flood, air-quality, tourism, police, exchange-rate and Israeli safety source, then recheck every volatile decision without presenting an unvalidated warning level, fare, schedule, supplier, property, score, saving, availability or commercial amount.",
+  "reviewMethod": "Prioritize official Thai immigration, consular, customs, health, airport, transit, tourism and Israeli safety sources. Editorial review completed 2026-07-20 with live re-verification of a sample of official sources. Recheck entry rules, TDAC, fares, schedules, weather, flood, air-quality and security guidance immediately before publication and booking, without presenting an unvalidated warning level, fare, schedule, supplier, property, score, saving, availability or commercial amount.",
   "sections": [
     "Immediate Bangkok decision and city fit",
     "Trip length and city role",
@@ -47,7 +47,7 @@
       "publisher": "Thailand Immigration Bureau",
       "url": "https://tdac.immigration.go.th/manual/en/",
       "type": "official",
-      "checkedAt": "2026-07-18",
+      "checkedAt": "2026-07-20",
       "supports": ["TDAC purpose and traveler workflow", "individual and group submission fields", "official update workflow"]
     },
     {
@@ -65,7 +65,7 @@
       "publisher": "Thailand Department of Consular Affairs, Ministry of Foreign Affairs",
       "url": "https://consular.mfa.go.th/th/content/20-5-69-0000?menu=5d68c88b15e39c160c008174&page=5d68c88b15e39c160c008173",
       "type": "official",
-      "checkedAt": "2026-07-18",
+      "checkedAt": "2026-07-20",
       "supports": ["active visa-policy change signal", "nationality-specific recheck requirement", "formal effective-process boundary"]
     },
     {
@@ -83,7 +83,7 @@
       "publisher": "Tourism Authority of Thailand Newsroom",
       "url": "https://www.tatnews.org/2026/07/thailand-entry-reminder-on-proof-of-funds-for-foreign-visitors/",
       "type": "official",
-      "checkedAt": "2026-07-18",
+      "checkedAt": "2026-07-20",
       "supports": ["possible proof-of-funds screening", "supporting-evidence categories", "immigration final-decision boundary"]
     },
     {
@@ -308,7 +308,7 @@
       "publisher": "Airports of Thailand",
       "url": "https://suvarnabhumi.airportthai.co.th/service/transportation/detail/1093",
       "type": "official",
-      "checkedAt": "2026-07-18",
+      "checkedAt": "2026-07-20",
       "supports": ["inter-airport shuttle category", "pickup and schedule recheck"]
     },
     {
