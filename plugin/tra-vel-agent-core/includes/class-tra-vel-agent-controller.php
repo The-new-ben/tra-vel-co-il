@@ -166,6 +166,26 @@ class Tra_Vel_Agent_Controller extends WP_REST_Controller {
 				),
 			)
 		);
+		register_rest_route(
+			$this->namespace,
+			'/settings/notification-recipients',
+			array(
+				array(
+					'methods'             => WP_REST_Server::CREATABLE,
+					'callback'            => array( $this, 'store_notification_recipients' ),
+					'permission_callback' => array( $this, 'can_manage_agent' ),
+					'args'                => array(
+						'recipients'   => array( 'type' => 'array', 'required' => true, 'minItems' => 1, 'maxItems' => 10, 'items' => array( 'type' => 'string', 'format' => 'email', 'maxLength' => 254 ), 'validate_callback' => 'rest_validate_request_arg' ),
+						'confirmation' => array( 'type' => 'string', 'required' => true, 'sanitize_callback' => 'sanitize_text_field' ),
+					),
+				),
+				array(
+					'methods'             => WP_REST_Server::DELETABLE,
+					'callback'            => array( $this, 'clear_notification_recipients' ),
+					'permission_callback' => array( $this, 'can_manage_agent' ),
+				),
+			)
+		);
 	}
 
 	public function create_run( WP_REST_Request $request ) {
@@ -219,15 +239,24 @@ class Tra_Vel_Agent_Controller extends WP_REST_Controller {
 
 			$interpreted = $this->provider->interpret( $prompt, $mode, $locale );
 			if ( is_wp_error( $interpreted ) ) {
-				$error_data = $interpreted->get_error_data();
+				$error_data    = $interpreted->get_error_data();
+				$provider_code = is_array( $error_data ) && isset( $error_data['provider_code'] ) ? $error_data['provider_code'] : null;
 				$this->store->update_run(
 					$created['id'],
 					array(
 						'status'         => 'provider_error',
-						'provider_state' => array( 'error_code' => $interpreted->get_error_code(), 'provider_code' => is_array( $error_data ) && isset( $error_data['provider_code'] ) ? $error_data['provider_code'] : null ),
+						'provider_state' => array( 'error_code' => $interpreted->get_error_code(), 'provider_code' => $provider_code ),
 					)
 				);
 				$this->store->append_event( $created['id'], $this->event( 'request.interpretation.failed', 'understanding', 'failed', 'tool', 'לא הצלחנו לפרש את הבקשה כעת. לא בוצע חיפוש ספקים ולא נוצרה הזמנה.', array( 'error_code' => $interpreted->get_error_code(), 'retryable' => true ) ) );
+				/**
+				 * Alert operational listeners only after the failed run state and
+				 * its audit event have committed. Listeners must remain idempotent.
+				 *
+				 * @param string      $error_code    Internal WP_Error code.
+				 * @param string|null $provider_code Upstream provider failure code.
+				 */
+				do_action( 'tra_vel_agent_provider_error', $interpreted->get_error_code(), $provider_code );
 				$run      = $this->store->get_run_by_uuid( $created['run_uuid'] );
 				$response = $this->private_response( $this->public_run( $run ), 201 );
 				return $this->attach_run_cookie( $response, $created['run_uuid'], $created['run_token'] );
@@ -381,6 +410,15 @@ class Tra_Vel_Agent_Controller extends WP_REST_Controller {
 						array( 'revision' => $next_revision, 'error_code' => $interpreted->get_error_code(), 'provider_code' => is_array( $error_data ) && isset( $error_data['provider_code'] ) ? $error_data['provider_code'] : null )
 					)
 				);
+				/**
+				 * Alert operational listeners only after the recorded provider
+				 * failure and its audit event have committed. Listeners must
+				 * remain idempotent.
+				 *
+				 * @param string      $error_code    Internal WP_Error code.
+				 * @param string|null $provider_code Upstream provider failure code.
+				 */
+				do_action( 'tra_vel_agent_provider_error', $interpreted->get_error_code(), is_array( $error_data ) && isset( $error_data['provider_code'] ) ? $error_data['provider_code'] : null );
 				return $interpreted;
 			}
 
@@ -661,9 +699,10 @@ class Tra_Vel_Agent_Controller extends WP_REST_Controller {
 				'notifications'    => class_exists( 'Tra_Vel_Agent_Notifier' )
 					? Tra_Vel_Agent_Notifier::health()
 					: array(
-						'operator_email'     => false,
-						'webhook_configured' => false,
-						'customer_email'     => false,
+						'operator_email'        => false,
+						'recipients_configured' => 0,
+						'webhook_configured'    => false,
+						'customer_email'        => false,
 					),
 				'agent_store'      => class_exists( 'Tra_Vel_Agent_Store' )
 					? Tra_Vel_Agent_Store::schema_health()
@@ -763,6 +802,30 @@ class Tra_Vel_Agent_Controller extends WP_REST_Controller {
 	public function clear_notification_webhook() {
 		Tra_Vel_Agent_Notifier::clear_webhook_url();
 		return $this->private_response( array( 'ok' => true, 'webhook' => Tra_Vel_Agent_Notifier::webhook_status() ) );
+	}
+
+	/**
+	 * Store the configured operator notification recipients. Addresses are
+	 * operator infrastructure, not secrets; only safe configuration state is
+	 * returned.
+	 *
+	 * @param WP_REST_Request $request REST request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function store_notification_recipients( WP_REST_Request $request ) {
+		if ( 'STORE TRA-VEL NOTIFICATION RECIPIENTS' !== $request->get_param( 'confirmation' ) ) {
+			return new WP_Error( 'tra_vel_agent_recipients_confirmation', 'Recipient confirmation did not match.', array( 'status' => 400 ) );
+		}
+		$stored = Tra_Vel_Agent_Notifier::store_recipients( $request->get_param( 'recipients' ) );
+		if ( is_wp_error( $stored ) ) {
+			return $stored;
+		}
+		return $this->private_response( array( 'ok' => true, 'recipients' => Tra_Vel_Agent_Notifier::recipients_status() ) );
+	}
+
+	public function clear_notification_recipients() {
+		Tra_Vel_Agent_Notifier::clear_recipients();
+		return $this->private_response( array( 'ok' => true, 'recipients' => Tra_Vel_Agent_Notifier::recipients_status() ) );
 	}
 
 	public function can_manage_agent() {

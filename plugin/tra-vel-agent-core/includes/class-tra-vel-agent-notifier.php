@@ -1,6 +1,7 @@
 <?php
 /**
- * Post-commit notification spine for durable assisted-quote milestones.
+ * Post-commit notification spine for durable assisted-quote milestones and
+ * hourly-bounded provider-failure operator alerts.
  *
  * This class only observes actions that upstream code fires after a durable
  * database commit. It never opens a transaction, never mutates aggregate
@@ -9,7 +10,8 @@
  * no free-form trip text and no budget amounts. The operator-only email may
  * additionally carry the explicitly consented lead contact and bounded UTM
  * attribution; the webhook and customer channels never receive contact data
- * beyond a contact_provided boolean.
+ * beyond a contact_provided boolean. Provider-failure alerts carry failure
+ * codes only and never run identifiers or prompt content.
  *
  * @package TraVelAgent
  */
@@ -18,11 +20,12 @@ defined( 'ABSPATH' ) || exit;
 
 class Tra_Vel_Agent_Notifier {
 	const WEBHOOK_OPTION           = 'tra_vel_agent_notification_webhook_v1';
+	const RECIPIENTS_OPTION        = 'tra_vel_agent_notification_recipients_v1';
 	const WEBHOOK_TIMEOUT_SECONDS  = 5;
 	const WEBHOOK_MAX_URL_LENGTH   = 500;
 	const SENT_MARKER_TTL_DAYS     = 30;
 	const MAX_OPERATOR_RECIPIENTS  = 10;
-	const PAYLOAD_CONTRACT_VERSION = '1.1.0';
+	const PAYLOAD_CONTRACT_VERSION = '1.2.0';
 
 	/** @var Tra_Vel_Agent_Store|null Marker storage; injectable for deterministic tests. */
 	private $marker_store;
@@ -35,11 +38,49 @@ class Tra_Vel_Agent_Notifier {
 		$this->case_store   = $case_store ? $case_store : ( class_exists( 'Tra_Vel_Quote_Case_Store' ) ? new Tra_Vel_Quote_Case_Store() : null );
 	}
 
-	/** Subscribe to the three post-commit assisted-quote lifecycle actions. */
+	/** Subscribe to the post-commit assisted-quote and provider-failure actions. */
 	public function register_hooks() {
 		add_action( 'tra_vel_quote_case_created', array( $this, 'handle_case_created' ), 10, 3 );
 		add_action( 'tra_vel_assisted_proposal_published', array( $this, 'handle_proposal_published' ), 10, 3 );
 		add_action( 'tra_vel_quote_case_traveler_action', array( $this, 'handle_traveler_action' ), 10, 3 );
+		add_action( 'tra_vel_agent_provider_error', array( $this, 'handle_provider_error' ), 10, 2 );
+	}
+
+	/**
+	 * Alert operators that the AI provider is failing for live visitors.
+	 *
+	 * Fired by the controller only after the failed run state and its audit
+	 * event have committed. The same claim_marker store bounds this channel to
+	 * at most one email per provider code per UTC hour, so a provider outage
+	 * cannot flood the operator inbox while every visitor request fails.
+	 *
+	 * @param string $error_code    Internal WP_Error code recorded on the run.
+	 * @param string $provider_code Upstream provider failure code when known.
+	 * @return void
+	 */
+	public function handle_provider_error( $error_code, $provider_code ) {
+		$error_code    = sanitize_key( (string) $error_code );
+		$provider_code = sanitize_key( (string) $provider_code );
+		if ( '' === $error_code ) {
+			$error_code = 'unknown';
+		}
+		if ( '' === $provider_code ) {
+			$provider_code = 'unknown';
+		}
+		if ( ! $this->claim_marker( 'provider_error:' . $provider_code . ':' . gmdate( 'YmdH' ) ) ) {
+			return;
+		}
+		$this->send_operator_email(
+			'Tra-Vel: תקלת ספק AI (' . $provider_code . ')',
+			array(
+				'המתכנן הפרטי של Tra-Vel נתקל בתקלת ספק AI ואינו מצליח לפרש בקשות של מבקרים כרגע.',
+				'קוד תקלה אצל הספק: ' . $provider_code,
+				'קוד שגיאה פנימי: ' . $error_code,
+				'מבקרים שפותחים תוכנית מקבלים הודעת כשל זמנית. לא נשמר מידע אישי ולא נשלחה פנייה לספקי נסיעות.',
+				'מומלץ לבדוק את המפתח, המכסה והסטטוס אצל ספק ה-AI. התראה זו נשלחת לכל היותר פעם בשעה לכל קוד תקלה.',
+			)
+		);
+		$this->send_operational_webhook( 'agent_provider.error', $error_code, $provider_code );
 	}
 
 	/**
@@ -263,35 +304,127 @@ class Tra_Vel_Agent_Notifier {
 	}
 
 	/**
+	 * Store the configured operator recipient list in a plain option.
+	 *
+	 * Recipient addresses are operator infrastructure, not traveler data and
+	 * not secrets, so unlike the webhook endpoint they are stored without
+	 * encryption. The list is validated, case-insensitively deduplicated, and
+	 * bounded to MAX_OPERATOR_RECIPIENTS before anything is written.
+	 *
+	 * @param mixed $recipients Requested list of operator email addresses.
+	 * @return true|WP_Error
+	 */
+	public static function store_recipients( $recipients ) {
+		if ( ! is_array( $recipients ) || array() === $recipients ) {
+			return new WP_Error( 'tra_vel_agent_recipients_invalid', 'Provide the operator notification recipients as a non-empty list of email addresses.', array( 'status' => 400 ) );
+		}
+		$valid = array();
+		foreach ( $recipients as $recipient ) {
+			$recipient = is_string( $recipient ) ? trim( $recipient ) : '';
+			if ( '' === $recipient || ! function_exists( 'is_email' ) || ! is_email( $recipient ) ) {
+				return new WP_Error( 'tra_vel_agent_recipient_email_invalid', 'Every operator notification recipient must be a valid email address.', array( 'status' => 400 ) );
+			}
+			$valid[ strtolower( $recipient ) ] = $recipient;
+		}
+		if ( count( $valid ) > self::MAX_OPERATOR_RECIPIENTS ) {
+			return new WP_Error( 'tra_vel_agent_recipients_limit', 'At most ' . self::MAX_OPERATOR_RECIPIENTS . ' operator notification recipients can be stored.', array( 'status' => 400 ) );
+		}
+		$stored = update_option(
+			self::RECIPIENTS_OPTION,
+			array(
+				'version'    => 1,
+				'recipients' => array_values( $valid ),
+				'updated_at' => gmdate( 'c' ),
+			),
+			false
+		);
+		$exists = is_array( get_option( self::RECIPIENTS_OPTION, null ) );
+		return ( $stored || $exists ) ? true : new WP_Error( 'tra_vel_agent_recipients_store_failed', 'The operator notification recipients could not be saved.', array( 'status' => 500 ) );
+	}
+
+	/**
+	 * Remove the configured recipient list; delivery falls back to admin_email.
+	 *
+	 * @return bool
+	 */
+	public static function clear_recipients() {
+		return delete_option( self::RECIPIENTS_OPTION );
+	}
+
+	/**
+	 * Return the validated configured recipient list, empty when unset.
+	 *
+	 * @return string[]
+	 */
+	public static function stored_recipients() {
+		$record = get_option( self::RECIPIENTS_OPTION, null );
+		if ( ! is_array( $record ) || 1 !== (int) ( isset( $record['version'] ) ? $record['version'] : 0 ) || ! isset( $record['recipients'] ) || ! is_array( $record['recipients'] ) ) {
+			return array();
+		}
+		$valid = array();
+		foreach ( $record['recipients'] as $recipient ) {
+			if ( ! is_string( $recipient ) || ! function_exists( 'is_email' ) || ! is_email( trim( $recipient ) ) ) {
+				continue;
+			}
+			$valid[ strtolower( trim( $recipient ) ) ] = trim( $recipient );
+			if ( count( $valid ) >= self::MAX_OPERATOR_RECIPIENTS ) {
+				break;
+			}
+		}
+		return array_values( $valid );
+	}
+
+	/**
+	 * Safe recipient configuration state for admin responses.
+	 *
+	 * @return array
+	 */
+	public static function recipients_status() {
+		$configured = self::stored_recipients();
+		return array(
+			'configured' => array() !== $configured,
+			'count'      => count( $configured ),
+		);
+	}
+
+	/**
 	 * Truthful channel readiness for the public health endpoint.
 	 *
 	 * operator_email is true only when at least one syntactically valid
-	 * recipient resolves; customer_email reports the channel capability while
-	 * per-case delivery still requires an account owner with a valid address.
+	 * recipient resolves; recipients_configured counts only the validated
+	 * stored list, so a default admin_email fallback truthfully reports zero.
+	 * customer_email reports the channel capability while per-case delivery
+	 * still requires an account owner with a valid address.
 	 *
 	 * @return array
 	 */
 	public static function health() {
 		$mail_available = function_exists( 'wp_mail' );
 		return array(
-			'operator_email'     => $mail_available && array() !== self::operator_recipients(),
-			'webhook_configured' => '' !== self::get_webhook_url(),
-			'customer_email'     => $mail_available,
+			'operator_email'        => $mail_available && array() !== self::operator_recipients(),
+			'recipients_configured' => count( self::stored_recipients() ),
+			'webhook_configured'    => '' !== self::get_webhook_url(),
+			'customer_email'        => $mail_available,
 		);
 	}
 
 	/**
 	 * Resolve, validate, and bound the operator recipient list.
 	 *
+	 * The configured option list wins when non-empty, admin_email remains the
+	 * default otherwise, and the existing filter stays the final override.
+	 *
 	 * @return string[]
 	 */
 	public static function operator_recipients() {
+		$configured = self::stored_recipients();
+		$defaults   = array() !== $configured ? $configured : array( get_option( 'admin_email' ) );
 		/**
 		 * Filters the operator notification recipient list.
 		 *
 		 * @param string[] $recipients Email addresses receiving operator alerts.
 		 */
-		$recipients = apply_filters( 'tra_vel_agent_notification_recipients', array( get_option( 'admin_email' ) ) );
+		$recipients = apply_filters( 'tra_vel_agent_notification_recipients', $defaults );
 		$valid      = array();
 		foreach ( is_array( $recipients ) ? $recipients : array() as $recipient ) {
 			if ( ! is_string( $recipient ) || ! function_exists( 'is_email' ) || ! is_email( $recipient ) ) {
@@ -437,22 +570,56 @@ class Tra_Vel_Agent_Notifier {
 	 * @return void
 	 */
 	private function send_webhook( $event, $case_id, $reference, $proposal_id, $revision, $action, $acquisition = null, $contact_provided = false ) {
+		$this->post_webhook_payload(
+			array(
+				'contract_version' => self::PAYLOAD_CONTRACT_VERSION,
+				'event'            => $event,
+				'case_id'          => $case_id,
+				'reference'        => $reference,
+				'proposal_id'      => $proposal_id,
+				'revision'         => $revision,
+				'action'           => $action,
+				'acquisition'      => is_array( $acquisition ) && array() !== $acquisition ? $acquisition : null,
+				'contact_provided' => (bool) $contact_provided,
+				'occurred_at'      => gmdate( 'c' ),
+			)
+		);
+	}
+
+	/**
+	 * POST one bounded operational JSON event to the optional webhook channel.
+	 *
+	 * Operational events carry provider failure codes only: no run identifiers,
+	 * no traveler data, and no prompt content ever ride this payload.
+	 *
+	 * @param string $event         Namespaced operational event name.
+	 * @param string $error_code    Internal WP_Error code.
+	 * @param string $provider_code Upstream provider failure code.
+	 * @return void
+	 */
+	private function send_operational_webhook( $event, $error_code, $provider_code ) {
+		$this->post_webhook_payload(
+			array(
+				'contract_version' => self::PAYLOAD_CONTRACT_VERSION,
+				'event'            => $event,
+				'error_code'       => $error_code,
+				'provider_code'    => $provider_code,
+				'occurred_at'      => gmdate( 'c' ),
+			)
+		);
+	}
+
+	/**
+	 * Shared webhook transport with at most one transport retry.
+	 *
+	 * @param array $payload Bounded JSON payload.
+	 * @return void
+	 */
+	private function post_webhook_payload( $payload ) {
 		$url = self::get_webhook_url();
 		if ( '' === $url ) {
 			return;
 		}
-		$payload = array(
-			'contract_version' => self::PAYLOAD_CONTRACT_VERSION,
-			'event'            => $event,
-			'case_id'          => $case_id,
-			'reference'        => $reference,
-			'proposal_id'      => $proposal_id,
-			'revision'         => $revision,
-			'action'           => $action,
-			'acquisition'      => is_array( $acquisition ) && array() !== $acquisition ? $acquisition : null,
-			'contact_provided' => (bool) $contact_provided,
-			'occurred_at'      => gmdate( 'c' ),
-		);
 		$args = array(
 			'timeout'     => self::WEBHOOK_TIMEOUT_SECONDS,
 			'redirection' => 0,
