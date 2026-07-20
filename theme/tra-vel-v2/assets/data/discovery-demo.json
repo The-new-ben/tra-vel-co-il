@@ -213,7 +213,7 @@
         "cost_scope": { "state": "partial", "categories": ["flight", "baggage", "stay", "taxes", "transfers", "local_transport", "activities", "dining", "insurance", "connectivity", "equipment", "entry"] }
       },
       "tags": ["טיסה ישירה", "סופ״ש", "טרולי כלול"],
-      "image": "hero-budapest-900.webp"
+      "image": "city-dubai.webp"
     },
     {
       "id": "bangkok",
@@ -265,7 +265,7 @@
         "cost_scope": { "state": "partial", "categories": ["flight", "baggage", "stay", "taxes", "transfers", "local_transport", "activities", "dining", "insurance", "connectivity", "equipment", "entry"] }
       },
       "tags": ["עצירה אחת", "10 לילות", "כבודה כלולה"],
-      "image": "city-prague.webp"
+      "image": "city-tokyo.webp"
     },
     {
       "id": "lisbon",
@@ -291,7 +291,7 @@
         "cost_scope": { "state": "partial", "categories": ["flight", "baggage", "stay", "taxes", "transfers", "local_transport", "activities", "dining", "insurance", "connectivity", "equipment", "entry"] }
       },
       "tags": ["7 לילות", "עצירה אחת", "מלון מומלץ"],
-      "image": "city-prague.webp"
+      "image": "city-lisbon.webp"
     }
   ],
   "route_sets": {
