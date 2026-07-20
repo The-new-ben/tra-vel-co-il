@@ -23,6 +23,7 @@ function tra_vel_v2_legacy_hub_redirects() {
 	return array(
 		'budapest-vacation' => '/destinations/budapest/',
 		'prague-vacation'   => '/destinations/prague/',
+		'vienna-vacation'   => '/destinations/vienna/',
 	);
 }
 
