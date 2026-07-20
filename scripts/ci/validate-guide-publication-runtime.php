@@ -223,15 +223,33 @@ $GLOBALS['guide_test_post_id']   = 73;
 $GLOBALS['guide_test_post_name'] = 'athens';
 $GLOBALS['guide_test_ancestors'] = array( 71 );
 
+$directory_manifest    = json_decode( (string) file_get_contents( TRA_VEL_V2_PATH . '/assets/data/editorial-directory.json' ), true );
+$manifest_destinations = is_array( $directory_manifest['destinations'] ?? null ) ? $directory_manifest['destinations'] : array();
+$manifest_supporting   = is_array( $directory_manifest['supporting_guides'] ?? null ) ? $directory_manifest['supporting_guides'] : array();
 $directory = tra_vel_v2_directory_item_list();
-$published = $directory['itemListElement'][0]['item'] ?? array();
-$research  = $directory['itemListElement'][2]['item'] ?? array();
-guide_publication_assert( ! empty( $published['url'] ), 'a published directory item must expose its canonical guide URL' );
-guide_publication_assert( empty( $research['url'] ), 'a research-only directory item must not expose a guide URL' );
+guide_publication_assert( count( $manifest_destinations ) === $directory['numberOfItems'], 'the destination directory schema must describe every editorial destination exactly once' );
+$published_directory_urls = 0;
+foreach ( $directory['itemListElement'] as $directory_index => $directory_entry ) {
+	$manifest_destination = $manifest_destinations[ $directory_index ] ?? array();
+	$manifest_guide_path  = (string) ( $manifest_destination['guide_path'] ?? '' );
+	if ( 'published' === ( $manifest_destination['guide_status'] ?? '' ) && tra_vel_v2_is_public_guide_path( $manifest_guide_path ) ) {
+		$published_directory_urls++;
+		guide_publication_assert( ( 'https://example.test' . $manifest_guide_path ) === ( $directory_entry['item']['url'] ?? '' ), 'a published directory item must expose its canonical guide URL' );
+	} else {
+		guide_publication_assert( empty( $directory_entry['item']['url'] ), 'a directory item without a published guide must not expose a guide URL' );
+	}
+}
+guide_publication_assert( $published_directory_urls >= 1, 'the destination directory must expose at least one published guide URL' );
 $GLOBALS['guide_test_template']  = 'page-directory.php';
 $GLOBALS['guide_test_post_name'] = 'guides';
+$expected_guide_index_items = 0;
+foreach ( array_merge( $manifest_destinations, $manifest_supporting ) as $manifest_guide ) {
+	if ( 'published' === ( $manifest_guide['guide_status'] ?? '' ) && ! empty( $manifest_guide['guide_path'] ) ) {
+		$expected_guide_index_items++;
+	}
+}
 $guide_directory = tra_vel_v2_directory_item_list();
-guide_publication_assert( 4 === $guide_directory['numberOfItems'], 'the guide index must contain published guides only' );
+guide_publication_assert( 9 === $guide_directory['numberOfItems'] && $expected_guide_index_items === $guide_directory['numberOfItems'], 'the guide index must contain published guides only' );
 foreach ( $guide_directory['itemListElement'] as $entry ) {
 	guide_publication_assert( ! empty( $entry['item']['url'] ), 'every item in the guide index schema must have a canonical guide URL' );
 }

@@ -252,7 +252,7 @@
       "cluster": "vienna",
       "parentPath": "/destinations/",
       "mapState": "vienna",
-      "status": "backlog",
+      "status": "content-ready",
       "conversionAction": "תכננו את וינה על המפה ובדקו תאריכים",
       "monetization": ["flights", "hotels", "packages", "insurance", "activities"]
     },
@@ -348,7 +348,7 @@
       "cluster": "dubai",
       "parentPath": "/destinations/",
       "mapState": "dubai",
-      "status": "backlog",
+      "status": "content-ready",
       "conversionAction": "בנו חופשה מלאה בדובאי על המפה ובדקו תאריכים",
       "monetization": ["flights", "hotels", "packages", "transfers", "insurance", "activities"]
     },
@@ -456,7 +456,7 @@
       "cluster": "tokyo",
       "parentPath": "/destinations/",
       "mapState": "tokyo",
-      "status": "backlog",
+      "status": "content-ready",
       "conversionAction": "בנו חופשה מלאה בטוקיו על המפה ובדקו תאריכים",
       "monetization": ["flights", "hotels", "packages", "transfers", "activities", "insurance"]
     },
@@ -588,7 +588,7 @@
       "cluster": "lisbon",
       "parentPath": "/destinations/",
       "mapState": "lisbon",
-      "status": "backlog",
+      "status": "content-ready",
       "conversionAction": "בנו חופשה מלאה בליסבון על המפה ובדקו תאריכים",
       "monetization": ["flights", "hotels", "packages", "transfers", "activities", "insurance"]
     },
@@ -816,7 +816,7 @@
       "cluster": "thailand",
       "parentPath": "/destinations/thailand/",
       "mapState": "bangkok",
-      "status": "backlog",
+      "status": "content-ready",
       "conversionAction": "בחרו שכונה, תחבורה ומסלול המשך",
       "monetization": ["hotels", "transfers", "activities", "dining"]
     },

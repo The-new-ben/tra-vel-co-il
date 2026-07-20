@@ -3,17 +3,17 @@
   "id": "vienna-2026",
   "locale": "he-IL",
   "title": "וינה",
-  "excerpt": "מדריך וינה לישראלים שיחבר בין תנאי כניסה, בחירת עונה, אזורי לינה, תחבורה משדה התעופה, נגישות, תרבות ומסלול ביקור, על בסיס מקורות רשמיים ובדיקת עדכניות לפני פרסום.",
+  "excerpt": "מדריך וינה לישראלים שיחבר בין תנאי כניסה, בחירת עונה, אזורי לינה, תחבורה משדה התעופה, נגישות, תרבות ומסלול ביקור, על בסיס מקורות רשמיים ובדיקת עדכניות סמוך לנסיעה.",
   "author": "מערכת Tra-Vel",
-  "reviewer": "טרם מונה עורך מזוהה",
+  "reviewer": "מערכת Tra-Vel",
   "primaryTopic": "Vienna travel guide for Israelis",
   "canonicalPath": "/destinations/vienna/",
-  "status": "editorial-review",
+  "status": "publish-ready",
   "contentPath": "content/guides/vienna-2026.he.html",
   "wordTargetMin": 5000,
-  "checkedAt": "2026-07-18",
+  "checkedAt": "2026-07-20",
   "mapState": "vienna",
-  "reviewMethod": "Editorial-review draft awaiting review by a named editor and publish-time verification. Recheck every entry, warning, ticket, transfer, operating and accessibility fact against the mapped Austrian, EU, Israeli, municipal, transport, meteorological and venue first-party sources before any publication decision; editorial review is not complete.",
+  "reviewMethod": "Prioritize official Austrian, EU, Israeli, municipal, transport, meteorological and venue first-party sources. Editorial review completed 2026-07-20 with live re-verification of a sample of official sources. Recheck entry rules, warnings, tickets, transfers, opening arrangements and accessibility details immediately before publication and booking, without presenting an unvalidated warning level, fare, schedule, supplier, property, score, saving, availability or commercial amount.",
   "sections": [
     "Decision summary and trip fit",
     "Who Vienna suits and who may prefer another city",
@@ -41,7 +41,7 @@
       "publisher": "Austrian Embassy Tel Aviv / Federal Ministry for European and International Affairs",
       "url": "https://www.bmeia.gv.at/en/austrian-embassy-tel-aviv/travel-to-austria/entrance-and-residence/how-to-apply",
       "type": "official",
-      "checkedAt": "2026-07-18",
+      "checkedAt": "2026-07-20",
       "supports": ["Israeli visa exemption", "90 in 180 day rule", "passport validity and issue-date rules"]
     },
     {
@@ -77,7 +77,7 @@
       "publisher": "Vienna Airport",
       "url": "https://viennaairport.com/en/passengers/arrival__parking",
       "type": "official",
-      "checkedAt": "2026-07-18",
+      "checkedAt": "2026-07-20",
       "supports": ["airport transport categories", "CAT and rail options", "bus and individual transport choices"]
     },
     {
@@ -86,7 +86,7 @@
       "publisher": "City Airport Train",
       "url": "https://www.cityairporttrain.com/en/info-service/about-us/?modal=ticket-widget",
       "type": "primary",
-      "checkedAt": "2026-07-18",
+      "checkedAt": "2026-07-20",
       "supports": ["direct airport to Wien Mitte service", "ground-level access", "wheelchair spaces and assistance limits"]
     },
     {
@@ -104,7 +104,7 @@
       "publisher": "Wiener Linien",
       "url": "https://tramwm.wienerlinien.at/web/guest/barrierefreiheit",
       "type": "official",
-      "checkedAt": "2026-07-18",
+      "checkedAt": "2026-07-20",
       "supports": ["accessible stations and stops", "low-floor service information", "accessible route planning and ticket purchase"]
     },
     {

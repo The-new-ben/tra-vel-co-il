@@ -354,7 +354,10 @@ tv2_assert( array( false ) === $map_entity_schema['properties']['price']['proper
 tv2_assert( is_array( $bangkok_destination ) && 'https://tra-vel.test/destinations/thailand/' === $bangkok_destination['url'], 'Bangkok did not resolve to the published Thailand guide' );
 tv2_assert( is_array( $budapest_destination ) && 'https://tra-vel.test/destinations/budapest/' === $budapest_destination['url'], 'Budapest did not resolve to its canonical guide' );
 tv2_assert( is_array( $athens_destination ) && 'https://tra-vel.test/destinations/athens/' === $athens_destination['url'], 'Athens did not resolve to its canonical guide' );
-tv2_assert( is_array( $tokyo_destination ) && 'https://tra-vel.test/destinations/' === $tokyo_destination['url'], 'unpublished destination emitted a faceted guide URL' );
+tv2_assert( is_array( $tokyo_destination ) && 'https://tra-vel.test/destinations/tokyo/' === $tokyo_destination['url'], 'Tokyo did not resolve to its canonical guide' );
+$destination_guide_url_probe = new ReflectionMethod( $discovery_controller, 'destination_guide_url' );
+$destination_guide_url_probe->setAccessible( true );
+tv2_assert( 'https://tra-vel.test/destinations/' === $destination_guide_url_probe->invoke( $discovery_controller, 'destination-without-published-guide' ), 'unpublished destination emitted a faceted guide URL' );
 tv2_assert( 'destination_deal' === $bangkok_destination['deal']['total_scope'], 'destination total lacks a truthful scope' );
 tv2_assert( 'דורש חיפוש חבילה חי' === $bangkok_destination['deal']['total_formatted'], 'destination deal amount can be presented as a package-inclusive total' );
 
