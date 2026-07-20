@@ -219,6 +219,20 @@ def validate_remote_contract(
     require(capabilities.get("reservation_execution") is False, "Health contract overstates reservation execution.")
     require(capabilities.get("ticket_issuance") is False, "Health contract overstates ticket issuance.")
 
+    provider = health.get("provider")
+    require(isinstance(provider, dict), "Provider health is missing.")
+    model = provider.get("model")
+    require(isinstance(model, str) and model.strip() != "", "Provider health does not disclose the active model identifier.")
+    require(
+        provider.get("model_source") in ("filter", "option", "default"),
+        "Provider health does not disclose a truthful model_source.",
+    )
+    forbidden_provider_fields = {"api_key", "apikey", "key", "secret", "authorization", "credential", "bearer"}
+    require(
+        not forbidden_provider_fields.intersection(str(name).lower() for name in provider),
+        "Provider health must never disclose credential material.",
+    )
+
     agent_store = health.get("agent_store")
     require(isinstance(agent_store, dict), "Agent store health is missing.")
     expected_agent_store = {

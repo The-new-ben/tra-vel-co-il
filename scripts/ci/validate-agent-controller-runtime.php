@@ -16,6 +16,7 @@ $GLOBALS['tv_agent_uuid_counter'] = 0;
 $GLOBALS['tv_agent_filters']      = array();
 $GLOBALS['tv_agent_can_read']     = true;
 $GLOBALS['tv_agent_routes']       = array();
+$GLOBALS['tv_agent_options']      = array();
 
 class WP_REST_Controller {
 	protected $namespace;
@@ -142,9 +143,23 @@ function is_ssl() { return true; }
 function wp_get_environment_type() { return 'local'; }
 function register_rest_route( $namespace, $route, $args ) { $GLOBALS['tv_agent_routes'][] = compact( 'namespace', 'route', 'args' ); }
 function rest_ensure_response( $value ) { return $value instanceof WP_REST_Response ? $value : new WP_REST_Response( $value ); }
+function get_option( $key, $default = false ) { return array_key_exists( $key, $GLOBALS['tv_agent_options'] ) ? $GLOBALS['tv_agent_options'][ $key ] : $default; }
+function update_option( $key, $value, $autoload = null ) {
+	unset( $autoload );
+	$changed = ! array_key_exists( $key, $GLOBALS['tv_agent_options'] ) || $GLOBALS['tv_agent_options'][ $key ] !== $value;
+	$GLOBALS['tv_agent_options'][ $key ] = $value;
+	return $changed;
+}
+function delete_option( $key ) {
+	$existed = array_key_exists( $key, $GLOBALS['tv_agent_options'] );
+	unset( $GLOBALS['tv_agent_options'][ $key ] );
+	return $existed;
+}
 
-require TRA_VEL_AGENT_PATH . '/includes/class-tra-vel-agent-policy.php';
+require TRA_VEL_AGENT_PATH . '/includes/class-tra-vel-agent-credential-vault.php';
 require TRA_VEL_AGENT_PATH . '/includes/interface-tra-vel-agent-provider.php';
+require TRA_VEL_AGENT_PATH . '/includes/class-tra-vel-agent-openai-provider.php';
+require TRA_VEL_AGENT_PATH . '/includes/class-tra-vel-agent-policy.php';
 require TRA_VEL_AGENT_PATH . '/includes/class-tra-vel-agent-store.php';
 require TRA_VEL_AGENT_PATH . '/includes/class-tra-vel-agent-controller.php';
 
@@ -172,7 +187,7 @@ class Tra_Vel_Test_Agent_Provider implements Tra_Vel_Agent_Provider {
 		}
 		return $this->revision_result;
 	}
-	public function health() { return array( 'configured' => true, 'model' => 'deterministic-fixture', 'endpoint' => 'none', 'live_calls' => false ); }
+	public function health() { return array( 'configured' => true, 'model' => 'deterministic-fixture', 'model_source' => 'default', 'endpoint' => 'none', 'live_calls' => false ); }
 }
 
 class Tra_Vel_Test_Agent_Store {
@@ -407,6 +422,7 @@ function tv_agent_controller_reset( $address ) {
 	$GLOBALS['tv_agent_transients']   = array();
 	$GLOBALS['tv_agent_filters']      = array();
 	$GLOBALS['tv_agent_can_read']     = true;
+	$GLOBALS['tv_agent_options']      = array();
 	$_SERVER['REMOTE_ADDR']           = $address;
 	$_COOKIE                          = array();
 }
@@ -852,4 +868,59 @@ tv_agent_assert_event_order( $approval_events, array( 'approval.decided' ), 'app
 tv_agent_controller_assert( 'human' === $approval_events[0]['source'] && 'completed' === $approval_events[0]['status'], 'approval event lost human-decision provenance' );
 tv_agent_controller_assert( ! preg_match( '/execution|booking|purchase/', $approval_events[0]['type'] ), 'approval decision emitted a false execution event' );
 
-echo "Tra-Vel agent controller runtime validation passed (private ownership, deterministic events, clarification and quota failure gates, no supplier or approval side effects).\n";
+// Interpretation model settings: admin-only, allowlisted, filter-final cost
+// control with a truthful model_source and an unchanged shipped default.
+tv_agent_controller_reset( '192.0.2.50' );
+$model_routes = array_values(
+	array_filter(
+		$GLOBALS['tv_agent_routes'],
+		static function ( $route ) { return '/settings/model' === $route['route']; }
+	)
+);
+tv_agent_controller_assert( 1 === count( $model_routes ) && 2 === count( $model_routes[0]['args'] ), 'model settings did not register POST beside DELETE' );
+tv_agent_controller_assert( 'POST' === $model_routes[0]['args'][0]['methods'] && 'DELETE' === $model_routes[0]['args'][1]['methods'], 'model settings methods changed' );
+tv_agent_controller_assert( 'can_manage_agent' === $model_routes[0]['args'][0]['permission_callback'][1] && 'can_manage_agent' === $model_routes[0]['args'][1]['permission_callback'][1], 'model settings are not admin-only' );
+tv_agent_controller_assert( Tra_Vel_Agent_OpenAI_Provider::ALLOWED_MODELS === $model_routes[0]['args'][0]['args']['model']['enum'], 'model route enum diverged from the provider allowlist constant' );
+tv_agent_controller_assert( is_wp_error( rest_validate_value_from_schema( 'gpt-6-frontier', $model_routes[0]['args'][0]['args']['model'], 'model' ) ), 'route schema accepted a non-allowlisted model' );
+tv_agent_controller_assert( array( 'gpt-5.6-terra', 'gpt-5.6-mini', 'gpt-5.6-nano', 'gpt-5-mini' ) === Tra_Vel_Agent_OpenAI_Provider::ALLOWED_MODELS, 'interpretation model allowlist changed' );
+tv_agent_controller_assert( 'gpt-5.6-terra' === Tra_Vel_Agent_OpenAI_Provider::DEFAULT_MODEL, 'shipped default interpretation model changed in this release' );
+
+$default_model_health = ( new Tra_Vel_Agent_OpenAI_Provider() )->health();
+tv_agent_controller_assert( 'gpt-5.6-terra' === $default_model_health['model'] && 'default' === $default_model_health['model_source'], 'unconfigured provider did not truthfully resolve the shipped default' );
+
+$model_controller = new Tra_Vel_Agent_Controller( new Tra_Vel_Test_Agent_Store(), new Tra_Vel_Test_Agent_Provider( tv_agent_controller_provider_result( tv_agent_controller_base_request() ) ) );
+$GLOBALS['tv_agent_current_user'] = 7;
+tv_agent_controller_assert( false === $model_controller->can_manage_agent(), 'non-admin account gained model management' );
+$GLOBALS['tv_agent_current_user'] = 1;
+tv_agent_controller_assert( true === $model_controller->can_manage_agent(), 'admin lost model management' );
+
+$wrong_model_confirmation = $model_controller->store_model( new WP_REST_Request( array( 'model' => 'gpt-5.6-mini', 'confirmation' => 'STORE MODEL' ) ) );
+tv_agent_controller_assert( is_wp_error( $wrong_model_confirmation ) && 'tra_vel_agent_model_confirmation' === $wrong_model_confirmation->get_error_code(), 'wrong model confirmation phrase was accepted' );
+tv_agent_controller_assert( ! array_key_exists( Tra_Vel_Agent_OpenAI_Provider::MODEL_OPTION, $GLOBALS['tv_agent_options'] ), 'rejected confirmation still stored a model' );
+$invalid_model = $model_controller->store_model( new WP_REST_Request( array( 'model' => 'gpt-6-frontier', 'confirmation' => 'STORE TRA-VEL AGENT MODEL' ) ) );
+tv_agent_controller_assert( is_wp_error( $invalid_model ) && 'tra_vel_agent_model_invalid' === $invalid_model->get_error_code(), 'non-allowlisted model identifier was accepted' );
+tv_agent_controller_assert( ! array_key_exists( Tra_Vel_Agent_OpenAI_Provider::MODEL_OPTION, $GLOBALS['tv_agent_options'] ), 'rejected model identifier was still stored' );
+
+$stored_model_response = $model_controller->store_model( new WP_REST_Request( array( 'model' => 'gpt-5.6-mini', 'confirmation' => 'STORE TRA-VEL AGENT MODEL' ) ) );
+tv_agent_assert_private_response( $stored_model_response, 'model store' );
+tv_agent_controller_assert( true === $stored_model_response->data['ok'] && true === $stored_model_response->data['model']['configured'] && 'gpt-5.6-mini' === $stored_model_response->data['model']['model'] && 'gpt-5.6-terra' === $stored_model_response->data['model']['default_model'], 'model store response is not truthful safe configuration state' );
+$option_model_health = ( new Tra_Vel_Agent_OpenAI_Provider() )->health();
+tv_agent_controller_assert( 'gpt-5.6-mini' === $option_model_health['model'] && 'option' === $option_model_health['model_source'], 'allowlisted stored option did not drive the interpretation model' );
+
+$GLOBALS['tv_agent_filters']['tra_vel_agent_openai_model'] = 'gpt-5.6-filter-override';
+$filter_model_health = ( new Tra_Vel_Agent_OpenAI_Provider() )->health();
+tv_agent_controller_assert( 'gpt-5.6-filter-override' === $filter_model_health['model'] && 'filter' === $filter_model_health['model_source'], 'tra_vel_agent_openai_model filter lost its final override' );
+unset( $GLOBALS['tv_agent_filters']['tra_vel_agent_openai_model'] );
+
+$GLOBALS['tv_agent_options'][ Tra_Vel_Agent_OpenAI_Provider::MODEL_OPTION ] = array( 'version' => 1, 'model' => 'gpt-6-frontier', 'updated_at' => '2030-04-01T10:00:00Z' );
+$corrupt_model_health = ( new Tra_Vel_Agent_OpenAI_Provider() )->health();
+tv_agent_controller_assert( 'gpt-5.6-terra' === $corrupt_model_health['model'] && 'default' === $corrupt_model_health['model_source'], 'non-allowlisted stored model reached live interpretation instead of the default' );
+
+tv_agent_controller_assert( true === Tra_Vel_Agent_OpenAI_Provider::store_model( 'gpt-5.6-nano' ), 'allowlisted model failed direct storage' );
+$cleared_model_response = $model_controller->clear_model();
+tv_agent_assert_private_response( $cleared_model_response, 'model clear' );
+tv_agent_controller_assert( true === $cleared_model_response->data['ok'] && false === $cleared_model_response->data['model']['configured'] && 'gpt-5.6-terra' === $cleared_model_response->data['model']['model'], 'model clear did not restore the shipped default' );
+tv_agent_controller_assert( ! array_key_exists( Tra_Vel_Agent_OpenAI_Provider::MODEL_OPTION, $GLOBALS['tv_agent_options'] ), 'model clear left the option behind' );
+tv_agent_controller_assert( 'default' === ( new Tra_Vel_Agent_OpenAI_Provider() )->health()['model_source'], 'cleared model did not resolve back to the default source' );
+
+echo "Tra-Vel agent controller runtime validation passed (private ownership, deterministic events, clarification and quota failure gates, admin-only allowlisted model settings, no supplier or approval side effects).\n";

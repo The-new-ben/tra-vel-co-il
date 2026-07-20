@@ -19,6 +19,7 @@ const runEvent = readJson('run-event.schema.json');
 const approval = readJson('approval.schema.json');
 const agentRun = readJson('agent-run.schema.json');
 const agentRunSummary = readJson('agent-run-summary.schema.json');
+const mainPhp = readFileSync(join(pluginRoot, 'tra-vel-agent-core.php'), 'utf8');
 const providerPhp = readPhp('class-tra-vel-agent-openai-provider.php');
 const controllerPhp = readPhp('class-tra-vel-agent-controller.php');
 const storePhp = readPhp('class-tra-vel-agent-store.php');
@@ -113,6 +114,41 @@ assertRequired(agentRunSummary.properties?.readiness, ['status', 'blockers'], 'A
 if (agentRunSummary.properties?.proposal_count?.minimum !== 0 || agentRunSummary.properties?.request_revision?.minimum !== 0) fail('AgentRunSummary counts and revisions must remain non-negative.');
 if (agentRunSummary.properties?.resume_available?.type !== 'boolean') fail('AgentRunSummary must publish a boolean resume_available truth flag.');
 if (agentRunSummary.properties?.planning_context?.additionalProperties !== false || agentRunSummary.properties?.readiness?.additionalProperties !== false) fail('AgentRunSummary nested objects must remain closed.');
+
+// 0.9.2 production response-integrity hardening: outside WP_DEBUG, PHP error
+// display must be off and only the deprecation classes may leave the runtime
+// error mask, at the earliest load point before any other plugin code loads.
+const hardeningIndex = mainPhp.indexOf("ini_set( 'display_errors', '0' )");
+const firstRequireIndex = mainPhp.indexOf('require_once');
+if (hardeningIndex < 0) fail('Agent Core bootstrap must disable PHP error display outside WP_DEBUG.');
+if (hardeningIndex >= 0 && firstRequireIndex >= 0 && hardeningIndex > firstRequireIndex) fail('Error-display hardening must run before any other plugin file is required.');
+if (!/if \( ! defined\( 'WP_DEBUG' \) \|\| true !== WP_DEBUG \)/.test(mainPhp)) fail('Error-display hardening must apply exactly when WP_DEBUG is not true.');
+if (!/function_exists\( 'ini_set' \)/.test(mainPhp)) fail('Error-display hardening must tolerate a host-disabled ini_set.');
+if (!/error_reporting\( error_reporting\(\) & ~E_DEPRECATED & ~E_USER_DEPRECATED \)/.test(mainPhp)) fail('Only the deprecation classes may leave the error mask; fatals and warnings must keep reaching logs.');
+if (/['"]display_errors['"],\s*['"]?(?:1|on|true)/i.test(mainPhp)) fail('Agent Core must never force PHP error display on.');
+
+// 0.9.2 cost-control model option: the filter stays the final override, the
+// stored option applies only when it matches the strict allowlist, and the
+// shipped default model is unchanged in this release.
+if (!/const DEFAULT_MODEL = 'gpt-5\.6-terra'/.test(providerPhp)) fail('The interpretation default model must remain gpt-5.6-terra.');
+if (!/const MODEL_OPTION = 'tra_vel_agent_model_v1'/.test(providerPhp)) fail('The interpretation model must be stored in the plain tra_vel_agent_model_v1 option.');
+if (!/const ALLOWED_MODELS = array\( 'gpt-5\.6-terra', 'gpt-5\.6-mini', 'gpt-5\.6-nano', 'gpt-5-mini' \)/.test(providerPhp)) fail('The interpretation model allowlist is not the agreed strict set.');
+if (!/apply_filters\( 'tra_vel_agent_openai_model', \$configured \)/.test(providerPhp)) fail('The tra_vel_agent_openai_model filter must stay the final override above the stored option.');
+if (!/'model_source' => \$this->model_source/.test(providerPhp)) fail('Provider health must disclose a truthful model_source.');
+for (const source of ["'filter'", "'option'", "'default'"]) {
+  if (!providerPhp.includes(`$this->model_source = ${source}`)) fail(`Provider model resolution must be able to report source ${source}.`);
+}
+const storedModelPhp = providerPhp.slice(providerPhp.indexOf('public static function stored_model'), providerPhp.indexOf('public static function model_status'));
+if (!storedModelPhp.includes('in_array( $model, self::ALLOWED_MODELS, true )')) fail('A stored model outside the allowlist must be ignored, never trusted.');
+const storeModelPhp = providerPhp.slice(providerPhp.indexOf('public static function store_model'), providerPhp.indexOf('public static function clear_model'));
+if (!storeModelPhp.includes('in_array( $model, self::ALLOWED_MODELS, true )') || !storeModelPhp.includes("'tra_vel_agent_model_invalid'")) fail('Model storage must reject identifiers outside the strict allowlist.');
+if (!providerPhp.includes('delete_option( self::MODEL_OPTION )')) fail('Clearing the model must restore the default by deleting the option.');
+if (!controllerPhp.includes("'/settings/model'")) fail('Admin-only model settings routes are missing.');
+if (!controllerPhp.includes("'STORE TRA-VEL AGENT MODEL'") || !controllerPhp.includes("'tra_vel_agent_model_confirmation'")) fail('Model storage must require its exact confirmation phrase.');
+const modelRoutePhp = controllerPhp.slice(controllerPhp.indexOf("'/settings/model'"), controllerPhp.indexOf("'/settings/model'") + 1400);
+if (!modelRoutePhp.includes('Tra_Vel_Agent_OpenAI_Provider::ALLOWED_MODELS')) fail('The model route must bind its enum to the single provider allowlist constant.');
+if ((modelRoutePhp.match(/can_manage_agent/g) || []).length < 2) fail('Both model settings methods must stay admin-only.');
+if (!controllerPhp.includes('public function clear_model()') || !controllerPhp.includes('Tra_Vel_Agent_OpenAI_Provider::clear_model()')) fail('The model DELETE route must delete the option to restore the default.');
 
 if (!/'store'\s*=>\s*false/.test(providerPhp)) fail('OpenAI Responses calls must disable provider-side response storage.');
 if (!providerPhp.includes('implements Tra_Vel_Agent_Provider')) fail('The OpenAI interpreter is not behind the replaceable provider boundary.');

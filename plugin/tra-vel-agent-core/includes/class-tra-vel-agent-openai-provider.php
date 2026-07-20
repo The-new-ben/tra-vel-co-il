@@ -14,12 +14,34 @@ class Tra_Vel_Agent_OpenAI_Provider implements Tra_Vel_Agent_Provider {
 	const RETRY_BACKOFF_BASE_SECONDS = 1;
 	const RETRY_BACKOFF_CAP_SECONDS = 4;
 	const RETRY_AFTER_MAX_SECONDS = 8;
+	const DEFAULT_MODEL = 'gpt-5.6-terra';
+	const MODEL_OPTION = 'tra_vel_agent_model_v1';
+	const ALLOWED_MODELS = array( 'gpt-5.6-terra', 'gpt-5.6-mini', 'gpt-5.6-nano', 'gpt-5-mini' );
 
 	/** @var string */
 	private $model;
 
+	/** @var string filter|option|default */
+	private $model_source;
+
 	public function __construct() {
-		$this->model = (string) apply_filters( 'tra_vel_agent_openai_model', 'gpt-5.6-terra' );
+		$stored     = self::stored_model();
+		$configured = '' !== $stored ? $stored : self::DEFAULT_MODEL;
+		/**
+		 * Filters the interpretation model and stays the final override above
+		 * the stored option and the shipped default.
+		 *
+		 * @param string $configured Allowlisted stored model or the default.
+		 */
+		$model = (string) apply_filters( 'tra_vel_agent_openai_model', $configured );
+		if ( $model !== $configured ) {
+			$this->model_source = 'filter';
+		} elseif ( '' !== $stored ) {
+			$this->model_source = 'option';
+		} else {
+			$this->model_source = 'default';
+		}
+		$this->model = $model;
 	}
 
 	/**
@@ -32,10 +54,81 @@ class Tra_Vel_Agent_OpenAI_Provider implements Tra_Vel_Agent_Provider {
 		return array(
 			'configured' => $status['configured'],
 			'model'      => $this->model,
+			'model_source' => $this->model_source,
 			'endpoint'   => 'responses',
 			'live_calls' => $status['configured'],
 			'max_output_tokens' => self::MAX_OUTPUT_TOKENS,
 			'transient_retry_limit' => self::MAX_TRANSIENT_RETRIES,
+		);
+	}
+
+	/**
+	 * Store the configured interpretation model in a plain option.
+	 *
+	 * Model identifiers are provider configuration for interpretation cost
+	 * control, not traveler data and not secrets, so like the notification
+	 * recipients they are stored without encryption. Only an exact member of
+	 * the ALLOWED_MODELS allowlist is ever written.
+	 *
+	 * @param mixed $model Requested interpretation model identifier.
+	 * @return true|WP_Error
+	 */
+	public static function store_model( $model ) {
+		$model = is_string( $model ) ? trim( $model ) : '';
+		if ( ! in_array( $model, self::ALLOWED_MODELS, true ) ) {
+			return new WP_Error( 'tra_vel_agent_model_invalid', 'The interpretation model must be one of the supported model identifiers.', array( 'status' => 400 ) );
+		}
+		$stored = update_option(
+			self::MODEL_OPTION,
+			array(
+				'version'    => 1,
+				'model'      => $model,
+				'updated_at' => gmdate( 'c' ),
+			),
+			false
+		);
+		$exists = is_array( get_option( self::MODEL_OPTION, null ) );
+		return ( $stored || $exists ) ? true : new WP_Error( 'tra_vel_agent_model_store_failed', 'The interpretation model could not be saved.', array( 'status' => 500 ) );
+	}
+
+	/**
+	 * Remove the configured model; interpretation falls back to DEFAULT_MODEL.
+	 *
+	 * @return bool
+	 */
+	public static function clear_model() {
+		return delete_option( self::MODEL_OPTION );
+	}
+
+	/**
+	 * Return the validated configured model, empty when unset or unrecognized.
+	 *
+	 * A stored value outside the current allowlist is ignored rather than
+	 * trusted, so a downgraded or corrupted option can never route live
+	 * interpretation spend to an unknown model.
+	 *
+	 * @return string
+	 */
+	public static function stored_model() {
+		$record = get_option( self::MODEL_OPTION, null );
+		if ( ! is_array( $record ) || 1 !== (int) ( isset( $record['version'] ) ? $record['version'] : 0 ) || ! isset( $record['model'] ) || ! is_string( $record['model'] ) ) {
+			return '';
+		}
+		$model = trim( $record['model'] );
+		return in_array( $model, self::ALLOWED_MODELS, true ) ? $model : '';
+	}
+
+	/**
+	 * Safe model configuration state for admin responses.
+	 *
+	 * @return array
+	 */
+	public static function model_status() {
+		$configured = self::stored_model();
+		return array(
+			'configured'    => '' !== $configured,
+			'model'         => '' !== $configured ? $configured : self::DEFAULT_MODEL,
+			'default_model' => self::DEFAULT_MODEL,
 		);
 	}
 

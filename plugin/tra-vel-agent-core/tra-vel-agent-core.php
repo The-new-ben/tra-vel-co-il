@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tra-Vel Agent Core
  * Description: Private AI travel planning plus durable, consented assisted-quote operations for Tra-Vel.
- * Version: 0.9.1
+ * Version: 0.9.2
  * Requires at least: 6.5
  * Requires PHP: 7.4
  * Author: Tra-Vel
@@ -11,7 +11,22 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'TRA_VEL_AGENT_VERSION', '0.9.1' );
+/**
+ * Production response-integrity hardening. Outside WP_DEBUG, PHP-rendered
+ * diagnostics must never reach response bodies: a deprecation notice echoed by
+ * ANY plugin or PHP upgrade corrupts every REST JSON payload this site serves.
+ * Display is turned off and only the deprecation classes leave the runtime
+ * error mask; fatals, warnings, and notices keep flowing to the error log
+ * unchanged, so log visibility is unaffected.
+ */
+if ( ! defined( 'WP_DEBUG' ) || true !== WP_DEBUG ) {
+	if ( function_exists( 'ini_set' ) ) {
+		ini_set( 'display_errors', '0' );
+	}
+	error_reporting( error_reporting() & ~E_DEPRECATED & ~E_USER_DEPRECATED );
+}
+
+define( 'TRA_VEL_AGENT_VERSION', '0.9.2' );
 define( 'TRA_VEL_AGENT_FILE', __FILE__ );
 define( 'TRA_VEL_AGENT_PATH', __DIR__ );
 

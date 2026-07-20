@@ -2,7 +2,7 @@
 Contributors: tra-vel
 Requires at least: 6.5
 Requires PHP: 7.4
-Stable tag: 0.9.1
+Stable tag: 0.9.2
 License: Proprietary
 
 Private AI travel planning, durable assisted-quote cases, operator progress, and protected approval foundations for Tra-Vel.
@@ -21,11 +21,19 @@ Version 0.9.0 adds bounded acquisition attribution on quote cases and an optiona
 
 Version 0.9.1 adds hourly-bounded provider-failure operator alerts on the committed provider_error path and admin-only configurable operator notification recipients with a truthful health count. Alerts carry failure codes only; the recipient list is a validated, deduplicated plain option because addresses are operator infrastructure, not secrets.
 
+Version 0.9.2 hardens production response integrity by disabling error display and deprecation reporting outside WP_DEBUG, so third-party PHP deprecation noise can never corrupt REST JSON responses, and adds an admin-only allowlisted interpretation-model option for cost control with a truthful `model_source` disclosure in health. The shipped default model is unchanged.
+
 == Security ==
 
 Use a hosting environment variable or wp-config.php constant for the OpenAI key when possible. The administrator-only encrypted-option fallback requires sodium. Keys are never returned by REST.
 
 == Changelog ==
+
+= 0.9.2 =
+
+* Error-display hardening: at the plugin's earliest load point, when WP_DEBUG is not true, PHP error display is disabled and E_DEPRECATED/E_USER_DEPRECATED leave the runtime error-reporting mask. A third-party plugin's PHP deprecation warnings had been echoed into every REST JSON response on hosts that display errors; this is display-only hardening, so fatals, warnings, and notices keep reaching the error log unchanged.
+* Configurable interpretation model: new admin-only `POST/DELETE /settings/model` routes (confirmation phrase required) store one allowlisted model identifier in the plain `tra_vel_agent_model_v1` option (`gpt-5.6-terra`, `gpt-5.6-mini`, `gpt-5.6-nano`, or `gpt-5-mini`). The provider resolves the existing `tra_vel_agent_openai_model` filter as the final override, then the validated option, then the unchanged `gpt-5.6-terra` default; a stored value outside the allowlist is ignored and falls back to the default.
+* Health: the `provider` block adds a truthful `model_source` of `filter`, `option`, or `default` beside the active model identifier; credentials are never disclosed.
 
 = 0.9.1 =
 

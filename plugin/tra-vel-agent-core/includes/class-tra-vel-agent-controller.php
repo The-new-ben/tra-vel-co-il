@@ -186,6 +186,26 @@ class Tra_Vel_Agent_Controller extends WP_REST_Controller {
 				),
 			)
 		);
+		register_rest_route(
+			$this->namespace,
+			'/settings/model',
+			array(
+				array(
+					'methods'             => WP_REST_Server::CREATABLE,
+					'callback'            => array( $this, 'store_model' ),
+					'permission_callback' => array( $this, 'can_manage_agent' ),
+					'args'                => array(
+						'model'        => array( 'type' => 'string', 'required' => true, 'enum' => Tra_Vel_Agent_OpenAI_Provider::ALLOWED_MODELS, 'sanitize_callback' => 'sanitize_text_field', 'validate_callback' => 'rest_validate_request_arg' ),
+						'confirmation' => array( 'type' => 'string', 'required' => true, 'sanitize_callback' => 'sanitize_text_field' ),
+					),
+				),
+				array(
+					'methods'             => WP_REST_Server::DELETABLE,
+					'callback'            => array( $this, 'clear_model' ),
+					'permission_callback' => array( $this, 'can_manage_agent' ),
+				),
+			)
+		);
 	}
 
 	public function create_run( WP_REST_Request $request ) {
@@ -826,6 +846,30 @@ class Tra_Vel_Agent_Controller extends WP_REST_Controller {
 	public function clear_notification_recipients() {
 		Tra_Vel_Agent_Notifier::clear_recipients();
 		return $this->private_response( array( 'ok' => true, 'recipients' => Tra_Vel_Agent_Notifier::recipients_status() ) );
+	}
+
+	/**
+	 * Store the configured interpretation model. Model identifiers are
+	 * provider configuration, not secrets; the value is validated against the
+	 * strict provider allowlist and only safe configuration state is returned.
+	 *
+	 * @param WP_REST_Request $request REST request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function store_model( WP_REST_Request $request ) {
+		if ( 'STORE TRA-VEL AGENT MODEL' !== $request->get_param( 'confirmation' ) ) {
+			return new WP_Error( 'tra_vel_agent_model_confirmation', 'Model confirmation did not match.', array( 'status' => 400 ) );
+		}
+		$stored = Tra_Vel_Agent_OpenAI_Provider::store_model( $request->get_param( 'model' ) );
+		if ( is_wp_error( $stored ) ) {
+			return $stored;
+		}
+		return $this->private_response( array( 'ok' => true, 'model' => Tra_Vel_Agent_OpenAI_Provider::model_status() ) );
+	}
+
+	public function clear_model() {
+		Tra_Vel_Agent_OpenAI_Provider::clear_model();
+		return $this->private_response( array( 'ok' => true, 'model' => Tra_Vel_Agent_OpenAI_Provider::model_status() ) );
 	}
 
 	public function can_manage_agent() {
