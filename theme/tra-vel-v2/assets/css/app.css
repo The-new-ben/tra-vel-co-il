@@ -3487,3 +3487,35 @@ h3.deal-title { display: block; margin: 6px 0 12px; font-size: 22px; line-height
   .commercial-assurance > i { width: 40px; height: 40px; padding: 9px; }
   .commercial-assurance > small { grid-column: 1/-1; max-width: none; padding-top: 10px; border-top: 1px solid #cde7d5; }
 }
+
+/* Inline callback-contact step before assisted WhatsApp handoffs */
+.lead-contact-step { margin: 14px 0 4px; padding: 16px; border: 1px solid #cfe0e4; border-radius: 16px; background: #f7fbfc; display: grid; gap: 12px; text-align: right; }
+.lead-contact-step h4 { margin: 0; font-size: 16px; color: #123338; }
+.lead-contact-step h4:focus-visible,.lead-contact-step h4:focus { outline: 2px solid #0f766e; outline-offset: 3px; border-radius: 6px; }
+.lead-contact-intro { margin: 0; font-size: 13px; color: #52646a; line-height: 1.5; }
+.lead-contact-fields { display: grid; gap: 10px; grid-template-columns: 1fr 1fr; }
+.lead-contact-field { display: grid; gap: 6px; font-size: 13px; color: #33474d; }
+.lead-contact-field input { min-height: 44px; padding: 8px 12px; border: 1px solid #c3d4d9; border-radius: 10px; font: inherit; background: #fff; }
+.lead-contact-field input:focus-visible { outline: 2px solid #0f766e; outline-offset: 2px; }
+.lead-contact-field input[aria-invalid="true"] { border-color: #b3423a; }
+.lead-contact-consent { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; color: #33474d; line-height: 1.5; }
+.lead-contact-consent input { width: 18px; height: 18px; min-width: 18px; margin-top: 2px; accent-color: #0f766e; }
+.lead-contact-consent input:focus-visible { outline: 2px solid #0f766e; outline-offset: 2px; }
+.lead-contact-consent a { color: #0f766e; text-decoration: underline; }
+.lead-contact-error { margin: 0; font-size: 13px; color: #b3423a; }
+.lead-contact-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.lead-contact-save { min-height: 44px; padding: 10px 18px; border: 0; border-radius: 999px; background: #123338; color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+.lead-contact-save:hover { background: #0f766e; }
+.lead-contact-save:focus-visible { outline: 2px solid #0f766e; outline-offset: 2px; }
+.lead-contact-save:disabled,.lead-contact-skip:disabled { opacity: .6; cursor: default; }
+.lead-contact-skip { min-height: 44px; padding: 10px 6px; border: 0; background: none; color: #52646a; font: inherit; font-size: 13px; text-decoration: underline; cursor: pointer; }
+.lead-contact-skip:focus-visible { outline: 2px solid #0f766e; outline-offset: 2px; border-radius: 6px; }
+
+@media (max-width: 680px) {
+  .lead-contact-fields { grid-template-columns: 1fr; }
+  .lead-contact-actions { align-items: stretch; flex-direction: column; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lead-contact-step,.lead-contact-step * { animation: none !important; transition: none !important; }
+}

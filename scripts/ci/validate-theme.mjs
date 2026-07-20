@@ -1184,6 +1184,30 @@ for (const marker of ['.commercial-data-notice', '.is-planning-only', '.insuranc
 }
 if (!/commercialDataMode\(payload\) === 'live'[\s\S]{0,180}provider !== 'demo'[\s\S]{0,180}(?:bookable|purchasable)/.test(appJs)) failures.push('Seller actions are not closed behind live provenance, a non-demo provider, and an explicit commerce capability.');
 if (!/commercialDataMode\(payload\) === 'live' && payload\?\.meta\?\.regulated_sale_ready === true/.test(appJs)) failures.push('Insurance products are not closed behind the explicit regulated-sale capability.');
+for (const marker of [
+  "const acquisitionStorageKey = 'traVelAcquisition'",
+  'function captureAcquisition()',
+  'function readAcquisition()',
+  'captureAcquisition();',
+  "const leadContactConsentVersion = '2026-07-19'",
+  'function normalizedIsraeliPhone(raw)',
+  'function buildLeadContactStep({onSave, onSkip})',
+  'function openCommercialContactStep(button, vertical, commerce, payload, candidate = {})',
+  'רוצים שנחזור אליכם גם אם השיחה מתנתקת?',
+  'אני מאשר/ת ל-Tra-Vel לשמור את הפרטים וליצור קשר לגבי הבקשה הזו',
+  'שמרו והמשיכו בוואטסאפ',
+  'המשיכו בלי להשאיר פרטים',
+  "privacyLink.href = '/privacy-policy/'",
+  'consent_version: leadContactConsentVersion',
+  '...(acquisition ? {acquisition} : {})',
+  '...(contact ? {contact} : {})'
+]) {
+  if (!appJs.includes(marker)) failures.push(`The 1.23.0 acquisition capture or pre-WhatsApp lead-contact step is missing ${marker}.`);
+}
+if (!/first-touch|First-touch/.test(appJs) || !appJs.includes('.trim().slice(0, 120)')) failures.push('Acquisition capture must stay first-touch and cap every stored field at 120 characters.');
+if (!/function openCommercialContactStep\([\s\S]{0,400}if \(commercialSellerReady\(payload, commerce\)\) \{\s*return startCommercialHandoff\(button, vertical, commerce, payload, candidate\);\s*\}/.test(appJs)) failures.push('The WhatsApp-labeled contact step must gate only the assisted-sales path and leave proven live seller handoffs unchanged.');
+if (!appCss.includes('.lead-contact-step') || !appCss.includes('.lead-contact-save:focus-visible') || !appCss.includes('.lead-contact-field input:focus-visible')) failures.push('The lead-contact step is missing its styling or visible keyboard focus treatment.');
+if (!/@media \(prefers-reduced-motion: reduce\)[\s\S]*\.lead-contact-step,\.lead-contact-step \* \{ animation: none !important; transition: none !important; \}/.test(appCss)) failures.push('The lead-contact step is missing its reduced-motion path.');
 const provenanceSource = readFileSync(join(themeRoot, 'inc/class-commercial-provenance.php'), 'utf8');
 for (const marker of ['retrieved_at', 'fresh_until', 'availability_checked_at', 'price_scope', 'licensed_provider', 'license_reference', 'regulated_sale_ready']) {
   if (!provenanceSource.includes(marker)) failures.push(`The live commercial provenance boundary is missing ${marker}.`);

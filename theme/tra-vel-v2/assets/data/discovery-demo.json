@@ -196,7 +196,7 @@
       "geo": { "latitude": 25.2048, "longitude": 55.2708 },
       "position": { "x": 59, "y": 53 },
       "airport": { "code": "DXB", "name": "Dubai International", "direct": true, "flight_minutes": 205, "transfer_minutes": 25 },
-      "deal": { "headline_price": 236, "total_per_person": 690, "currency": "USD", "trend_pct": 0, "nights": 4, "total_scope": "destination_deal", "insight": "תרחיש הכולל טרולי והעברה להשוואת עלות מלאה", "bookable": false },
+      "deal": { "headline_price": 236, "total_per_person": 690, "currency": "USD", "trend_pct": 0, "nights": 4, "total_scope": "destination_deal", "insight": "החישוב כולל טרולי והעברה להשוואת עלות מלאה", "bookable": false },
       "hotel": { "name": "דוגמת לינה באזור קריק בדובאי", "area": "Dubai Creek", "rating": 4.5, "nightly": 170, "nights": 4, "room_total": 680, "per_person_total": 340, "currency": "USD", "tour_ready": false },
       "weather": { "temperature_c": 31, "condition": "חם ויבש", "season_fit": "טוב" },
       "planning": {
@@ -248,7 +248,7 @@
       "geo": { "latitude": 35.6762, "longitude": 139.6503 },
       "position": { "x": 84, "y": 39 },
       "airport": { "code": "HND", "name": "Tokyo Haneda", "direct": false, "flight_minutes": 930, "transfer_minutes": 35 },
-      "deal": { "headline_price": 918, "total_per_person": 1810, "currency": "USD", "trend_pct": 0, "nights": 10, "total_scope": "destination_deal", "insight": "תרחיש לנובמבר עם עצירה אחת להשוואת זמן ועלות", "bookable": false },
+      "deal": { "headline_price": 918, "total_per_person": 1810, "currency": "USD", "trend_pct": 0, "nights": 10, "total_scope": "destination_deal", "insight": "מסלול לנובמבר עם עצירה אחת להשוואת זמן ועלות", "bookable": false },
       "hotel": { "name": "דוגמת לינה בשינג׳וקו", "area": "Shinjuku", "rating": 4.3, "nightly": 148, "nights": 10, "room_total": 1480, "per_person_total": 740, "currency": "USD", "tour_ready": false },
       "weather": { "temperature_c": 18, "condition": "קריר ובהיר", "season_fit": "מצוין" },
       "planning": {
@@ -274,7 +274,7 @@
       "geo": { "latitude": 38.7223, "longitude": -9.1393 },
       "position": { "x": 29, "y": 43 },
       "airport": { "code": "LIS", "name": "Humberto Delgado", "direct": false, "flight_minutes": 470, "transfer_minutes": 25 },
-      "deal": { "headline_price": 327, "total_per_person": 910, "currency": "USD", "trend_pct": 0, "nights": 7, "total_scope": "destination_deal", "insight": "תרחיש דרך רומא בכרטיס אחד להשוואת זמן ועלות", "bookable": false },
+      "deal": { "headline_price": 327, "total_per_person": 910, "currency": "USD", "trend_pct": 0, "nights": 7, "total_scope": "destination_deal", "insight": "מסלול דרך רומא בכרטיס אחד להשוואת זמן ועלות", "bookable": false },
       "hotel": { "name": "דוגמת לינה בבאישה", "area": "Baixa", "rating": 4.5, "nightly": 132, "nights": 7, "room_total": 924, "per_person_total": 462, "currency": "USD", "tour_ready": false },
       "weather": { "temperature_c": 21, "condition": "נעים ורוחי", "season_fit": "טוב" },
       "planning": {
@@ -299,7 +299,7 @@
       {
         "id": "budapest-direct",
         "currency": "USD",
-        "label": "תרחיש ישיר לבודפשט",
+        "label": "טיסה ישירה לבודפשט",
         "badge": "הכי פשוט",
         "duration_minutes": 210,
         "stops": 0,
@@ -315,7 +315,7 @@
       {
         "id": "budapest-vienna",
         "currency": "USD",
-        "label": "תרחיש דרך וינה והמשך יבשתי",
+        "label": "דרך וינה, המשך יבשתי",
         "badge": "חלופה גמישה",
         "duration_minutes": 360,
         "stops": 1,
@@ -333,7 +333,7 @@
       {
         "id": "prague-direct",
         "currency": "USD",
-        "label": "תרחיש ישיר לפראג",
+        "label": "טיסה ישירה לפראג",
         "badge": "המסלול הפשוט",
         "duration_minutes": 245,
         "stops": 0,
@@ -349,7 +349,7 @@
       {
         "id": "prague-vienna",
         "currency": "USD",
-        "label": "תרחיש דרך וינה והמשך ברכבת",
+        "label": "דרך וינה, המשך ברכבת",
         "badge": "חלופה יבשתית",
         "duration_minutes": 420,
         "stops": 1,
@@ -367,7 +367,7 @@
       {
         "id": "vienna-direct",
         "currency": "USD",
-        "label": "תרחיש ישיר לווינה",
+        "label": "טיסה ישירה לווינה",
         "badge": "המסלול הפשוט",
         "duration_minutes": 225,
         "stops": 0,
@@ -383,7 +383,7 @@
       {
         "id": "vienna-bratislava",
         "currency": "USD",
-        "label": "תרחיש דרך ברטיסלבה והמשך יבשתי",
+        "label": "דרך ברטיסלבה, המשך יבשתי",
         "badge": "חלופה אזורית",
         "duration_minutes": 345,
         "stops": 1,
@@ -401,7 +401,7 @@
       {
         "id": "athens-direct",
         "currency": "USD",
-        "label": "תרחיש ישיר לאתונה",
+        "label": "טיסה ישירה לאתונה",
         "badge": "הכי מהיר",
         "duration_minutes": 135,
         "stops": 0,
@@ -417,7 +417,7 @@
       {
         "id": "athens-larnaca",
         "currency": "USD",
-        "label": "תרחיש דרך לרנקה",
+        "label": "דרך לרנקה",
         "badge": "חלופה בשעות אחרות",
         "duration_minutes": 300,
         "stops": 1,
@@ -435,7 +435,7 @@
       {
         "id": "dubai-direct",
         "currency": "USD",
-        "label": "תרחיש ישיר לדובאי",
+        "label": "טיסה ישירה לדובאי",
         "badge": "הכי נוח",
         "duration_minutes": 205,
         "stops": 0,
@@ -451,7 +451,7 @@
       {
         "id": "dubai-amman",
         "currency": "USD",
-        "label": "תרחיש דרך עמאן",
+        "label": "דרך עמאן",
         "badge": "חלופת קונקשן",
         "duration_minutes": 390,
         "stops": 1,
@@ -469,7 +469,7 @@
       {
         "id": "bangkok-direct",
         "currency": "USD",
-        "label": "תרחיש ישיר לבנגקוק",
+        "label": "טיסה ישירה לבנגקוק",
         "badge": "הכי נוח",
         "duration_minutes": 680,
         "stops": 0,
@@ -485,7 +485,7 @@
       {
         "id": "bangkok-dubai",
         "currency": "USD",
-        "label": "תרחיש דרך דובאי",
+        "label": "דרך דובאי",
         "badge": "הבחירה החכמה",
         "duration_minutes": 840,
         "stops": 1,
@@ -501,7 +501,7 @@
       {
         "id": "bangkok-athens",
         "currency": "USD",
-        "label": "תרחיש עם עצירת לילה באתונה",
+        "label": "מסלול עם עצירת לילה באתונה",
         "badge": "עצירה ארוכה",
         "duration_minutes": 1470,
         "stops": 1,
@@ -519,7 +519,7 @@
       {
         "id": "tokyo-dubai",
         "currency": "USD",
-        "label": "תרחיש דרך דובאי להנדה",
+        "label": "דרך דובאי להנדה",
         "badge": "כרטיס אחד",
         "duration_minutes": 930,
         "stops": 1,
@@ -535,7 +535,7 @@
       {
         "id": "tokyo-bangkok",
         "currency": "USD",
-        "label": "תרחיש דרך בנגקוק עם עצירת לילה",
+        "label": "דרך בנגקוק עם עצירת לילה",
         "badge": "מסלול משולב",
         "duration_minutes": 1740,
         "stops": 1,
@@ -551,7 +551,7 @@
       {
         "id": "tokyo-seoul",
         "currency": "USD",
-        "label": "תרחיש דרך סיאול לנריטה",
+        "label": "דרך סיאול לנריטה",
         "badge": "חלופה ללא לינת ביניים",
         "duration_minutes": 1050,
         "stops": 1,
@@ -569,7 +569,7 @@
       {
         "id": "lisbon-rome",
         "currency": "USD",
-        "label": "תרחיש דרך רומא בכרטיס אחד",
+        "label": "דרך רומא בכרטיס אחד",
         "badge": "האיזון החכם",
         "duration_minutes": 470,
         "stops": 1,
@@ -585,7 +585,7 @@
       {
         "id": "lisbon-athens",
         "currency": "USD",
-        "label": "תרחיש דרך אתונה עם עצירת לילה",
+        "label": "דרך אתונה עם עצירת לילה",
         "badge": "חלופה גמישה",
         "duration_minutes": 1180,
         "stops": 1,
@@ -601,7 +601,7 @@
       {
         "id": "lisbon-madrid",
         "currency": "USD",
-        "label": "תרחיש דרך מדריד בכרטיס אחד",
+        "label": "דרך מדריד בכרטיס אחד",
         "badge": "חלופה ללא לינת ביניים",
         "duration_minutes": 520,
         "stops": 1,

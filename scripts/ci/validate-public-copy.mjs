@@ -142,12 +142,24 @@ for (const destination of discoveryDemo.destinations || []) {
 }
 for (const [destinationId, routes] of Object.entries(discoveryDemo.route_sets || {})) {
   for (const route of routes || []) {
-    if (!String(route.label || '').includes('תרחיש')) {
-      failures.push(`${destinationId}/${route.id || 'route'} needs an unmistakably illustrative route label.`);
+    // Since theme 1.23.0 route labels are natural traveler-facing Hebrew;
+    // lab wording must not reach customers while the labels stay clearly
+    // non-commercial: no carrier identity, and the route deal itself remains
+    // non-bookable demo data enforced by the discovery contract validator.
+    if (!String(route.label || '').trim()) {
+      failures.push(`${destinationId}/${route.id || 'route'} needs a typed traveler-facing route label.`);
+    }
+    if (/תרחיש/u.test(String(route.label || ''))) {
+      failures.push(`${destinationId}/${route.id || 'route'} exposes internal scenario language in a customer-visible route label.`);
     }
     if (forbiddenDemoIdentity.test(String(route.label || ''))) {
       failures.push(`${destinationId}/${route.id || 'route'} exposes a real carrier identity in demo data.`);
     }
+  }
+}
+for (const tripPackage of JSON.parse(readFileSync(join(themeRoot, 'assets/data/trip-package-demo.json'), 'utf8')).packages || []) {
+  if (/תרחיש/u.test(String(tripPackage.name || ''))) {
+    failures.push(`${tripPackage.id || 'package fixture'} exposes internal scenario language in a customer-visible package name.`);
   }
 }
 
