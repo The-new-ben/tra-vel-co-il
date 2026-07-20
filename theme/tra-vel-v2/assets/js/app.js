@@ -9325,10 +9325,14 @@ function homeSearchNavigationUrl(form, anywhere) {
     form.querySelector('[data-home-children]'),
     form.querySelector('[data-home-rooms]')
   ];
+  // Theme 1.26.0: the tap calendar's flexible-dates choice travels with every
+  // handoff, but only when the traveler actually chose it.
+  const flexibility = form.querySelector('[data-trip-flexibility]');
   if (!anywhere) {
     controls.forEach(control => {
       if (!control?.disabled && control.name && control.value !== '') url.searchParams.set(control.name, control.value);
     });
+    if (flexibility?.value) url.searchParams.set('flexibility', flexibility.value);
     return url;
   }
   url.searchParams.set('destination_mode', 'anywhere');
@@ -9341,6 +9345,7 @@ function homeSearchNavigationUrl(form, anywhere) {
   url.searchParams.set('adults', controls[4]?.value || '2');
   url.searchParams.set('children', controls[5]?.value || '0');
   if (rooms && !rooms.disabled) url.searchParams.set('rooms', rooms.value || '1');
+  if (flexibility?.value) url.searchParams.set('flexibility', flexibility.value);
   return url;
 }
 
@@ -11506,16 +11511,16 @@ const diveStoreServiceCtaLabels = {
   flights: 'השוו טיסות',
   accommodation: 'פתחו חיפוש מלונות',
   transfers: 'התאימו העברות',
-  activities: 'בנו ימים ופעילויות',
-  dining: 'הוסיפו העדפות אוכל',
+  activities: 'פתחו פעילויות במפת היעד',
+  dining: 'פתחו אוכל והעדפות במפת היעד',
   insurance: 'בדקו נושאים לביטוח',
-  connectivity: 'השוו נפח גלישה וכיסוי',
-  equipment: 'בנו רשימת ציוד'
+  connectivity: 'פתחו תקשורת במפת היעד',
+  equipment: 'פתחו ציוד במפת היעד'
 };
 const diveStoreHubCtaLabels = {
   flights: 'חפשו טיסות',
   accommodation: 'חפשו לינה',
-  connectivity: 'השוו חיבור',
+  connectivity: 'תכננו עם המומחה',
   insurance: 'בדקו ביטוח'
 };
 let globeDiveState = { depth: 0, kind: '', key: '', latitude: null, longitude: null };
@@ -11614,16 +11619,19 @@ function diveBreadcrumbTrail(state = globeDiveState) {
 }
 
 function diveDestinationServiceLinks(data) {
+  // Theme 1.26.0 one-click-first: activities, dining, connectivity, and
+  // equipment open the destination's map plan with the matching module in
+  // focus instead of routing the tap into the planner conversation.
   const airport = data.airportCode || '';
   return {
     flights: destinationPlanUrl('/flights/', { destination: airport }),
     accommodation: destinationPlanUrl('/hotels/', { destination: airport }),
     transfers: destinationPlanUrl('/packages/', { destination: airport, transfers: 'true' }),
-    activities: destinationPlanUrl('/ai-planner/', { destination: data.id, scope: 'activities' }),
-    dining: destinationPlanUrl('/ai-planner/', { destination: data.id, scope: 'dining' }),
+    activities: destinationPlanUrl('/travel-map/', { destination: data.id, scope: 'activities' }),
+    dining: destinationPlanUrl('/travel-map/', { destination: data.id, scope: 'dining' }),
     insurance: destinationPlanUrl('/travel-insurance/', { trip_destination: data.id }),
-    connectivity: destinationPlanUrl('/ai-planner/', { destination: data.id, scope: 'connectivity' }),
-    equipment: destinationPlanUrl('/ai-planner/', { destination: data.id, scope: 'equipment' })
+    connectivity: destinationPlanUrl('/travel-map/', { destination: data.id, scope: 'connectivity' }),
+    equipment: destinationPlanUrl('/travel-map/', { destination: data.id, scope: 'equipment' })
   };
 }
 
@@ -11741,7 +11749,7 @@ function diveBundleCard(data, routes = []) {
     bundle: true,
     fact: 'ביטוח נסיעות ו-eSIM ותקשורת, מותאמים יחד לנסיעה אחת',
     price,
-    cta: { label: 'הרכיבו ערכת נסיעה', href: destinationPlanUrl('/ai-planner/', { destination: data.id, scope: 'connectivity,insurance' }) }
+    cta: { label: 'תכננו ערכת נסיעה עם המומחה', href: destinationPlanUrl('/ai-planner/', { destination: data.id, scope: 'connectivity,insurance' }) }
   };
 }
 
@@ -12111,6 +12119,670 @@ function initGlobeDiveStore() {
   });
 }
 
+// --- One-click planning surfaces (theme 1.26.0) ------------------------------
+// The owner's law: a tap opens a picker, never a conversation. The tap
+// calendar, the party stepper, and the destination chip row let travelers
+// complete the search dock and the comparison forms without typing, while the
+// existing native inputs stay the only value holders so every current GET
+// contract stays identical. No surface here invents a price, a date claim, or
+// an availability promise.
+const tripCalendarLocale = 'he-IL';
+const tripCalendarMonthTitleFormat = new Intl.DateTimeFormat(tripCalendarLocale, { month: 'long', year: 'numeric', timeZone: 'UTC' });
+const tripCalendarDayLabelFormat = new Intl.DateTimeFormat(tripCalendarLocale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+const tripCalendarWeekdayFormat = new Intl.DateTimeFormat(tripCalendarLocale, { weekday: 'narrow', timeZone: 'UTC' });
+const tripCalendarPresets = Object.freeze({
+  weekend: 'סופ״ש הקרוב',
+  week: 'שבוע',
+  two_weeks: 'שבועיים',
+  flexible: 'גמיש ±3 ימים'
+});
+const tripCalendarFlexibleDays = 3;
+
+function tripDateFromIso(value) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value || '')) return null;
+  const date = new Date(`${value}T12:00:00Z`);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function tripDateIso(date) {
+  return date instanceof Date && !Number.isNaN(date.getTime()) ? date.toISOString().slice(0, 10) : '';
+}
+
+function tripCalendarTodayIso() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+}
+
+function tripCalendarMonthStart(iso) {
+  const date = tripDateFromIso(iso) || tripDateFromIso(tripCalendarTodayIso()) || new Date();
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1, 12));
+}
+
+function tripCalendarNextRange(range = {}, dayIso = '', { sameDayAllowed = false, minIso = '' } = {}) {
+  const current = {
+    start: /^\d{4}-\d{2}-\d{2}$/.test(range?.start || '') ? range.start : '',
+    end: /^\d{4}-\d{2}-\d{2}$/.test(range?.end || '') ? range.end : ''
+  };
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dayIso) || (minIso && dayIso < minIso)) {
+    return { ...current, complete: false, changed: false };
+  }
+  if (!current.start || (current.start && current.end)) {
+    return { start: dayIso, end: '', complete: false, changed: true };
+  }
+  if (dayIso < current.start) return { start: dayIso, end: '', complete: false, changed: true };
+  if (dayIso === current.start && !sameDayAllowed) return { start: current.start, end: '', complete: false, changed: false };
+  return { start: current.start, end: dayIso, complete: true, changed: true };
+}
+
+function tripCalendarPresetRange(preset, baseIso = tripCalendarTodayIso(), currentStartIso = '') {
+  if (preset === 'weekend') {
+    const base = tripDateFromIso(baseIso);
+    if (!base) return null;
+    const offset = (4 - base.getUTCDay() + 7) % 7;
+    const start = offset > 0 ? travelDateAfter(baseIso, offset) : baseIso;
+    if (!start) return null;
+    return { start, end: travelDateAfter(start, 2), complete: true };
+  }
+  const nights = preset === 'week' ? 7 : (preset === 'two_weeks' ? 14 : 0);
+  if (!nights) return null;
+  const start = /^\d{4}-\d{2}-\d{2}$/.test(currentStartIso || '') && currentStartIso >= baseIso ? currentStartIso : baseIso;
+  const end = travelDateAfter(start, nights);
+  return end ? { start, end, complete: true } : null;
+}
+
+function commitTripCalendarRange(controls = {}, range = {}) {
+  const start = controls.start;
+  const end = controls.end;
+  if (!start || !end || range?.complete !== true) return false;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(range.start || '') || !/^\d{4}-\d{2}-\d{2}$/.test(range.end || '')) return false;
+  start.value = range.start;
+  end.value = range.end;
+  [start, end].forEach(control => {
+    ['input', 'change'].forEach(type => control.dispatchEvent(new Event(type, { bubbles: true })));
+  });
+  return true;
+}
+
+function ensureTripFlexibilityField(form) {
+  if (!form) return null;
+  const existing = form.querySelector('[data-trip-flexibility]');
+  if (existing) return existing;
+  const field = document.createElement('input');
+  field.type = 'hidden';
+  field.name = 'flexibility';
+  field.value = '';
+  field.disabled = true;
+  field.setAttribute('data-trip-flexibility', 'true');
+  form.append(field);
+  return field;
+}
+
+function setTripFlexibility(field, active) {
+  if (!field) return false;
+  field.value = active ? String(tripCalendarFlexibleDays) : '';
+  field.disabled = !field.value;
+  return Boolean(field.value);
+}
+
+function setupTripDateRangePicker(config = {}) {
+  const form = config.form;
+  const start = form?.querySelector(config.startSelector || '');
+  const end = form?.querySelector(config.endSelector || '');
+  if (!form || !start || !end || form.dataset.tripCalendarEnhanced === 'true') return null;
+  form.dataset.tripCalendarEnhanced = 'true';
+  const sameDayAllowed = typeof config.sameDayAllowed === 'function' ? () => config.sameDayAllowed(form) === true : () => false;
+  const minIso = () => {
+    const today = tripCalendarTodayIso();
+    const declared = String(start.getAttribute('min') || '');
+    return declared && declared > today ? declared : today;
+  };
+
+  const host = document.createElement('div');
+  host.className = 'trip-calendar';
+  host.setAttribute('data-trip-calendar', 'true');
+  host.setAttribute('role', 'dialog');
+  host.setAttribute('aria-modal', 'false');
+  host.setAttribute('aria-label', 'בחירת טווח תאריכים');
+  host.hidden = true;
+
+  const presetsRow = document.createElement('div');
+  presetsRow.className = 'trip-calendar-presets';
+  presetsRow.setAttribute('role', 'group');
+  presetsRow.setAttribute('aria-label', 'קיצורי טווח תאריכים');
+  Object.entries(tripCalendarPresets).forEach(([key, label]) => {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.setAttribute('data-trip-preset', key);
+    chip.setAttribute('aria-pressed', 'false');
+    chip.textContent = label;
+    presetsRow.append(chip);
+  });
+  host.append(presetsRow);
+
+  const head = document.createElement('div');
+  head.className = 'trip-calendar-head';
+  const prevButton = document.createElement('button');
+  prevButton.type = 'button';
+  prevButton.className = 'trip-calendar-nav';
+  prevButton.setAttribute('data-trip-nav', 'prev');
+  prevButton.setAttribute('aria-label', 'החודש הקודם');
+  prevButton.textContent = 'הקודם';
+  const titles = document.createElement('div');
+  titles.className = 'trip-calendar-titles';
+  const nextButton = document.createElement('button');
+  nextButton.type = 'button';
+  nextButton.className = 'trip-calendar-nav';
+  nextButton.setAttribute('data-trip-nav', 'next');
+  nextButton.setAttribute('aria-label', 'החודש הבא');
+  nextButton.textContent = 'הבא';
+  head.append(prevButton, titles, nextButton);
+  host.append(head);
+
+  const monthsHost = document.createElement('div');
+  monthsHost.className = 'trip-calendar-months';
+  host.append(monthsHost);
+
+  const status = document.createElement('p');
+  status.className = 'trip-calendar-status';
+  status.setAttribute('data-trip-status', 'true');
+  status.setAttribute('role', 'status');
+  status.setAttribute('aria-live', 'polite');
+  status.setAttribute('aria-atomic', 'true');
+  host.append(status);
+
+  const closeButton = document.createElement('button');
+  closeButton.type = 'button';
+  closeButton.className = 'trip-calendar-close';
+  closeButton.setAttribute('data-trip-close', 'true');
+  closeButton.textContent = 'סגרו את לוח התאריכים';
+  host.append(closeButton);
+
+  if (config.appendToForm === true) {
+    form.append(host);
+  } else {
+    const anchor = form.querySelector(config.anchorSelector || '');
+    if (anchor?.parentNode) anchor.parentNode.insertBefore(host, anchor.nextSibling);
+    else form.append(host);
+  }
+
+  const flexibilityField = ensureTripFlexibilityField(form);
+  const state = { open: false, opener: start, pending: { start: '', end: '' }, viewIso: '', focusIso: '' };
+  const announce = message => setTextContentIfChanged(status, message);
+
+  const buildMonth = viewDate => {
+    const monthWrap = document.createElement('div');
+    monthWrap.className = 'trip-calendar-month';
+    const weekdays = document.createElement('div');
+    weekdays.className = 'trip-calendar-weekdays';
+    weekdays.setAttribute('aria-hidden', 'true');
+    for (let day = 0; day < 7; day += 1) {
+      appendTextElement(weekdays, 'span', tripCalendarWeekdayFormat.format(new Date(Date.UTC(2026, 0, 4 + day, 12))));
+    }
+    monthWrap.append(weekdays);
+    const grid = document.createElement('div');
+    grid.className = 'trip-calendar-grid';
+    const monthStart = new Date(Date.UTC(viewDate.getUTCFullYear(), viewDate.getUTCMonth(), 1, 12));
+    for (let blank = 0; blank < monthStart.getUTCDay(); blank += 1) {
+      const spacer = document.createElement('span');
+      spacer.className = 'trip-calendar-spacer';
+      spacer.setAttribute('aria-hidden', 'true');
+      grid.append(spacer);
+    }
+    const daysInMonth = new Date(Date.UTC(viewDate.getUTCFullYear(), viewDate.getUTCMonth() + 1, 0, 12)).getUTCDate();
+    const minimum = minIso();
+    const todayIso = tripCalendarTodayIso();
+    for (let day = 1; day <= daysInMonth; day += 1) {
+      const dayDate = new Date(Date.UTC(viewDate.getUTCFullYear(), viewDate.getUTCMonth(), day, 12));
+      const iso = tripDateIso(dayDate);
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'trip-calendar-day';
+      button.setAttribute('data-trip-day', iso);
+      button.tabIndex = -1;
+      button.textContent = String(day);
+      button.setAttribute('aria-label', tripCalendarDayLabelFormat.format(dayDate));
+      if (iso < minimum) {
+        button.disabled = true;
+        button.setAttribute('aria-disabled', 'true');
+      }
+      if (iso === todayIso) button.setAttribute('aria-current', 'date');
+      const isEdge = iso === state.pending.start || iso === state.pending.end;
+      if (isEdge) button.classList.add('is-edge');
+      if (state.pending.start && state.pending.end && iso > state.pending.start && iso < state.pending.end) button.classList.add('is-in-range');
+      button.setAttribute('aria-pressed', String(isEdge));
+      grid.append(button);
+    }
+    monthWrap.append(grid);
+    return monthWrap;
+  };
+
+  const render = () => {
+    const viewDate = tripCalendarMonthStart(state.viewIso || state.pending.start || minIso());
+    const secondMonth = new Date(Date.UTC(viewDate.getUTCFullYear(), viewDate.getUTCMonth() + 1, 1, 12));
+    titles.replaceChildren();
+    [viewDate, secondMonth].forEach(month => {
+      const title = document.createElement('span');
+      title.setAttribute('data-trip-month-title', 'true');
+      title.textContent = tripCalendarMonthTitleFormat.format(month);
+      titles.append(title);
+    });
+    monthsHost.replaceChildren(buildMonth(viewDate), buildMonth(secondMonth));
+    prevButton.disabled = viewDate.getTime() <= tripCalendarMonthStart(tripCalendarTodayIso()).getTime();
+    const flexibleChip = presetsRow.querySelector('[data-trip-preset="flexible"]');
+    if (flexibleChip) {
+      const flexibleActive = Boolean(flexibilityField?.value);
+      flexibleChip.setAttribute('aria-pressed', String(flexibleActive));
+      flexibleChip.classList.toggle('is-active', flexibleActive);
+    }
+    const preferred = state.focusIso || state.pending.start || minIso();
+    const dayButtons = Array.from(monthsHost.querySelectorAll('[data-trip-day]')).filter(button => !button.disabled);
+    const focusCandidate = dayButtons.find(button => button.dataset.tripDay === preferred) || dayButtons[0];
+    if (focusCandidate) focusCandidate.tabIndex = 0;
+  };
+
+  const close = ({ restoreFocus = true } = {}) => {
+    host.hidden = true;
+    state.open = false;
+    if (restoreFocus) state.opener?.focus?.();
+  };
+
+  const open = opener => {
+    state.opener = opener || start;
+    state.pending = {
+      start: /^\d{4}-\d{2}-\d{2}$/.test(start.value || '') ? start.value : '',
+      end: /^\d{4}-\d{2}-\d{2}$/.test(end.value || '') ? end.value : ''
+    };
+    state.viewIso = state.pending.start || minIso();
+    state.focusIso = state.pending.start || '';
+    render();
+    host.hidden = false;
+    state.open = true;
+    announce(state.pending.start && state.pending.end
+      ? 'הטווח הנוכחי מסומן. בחירת תאריך חדש מתחילה טווח אחר.'
+      : 'בחרו תאריך התחלה.');
+    monthsHost.querySelector('[data-trip-day][tabindex="0"]')?.focus?.();
+    host.scrollIntoView({ behavior: preferredScrollBehavior(), block: 'nearest' });
+  };
+
+  host.addEventListener('click', event => {
+    const preset = event.target?.closest?.('[data-trip-preset]');
+    if (preset) {
+      if (preset.dataset.tripPreset === 'flexible') {
+        const flexibleActive = setTripFlexibility(flexibilityField, !flexibilityField?.value);
+        render();
+        announce(flexibleActive ? 'סומנו תאריכים גמישים בטווח של עד שלושה ימים.' : 'סימון התאריכים הגמישים הוסר.');
+        return;
+      }
+      const presetRange = tripCalendarPresetRange(preset.dataset.tripPreset, minIso(), state.pending.start || start.value);
+      if (!presetRange) return;
+      state.pending = { start: presetRange.start, end: presetRange.end };
+      commitTripCalendarRange({ start, end }, presetRange);
+      state.viewIso = presetRange.start;
+      render();
+      announce(`הטווח נבחר: ${presetRange.start} עד ${presetRange.end}.`);
+      close();
+      return;
+    }
+    const nav = event.target?.closest?.('[data-trip-nav]');
+    if (nav) {
+      const viewDate = tripCalendarMonthStart(state.viewIso || minIso());
+      const shifted = new Date(Date.UTC(viewDate.getUTCFullYear(), viewDate.getUTCMonth() + (nav.dataset.tripNav === 'next' ? 1 : -1), 1, 12));
+      const todayMonth = tripCalendarMonthStart(tripCalendarTodayIso());
+      state.viewIso = tripDateIso(shifted.getTime() < todayMonth.getTime() ? todayMonth : shifted);
+      render();
+      return;
+    }
+    if (event.target?.closest?.('[data-trip-close]')) {
+      close();
+      return;
+    }
+    const dayButton = event.target?.closest?.('[data-trip-day]');
+    if (!dayButton || dayButton.disabled) return;
+    const next = tripCalendarNextRange(state.pending, dayButton.dataset.tripDay, { sameDayAllowed: sameDayAllowed(), minIso: minIso() });
+    state.pending = { start: next.start, end: next.end };
+    state.focusIso = dayButton.dataset.tripDay;
+    if (next.complete) {
+      commitTripCalendarRange({ start, end }, next);
+      render();
+      announce(`הטווח נבחר: ${next.start} עד ${next.end}.`);
+      close();
+      return;
+    }
+    render();
+    announce(next.start ? 'עכשיו בחרו תאריך סיום.' : 'בחרו תאריך התחלה.');
+    monthsHost.querySelector(`[data-trip-day="${state.focusIso}"]`)?.focus?.();
+  });
+
+  host.addEventListener('keydown', event => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      close();
+      return;
+    }
+    const dayButton = event.target?.closest?.('[data-trip-day]');
+    if (!dayButton) return;
+    const arrowDeltas = { ArrowLeft: 1, ArrowRight: -1, ArrowUp: -7, ArrowDown: 7 };
+    if (!(event.key in arrowDeltas)) return;
+    event.preventDefault();
+    const target = travelDateAfter(dayButton.dataset.tripDay, arrowDeltas[event.key]);
+    if (!target || target < minIso()) return;
+    const viewDate = tripCalendarMonthStart(state.viewIso || minIso());
+    const windowStart = tripDateIso(viewDate);
+    const windowEnd = tripDateIso(new Date(Date.UTC(viewDate.getUTCFullYear(), viewDate.getUTCMonth() + 2, 0, 12)));
+    if (target < windowStart) {
+      state.viewIso = target;
+    } else if (target > windowEnd) {
+      const targetDate = tripDateFromIso(target);
+      state.viewIso = tripDateIso(new Date(Date.UTC(targetDate.getUTCFullYear(), targetDate.getUTCMonth() - 1, 1, 12)));
+    }
+    state.focusIso = target;
+    render();
+    monthsHost.querySelector(`[data-trip-day="${target}"]`)?.focus?.();
+  });
+
+  const openFromControl = event => {
+    if (event.type === 'keydown' && !['Enter', ' ', 'ArrowDown'].includes(event.key)) return;
+    event.preventDefault();
+    open(event.currentTarget);
+  };
+  [start, end].forEach(control => {
+    control.readOnly = true;
+    control.setAttribute('aria-haspopup', 'dialog');
+    control.setAttribute('data-trip-calendar-opener', 'true');
+    control.addEventListener('click', openFromControl);
+    control.addEventListener('keydown', openFromControl);
+  });
+
+  return { open, close, host };
+}
+
+function initTripDateRangePickers() {
+  const pickers = [
+    { form: document.querySelector('[data-home-search]'), startSelector: '[data-home-departure]', endSelector: '[data-home-return]', appendToForm: true, sameDayAllowed: form => form.dataset.productKind === 'insurance' },
+    { form: document.querySelector('[data-flight-search]'), startSelector: 'input[name="departure_date"]', endSelector: 'input[name="return_date"]', anchorSelector: '.flight-date-grid' },
+    { form: document.querySelector('[data-hotel-search]'), startSelector: 'input[name="checkin"]', endSelector: 'input[name="checkout"]', anchorSelector: '.hotel-date-grid' },
+    { form: document.querySelector('[data-package-search]'), startSelector: 'input[name="departure_date"]', endSelector: 'input[name="return_date"]', anchorSelector: '.package-date-grid' },
+    { form: document.querySelector('[data-insurance-quote]'), startSelector: 'input[name="start_date"]', endSelector: 'input[name="end_date"]', anchorSelector: '.insurance-date-grid', sameDayAllowed: () => true }
+  ];
+  pickers.forEach(config => {
+    if (config.form) setupTripDateRangePicker(config);
+  });
+}
+
+const partyStepperLimits = Object.freeze({
+  adults: { min: 1, max: 6 },
+  children: { min: 0, max: 4 },
+  rooms: { min: 1, max: 3 }
+});
+const partyStepperRowLabels = Object.freeze({ adults: 'מבוגרים', children: 'ילדים', rooms: 'חדרים' });
+const partyStepperStepLabels = Object.freeze({
+  adults: { add: 'הוסיפו מבוגר', remove: 'הפחיתו מבוגר' },
+  children: { add: 'הוסיפו ילד', remove: 'הפחיתו ילד' },
+  rooms: { add: 'הוסיפו חדר', remove: 'הפחיתו חדר' }
+});
+let partyPanelSequence = 0;
+
+function partyStepperClamp(kind, value) {
+  const limits = partyStepperLimits[kind] || { min: 0, max: 9 };
+  const numeric = Number.parseInt(String(value), 10);
+  if (!Number.isInteger(numeric)) return limits.min;
+  return Math.min(limits.max, Math.max(limits.min, numeric));
+}
+
+function partyStepperSummary(adults, children, rooms = null) {
+  const parts = [
+    adults === 1 ? 'מבוגר אחד' : `${adults} מבוגרים`,
+    children === 0 ? 'ללא ילדים' : (children === 1 ? 'ילד אחד' : `${children} ילדים`)
+  ];
+  if (Number.isInteger(rooms) && rooms > 0) parts.push(rooms === 1 ? 'חדר 1' : `${rooms} חדרים`);
+  return parts.join(' · ');
+}
+
+function renderPartyChildAges(host, count) {
+  if (!host) return 0;
+  const total = Math.max(0, Math.min(partyStepperLimits.children.max, Number(count) || 0));
+  const previous = Array.from(host.querySelectorAll('[data-party-child-age]')).map(select => select.value);
+  host.replaceChildren();
+  for (let index = 0; index < total; index += 1) {
+    const label = document.createElement('label');
+    label.className = 'party-child-age';
+    appendTextElement(label, 'span', `גיל ילד ${index + 1}`);
+    const select = document.createElement('select');
+    select.setAttribute('data-party-child-age', String(index + 1));
+    select.setAttribute('aria-label', `גיל ילד ${index + 1}`);
+    for (let age = 0; age <= 17; age += 1) {
+      const option = document.createElement('option');
+      option.value = String(age);
+      option.textContent = String(age);
+      select.append(option);
+    }
+    if (previous[index] !== undefined) select.value = previous[index];
+    label.append(select);
+    host.append(label);
+  }
+  host.hidden = total === 0;
+  return total;
+}
+
+function syncPartyChildAgesField(form, host) {
+  // Ages feed an existing form field only when one exists; the theme has no
+  // child-age GET contract today, so without one the ages stay local UI.
+  const field = form?.querySelector('input[name="child_ages"]');
+  if (!field || !host) return false;
+  field.value = Array.from(host.querySelectorAll('[data-party-child-age]')).map(select => select.value).join(',');
+  return true;
+}
+
+function setupPartyStepper(form) {
+  if (!form || form.dataset.partyEnhanced === 'true') return null;
+  const selects = {
+    adults: form.querySelector('select[name="adults"]'),
+    children: form.querySelector('select[name="children"]'),
+    rooms: form.querySelector('select[name="rooms"]')
+  };
+  if (!selects.adults || !selects.children) return null;
+  const adultsLabel = selects.adults.closest('label');
+  const host = adultsLabel?.parentElement;
+  if (!adultsLabel || !host) return null;
+  form.dataset.partyEnhanced = 'true';
+  ['adults', 'children', 'rooms'].forEach(kind => {
+    selects[kind]?.closest('label')?.setAttribute('data-party-hidden', 'true');
+  });
+
+  partyPanelSequence += 1;
+  const panelId = `party-panel-${partyPanelSequence}`;
+  const pill = document.createElement('button');
+  pill.type = 'button';
+  pill.className = 'party-pill';
+  pill.setAttribute('data-party-pill', 'true');
+  pill.setAttribute('aria-expanded', 'false');
+  pill.setAttribute('aria-controls', panelId);
+  const summary = document.createElement('span');
+  summary.className = 'party-pill-summary';
+  summary.setAttribute('data-party-summary', 'true');
+  pill.append(summary);
+  const caret = document.createElement('span');
+  caret.className = 'party-pill-caret';
+  caret.setAttribute('aria-hidden', 'true');
+  caret.textContent = '▾';
+  pill.append(caret);
+  host.insertBefore(pill, adultsLabel);
+
+  const panel = document.createElement('div');
+  panel.className = 'party-panel';
+  panel.id = panelId;
+  panel.setAttribute('data-party-panel', 'true');
+  panel.hidden = true;
+  const rowsHost = document.createElement('div');
+  rowsHost.className = 'party-rows';
+  panel.append(rowsHost);
+  const agesHost = document.createElement('div');
+  agesHost.className = 'party-child-ages';
+  agesHost.setAttribute('data-party-child-ages', 'true');
+  agesHost.hidden = true;
+  panel.append(agesHost);
+
+  const rows = {};
+  ['adults', 'children', 'rooms'].forEach(kind => {
+    const select = selects[kind];
+    if (!select) return;
+    const row = document.createElement('div');
+    row.className = 'party-row';
+    row.setAttribute('data-party-row', kind);
+    appendTextElement(row, 'span', partyStepperRowLabels[kind], 'party-row-label');
+    const controlsWrap = document.createElement('div');
+    controlsWrap.className = 'party-row-controls';
+    const plus = document.createElement('button');
+    plus.type = 'button';
+    plus.setAttribute('data-party-step', kind);
+    plus.setAttribute('data-step-delta', '1');
+    plus.setAttribute('aria-label', partyStepperStepLabels[kind].add);
+    plus.textContent = '+';
+    const value = document.createElement('b');
+    value.setAttribute('data-party-value', kind);
+    const minus = document.createElement('button');
+    minus.type = 'button';
+    minus.setAttribute('data-party-step', kind);
+    minus.setAttribute('data-step-delta', '-1');
+    minus.setAttribute('aria-label', partyStepperStepLabels[kind].remove);
+    minus.textContent = '−';
+    controlsWrap.append(plus, value, minus);
+    row.append(controlsWrap);
+    rowsHost.append(row);
+    rows[kind] = { row, value, plus, minus, select };
+  });
+
+  if (form.matches('[data-home-search]')) form.append(panel);
+  else if (host.parentNode) host.parentNode.insertBefore(panel, host.nextSibling);
+  else form.append(panel);
+
+  const refresh = () => {
+    const adults = partyStepperClamp('adults', selects.adults.value);
+    const children = partyStepperClamp('children', selects.children.value);
+    const roomsUsable = Boolean(selects.rooms) && !selects.rooms.disabled;
+    const rooms = roomsUsable ? partyStepperClamp('rooms', selects.rooms.value) : null;
+    setTextContentIfChanged(summary, partyStepperSummary(adults, children, rooms));
+    Object.entries(rows).forEach(([kind, parts]) => {
+      const usable = kind !== 'rooms' || roomsUsable;
+      parts.row.hidden = !usable;
+      if (!usable) return;
+      const current = partyStepperClamp(kind, parts.select.value);
+      setTextContentIfChanged(parts.value, String(current));
+      parts.minus.disabled = current <= partyStepperLimits[kind].min;
+      parts.plus.disabled = current >= partyStepperLimits[kind].max;
+    });
+    if (String(children) !== String(agesHost.dataset.count || '')) {
+      renderPartyChildAges(agesHost, children);
+      agesHost.dataset.count = String(children);
+      syncPartyChildAgesField(form, agesHost);
+    }
+  };
+
+  const step = (kind, delta) => {
+    const select = selects[kind];
+    if (!select || select.disabled) return;
+    const next = partyStepperClamp(kind, partyStepperClamp(kind, select.value) + delta);
+    if (String(next) === String(select.value)) return;
+    select.value = String(next);
+    ['input', 'change'].forEach(type => select.dispatchEvent(new Event(type, { bubbles: true })));
+    refresh();
+  };
+
+  panel.addEventListener('click', event => {
+    const button = event.target?.closest?.('[data-party-step]');
+    if (!button || button.disabled) return;
+    step(button.dataset.partyStep, Number(button.dataset.stepDelta) || 0);
+  });
+  panel.addEventListener('change', event => {
+    if (event.target?.closest?.('[data-party-child-age]')) syncPartyChildAgesField(form, agesHost);
+  });
+  panel.addEventListener('keydown', event => {
+    if (event.key !== 'Escape') return;
+    event.preventDefault();
+    panel.hidden = true;
+    pill.setAttribute('aria-expanded', 'false');
+    pill.focus();
+  });
+  pill.addEventListener('click', () => {
+    const opening = panel.hidden;
+    panel.hidden = !opening;
+    pill.setAttribute('aria-expanded', String(opening));
+    if (opening) refresh();
+  });
+  form.addEventListener('change', refresh);
+  if (form.matches('[data-home-search]')) {
+    document.querySelectorAll('.product-tabs [role="tab"][data-product-kind]').forEach(tab => {
+      tab.addEventListener('click', refresh);
+      tab.addEventListener('keydown', () => window.setTimeout(refresh, 0));
+    });
+  }
+  refresh();
+  return { pill, panel, refresh };
+}
+
+function initPartySteppers() {
+  ['[data-home-search]', '[data-flight-search]', '[data-hotel-search]', '[data-package-search]', '[data-insurance-quote]']
+    .forEach(selector => setupPartyStepper(document.querySelector(selector)));
+}
+
+function homeDestinationChipSelectedSlug(select) {
+  if (!select) return '';
+  const option = select.selectedOptions?.[0] || Array.from(select.options || []).find(item => item?.value === select.value);
+  return option?.dataset?.slug || '';
+}
+
+function syncHomeDestinationChipStates(select, chips = []) {
+  const slug = homeDestinationChipSelectedSlug(select);
+  chips.forEach(chip => {
+    const active = Boolean(slug) && chip.dataset.chipSlug === slug;
+    chip.classList.toggle('is-active', active);
+    chip.setAttribute('aria-pressed', String(active));
+  });
+  return slug;
+}
+
+function applyHomeDestinationChip(select, chip) {
+  if (!select || !chip?.dataset?.chipSlug) return false;
+  const option = Array.from(select.options || []).find(item => item?.dataset?.slug === chip.dataset.chipSlug);
+  if (!option) return false;
+  select.value = option.value;
+  ['input', 'change'].forEach(type => select.dispatchEvent(new Event(type, { bubbles: true })));
+  return true;
+}
+
+function initHomeDestinationChips() {
+  const row = document.querySelector('[data-home-destination-chips]');
+  const select = document.querySelector('[data-home-destination]');
+  if (!row || !select) return;
+  const chips = Array.from(row.querySelectorAll('[data-destination-chip]'));
+  if (!chips.length) return;
+  chips.forEach(chip => chip.addEventListener('click', () => {
+    if (applyHomeDestinationChip(select, chip)) syncHomeDestinationChipStates(select, chips);
+  }));
+  select.addEventListener('change', () => syncHomeDestinationChipStates(select, chips));
+  syncHomeDestinationChipStates(select, chips);
+}
+
+function initMapPlanScopeFocus() {
+  // A dive-store chip lands on the destination's plan with the matching
+  // module already open, so the tap ends on a picker instead of a chat.
+  if (!isMapWorkspacePage()) return;
+  const params = new URLSearchParams(window.location.search);
+  const destination = String(params.get('destination') || '').trim();
+  const scopeKeys = String(params.get('scope') || '').split(',').map(value => value.trim()).filter(Boolean).slice(0, 12);
+  if (!destination || !scopeKeys.length || window.location.hash) return;
+  const plan = document.querySelector('[data-destination-plan]');
+  if (!plan) return;
+  const moduleKeys = scopeKeys.filter(key => /^[a-z_-]{1,40}$/.test(key) && plan.querySelector(`[data-plan-module="${CSS.escape(key)}"]`));
+  if (moduleKeys.length && scopeKeys.length <= 2) {
+    plan.querySelectorAll('[data-plan-module]').forEach(module => {
+      module.open = moduleKeys.includes(module.dataset.planModule);
+    });
+  }
+  const anchor = document.getElementById('destination-plan-title') || plan;
+  window.setTimeout(() => anchor.scrollIntoView({ behavior: preferredScrollBehavior(), block: 'start' }), 80);
+}
+
 function initTraVelV2() {
   if (document.documentElement.dataset.traVelV2Ready === 'true') return;
   document.documentElement.dataset.traVelV2Ready = 'true';
@@ -12165,6 +12837,10 @@ function initTraVelV2() {
   syncDiscoveryTripContext();
   initDestinationPlan();
   initHomeDiscoverySearch();
+  initHomeDestinationChips();
+  initTripDateRangePickers();
+  initPartySteppers();
+  initMapPlanScopeFocus();
   initControls();
   initAIConversationEntry();
   initDirectory();

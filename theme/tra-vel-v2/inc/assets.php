@@ -106,6 +106,18 @@ function tra_vel_v2_enqueue_assets() {
 			"window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'granted'});gtag('js',new Date());gtag('config','" . esc_js( $ga4_id ) . "');"
 		);
 	}
+
+	$travelpayouts_marker = apply_filters( 'tra_vel_v2_travelpayouts_marker', get_option( 'tra_vel_v2_travelpayouts_marker', '' ) );
+	$travelpayouts_marker = is_string( $travelpayouts_marker ) ? trim( $travelpayouts_marker ) : '';
+	if ( preg_match( '/^[0-9]{4,10}$/', $travelpayouts_marker ) ) {
+		wp_enqueue_script(
+			'tra-vel-v2-travelpayouts',
+			'https://tpembars.com/' . rawurlencode( base64_encode( $travelpayouts_marker ) ) . '.js?t=' . rawurlencode( $travelpayouts_marker ),
+			array(),
+			null,
+			true
+		);
+	}
 }
 add_action( 'wp_enqueue_scripts', 'tra_vel_v2_enqueue_assets' );
 

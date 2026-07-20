@@ -1509,6 +1509,121 @@ if (!/@media \(max-width: 760px\)[\s\S]*?\.dive-board \{ grid-template-columns: 
 const diveStoreBaseRule = appCss.match(/\n\.globe-dive-store \{([^}]*)\}/)?.[1] || '';
 if (!diveStoreBaseRule || /position:\s*(?:absolute|fixed|sticky)/.test(diveStoreBaseRule)) failures.push('The dive store must remain in document flow and can never cover the globe.');
 
+// Theme 1.26.0 one-click-first: taps resolve through pickers (search dock,
+// tap calendar, party stepper, destination chips, and the destination map
+// plan) instead of the planner conversation. The planner stays a fully
+// functional, honestly labeled secondary mode. These checks extend the
+// 1.25.x contract; none replace it.
+const heroActionsMarkup = frontPage.match(/<div class="hero-agent-actions">[\s\S]*?<\/div>/)?.[0] || '';
+if (!heroActionsMarkup.includes('data-hero-compare') || !heroActionsMarkup.includes('href="#search"') || !heroActionsMarkup.includes('השוו טיסה ומלון')) failures.push('The hero primary CTA must open the search dock with the honest comparison label.');
+if (heroActionsMarkup.indexOf('data-hero-compare') < 0 || heroActionsMarkup.indexOf('data-home-surprise') < 0 || heroActionsMarkup.indexOf('data-hero-compare') > heroActionsMarkup.indexOf('data-home-surprise')) failures.push('The hero comparison CTA must render before the surprise trigger.');
+const heroCompareAnchor = heroActionsMarkup.match(/<a class="hero-compare-cta"[^>]*>/)?.[0] || '';
+if (!heroCompareAnchor || heroCompareAnchor.includes('ai-planner')) failures.push('The hero primary CTA must never route into the planner conversation.');
+const heroSurpriseAnchor = frontPage.match(/<a class="surprise-cta"[^>]*>/)?.[0] || '';
+if (!heroSurpriseAnchor.includes('data-home-surprise') || heroSurpriseAnchor.includes('ai-planner')) failures.push('The surprise trigger must land on the dock or map, never in the planner conversation.');
+if (!frontPage.includes("add_query_arg( 'destination', 'anywhere', home_url( '/' ) ) . '#search'")) failures.push('The surprise fallback must preselect the open-ended destination on the dock.');
+if (!frontPage.includes('data-hero-planner-quiet') || !frontPage.includes('או פשוט תארו לנו במילים')) failures.push('The demoted planner entry must remain an honest quiet secondary link.');
+const homeChipsMarkup = frontPage.match(/<div class="home-destination-chips"[\s\S]*?<\/div>/)?.[0] || '';
+if (!homeChipsMarkup.includes('data-home-destination-chips') || !homeChipsMarkup.includes('data-destination-chip')) failures.push('The homepage is missing its tap-first destination chip row.');
+if (!homeChipsMarkup.includes('data-chip-slug="anywhere"') || !homeChipsMarkup.includes('לא משנה לאן')) failures.push('The destination chip row is missing its honest open-ended choice.');
+if (/<button(?![^>]*type="button")[^>]*data-destination-chip/.test(homeChipsMarkup)) failures.push('Destination chips must be non-submitting buttons.');
+if (!frontPage.includes("array( 'budapest', 'athens', 'dubai', 'bangkok', 'tokyo', 'lisbon' )")) failures.push('The chip row must derive from the six popular discovery destinations.');
+if (frontPage.indexOf('data-home-destination-chips') < 0 || frontPage.indexOf('data-home-destination-chips') > frontPage.indexOf('data-home-search data-product-kind')) failures.push('The destination chip row must sit above the search dock destination select.');
+if (!frontPage.includes('.search-zone .home-destination-chips{display:none!important}')) failures.push('The JavaScript-only chip row must stay hidden for no-JavaScript travelers.');
+for (const marker of ['function initHomeDestinationChips', 'function applyHomeDestinationChip', 'function syncHomeDestinationChipStates', 'initHomeDestinationChips();']) {
+  if (!appJs.includes(marker)) failures.push(`Destination chips are not wired to the canonical destination select: ${marker}.`);
+}
+if (!appCss.includes('.home-destination-chips button { flex: 0 0 auto; min-height: 44px;') || !appCss.includes('.home-destination-chips button:focus-visible')) failures.push('Destination chips must keep 44px targets and visible keyboard focus.');
+const oneClickModuleStart = appJs.indexOf('// --- One-click planning surfaces (theme 1.26.0)');
+const oneClickModuleEnd = appJs.indexOf('\nfunction initTraVelV2(', oneClickModuleStart);
+const oneClickModuleSource = oneClickModuleStart >= 0 && oneClickModuleEnd > oneClickModuleStart ? appJs.slice(oneClickModuleStart, oneClickModuleEnd) : '';
+if (!oneClickModuleSource) failures.push('The one-click planning module is missing from the client.');
+for (const marker of [
+  'function tripCalendarNextRange',
+  'function tripCalendarPresetRange',
+  'function commitTripCalendarRange',
+  'function ensureTripFlexibilityField',
+  'function setTripFlexibility',
+  'function setupTripDateRangePicker',
+  'function initTripDateRangePickers',
+  "host.setAttribute('role', 'dialog')",
+  "host.setAttribute('aria-label', 'בחירת טווח תאריכים')",
+  'control.readOnly = true',
+  "control.setAttribute('aria-haspopup', 'dialog')",
+  'new Intl.DateTimeFormat(tripCalendarLocale',
+  'ArrowLeft: 1, ArrowRight: -1, ArrowUp: -7, ArrowDown: 7',
+  "event.key === 'Escape'",
+  'preferredScrollBehavior()',
+  "const declared = String(start.getAttribute('min') || '')",
+  'function tripCalendarTodayIso'
+]) {
+  if (!oneClickModuleSource.includes(marker)) failures.push(`The tap calendar contract is missing ${marker}`);
+}
+for (const preset of ['סופ״ש הקרוב', 'שבוע', 'שבועיים', 'גמיש ±3 ימים']) {
+  if (!oneClickModuleSource.includes(preset)) failures.push(`The tap calendar preset ${preset} is missing.`);
+}
+if (/[$₪€£]\s?\d|החל מ-/.test(oneClickModuleSource)) failures.push('The one-click surfaces must never invent a price.');
+for (const marker of ["field.name = 'flexibility'", "field.setAttribute('data-trip-flexibility', 'true')", 'field.disabled = !field.value']) {
+  if (!oneClickModuleSource.includes(marker)) failures.push(`The flexible-dates field contract is missing ${marker}`);
+}
+if (!homeDiscoverySource.includes("form.querySelector('[data-trip-flexibility]')") || (homeDiscoverySource.split("url.searchParams.set('flexibility', flexibility.value)").length - 1) < 2) failures.push('Flexible dates must travel with both the comparison and open-ended handoffs, only when actually chosen.');
+for (const marker of [
+  'function partyStepperClamp',
+  'function partyStepperSummary',
+  'function renderPartyChildAges',
+  'function syncPartyChildAgesField',
+  'function setupPartyStepper',
+  'function initPartySteppers',
+  "pill.setAttribute('aria-expanded', 'false')",
+  "pill.setAttribute('aria-controls', panelId)",
+  "minus.setAttribute('aria-label', partyStepperStepLabels[kind].remove)",
+  "plus.setAttribute('aria-label', partyStepperStepLabels[kind].add)",
+  'host.hidden = total === 0;',
+  'initPartySteppers();'
+]) {
+  if (!oneClickModuleSource.includes(marker) && !appJs.includes(marker)) failures.push(`The party stepper contract is missing ${marker}`);
+}
+if (!oneClickModuleSource.includes("children === 0 ? 'ללא ילדים'")) failures.push('The party pill must describe a childless party honestly.');
+if (/type="hidden"[^>]*name="(?:adults|children|rooms)"/.test(frontPage) || /type="hidden"[^>]*name="(?:adults|children|rooms)"/.test(commercialExperiencePage)) failures.push('Party counts must stay on the existing visible select contract, never hidden inputs.');
+for (const marker of [
+  '.trip-calendar-day { min-height: 44px;',
+  '.trip-calendar-presets button { min-height: 44px;',
+  '.party-row-controls button { min-height: 44px; min-width: 44px;',
+  '.party-pill { display: flex;',
+  'label[data-party-hidden="true"] { display: none !important; }',
+  '.search-dock .trip-calendar,.search-dock .party-panel { grid-column: 1 / -1; }'
+]) {
+  if (!appCss.includes(marker)) failures.push(`The one-click layout contract is missing ${marker}`);
+}
+const tripCalendarBaseRule = appCss.match(/\n\.trip-calendar \{([^}]*)\}/)?.[1] || '';
+const partyPanelBaseRule = appCss.match(/\n\.party-panel \{([^}]*)\}/)?.[1] || '';
+for (const [selector, rule] of [['.trip-calendar', tripCalendarBaseRule], ['.party-panel', partyPanelBaseRule]]) {
+  if (!rule || /position:\s*(?:absolute|fixed|sticky)/.test(rule)) failures.push(`${selector} must remain an in-flow surface and can never overlay the dock or the Earth.`);
+}
+if (!/@media \(max-width: 760px\)[\s\S]*?\.trip-calendar-months \{ grid-template-columns: 1fr; \}/.test(appCss)) failures.push('The tap calendar must become a full-width single-column sheet on mobile.');
+if (!/@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.trip-calendar,\.trip-calendar \*,\.party-panel,\.party-panel \*/.test(appCss)) failures.push('The tap calendar and party stepper are missing their reduced-motion path.');
+for (const scope of ['activities', 'dining', 'connectivity', 'equipment']) {
+  if (!diveDestinationLinksSource.includes(`destinationPlanUrl('/travel-map/', { destination: data.id, scope: '${scope}' })`)) failures.push(`The ${scope} dive chip must open the destination map plan, not the planner conversation.`);
+}
+if (diveDestinationLinksSource.includes("'/ai-planner/'")) failures.push('Destination dive chips must not route any vertical into the planner conversation.');
+if (!appJs.includes("connectivity: 'תכננו עם המומחה'")) failures.push('The hub connectivity handoff must disclose that it opens the expert planner.');
+for (const marker of ['function initMapPlanScopeFocus', 'module.open = moduleKeys.includes(module.dataset.planModule)', 'initMapPlanScopeFocus();']) {
+  if (!appJs.includes(marker)) failures.push(`The map scope focus contract is missing ${marker}.`);
+}
+const holidayStart = frontPage.indexOf('id="holiday-planning"');
+const holidayEnd = frontPage.indexOf('</section>', holidayStart);
+const holidayMarkup = holidayStart >= 0 && holidayEnd > holidayStart ? frontPage.slice(holidayStart, holidayEnd) : '';
+if (!holidayMarkup) failures.push('The homepage is missing the holiday planning module.');
+if (holidayStart < frontPage.indexOf('id="deals"') || holidayStart > frontPage.indexOf('id="ai"')) failures.push('The holiday module must sit between the deals grid and the planner section.');
+for (const holiday of ['ראש השנה', 'סוכות', 'חנוכה', 'פסח']) {
+  if (!holidayMarkup.includes(`'${holiday}'`)) failures.push(`The holiday module is missing ${holiday}.`);
+}
+if (!holidayMarkup.includes('חופשות לפי החגים') || !holidayMarkup.includes('בדקו יעדים וזמינות לתקופת החג')) failures.push('The holiday module must keep its honest availability-check copy.');
+if (!holidayMarkup.includes("add_query_arg( 'intent', $holiday_card['intent'], $map_url )")) failures.push('Holiday cards must open the travel map with an existing planning intent.');
+if (/[$₪€£]\s?\d|החל מ-|\d{4}-\d{2}-\d{2}/.test(holidayMarkup)) failures.push('Holiday cards must not fabricate prices or dates.');
+if (holidayMarkup.includes('ai-planner')) failures.push('Holiday cards must never route into the planner conversation.');
+if (!holidayMarkup.includes('class="deal-card holiday-card"') || (holidayMarkup.match(/'intent' => '(?:smart|value|easy|romantic|family|adventure)'/g) || []).length !== 4) failures.push('The holiday module must render exactly four static holiday cards with existing planning intents.');
+
 if (failures.length) {
   console.error('Tra-Vel V2 theme validation failed:');
   failures.forEach((failure) => console.error(`- ${failure}`));
