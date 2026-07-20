@@ -1432,6 +1432,83 @@ if (!existsSync(heroQueuePath)) {
   }
 }
 
+// Theme 1.25.0 dive store: every dive reveals the location's services below
+// the globe with truthful sample pricing, a single footnote per panel, and no
+// new scroll traps. These checks extend the 1.24.x contract; none replace it.
+for (const marker of [
+  'const NEAR_LOD_DISTANCE = 3.0;',
+  'const TAP_PREVIEW_DELAY_MS = DOUBLE_TAP_WINDOW_MS;',
+  'const DIVE_REGION_DISTANCE = 2.9;'
+]) {
+  if (!globeJs.includes(marker)) failures.push(`The dive-store globe tuning contract is missing ${marker}`);
+}
+if (!/function diveToScreenPoint\([\s\S]{0,700}selectScreenPoint\(clientX, clientY, 'dive'\)[\s\S]{0,400}animateTo\(/.test(globeJs)) failures.push('A discovery-globe dive must publish its selection through the shared pipeline before requesting the dive camera flight.');
+if (!globeJs.includes("if (root.matches('[data-discovery-globe]')) selectScreenPoint(clientX, clientY, 'dive');")) failures.push('Dive selections must stay scoped to discovery globes; guide globes dive without publishing.');
+if (!/state\.previewTimer = window\.setTimeout\(\(\) => \{ selectScreenPoint\(clientX, clientY, 'pointer'\); state\.previewTimer = 0; \}, TAP_PREVIEW_DELAY_MS\);/.test(globeJs)) failures.push('A lone free-point tap must debounce its preview through the double-tap window so a dive never fires a preview first.');
+if (!/root\.addEventListener\('pointerdown', event => \{\s*noteDirectInteraction\(\);\s*cancelPendingPreview\(\);/.test(globeJs)) failures.push('A new pointer gesture must cancel the pending free-point preview before it can fire with stale coordinates.');
+if (!/function focusPoint\(latitude, longitude, options = \{\}\) \{[\s\S]{0,900}clamp\(Number\(options\.distance\) \|\| DIVE_REGION_DISTANCE, 2\.25, 4\.8\)/.test(globeJs)) failures.push('The explore-the-region flight must clamp to the shared camera distance range.');
+if (!globeJs.includes('Math.min(state.animation ? state.animation.toDistance : state.distance, 3.05)')) failures.push('A selection-driven focus flight must not zoom back out past an in-flight dive.');
+if (/addEventListener\(\s*['"](?:wheel|mousewheel)['"]/.test(appJs)) failures.push('The dive store must never bind wheel listeners; page scrolling stays with the browser.');
+for (const [template, source] of [['front-page.php', frontPage], ['page-map.php', mapPage]]) {
+  for (const marker of ['data-dive-store', 'data-dive-breadcrumb', 'data-dive-back', 'data-dive-kicker', 'data-dive-title', 'data-dive-meta', 'data-dive-chips', 'data-dive-board', 'data-dive-nearby', 'data-dive-footnote', 'data-dive-live role="status" aria-live="polite" aria-atomic="true"']) {
+    if (!source.includes(marker)) failures.push(`${template} is missing the dive-store surface marker ${marker}.`);
+  }
+  const footnoteCount = source.split('המחירים להמחשה; המחיר הסופי מאומת לפני התשלום.').length - 1;
+  if (footnoteCount !== 1) failures.push(`${template} must render exactly one dive-store price footnote (found ${footnoteCount}).`);
+  if (!source.includes('חזרה לעולם')) failures.push(`${template} is missing the dive-store back-to-world control.`);
+}
+if (mapPage.indexOf('data-dive-store') < mapPage.indexOf('class="map-status-row"') || mapPage.indexOf('data-dive-store') > mapPage.indexOf('data-map-destination-index')) failures.push('The map dive store must sit directly below the globe status row, before the destination index, never over the Earth.');
+if (frontPage.indexOf('data-dive-store') < frontPage.indexOf('data-home-globe') || frontPage.indexOf('data-dive-store') > frontPage.indexOf('data-map-result')) failures.push('The homepage dive store must sit between the globe panel and the result card, never over the Earth.');
+if (!appJs.includes("const diveStoreFootnoteText = 'המחירים להמחשה; המחיר הסופי מאומת לפני התשלום.';")) failures.push('The dive store is missing its canonical single price footnote text.');
+if ((appJs.split('המחירים להמחשה').length - 1) !== 1) failures.push('The dive-store price disclosure must exist exactly once in the client, never per card.');
+if (!appJs.includes('footnote.hidden = pricedLines === 0;')) failures.push('The dive-store footnote must appear only while at least one sample price is visible.');
+for (const marker of ['function diveStoreNextState', 'function diveStorePointKind', 'function diveStoreTargetKey', 'function nearestCuratedDestinations', 'function diveBreadcrumbTrail', 'function diveBundleCard', 'function diveHubCards', 'function renderGlobeDiveStore', 'function initGlobeDiveStore', 'function diveStoreStepBack', 'function setGlobeDiveDepthAttributes', 'function syncGlobeDiveStoreRoutes']) {
+  if (!appJs.includes(marker)) failures.push(`The dive-store client kernel is missing ${marker}.`);
+}
+if (!appJs.includes('initGlobeDiveStore();')) failures.push('The production app does not initialize the globe dive store.');
+const diveDestinationLinksSource = appJs.match(/function diveDestinationServiceLinks\(data\) \{[\s\S]*?\n\}/)?.[0] || '';
+for (const marker of [
+  "flights: destinationPlanUrl('/flights/', { destination: airport })",
+  "accommodation: destinationPlanUrl('/hotels/', { destination: airport })",
+  "transfers: destinationPlanUrl('/packages/', { destination: airport, transfers: 'true' })",
+  "insurance: destinationPlanUrl('/travel-insurance/', { trip_destination: data.id })",
+  "scope: 'dining'",
+  "scope: 'connectivity'",
+  "scope: 'equipment'",
+  "scope: 'activities'"
+]) {
+  if (!diveDestinationLinksSource.includes(marker)) failures.push(`Dive-store destination chips must reuse the exact plan-360 vertical link patterns: ${marker}.`);
+}
+const diveHubCardsSource = appJs.match(/function diveHubCards\(hub\) \{[\s\S]*?\n\}/)?.[0] || '';
+const diveHubLinksSource = appJs.match(/function diveHubServiceLinks\(hub\) \{[\s\S]*?\n\}/)?.[0] || '';
+if (/[$₪€£]\s?\d|החל מ-/.test(diveHubCardsSource)) failures.push('Hub dive cards must never invent a price before live search.');
+if (!diveHubLinksSource.includes('const destination = hub.iataSearchCode || hub.id;')) failures.push('Hub dive chips must search through the hub IATA code or its stable identity.');
+const diveBundleSource = appJs.match(/function diveBundleCard\(data, routes = \[\]\) \{[\s\S]*?\n\}/)?.[0] || '';
+if (!diveBundleSource.includes('Number(route?.costs?.insurance)') || !diveBundleSource.includes('Math.min(...insuranceCosts)') || !diveBundleSource.includes('? {') || !diveBundleSource.includes(': null')) failures.push('The travel-kit bundle sample price must derive only from existing planning-route insurance components and fail closed without them.');
+if (!appJs.includes("wrap.append(document.createTextNode('החל מ-'));") || !appJs.includes("const amount = document.createElement('bdi');") || !appJs.includes("amount.setAttribute('dir', 'ltr');")) failures.push('Every dive-store sample price must render in the החל מ- form with an LTR-isolated amount.');
+if (!/const sameFocusedTarget = state\.depth >= 1 && state\.kind === kind && state\.key === key;/.test(appJs) || !appJs.includes("const depth = kind === 'map_point' ? 1 : (sameFocusedTarget ? 2 : 1);")) failures.push('The dive depth model must deepen only on a repeated same-target dive and must never open a board for an arbitrary point.');
+if (!appJs.includes("window.traVelGlobe3D?.zoom?.('out', { root: globeDiveRoot });")) failures.push('Stepping back up a dive level must zoom the camera out through the existing zoom path.');
+if (!/if \(inputType === 'dive'\) return;/.test(appJs)) failures.push('A dive reveal must not double-scroll through the selection rail; the dive panel owns its own reveal.');
+if (!appJs.includes("section.scrollIntoView({ behavior: preferredScrollBehavior(), block: 'nearest' });")) failures.push('The dive panel must reveal its top edge with the motion-preference-aware scroll behavior.');
+for (const marker of [
+  '.dive-chip { flex: 0 0 auto; min-height: 44px;',
+  '.dive-back { min-height: 44px;',
+  '.dive-card-action { min-height: 44px;',
+  '.dive-nearby-chip { min-height: 44px;',
+  '.dive-chip-row { display: flex; gap: 8px; overflow-x: auto;',
+  '.dive-board { display: grid; grid-template-columns: repeat(4,minmax(0,1fr));',
+  '.theme-map-shell .world-canvas[data-dive-depth="1"] { min-height: 440px; }',
+  '.theme-map-shell .world-canvas[data-dive-depth="2"] { min-height: 330px; }',
+  '.home-globe-stack .globe-panel[data-dive-depth="1"] .globe',
+  '.home-globe-stack .globe-panel[data-dive-depth="2"] .globe',
+  '.globe-dive-store,.globe-dive-store * { animation: none !important; transition: none !important; }'
+]) {
+  if (!appCss.includes(marker)) failures.push(`The dive-store layout contract is missing ${marker}`);
+}
+if (!/@media \(max-width: 760px\)[\s\S]*?\.dive-board \{ grid-template-columns: 1fr; \}/.test(appCss)) failures.push('The dive-store board must become a single column on mobile.');
+const diveStoreBaseRule = appCss.match(/\n\.globe-dive-store \{([^}]*)\}/)?.[1] || '';
+if (!diveStoreBaseRule || /position:\s*(?:absolute|fixed|sticky)/.test(diveStoreBaseRule)) failures.push('The dive store must remain in document flow and can never cover the globe.');
+
 if (failures.length) {
   console.error('Tra-Vel V2 theme validation failed:');
   failures.forEach((failure) => console.error(`- ${failure}`));

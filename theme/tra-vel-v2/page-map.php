@@ -161,6 +161,22 @@ $default_map_airport = sanitize_text_field( $default_map_data['airport']['code']
 				<a class="map-imagery-attribution" href="https://visibleearth.nasa.gov/images/74218/december-blue-marble-next-generation/74226l" target="_blank" rel="noopener noreferrer">NASA Blue Marble</a>
 				<a class="map-weather-attribution" data-weather-attribution href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer" hidden>Weather data by Open-Meteo · CC BY 4.0</a>
 			</div>
+			<section class="globe-dive-store" data-dive-store data-dive-depth="0" hidden aria-label="<?php esc_attr_e( 'שירותים ומוצרים לנקודה שנבחרה על הגלובוס', 'tra-vel-v2' ); ?>">
+				<div class="dive-store-topline">
+					<nav class="dive-breadcrumb" data-dive-breadcrumb aria-label="<?php esc_attr_e( 'רמת הצלילה על הגלובוס', 'tra-vel-v2' ); ?>"></nav>
+					<button class="dive-back" data-dive-back type="button" hidden><i data-lucide="corner-left-up"></i><?php esc_html_e( 'חזרה לעולם', 'tra-vel-v2' ); ?></button>
+				</div>
+				<header class="dive-hero" data-dive-hero>
+					<small data-dive-kicker></small>
+					<strong data-dive-title></strong>
+					<span data-dive-meta></span>
+				</header>
+				<div class="dive-chip-row" data-dive-chips role="list" aria-label="<?php esc_attr_e( 'חלקי החופשה לנקודה שנבחרה', 'tra-vel-v2' ); ?>" hidden></div>
+				<div class="dive-board" data-dive-board hidden></div>
+				<div class="dive-nearby" data-dive-nearby hidden></div>
+				<p class="dive-footnote" data-dive-footnote hidden><?php esc_html_e( 'המחירים להמחשה; המחיר הסופי מאומת לפני התשלום.', 'tra-vel-v2' ); ?></p>
+				<span class="sr-only" data-dive-live role="status" aria-live="polite" aria-atomic="true"></span>
+			</section>
 			<nav class="map-destination-index" data-map-destination-index aria-label="<?php esc_attr_e( 'בחירת יעד ללא שימוש בגלובוס', 'tra-vel-v2' ); ?>">
 				<strong><i data-lucide="list"></i><?php esc_html_e( 'בחרו יעד מהרשימה', 'tra-vel-v2' ); ?></strong>
 				<div>

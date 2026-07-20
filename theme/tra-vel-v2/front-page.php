@@ -118,6 +118,22 @@ $home_return    = $home_now->modify( '+34 days' )->format( 'Y-m-d' );
 				<div class="globe-tools"><button data-map-zoom="in" type="button" aria-label="<?php esc_attr_e( 'הגדלה', 'tra-vel-v2' ); ?>"><i data-lucide="plus"></i></button><button data-map-zoom="out" type="button" aria-label="<?php esc_attr_e( 'הקטנה', 'tra-vel-v2' ); ?>"><i data-lucide="minus"></i></button><a href="<?php echo esc_url( $map_url ); ?>" aria-label="<?php esc_attr_e( 'מפה מלאה', 'tra-vel-v2' ); ?>"><i data-lucide="maximize-2"></i></a></div>
 				<div class="home-reveal-feedback" data-home-reveal data-state="ready"><span><i data-lucide="sparkles"></i><span><small data-home-reveal-context><?php echo esc_html( $home_campaign_is_seasonal ? __( 'כיוון שמתאים לעונה', 'tra-vel-v2' ) : __( 'כיוון להתחלת החיפוש', 'tra-vel-v2' ) ); ?></small><strong data-home-reveal-status><?php esc_html_e( 'בחרו יעד או לחצו על תפתיעו אותי.', 'tra-vel-v2' ); ?></strong></span></span><button data-home-reveal-cancel type="button" hidden><?php esc_html_e( 'עצרו', 'tra-vel-v2' ); ?></button></div>
 			</div>
+				<section class="globe-dive-store" data-dive-store data-dive-depth="0" hidden aria-label="<?php esc_attr_e( 'שירותים ומוצרים לנקודה שנבחרה על הגלובוס', 'tra-vel-v2' ); ?>">
+					<div class="dive-store-topline">
+						<nav class="dive-breadcrumb" data-dive-breadcrumb aria-label="<?php esc_attr_e( 'רמת הצלילה על הגלובוס', 'tra-vel-v2' ); ?>"></nav>
+						<button class="dive-back" data-dive-back type="button" hidden><i data-lucide="corner-left-up"></i><?php esc_html_e( 'חזרה לעולם', 'tra-vel-v2' ); ?></button>
+					</div>
+					<header class="dive-hero" data-dive-hero>
+						<small data-dive-kicker></small>
+						<strong data-dive-title></strong>
+						<span data-dive-meta></span>
+					</header>
+					<div class="dive-chip-row" data-dive-chips role="list" aria-label="<?php esc_attr_e( 'חלקי החופשה לנקודה שנבחרה', 'tra-vel-v2' ); ?>" hidden></div>
+					<div class="dive-board" data-dive-board hidden></div>
+					<div class="dive-nearby" data-dive-nearby hidden></div>
+					<p class="dive-footnote" data-dive-footnote hidden><?php esc_html_e( 'המחירים להמחשה; המחיר הסופי מאומת לפני התשלום.', 'tra-vel-v2' ); ?></p>
+					<span class="sr-only" data-dive-live role="status" aria-live="polite" aria-atomic="true"></span>
+				</section>
 				<article class="map-result" data-map-result>
 					<img class="map-result-image" data-result-image src="<?php echo esc_url( tra_vel_v2_asset_uri( 'images/' . $home_default_image ) ); ?>" alt="<?php echo esc_attr( $home_default_label ); ?>">
 					<div class="map-result-body"><div class="result-top"><div><small data-result-context><?php echo esc_html( $home_default_context ); ?></small><h3 data-result-city><?php echo esc_html( $home_default_label ); ?></h3></div><button class="save-button" type="button" aria-label="<?php esc_attr_e( 'שמירה', 'tra-vel-v2' ); ?>"><i data-lucide="heart"></i></button></div><div class="result-tags" data-result-tags><?php foreach ( array_slice( (array) ( $home_default_data['tags'] ?? array() ), 0, 3 ) as $tag ) : ?><span><?php echo esc_html( $tag ); ?></span><?php endforeach; ?></div><div class="result-price"><div><small><?php esc_html_e( 'מחיר לתכנון לאדם', 'tra-vel-v2' ); ?></small><strong data-result-price><?php echo esc_html( $home_default_price ); ?></strong></div><p data-result-note><?php esc_html_e( 'המחיר הסופי מאומת מול הספק לפני התשלום.', 'tra-vel-v2' ); ?></p></div>

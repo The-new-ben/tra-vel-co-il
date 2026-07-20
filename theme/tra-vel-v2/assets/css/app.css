@@ -3536,3 +3536,81 @@ h3.deal-title { display: block; margin: 6px 0 12px; font-size: 22px; line-height
 @media (prefers-reduced-motion: reduce) {
   .lead-contact-step,.lead-contact-step * { animation: none !important; transition: none !important; }
 }
+
+/* Globe dive store (theme 1.25.0): every dive opens the location's services
+   below the globe. The globe is never covered; it yields height through the
+   data-dive-depth classes while the panel stays in normal document flow. */
+.globe-dive-store { position: relative; display: grid; gap: 12px; margin-top: 10px; padding: 15px; border: 1px solid #cedbd5; border-radius: 18px; background: #fff; color: var(--ink); box-shadow: 0 12px 34px rgba(7,31,40,.08); }
+.globe-dive-store::before { content: ''; position: absolute; inset-block: 0; inset-inline-start: 0; width: 4px; background: var(--aqua); border-start-start-radius: 18px; border-end-start-radius: 18px; }
+.globe-dive-store[hidden] { display: none; }
+.home-globe-stack .globe-dive-store { width: min(550px,100%); justify-self: center; }
+.dive-store-topline { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.dive-breadcrumb { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; font-size: 12.5px; font-weight: 800; color: var(--muted); }
+.dive-breadcrumb b { color: var(--ink); }
+.dive-crumb-separator { color: #9fb0ac; }
+.dive-back { min-height: 44px; display: inline-flex; align-items: center; gap: 7px; padding: 9px 13px; border: 1px solid #cedbd5; border-radius: 12px; background: #f4f8f4; color: var(--ink); font-size: 12.5px; font-weight: 850; cursor: pointer; }
+.dive-back:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
+.dive-back :is(i,svg) { width: 15px; }
+.dive-hero { display: grid; gap: 3px; }
+.dive-hero small { color: var(--muted); font-weight: 800; font-size: 11.5px; letter-spacing: .2px; }
+.dive-hero strong { font-size: 19px; line-height: 1.25; }
+.dive-hero span { color: var(--muted); font-size: 13px; }
+.dive-chip-row { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: thin; }
+.dive-chip { flex: 0 0 auto; min-height: 44px; display: inline-flex; align-items: center; gap: 7px; padding: 10px 14px; border: 1px solid #cedbd5; border-radius: 999px; background: #f7faf6; color: var(--ink); font-size: 12.5px; font-weight: 850; cursor: pointer; }
+.dive-chip :is(i,svg) { width: 15px; flex: 0 0 auto; }
+.dive-chip:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
+.dive-chip-action { border-color: #0b2a35; background: #08232c; color: #fff; }
+.dive-board { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 10px; }
+.dive-card { display: grid; gap: 6px; align-content: start; min-width: 0; padding: 12px; border: 1px solid #dbe4de; border-radius: 14px; background: #fbfdf9; }
+.dive-card > :is(i,svg) { width: 18px; color: var(--blue); }
+.dive-card b { font-size: 13.5px; }
+.dive-card em { font-style: normal; color: var(--muted); font-size: 12px; line-height: 1.45; }
+.dive-price { font-weight: 900; font-size: 13.5px; }
+.dive-price-caption { color: var(--muted); font-size: 11px; }
+.dive-card-action { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 9px 12px; border-radius: 10px; background: #08232c; color: #fff; font-size: 12px; font-weight: 850; }
+.dive-card-action :is(i,svg) { width: 14px; }
+.dive-card-action:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
+.dive-card.is-bundle { border-color: var(--lime-2); background: #fbffe9; }
+.dive-banner { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 11px 13px; border: 1px solid #e0d3a4; border-radius: 12px; background: #fffaf0; font-size: 12.5px; font-weight: 750; }
+.dive-banner > :is(i,svg) { width: 17px; color: #8c6d1f; flex: 0 0 auto; }
+.dive-banner > span { flex: 1 1 220px; min-width: 0; }
+.dive-banner-action { min-height: 44px; display: inline-flex; align-items: center; gap: 7px; padding: 9px 13px; border-radius: 10px; background: #08232c; color: #fff; font-size: 12px; font-weight: 850; }
+.dive-banner-action:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
+.dive-nearby { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.dive-nearby strong { font-size: 12.5px; color: var(--muted); }
+.dive-nearby-chip { min-height: 44px; display: inline-flex; align-items: center; gap: 7px; padding: 9px 13px; border: 1px solid #cedbd5; border-radius: 999px; background: #f7faf6; color: var(--ink); font-size: 12.5px; font-weight: 850; cursor: pointer; }
+.dive-nearby-chip small { color: var(--muted); font-weight: 800; }
+.dive-nearby-chip:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
+.dive-footnote { margin: 0; color: var(--muted); font-size: 12px; }
+
+/* The globe yields height instead of being covered. Depth one is roughly the
+   60vh to 40vh step of the desktop layout; depth two docks near 30vh. */
+.theme-map-shell .world-canvas { transition: min-height var(--motion-confirm) var(--ease-standard); }
+.theme-map-shell .world-canvas .globe { transition: width var(--motion-confirm) var(--ease-standard); }
+.home-globe-stack .globe { transition: width var(--motion-confirm) var(--ease-standard); }
+.theme-map-shell .world-canvas[data-dive-depth="1"] { min-height: 440px; }
+.theme-map-shell .world-canvas[data-dive-depth="1"] .globe { width: min(430px,84%); }
+.theme-map-shell .world-canvas[data-dive-depth="2"] { min-height: 330px; }
+.theme-map-shell .world-canvas[data-dive-depth="2"] .globe { width: min(320px,70%); }
+.home-globe-stack .globe-panel[data-dive-depth="1"] .globe { width: min(430px,78%); }
+.home-globe-stack .globe-panel[data-dive-depth="2"] .globe { width: min(330px,64%); }
+
+@media (max-width: 1000px) {
+  .dive-board { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .theme-map-shell .world-canvas[data-dive-depth="1"] { min-height: clamp(300px,48vw,470px); }
+  .theme-map-shell .world-canvas[data-dive-depth="2"] { min-height: clamp(240px,38vw,360px); }
+}
+
+@media (max-width: 760px) {
+  .dive-board { grid-template-columns: 1fr; }
+  .globe-dive-store { padding: 13px; border-radius: 16px; }
+  .theme-map-shell .world-canvas[data-dive-depth="1"] { min-height: 400px; }
+  .theme-map-shell .world-canvas[data-dive-depth="1"] .globe { width: 370px; height: 370px; }
+  .theme-map-shell .world-canvas[data-dive-depth="2"] { min-height: 300px; }
+  .theme-map-shell .world-canvas[data-dive-depth="2"] .globe { width: 270px; height: 270px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-map-shell .world-canvas,.theme-map-shell .world-canvas .globe,.home-globe-stack .globe { transition: none !important; }
+  .globe-dive-store,.globe-dive-store * { animation: none !important; transition: none !important; }
+}

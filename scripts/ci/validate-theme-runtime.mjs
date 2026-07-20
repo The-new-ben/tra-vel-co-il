@@ -3296,4 +3296,48 @@ assert.match(globeSource, /function startTour\(ids = null, options = \{\}\) \{\s
 assert.match(globeSource, /candidateIndex >= MARKER_COLLISION_BUDGET/, 'The collision pass must stay inside the bounded front-hemisphere marker budget.');
 assert.match(globeSource, /timestamp - state\.lastMarkerSyncAt >= IDLE_MARKER_SYNC_INTERVAL_MS/, 'Idle-spin marker declutter must throttle to the bounded interval while the sphere renders at full rate.');
 
+// Theme 1.25.0 dive store: the depth reducer, point-type routing, nearest
+// computation, and truthful sample pricing run against the loaded client.
+vm.runInContext(`
+  destinationData = {
+    bangkok: {id:'bangkok', city:'בנגקוק', country:'תאילנד', latitude:13.7563, longitude:100.5018, airportCode:'BKK', price:'החל מ-$950', hotelArea:'Siam', hotelPrice:'$65', currency:'USD'},
+    athens: {id:'athens', city:'אתונה', country:'יוון', latitude:37.9838, longitude:23.7275, airportCode:'ATH', price:'החל מ-$189', hotelArea:'Plaka', hotelPrice:'$145', currency:'USD'},
+    budapest: {id:'budapest', city:'בודפשט', country:'הונגריה', latitude:47.4979, longitude:19.0402, airportCode:'BUD', price:'החל מ-$229', hotelArea:'District V', hotelPrice:'$130', currency:'USD'},
+    dubai: {id:'dubai', city:'דובאי', country:'איחוד האמירויות', latitude:25.2048, longitude:55.2708, airportCode:'DXB', price:'החל מ-$236', hotelArea:'Dubai Creek', hotelPrice:'$170', currency:'USD'}
+  };
+  explorationHubData = {
+    larnaca: {id:'larnaca', city:'לרנקה', country:'קפריסין', latitude:34.9003, longitude:33.6232, radiusKm:90, iataSearchCode:'LCA', liveSearchScopes:['route','stay','activities','insurance','connectivity','equipment']}
+  };
+`, context);
+const diveOne = runtimeJson(`diveStoreNextState({depth:0,kind:'',key:''}, {type:'dive', kind:'destination', key:'bangkok', latitude:13.7563, longitude:100.5018})`);
+assert.equal(diveOne.depth, 1, 'A first dive on a destination must open the D1 chip row.');
+const diveTwo = runtimeJson(`diveStoreNextState(${JSON.stringify(diveOne)}, {type:'dive', kind:'destination', key:'bangkok'})`);
+assert.equal(diveTwo.depth, 2, 'A second dive on the same focused destination must expand to the D2 service board.');
+const diveSwap = runtimeJson(`diveStoreNextState(${JSON.stringify(diveTwo)}, {type:'dive', kind:'destination', key:'athens'})`);
+assert.deepEqual({depth: diveSwap.depth, key: diveSwap.key}, {depth: 1, key: 'athens'}, 'A dive on a different destination at any depth must swap the panel back to its D1 state.');
+assert.equal(runtimeJson(`diveStoreNextState(${JSON.stringify(diveTwo)}, {type:'dive', kind:'destination', key:'bangkok'})`).depth, 2, 'The dive depth must cap at the D2 board.');
+const divePointRepeat = runtimeJson(`diveStoreNextState({depth:1,kind:'map_point',key:'point:10.0:10.0'}, {type:'dive', kind:'map_point', key:'point:10.0:10.0'})`);
+assert.equal(divePointRepeat.depth, 1, 'An arbitrary point must never open a D2 board, even on repeated dives.');
+const diveBack = runtimeJson(`diveStoreNextState(${JSON.stringify(diveTwo)}, {type:'back'})`);
+assert.deepEqual({depth: diveBack.depth, key: diveBack.key}, {depth: 1, key: 'bangkok'}, 'Back must step exactly one dive level up.');
+assert.equal(runtimeJson(`diveStoreNextState(${JSON.stringify(diveBack)}, {type:'back'})`).depth, 0, 'Backing out of D1 must return the surface to the D0 orbit.');
+assert.equal(runtimeJson(`diveStoreNextState(${JSON.stringify(diveTwo)}, {type:'select', kind:'map_point', key:'point:1.0:1.0'})`).depth, 0, 'A plain tap elsewhere must close the dive store back to orbit previews.');
+assert.equal(runtimeJson(`diveStoreNextState({depth:0,kind:'',key:''}, {type:'select', kind:'destination', key:'athens'})`).depth, 1, 'Selecting a destination is a D1 entry.');
+assert.equal(runtimeJson(`diveStorePointKind({selectionKind:'destination', supported:true, nearestDestination:'bangkok', latitude:13.7, longitude:100.5})`), 'destination', 'A supported destination selection must route to the destination dive surface.');
+assert.equal(runtimeJson(`diveStorePointKind({selectionKind:'exploration_hub', hubId:'larnaca', latitude:34.9, longitude:33.6})`), 'exploration_hub', 'A hub selection must route to the hub dive surface.');
+assert.equal(runtimeJson(`diveStorePointKind({selectionKind:'exploration_hub', hubId:'unknown-hub', latitude:34.9, longitude:33.6})`), 'map_point', 'An unknown hub identity must fall back to the safe point surface.');
+assert.equal(runtimeJson(`diveStorePointKind({latitude:200, longitude:0})`), '', 'Invalid coordinates must not open any dive surface.');
+const runtimeNearest = runtimeJson(`nearestCuratedDestinations({latitude:34.9003, longitude:33.6232}, destinationData, 3)`);
+assert.deepEqual(runtimeNearest.map(entry => entry.id), ['athens', 'budapest', 'dubai'], 'The nearest-three computation must order curated destinations by great-circle distance.');
+assert.ok(runtimeNearest.every(entry => Number.isInteger(entry.distanceKm) && entry.distanceKm > 0), 'Nearest-destination chips must carry whole-kilometre distances.');
+assert.deepEqual(runtimeJson(`diveBreadcrumbTrail({depth:1, kind:'destination', key:'bangkok'})`), ['עולם', 'תאילנד', 'בנגקוק'], 'The breadcrumb must read world, country, city for a destination dive.');
+assert.deepEqual(runtimeJson(`diveBreadcrumbTrail({depth:1, kind:'map_point', key:'point:1.0:1.0'})`), ['עולם', 'נקודה על הגלובוס'], 'An arbitrary point must stay an honest globe point in the breadcrumb.');
+assert.equal(runtimeJson(`diveBundleCard(destinationData.bangkok, []).price`), null, 'Without planning-route insurance data the travel-kit bundle must not show a price.');
+assert.equal(runtimeJson(`diveBundleCard(destinationData.bangkok, [{currency:'USD', costs:{insurance:72}}, {currency:'USD', costs:{insurance:85}}]).price.amount`), '$72', 'The bundle sample price must be the minimum existing route insurance component.');
+assert.equal(runtimeJson(`divePriceParts('החל מ-$214').amount`), '$214', 'Sample prices must parse only from the החל מ- form.');
+assert.equal(runtimeJson(`divePriceParts('$214')`), null, 'A bare amount without the החל מ- form must never render as a dive price.');
+assert.equal(runtimeJson(`diveHubCards(explorationHubData.larnaca).every(card => card.price === null)`), true, 'Hub dive cards must never carry a price before live search.');
+assert.equal(runtimeJson('diveStoreFootnoteText'), 'המחירים להמחשה; המחיר הסופי מאומת לפני התשלום.', 'The dive store must keep its canonical single price footnote.');
+vm.runInContext('destinationData = { ...fallbackDestinations }; explorationHubData = {};', context);
+
 console.log('Tra-Vel animated journey runtime checks passed.');
