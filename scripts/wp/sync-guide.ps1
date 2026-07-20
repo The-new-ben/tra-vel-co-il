@@ -558,18 +558,37 @@ try {
     $encodedPair = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($pair))
     $headers = @{ Authorization = "Basic $encodedPair" }
 
+    # Windows PowerShell 5.1 Invoke-RestMethod can hand back JSON array responses
+    # nested one level deep (a single-element or empty inner array), which breaks
+    # strict count-based conflict guards. Flatten to genuine page records only.
+    function ConvertTo-PageRecordArray {
+        param($Response)
+        $records = @()
+        foreach ($item in @($Response)) {
+            if ($null -eq $item) { continue }
+            if ($item -is [System.Collections.IEnumerable] -and $item -isnot [string] -and $null -eq $item.PSObject.Properties['id']) {
+                foreach ($nested in $item) {
+                    if ($null -ne $nested -and $null -ne $nested.PSObject.Properties['id']) { $records += $nested }
+                }
+                continue
+            }
+            if ($null -ne $item.PSObject.Properties['id']) { $records += $item }
+        }
+        return ,$records
+    }
+
     $lookupPage = {
         param($lookupSlug, $lookupParentId)
         $encodedSlug = [Uri]::EscapeDataString([string]$lookupSlug)
         $lookupUri = "$SiteUrl/wp-json/wp/v2/pages?slug=$encodedSlug&parent=$lookupParentId&status=any&context=edit&_fields=id,slug,status,parent"
-        return @(Invoke-RestMethod -Uri $lookupUri -Headers $headers -Method Get -MaximumRedirection 0 -TimeoutSec 30)
+        return ConvertTo-PageRecordArray (Invoke-RestMethod -Uri $lookupUri -Headers $headers -Method Get -MaximumRedirection 0 -TimeoutSec 30)
     }
 
     $ancestorChain = Resolve-GuideAncestorChain -Route $route -Lookup $lookupPage -RequirePublished:($Status -eq 'publish')
     $parentId = [int]$ancestorChain.FinalParentId
     $encodedFinalSlug = [Uri]::EscapeDataString([string]$route.FinalSlug)
     $targetLookupUri = "$SiteUrl/wp-json/wp/v2/pages?slug=$encodedFinalSlug&parent=$parentId&status=any&context=edit&_fields=id,slug,status,parent"
-    $targetMatches = @(Invoke-RestMethod -Uri $targetLookupUri -Headers $headers -Method Get -MaximumRedirection 0 -TimeoutSec 30)
+    $targetMatches = ConvertTo-PageRecordArray (Invoke-RestMethod -Uri $targetLookupUri -Headers $headers -Method Get -MaximumRedirection 0 -TimeoutSec 30)
     $existing = Find-ExactGuideTarget -Slug $route.FinalSlug -ParentId $parentId -Candidates $targetMatches
 
     $body = [ordered]@{
