@@ -2425,6 +2425,9 @@ function updateGlobeSelectionRail(data, options = {}) {
 }
 
 function revealGlobeSelection(inputType = 'pointer') {
+  // A dive reveal is owned by the dive store panel, which scrolls itself into
+  // view as the direct result of the gesture; the rail must not compete.
+  if (inputType === 'dive') return;
   const rail = document.querySelector('[data-globe-selection]');
   if (!rail) return;
   if (inputType === 'keyboard') rail.focus({ preventScroll: true });
@@ -4884,6 +4887,7 @@ function mapDestinationWorkspaceItem(data) {
 }
 
 function renderRoutes(routes, recommendedId = '') {
+  syncGlobeDiveStoreRoutes();
   const list = document.querySelector('[data-route-list]');
   if (!list) return;
   list.replaceChildren();
@@ -11467,6 +11471,646 @@ function initExperienceDecisionMap() {
   if (selected) select(selected);
 }
 
+// --- Globe dive store (theme 1.25.0) ----------------------------------------
+// Every double-click or double-tap dive reveals the struck location's services
+// below the globe. Depth model: D0 orbit (existing previews), D1 first dive or
+// destination selection (hero + service chip row, globe yields height), D2
+// second dive on the same focus (full service board, globe docks smaller).
+// Truth rules: prices come only from existing planning data, always in the
+// 'החל מ-' form with one panel-level footnote; hub and free-point surfaces
+// never show a price. The dive store binds no wheel or scroll listeners.
+const diveStoreFootnoteText = 'המחירים להמחשה; המחיר הסופי מאומת לפני התשלום.';
+const diveStoreServiceOrder = ['flights', 'accommodation', 'transfers', 'activities', 'dining', 'insurance', 'connectivity', 'equipment'];
+const diveStoreHubServiceOrder = ['flights', 'accommodation', 'connectivity', 'insurance'];
+const diveStoreServiceLabels = {
+  flights: 'טיסות',
+  accommodation: 'מלונות',
+  transfers: 'העברות',
+  activities: 'פעילויות',
+  dining: 'אוכל',
+  insurance: 'ביטוח',
+  connectivity: 'eSIM ותקשורת',
+  equipment: 'ציוד'
+};
+const diveStoreServiceIcons = {
+  flights: 'plane-takeoff',
+  accommodation: 'hotel',
+  transfers: 'car-taxi-front',
+  activities: 'ticket-check',
+  dining: 'utensils',
+  insurance: 'shield-check',
+  connectivity: 'wifi',
+  equipment: 'luggage'
+};
+const diveStoreServiceCtaLabels = {
+  flights: 'השוו טיסות',
+  accommodation: 'פתחו חיפוש מלונות',
+  transfers: 'התאימו העברות',
+  activities: 'בנו ימים ופעילויות',
+  dining: 'הוסיפו העדפות אוכל',
+  insurance: 'בדקו נושאים לביטוח',
+  connectivity: 'השוו נפח גלישה וכיסוי',
+  equipment: 'בנו רשימת ציוד'
+};
+const diveStoreHubCtaLabels = {
+  flights: 'חפשו טיסות',
+  accommodation: 'חפשו לינה',
+  connectivity: 'השוו חיבור',
+  insurance: 'בדקו ביטוח'
+};
+let globeDiveState = { depth: 0, kind: '', key: '', latitude: null, longitude: null };
+let globeDiveRoot = null;
+
+function diveStoreNextState(current = { depth: 0, kind: '', key: '' }, event = {}) {
+  const closed = { depth: 0, kind: '', key: '', latitude: null, longitude: null };
+  const state = {
+    depth: Number(current?.depth) > 0 ? Math.min(2, Math.floor(Number(current.depth))) : 0,
+    kind: typeof current?.kind === 'string' ? current.kind : '',
+    key: typeof current?.key === 'string' ? current.key : '',
+    latitude: Number.isFinite(Number(current?.latitude)) ? Number(current.latitude) : null,
+    longitude: Number.isFinite(Number(current?.longitude)) ? Number(current.longitude) : null
+  };
+  if (event?.type === 'reset') return closed;
+  if (event?.type === 'back') {
+    const depth = Math.max(0, state.depth - 1);
+    return depth === 0 ? closed : { ...state, depth };
+  }
+  const kind = ['destination', 'exploration_hub', 'map_point'].includes(event?.kind) ? event.kind : '';
+  const key = typeof event?.key === 'string' ? event.key.slice(0, 80) : '';
+  if (!kind || !key) return state;
+  const next = {
+    kind,
+    key,
+    latitude: Number.isFinite(Number(event.latitude)) ? Number(event.latitude) : null,
+    longitude: Number.isFinite(Number(event.longitude)) ? Number(event.longitude) : null
+  };
+  if (event.type === 'dive') {
+    // A second dive while the same target stays focused deepens to the board;
+    // a dive on any other target flies there and swaps the panel back to D1.
+    const sameFocusedTarget = state.depth >= 1 && state.kind === kind && state.key === key;
+    const depth = kind === 'map_point' ? 1 : (sameFocusedTarget ? 2 : 1);
+    return { ...next, depth };
+  }
+  if (event.type === 'select') {
+    // Selecting a destination is a D1 entry; a plain tap elsewhere returns the
+    // surface to the D0 orbit previews without opening the store.
+    if (kind !== 'destination') return closed;
+    const sameTarget = state.kind === 'destination' && state.key === key;
+    return { ...next, depth: sameTarget ? Math.max(1, state.depth) : 1 };
+  }
+  return state;
+}
+
+function diveStorePointKind(detail = {}) {
+  const destinationId = typeof detail.nearestDestination === 'string' ? detail.nearestDestination : '';
+  if (detail.selectionKind === 'destination' && detail.supported && destinationId && destinationData[destinationId]) return 'destination';
+  const hubId = typeof detail.hubId === 'string' ? detail.hubId.replace(/[^a-z0-9-]/g, '').slice(0, 60) : '';
+  if (detail.selectionKind === 'exploration_hub' && hubId && explorationHubData[hubId]) return 'exploration_hub';
+  const latitude = Number(detail.latitude);
+  const longitude = Number(detail.longitude);
+  if (Number.isFinite(latitude) && latitude >= -90 && latitude <= 90
+    && Number.isFinite(longitude) && longitude >= -180 && longitude <= 180) return 'map_point';
+  return '';
+}
+
+function diveStoreTargetKey(kind, detail = {}) {
+  if (kind === 'destination') return String(detail.nearestDestination || '');
+  if (kind === 'exploration_hub') return String(detail.hubId || '').replace(/[^a-z0-9-]/g, '').slice(0, 60);
+  const latitude = Number(detail.latitude);
+  const longitude = Number(detail.longitude);
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return '';
+  return `point:${latitude.toFixed(1)}:${longitude.toFixed(1)}`;
+}
+
+function nearestCuratedDestinations(point, destinations = destinationData, count = 3) {
+  const latitude = Number(point?.latitude);
+  const longitude = Number(point?.longitude);
+  if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90
+    || !Number.isFinite(longitude) || longitude < -180 || longitude > 180) return [];
+  return Object.values(destinations || {})
+    .filter(destination => destination && typeof destination.id === 'string'
+      && Number.isFinite(Number(destination.latitude)) && Number.isFinite(Number(destination.longitude)))
+    .map(destination => ({
+      id: destination.id,
+      city: destination.city || destination.id,
+      country: destination.country || '',
+      distanceKm: Math.round(explorationHubDistanceKm({ latitude, longitude }, destination))
+    }))
+    .sort((first, second) => first.distanceKm - second.distanceKm || first.id.localeCompare(second.id))
+    .slice(0, Math.max(1, Math.min(8, Number(count) || 3)));
+}
+
+function diveBreadcrumbTrail(state = globeDiveState) {
+  if (!state || !(Number(state.depth) > 0)) return ['עולם'];
+  if (state.kind === 'destination') {
+    const data = destinationData[state.key];
+    if (data) return ['עולם', data.country, data.city].filter(Boolean);
+  }
+  if (state.kind === 'exploration_hub') {
+    const hub = explorationHubData[state.key];
+    if (hub) return ['עולם', hub.country, hub.city].filter(Boolean);
+  }
+  return ['עולם', 'נקודה על הגלובוס'];
+}
+
+function diveDestinationServiceLinks(data) {
+  const airport = data.airportCode || '';
+  return {
+    flights: destinationPlanUrl('/flights/', { destination: airport }),
+    accommodation: destinationPlanUrl('/hotels/', { destination: airport }),
+    transfers: destinationPlanUrl('/packages/', { destination: airport, transfers: 'true' }),
+    activities: destinationPlanUrl('/ai-planner/', { destination: data.id, scope: 'activities' }),
+    dining: destinationPlanUrl('/ai-planner/', { destination: data.id, scope: 'dining' }),
+    insurance: destinationPlanUrl('/travel-insurance/', { trip_destination: data.id }),
+    connectivity: destinationPlanUrl('/ai-planner/', { destination: data.id, scope: 'connectivity' }),
+    equipment: destinationPlanUrl('/ai-planner/', { destination: data.id, scope: 'equipment' })
+  };
+}
+
+function diveHubServiceLinks(hub) {
+  const destination = hub.iataSearchCode || hub.id;
+  const q = `${hub.city}, ${hub.country}`;
+  return {
+    flights: destinationPlanUrl('/flights/', { q, scope: 'flights', destination }),
+    accommodation: destinationPlanUrl('/hotels/', { q, scope: 'accommodation', destination }),
+    connectivity: destinationPlanUrl('/ai-planner/', { q, scope: 'connectivity', destination }),
+    insurance: destinationPlanUrl('/travel-insurance/', { q, scope: 'insurance', destination, trip_destination: hub.id })
+  };
+}
+
+function diveServiceChips(kind, data) {
+  if (kind === 'destination' && data) {
+    const links = diveDestinationServiceLinks(data);
+    return diveStoreServiceOrder.map(id => ({ id, icon: diveStoreServiceIcons[id], label: diveStoreServiceLabels[id], href: links[id] }));
+  }
+  if (kind === 'exploration_hub' && data) {
+    const links = diveHubServiceLinks(data);
+    return diveStoreHubServiceOrder.map(id => ({ id, icon: diveStoreServiceIcons[id], label: diveStoreServiceLabels[id], href: links[id] }));
+  }
+  return [];
+}
+
+function divePriceParts(value) {
+  const text = typeof value === 'string' ? value.trim() : '';
+  const match = text.match(/^החל מ-(.+)$/);
+  if (!match) return null;
+  const amount = match[1].trim();
+  if (!/^[$€£₪][\d,.]+$/.test(amount)) return null;
+  return { amount };
+}
+
+function diveCurrencySymbol(currency) {
+  return { USD: '$', EUR: '€', GBP: '£', ILS: '₪' }[String(currency || '').toUpperCase()] || '$';
+}
+
+function divePlanningModuleHeadline(data, moduleId) {
+  const headline = data?.planning?.modules?.[moduleId]?.headline;
+  return typeof headline === 'string' ? headline : '';
+}
+
+function diveDestinationHeroMeta(data) {
+  const parts = [];
+  if (data.flightDuration) {
+    parts.push(data.airportDirect
+      ? `טיסה ישירה משוערת, כ-${data.flightDuration} שעות`
+      : `זמן טיסה משוער כ-${data.flightDuration} שעות, כולל עצירה`);
+  }
+  // Weather and season lines follow the same supplier truth gates as the rest
+  // of the panel: no live or last-checked snapshot means no weather claim.
+  const weatherUsable = Boolean(data.liveLayers?.weather) && (discoverySnapshotIsCurrent() || discoverySnapshotIsStale());
+  if (weatherUsable && data.weather) parts.push(`${data.weather}${data.weatherCondition ? ` · ${data.weatherCondition}` : ''}`);
+  const seasonUsable = weatherUsable && discoverySnapshotIsCurrent() && fieldProvenanceLive(discoveryFieldProvenance, 'weather_season', data.id) && data.seasonFit;
+  if (seasonUsable) parts.push(`התאמת עונה: ${data.seasonFit}`);
+  if (!weatherUsable) parts.push('מזג אוויר ועונה ייבדקו לפי מועד הנסיעה');
+  return parts;
+}
+
+function diveDestinationCards(data) {
+  const links = diveDestinationServiceLinks(data);
+  const flightFact = data.flightDuration
+    ? (data.airportDirect ? `טיסה ישירה, כ-${data.flightDuration} שעות` : `כ-${data.flightDuration} שעות, כולל עצירה`)
+    : '';
+  const transferMinutes = Number(data.transferMinutes);
+  const facts = {
+    flights: flightFact,
+    accommodation: data.hotelArea ? `אזור ${data.hotelArea}` : '',
+    transfers: Number.isFinite(transferMinutes) && transferMinutes > 0 ? `כ-${transferMinutes} דקות מהשדה למרכז` : '',
+    activities: '',
+    dining: divePlanningModuleHeadline(data, 'dining'),
+    insurance: '',
+    connectivity: divePlanningModuleHeadline(data, 'connectivity'),
+    equipment: divePlanningModuleHeadline(data, 'equipment')
+  };
+  const flightPrice = divePriceParts(data.price);
+  const nightly = typeof data.hotelPrice === 'string' && /^[$€£₪][\d,.]+$/.test(data.hotelPrice.trim()) ? data.hotelPrice.trim() : '';
+  const prices = {
+    flights: flightPrice ? { amount: flightPrice.amount, suffix: '' } : null,
+    accommodation: nightly ? { amount: nightly, suffix: ' ללילה' } : null
+  };
+  return diveStoreServiceOrder.map(id => ({
+    id,
+    icon: diveStoreServiceIcons[id],
+    label: diveStoreServiceLabels[id],
+    fact: facts[id] || '',
+    price: prices[id] || null,
+    cta: { label: diveStoreServiceCtaLabels[id], href: links[id] }
+  }));
+}
+
+function diveStoreRoutesForDestination(key) {
+  if (Array.isArray(homeRouteExamples?.[key]) && homeRouteExamples[key].length) return homeRouteExamples[key];
+  if (key && key === activeDestination && Array.isArray(discoveryRoutes) && discoveryRoutes.length) return discoveryRoutes;
+  return [];
+}
+
+function diveBundleCard(data, routes = []) {
+  if (!data) return null;
+  // The bundle sample price may come only from the destination's existing
+  // planning-route insurance components; without that data no price renders.
+  const insuranceCosts = (Array.isArray(routes) ? routes : [])
+    .map(route => Number(route?.costs?.insurance))
+    .filter(value => Number.isFinite(value) && value > 0);
+  const currency = diveCurrencySymbol((Array.isArray(routes) && routes[0]?.currency) || data.currency);
+  const price = insuranceCosts.length
+    ? { amount: `${currency}${Math.min(...insuranceCosts)}`, suffix: '', caption: 'רכיב הביטוח מתוך מסלולי התכנון של היעד' }
+    : null;
+  return {
+    id: 'travel-kit',
+    icon: 'package',
+    label: 'ערכת נסיעה',
+    bundle: true,
+    fact: 'ביטוח נסיעות ו-eSIM ותקשורת, מותאמים יחד לנסיעה אחת',
+    price,
+    cta: { label: 'הרכיבו ערכת נסיעה', href: destinationPlanUrl('/ai-planner/', { destination: data.id, scope: 'connectivity,insurance' }) }
+  };
+}
+
+function diveHubCards(hub) {
+  const links = diveHubServiceLinks(hub);
+  const facts = {
+    flights: `דרכי הגעה אל ${hub.city}`,
+    accommodation: `לינה ב${hub.city} לפי אזור והרכב`,
+    connectivity: 'נפח גלישה וכיסוי לפי ימי הנסיעה',
+    insurance: 'נושאים לבירור לפי המסלול והנוסעים'
+  };
+  return diveStoreHubServiceOrder.map(id => ({
+    id,
+    icon: diveStoreServiceIcons[id],
+    label: diveStoreServiceLabels[id],
+    fact: facts[id],
+    price: null,
+    cta: { label: diveStoreHubCtaLabels[id], href: links[id] }
+  }));
+}
+
+function diveStoreSectionFor(globeRoot) {
+  const scope = globeRoot?.closest?.('.theme-map-shell') || globeRoot?.closest?.('.home-globe-stack');
+  return scope?.querySelector?.('[data-dive-store]') || document.querySelector('[data-dive-store]');
+}
+
+function setGlobeDiveDepthAttributes(globeRoot, depth) {
+  const targets = [globeRoot, globeRoot?.closest?.('[data-map-canvas]'), globeRoot?.closest?.('.globe-panel')];
+  targets.forEach(target => {
+    if (!target || !target.dataset) return;
+    if (depth > 0) target.dataset.diveDepth = String(depth);
+    else delete target.dataset.diveDepth;
+  });
+}
+
+function appendDiveIcon(parent, name) {
+  const icon = document.createElement('i');
+  icon.setAttribute('data-lucide', name);
+  parent.append(icon);
+}
+
+function appendDivePrice(parent, price) {
+  if (!price) return false;
+  const wrap = document.createElement('span');
+  wrap.className = 'dive-price';
+  wrap.append(document.createTextNode('החל מ-'));
+  const amount = document.createElement('bdi');
+  amount.setAttribute('dir', 'ltr');
+  amount.textContent = price.amount;
+  wrap.append(amount);
+  if (price.suffix) wrap.append(document.createTextNode(price.suffix));
+  parent.append(wrap);
+  if (price.caption) appendTextElement(parent, 'small', price.caption, 'dive-price-caption');
+  return true;
+}
+
+function renderDiveBreadcrumb(container, trail) {
+  if (!container) return;
+  container.replaceChildren();
+  trail.forEach((part, index) => {
+    if (index > 0) {
+      const separator = document.createElement('span');
+      separator.className = 'dive-crumb-separator';
+      separator.setAttribute('aria-hidden', 'true');
+      separator.textContent = '‹';
+      container.append(separator);
+    }
+    appendTextElement(container, index === trail.length - 1 && trail.length > 1 ? 'b' : 'span', part, 'dive-crumb');
+  });
+}
+
+function renderDiveChipRow(container, chips) {
+  if (!container) return;
+  container.replaceChildren(...chips.map(chip => {
+    const link = document.createElement('a');
+    link.className = 'dive-chip';
+    link.setAttribute('role', 'listitem');
+    link.href = chip.href;
+    appendDiveIcon(link, chip.icon);
+    appendTextElement(link, 'span', chip.label);
+    return link;
+  }));
+}
+
+function renderDiveCard(card) {
+  const article = document.createElement('article');
+  article.className = card.bundle ? 'dive-card is-bundle' : 'dive-card';
+  article.dataset.diveCard = card.id;
+  appendDiveIcon(article, card.icon);
+  appendTextElement(article, 'b', card.label);
+  if (card.fact) appendTextElement(article, 'em', card.fact);
+  const priced = appendDivePrice(article, card.price);
+  const action = document.createElement('a');
+  action.className = 'dive-card-action';
+  action.href = card.cta.href;
+  appendTextElement(action, 'span', card.cta.label);
+  appendDiveIcon(action, 'arrow-left');
+  article.append(action);
+  return { element: article, priced };
+}
+
+function renderDiveNearbyRow(container, point, { heading = 'יעדים קרובים' } = {}) {
+  if (!container) return 0;
+  container.replaceChildren();
+  const nearest = nearestCuratedDestinations(point, destinationData, 3);
+  if (!nearest.length) {
+    container.hidden = true;
+    return 0;
+  }
+  appendTextElement(container, 'strong', heading);
+  nearest.forEach(entry => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'dive-nearby-chip';
+    button.dataset.diveNearbyDestination = entry.id;
+    appendTextElement(button, 'span', entry.city);
+    const distance = document.createElement('small');
+    const kilometers = document.createElement('bdi');
+    kilometers.setAttribute('dir', 'ltr');
+    kilometers.textContent = String(entry.distanceKm);
+    distance.append(kilometers, document.createTextNode(' ק"מ'));
+    button.append(distance);
+    container.append(button);
+  });
+  container.hidden = false;
+  return nearest.length;
+}
+
+function renderGlobeDiveStore(revealPanel = false) {
+  const section = diveStoreSectionFor(globeDiveRoot);
+  if (!section) return false;
+  const breadcrumb = section.querySelector('[data-dive-breadcrumb]');
+  const back = section.querySelector('[data-dive-back]');
+  const kicker = section.querySelector('[data-dive-kicker]');
+  const title = section.querySelector('[data-dive-title]');
+  const meta = section.querySelector('[data-dive-meta]');
+  const chips = section.querySelector('[data-dive-chips]');
+  const board = section.querySelector('[data-dive-board]');
+  const nearby = section.querySelector('[data-dive-nearby]');
+  const footnote = section.querySelector('[data-dive-footnote]');
+  const live = section.querySelector('[data-dive-live]');
+  const state = globeDiveState;
+  const destination = state.kind === 'destination' ? destinationData[state.key] : null;
+  const hub = state.kind === 'exploration_hub' ? explorationHubData[state.key] : null;
+  const resolved = state.depth > 0 && (destination || hub || state.kind === 'map_point');
+  if (!resolved) {
+    section.hidden = true;
+    section.dataset.diveDepth = '0';
+    setGlobeDiveDepthAttributes(globeDiveRoot, 0);
+    return true;
+  }
+  section.hidden = false;
+  section.dataset.diveDepth = String(state.depth);
+  section.dataset.diveKind = state.kind;
+  setGlobeDiveDepthAttributes(globeDiveRoot, state.depth);
+  renderDiveBreadcrumb(breadcrumb, diveBreadcrumbTrail(state));
+  if (back) back.hidden = false;
+
+  let pricedLines = 0;
+  let announcement = '';
+  if (destination) {
+    if (kicker) kicker.textContent = 'צלילה ליעד';
+    if (title) title.textContent = `${destination.city}, ${destination.country}`;
+    if (meta) meta.textContent = diveDestinationHeroMeta(destination).join(' · ');
+    if (state.depth === 1) {
+      renderDiveChipRow(chips, diveServiceChips('destination', destination));
+      if (chips) chips.hidden = false;
+      if (board) { board.hidden = true; board.replaceChildren(); }
+      announcement = `${destination.city}: שמונה חלקי חופשה נפתחו מתחת לגלובוס.`;
+    } else {
+      if (chips) { chips.hidden = true; chips.replaceChildren(); }
+      if (board) {
+        const cards = diveDestinationCards(destination)
+          .concat([diveBundleCard(destination, diveStoreRoutesForDestination(destination.id))])
+          .filter(Boolean)
+          .map(renderDiveCard);
+        pricedLines = cards.filter(card => card.priced).length;
+        board.replaceChildren(...cards.map(card => card.element));
+        board.hidden = false;
+      }
+      announcement = `${destination.city}: לוח השירותים המלא נפתח מתחת לגלובוס.`;
+    }
+    if (nearby) { nearby.hidden = true; nearby.replaceChildren(); }
+  } else if (hub) {
+    if (kicker) kicker.textContent = 'אזור לגילוי';
+    if (title) title.textContent = `${hub.city}, ${hub.country}`;
+    if (meta) meta.textContent = 'נקודה מוכרת על הגלובוס · כל חלק ייבדק לפי תאריכים ונוסעים';
+    if (state.depth === 1) {
+      renderDiveChipRow(chips, diveServiceChips('exploration_hub', hub));
+      if (chips) chips.hidden = false;
+      if (board) { board.hidden = true; board.replaceChildren(); }
+      if (nearby) { nearby.hidden = true; nearby.replaceChildren(); }
+      announcement = `${hub.city}: ארבעה חלקי חופשה מרכזיים נפתחו מתחת לגלובוס.`;
+    } else {
+      if (chips) { chips.hidden = true; chips.replaceChildren(); }
+      if (board) {
+        const banner = document.createElement('div');
+        banner.className = 'dive-banner';
+        appendDiveIcon(banner, 'construction');
+        appendTextElement(banner, 'span', 'היעד המלא עדיין נבנה אצלנו. דברו עם המתכנן והחופשה תורכב סביב הנקודה שבחרתם.');
+        const bannerAction = document.createElement('a');
+        bannerAction.className = 'dive-banner-action';
+        bannerAction.href = destinationPlanUrl('/ai-planner/', {
+          q: `${hub.city}, ${hub.country}`,
+          destination: hub.iataSearchCode || hub.id,
+          scope: fullTripPlanningScope,
+          mode: 'destination',
+          intent: activePlanIntent,
+          ...discoveryTripContextQuery('ai')
+        });
+        appendTextElement(bannerAction, 'span', 'דברו עם המתכנן');
+        appendDiveIcon(bannerAction, 'arrow-left');
+        banner.append(bannerAction);
+        const cards = diveHubCards(hub).map(renderDiveCard);
+        board.replaceChildren(banner, ...cards.map(card => card.element));
+        board.hidden = false;
+      }
+      renderDiveNearbyRow(nearby, { latitude: hub.latitude, longitude: hub.longitude });
+      announcement = `${hub.city}: לוח החלקים המרכזיים נפתח מתחת לגלובוס.`;
+    }
+  } else {
+    const latitude = Number(state.latitude);
+    const longitude = Number(state.longitude);
+    if (kicker) kicker.textContent = 'נקודה על הגלובוס';
+    if (title) {
+      title.replaceChildren();
+      const coordinates = document.createElement('bdi');
+      coordinates.setAttribute('dir', 'ltr');
+      coordinates.textContent = `${latitude.toFixed(2)}°, ${longitude.toFixed(2)}°`;
+      title.append(coordinates);
+    }
+    if (meta) meta.textContent = 'הנקודה נשמרה. חקרו את האזור או פתחו ממנה תכנון חופשה מלא.';
+    if (chips) {
+      chips.replaceChildren();
+      const explore = document.createElement('button');
+      explore.type = 'button';
+      explore.className = 'dive-chip dive-chip-action';
+      explore.dataset.diveExplore = 'true';
+      explore.dataset.latitude = String(latitude);
+      explore.dataset.longitude = String(longitude);
+      appendDiveIcon(explore, 'scan-search');
+      appendTextElement(explore, 'span', 'חקרו את האזור');
+      const planner = document.createElement('a');
+      planner.className = 'dive-chip dive-chip-action';
+      planner.href = destinationPlanUrl('/ai-planner/', {
+        ...activePlanningSelectionQuery(''),
+        mode: 'map_point',
+        intent: activePlanIntent,
+        ...discoveryTripContextQuery('ai'),
+        scope: fullTripPlanningScope
+      });
+      appendDiveIcon(planner, 'sparkles');
+      appendTextElement(planner, 'span', 'זהו את האזור ובנו חופשה');
+      chips.append(explore, planner);
+      chips.hidden = false;
+    }
+    if (board) { board.hidden = true; board.replaceChildren(); }
+    renderDiveNearbyRow(nearby, { latitude, longitude });
+    announcement = 'הנקודה נפתחה מתחת לגלובוס עם היעדים הקרובים אליה.';
+  }
+
+  // One footnote per panel: it appears only when at least one sample price is
+  // visible, and no card carries its own disclaimer.
+  if (footnote) footnote.hidden = pricedLines === 0;
+  if (live && announcement) live.textContent = announcement;
+  renderIcons();
+  if (revealPanel && typeof section.scrollIntoView === 'function') {
+    section.scrollIntoView({ behavior: preferredScrollBehavior(), block: 'nearest' });
+  }
+  return true;
+}
+
+function applyGlobeDiveState(next, globeRoot, revealPanel = false) {
+  const previous = globeDiveState;
+  globeDiveState = next;
+  if (globeRoot) globeDiveRoot = globeRoot;
+  renderGlobeDiveStore(revealPanel && next.depth > 0 && (next.depth > previous.depth || next.key !== previous.key));
+}
+
+function syncGlobeDiveStoreRoutes() {
+  if (globeDiveState.depth === 2 && globeDiveState.kind === 'destination') renderGlobeDiveStore(false);
+}
+
+function diveStoreStepBack() {
+  if (!(globeDiveState.depth > 0)) return false;
+  applyGlobeDiveState(diveStoreNextState(globeDiveState, { type: 'back' }), globeDiveRoot, false);
+  if (globeDiveRoot) window.traVelGlobe3D?.zoom?.('out', { root: globeDiveRoot });
+  return true;
+}
+
+function diveStoreSwapDestination(destinationId) {
+  const key = String(destinationId || '').replace(/[^a-z0-9-]/g, '').slice(0, 60);
+  const data = destinationData[key];
+  if (!data) return false;
+  const pin = globeDiveRoot?.querySelector?.(`.price-pin[data-destination="${CSS.escape(key)}"]`);
+  if (pin && typeof pin.click === 'function') {
+    // Reuse the exact destination-pin pipeline (selection, hydration, URL).
+    pin.click();
+    return true;
+  }
+  discoveryDestinationMode = 'recommended';
+  discoveryDestinationLocked = true;
+  discoverySelectedPlan = null;
+  activeRouteId = '';
+  activeRouteSelectionLocked = false;
+  setActiveDestination(key, null, { animate: true, responseConfirmed: false, userSelected: true, globeRoot: globeDiveRoot });
+  hydrateDiscovery(discoveryRequestParams({ destination: key }));
+  applyGlobeDiveState(diveStoreNextState(globeDiveState, {
+    type: 'select', kind: 'destination', key, latitude: data.latitude, longitude: data.longitude
+  }), globeDiveRoot, false);
+  return true;
+}
+
+function initGlobeDiveStore() {
+  if (!document.querySelector('[data-dive-store]')) return;
+  document.addEventListener('travelglobe:select', event => {
+    const globeRoot = event.target?.closest?.('[data-globe-3d][data-discovery-globe]');
+    if (!globeRoot) return;
+    const detail = event.detail || {};
+    const kind = diveStorePointKind(detail);
+    if (!kind) return;
+    const key = diveStoreTargetKey(kind, detail);
+    if (!key) return;
+    const viaDive = detail.inputType === 'dive';
+    applyGlobeDiveState(diveStoreNextState(globeDiveState, {
+      type: viaDive ? 'dive' : 'select',
+      kind,
+      key,
+      latitude: detail.latitude,
+      longitude: detail.longitude
+    }), globeRoot, viaDive);
+  });
+  document.addEventListener('click', event => {
+    const back = event.target?.closest?.('[data-dive-back]');
+    if (back && globeDiveState.depth > 0) {
+      diveStoreStepBack();
+      return;
+    }
+    const nearbyChoice = event.target?.closest?.('[data-dive-nearby-destination]');
+    if (nearbyChoice?.dataset?.diveNearbyDestination) {
+      diveStoreSwapDestination(nearbyChoice.dataset.diveNearbyDestination);
+      return;
+    }
+    const explore = event.target?.closest?.('[data-dive-explore]');
+    if (explore?.dataset && explore.dataset.diveExplore === 'true') {
+      const latitude = Number(explore.dataset.latitude);
+      const longitude = Number(explore.dataset.longitude);
+      if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
+        window.traVelGlobe3D?.focusPoint?.(latitude, longitude, { root: globeDiveRoot });
+      }
+      return;
+    }
+    const pin = event.target?.closest?.('.price-pin[data-destination]');
+    if (!pin?.dataset?.destination) return;
+    const globeRoot = pin.closest?.('[data-globe-3d][data-discovery-globe]');
+    if (!globeRoot) return;
+    const key = String(pin.dataset.destination).replace(/[^a-z0-9-]/g, '').slice(0, 60);
+    const data = destinationData[key];
+    if (!data) return;
+    applyGlobeDiveState(diveStoreNextState(globeDiveState, {
+      type: 'select', kind: 'destination', key, latitude: data.latitude, longitude: data.longitude
+    }), globeRoot, false);
+  });
+  document.addEventListener('keydown', event => {
+    if (event.key !== 'Escape' || !(globeDiveState.depth > 0)) return;
+    diveStoreStepBack();
+  });
+}
+
 function initTraVelV2() {
   if (document.documentElement.dataset.traVelV2Ready === 'true') return;
   document.documentElement.dataset.traVelV2Ready = 'true';
@@ -11496,6 +12140,7 @@ function initTraVelV2() {
   initNavigation();
   initMap();
   initGlobePointSelection();
+  initGlobeDiveStore();
   if (restoredFreePoint) {
     const restoredHub = explorationHubForPoint(activePlanningSelection.latitude, activePlanningSelection.longitude);
     const restoredDetail = {

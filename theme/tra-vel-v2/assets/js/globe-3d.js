@@ -19,8 +19,15 @@
   const DOUBLE_CLICK_DIVE_DISTANCE = 0.6;        // camera distance removed per dive
   const DOUBLE_CLICK_DIVE_DURATION_MS = 700;
   const MARKER_COLLISION_BUDGET = 60;            // front-hemisphere markers entering the collision pass per frame
-  const NEAR_LOD_DISTANCE = 2.8;                 // closer than this: budgeted hub city labels join the layout
+  // Theme 1.25.0 dive tuning: the near-LOD threshold moved from 2.8 to 3.0 so
+  // the very first dive from the default camera height (3.15 - 0.6 = 2.55)
+  // crosses into the labeled zone about a quarter of the way through the eased
+  // dive instead of arriving with almost no margin. The per-dive delta stays
+  // 0.6 (validator-pinned), so the label threshold is the tuned knob.
+  const NEAR_LOD_DISTANCE = 3.0;                 // closer than this: budgeted hub city labels join the layout
   const NEAR_LOD_HUB_LABEL_BUDGET = 12;          // labeled hubs per frame at near zoom
+  const TAP_PREVIEW_DELAY_MS = DOUBLE_TAP_WINDOW_MS; // free-point preview waits out the double-tap window so a dive never fires a preview first
+  const DIVE_REGION_DISTANCE = 2.9;              // 'explore the region' medium camera height
 
   function shouldReduceMotion() {
     return window.matchMedia('(prefers-reduced-motion: reduce)').matches || navigator.connection?.saveData === true;
@@ -433,6 +440,7 @@
       lastMarkerSyncAt: 0,
       lastTap: null,
       suppressDiveUntil: 0,
+      previewTimer: 0,
       idleSpin: { lastTick: 0, resumeAt: 0, resumeTimer: 0 },
       tour: {
         active: false,
@@ -471,6 +479,7 @@
       state.animation = null;
       state.pointer = null;
       stopTour(true);
+      cancelPendingPreview();
       if (state.idleSpin.resumeTimer) window.clearTimeout(state.idleSpin.resumeTimer);
       state.idleSpin.resumeTimer = 0;
       if (state.frame) window.cancelAnimationFrame(state.frame);
@@ -870,17 +879,52 @@
     // struck coordinate and steps the camera closer. Zoom stays limited to
     // buttons, double activation, and the existing pinch path; the globe
     // never binds wheel or scroll listeners.
+    // Dive store (theme 1.25.0): each discovery-globe dive also publishes the
+    // selection a tap would publish, tagged inputType 'dive', so the panel
+    // below the globe reveals the location's services. The dive camera request
+    // comes last so it outranks any selection-driven focus flight.
     function diveToScreenPoint(clientX, clientY) {
       if (root.classList.contains('globe-3d-unavailable')) return false;
       const rectangle = root.getBoundingClientRect();
       const point = globePointFromScreen(clientX - rectangle.left, clientY - rectangle.top, rectangle.width, rectangle.height, state);
       if (!point) return false;
       state.visible = document.visibilityState !== 'hidden';
+      cancelPendingPreview();
+      if (root.matches('[data-discovery-globe]')) selectScreenPoint(clientX, clientY, 'dive');
       animateTo(
         -point.longitude * DEG,
         point.latitude * DEG,
         clamp(state.distance - DOUBLE_CLICK_DIVE_DISTANCE, 2.25, 4.8),
         DOUBLE_CLICK_DIVE_DURATION_MS
+      );
+      return true;
+    }
+
+    // A lone free-point tap waits out the double-tap window before publishing
+    // its preview, so a dive gesture never fires the preview first. Marker
+    // taps and keyboard selection stay immediate.
+    function cancelPendingPreview() {
+      if (!state.previewTimer) return;
+      window.clearTimeout(state.previewTimer);
+      state.previewTimer = 0;
+    }
+
+    // Explore-the-region flight (theme 1.25.0): the services panel can fly the
+    // camera to an arbitrary coordinate at a medium height without changing
+    // the committed selection.
+    function focusPoint(latitude, longitude, options = {}) {
+      if (root.classList.contains('globe-3d-unavailable')) return false;
+      const numericLatitude = Number(latitude);
+      const numericLongitude = Number(longitude);
+      if (!Number.isFinite(numericLatitude) || numericLatitude < -90 || numericLatitude > 90
+        || !Number.isFinite(numericLongitude) || numericLongitude < -180 || numericLongitude > 180) return false;
+      noteDirectInteraction();
+      state.visible = document.visibilityState !== 'hidden';
+      animateTo(
+        -numericLongitude * DEG,
+        numericLatitude * DEG,
+        clamp(Number(options.distance) || DIVE_REGION_DISTANCE, 2.25, 4.8),
+        clamp(Number(options.duration) || 780, 180, 3200)
       );
       return true;
     }
@@ -898,7 +942,13 @@
       const latitude = Number(marker.dataset.latitude);
       const longitude = Number(marker.dataset.longitude);
       if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return false;
-      if (!animate) state.animation = null;
+      // Theme 1.25.0: a snap focus keeps an in-flight camera animation that
+      // already ends beside this destination (a dive that selected it), so an
+      // early discovery response cannot cancel the dive mid-flight.
+      const animationEndsHere = Boolean(state.animation)
+        && Math.abs(shortestAngle(normalizeAngle(state.animation.fromYaw + state.animation.deltaYaw), -longitude * DEG)) <= 0.06
+        && Math.abs(state.animation.toPitch - latitude * DEG) <= 0.06;
+      if (!animate && !animationEndsHere) state.animation = null;
       state.selected = id;
       state.selectedHub = '';
       if (pulse) pulseRoute();
@@ -913,8 +963,10 @@
       });
       const targetYaw = -longitude * DEG;
       const targetPitch = latitude * DEG;
-      if (animate) animateTo(targetYaw, targetPitch, Math.min(state.distance, 3.05), duration, rotations);
-      else {
+      // A running camera animation (for example an in-flight dive) owns the
+      // intended distance; focusing must not zoom back out past it.
+      if (animate) animateTo(targetYaw, targetPitch, Math.min(state.animation ? state.animation.toDistance : state.distance, 3.05), duration, rotations);
+      else if (!animationEndsHere) {
         state.yaw = normalizeAngle(targetYaw);
         state.pitch = clamp(targetPitch, -70 * DEG, 70 * DEG);
         requestRender();
@@ -1013,7 +1065,7 @@
       });
       const targetYaw = -hub.longitude * DEG;
       const targetPitch = hub.latitude * DEG;
-      if (animate) animateTo(targetYaw, targetPitch, Math.min(state.distance, 3.05), 680);
+      if (animate) animateTo(targetYaw, targetPitch, Math.min(state.animation ? state.animation.toDistance : state.distance, 3.05), 680);
       else {
         state.animation = null;
         state.yaw = normalizeAngle(targetYaw);
@@ -1025,6 +1077,7 @@
     }
 
     function selectScreenPoint(clientX, clientY, inputType = 'pointer') {
+      cancelPendingPreview();
       if (!root.matches('[data-discovery-globe]')) {
         if (liveRegion) liveRegion.textContent = 'לבחירת נקודה חופשית, פתחו את מפת החופשות המלאה.';
         return false;
@@ -1205,6 +1258,7 @@
 
     root.addEventListener('pointerdown', event => {
       noteDirectInteraction();
+      cancelPendingPreview();
       if (!event.isPrimary || event.button !== 0) return;
       state.visible = document.visibilityState !== 'hidden';
       state.pointer = {
@@ -1296,12 +1350,14 @@
             state.suppressDiveUntil = tap.at + 420;
             diveToScreenPoint(event.clientX, event.clientY);
           }
-          // The second half of a double activation never re-selects the point.
+          // The first tap's debounced preview was cancelled on pointerdown, so
+          // the dive publishes the gesture's only selection.
           return;
         }
       }
       if (event.type === 'pointerup' && !pointer.moved && !pointer.startedOnPin && !pointer.startedOnHub && performance.now() - pointer.startedAt < 700) {
-        selectScreenPoint(event.clientX, event.clientY, 'pointer');
+        const { clientX, clientY } = event;
+        state.previewTimer = window.setTimeout(() => { selectScreenPoint(clientX, clientY, 'pointer'); state.previewTimer = 0; }, TAP_PREVIEW_DELAY_MS);
       }
     };
     root.addEventListener('pointerup', endPointer);
@@ -1389,7 +1445,7 @@
       }, TOUR_START_DELAY_MS);
     }
     requestRender();
-    return { root, focusDestination, focusHub, zoom, setDestinations, setExplorationHubs, clearSelection, pulseRoute, cancelMotion, requestRender, startTour, stopTour };
+    return { root, focusDestination, focusHub, focusPoint, zoom, setDestinations, setExplorationHubs, clearSelection, pulseRoute, cancelMotion, requestRender, startTour, stopTour };
   }
 
   function initialize() {
@@ -1417,6 +1473,14 @@
       controllers.forEach(controller => {
         if (!targetRoot || controller.root === targetRoot) controller.focusHub(id, options);
       });
+    },
+    focusPoint(latitude, longitude, options = {}) {
+      const targetRoot = typeof options === 'object' && options ? options.root : null;
+      let handled = false;
+      controllers.forEach(controller => {
+        if (!targetRoot || controller.root === targetRoot) handled = controller.focusPoint(latitude, longitude, options) || handled;
+      });
+      return handled;
     },
     clearSelection(options = {}) {
       const targetRoot = typeof options === 'object' ? options.root : null;
