@@ -29,6 +29,33 @@ function tra_vel_v2_canonical_guide_url( $canonical, $post ) {
 add_filter( 'get_canonical_url', 'tra_vel_v2_canonical_guide_url', 10, 2 );
 
 /**
+ * Return the document title text for one destination guide.
+ *
+ * Top-level destination hubs cover flight timing, costs and areas as fixed
+ * sections of the editorial contract, so they carry the full search-facing
+ * formula. Nested supporting guides keep the neutral planning title.
+ *
+ * @param int $post_id Optional post ID.
+ * @return string
+ */
+function tra_vel_v2_guide_title_text( $post_id = 0 ) {
+	$post_id = $post_id ? (int) $post_id : (int) get_queried_object_id();
+	$path    = wp_parse_url( (string) get_permalink( $post_id ), PHP_URL_PATH );
+	if ( is_string( $path ) && preg_match( '#^/destinations/[a-z0-9-]+/$#', $path ) ) {
+		return sprintf(
+			/* translators: %s: destination name. */
+			__( 'חופשה ב%s: המדריך המלא לישראלים | מתי לטוס, עלויות, אזורים', 'tra-vel-v2' ),
+			get_the_title( $post_id )
+		);
+	}
+	return sprintf(
+		/* translators: %s: destination name. */
+		__( '%s | מדריך תכנון לישראלים', 'tra-vel-v2' ),
+		get_the_title( $post_id )
+	);
+}
+
+/**
  * Keep public titles destination-neutral and useful outside the former Europe focus.
  *
  * @param array<string, string> $parts Generated document title parts.
@@ -37,14 +64,13 @@ add_filter( 'get_canonical_url', 'tra_vel_v2_canonical_guide_url', 10, 2 );
 function tra_vel_v2_document_title_parts( $parts ) {
 	$parts['site'] = 'Tra-Vel';
 
+	$opportunity_title = function_exists( 'tra_vel_v2_seo_opportunity_public_title' ) ? tra_vel_v2_seo_opportunity_public_title() : '';
 	if ( is_front_page() ) {
 		$parts['title'] = __( 'חופשות, טיסות, מלונות ותכנון חכם', 'tra-vel-v2' );
+	} elseif ( $opportunity_title ) {
+		$parts['title'] = $opportunity_title;
 	} elseif ( tra_vel_v2_is_destination_guide() ) {
-		$parts['title'] = sprintf(
-			/* translators: %s: destination name. */
-			__( '%s | מדריך תכנון לישראלים', 'tra-vel-v2' ),
-			get_the_title()
-		);
+		$parts['title'] = tra_vel_v2_guide_title_text();
 	}
 
 	return $parts;
@@ -62,12 +88,13 @@ function tra_vel_v2_public_seo_title( $title ) {
 		return __( 'חופשות, טיסות, מלונות ותכנון חכם | Tra-Vel', 'tra-vel-v2' );
 	}
 
+	$opportunity_title = function_exists( 'tra_vel_v2_seo_opportunity_public_title' ) ? tra_vel_v2_seo_opportunity_public_title() : '';
+	if ( $opportunity_title ) {
+		return $opportunity_title . ' | Tra-Vel';
+	}
+
 	if ( tra_vel_v2_is_destination_guide() ) {
-		return sprintf(
-			/* translators: %s: destination name. */
-			__( '%s | מדריך תכנון לישראלים | Tra-Vel', 'tra-vel-v2' ),
-			get_the_title()
-		);
+		return tra_vel_v2_guide_title_text() . ' | Tra-Vel';
 	}
 
 	return $title;
@@ -75,6 +102,189 @@ function tra_vel_v2_public_seo_title( $title ) {
 add_filter( 'wpseo_title', 'tra_vel_v2_public_seo_title' );
 add_filter( 'wpseo_opengraph_title', 'tra_vel_v2_public_seo_title' );
 add_filter( 'wpseo_twitter_title', 'tra_vel_v2_public_seo_title' );
+
+/**
+ * Return the excerpt-based description for the current singular page.
+ *
+ * The same stored excerpt already feeds og:description, so the plain meta
+ * description reuses it instead of inventing new copy.
+ *
+ * @param int $post_id Optional post ID.
+ * @return string
+ */
+function tra_vel_v2_singular_meta_description_fallback( $post_id = 0 ) {
+	$post_id = $post_id ? (int) $post_id : (int) get_queried_object_id();
+	if ( ! $post_id ) {
+		return '';
+	}
+	$excerpt = wp_strip_all_tags( (string) get_the_excerpt( $post_id ) );
+	return trim( preg_replace( '/\s+/u', ' ', $excerpt ) );
+}
+
+/**
+ * Fill an empty plugin meta description from the page excerpt.
+ *
+ * A hand-written plugin description always wins; the fallback only closes
+ * the gap on pages that would otherwise ship no meta description at all.
+ *
+ * @param mixed $description Existing generated description.
+ * @return mixed
+ */
+function tra_vel_v2_public_meta_description( $description ) {
+	if ( is_string( $description ) && '' !== trim( $description ) ) {
+		return $description;
+	}
+	if ( ! is_singular() ) {
+		return $description;
+	}
+	$fallback = tra_vel_v2_singular_meta_description_fallback();
+	return '' !== $fallback ? $fallback : $description;
+}
+add_filter( 'wpseo_metadesc', 'tra_vel_v2_public_meta_description', 20 );
+add_filter( 'aioseo_description', 'tra_vel_v2_public_meta_description', 20 );
+
+/** Print the excerpt-based meta description when no SEO plugin owns the head. */
+function tra_vel_v2_print_meta_description_fallback() {
+	if ( is_admin() || is_feed() || ! is_singular() ) {
+		return;
+	}
+	if ( defined( 'WPSEO_VERSION' ) || defined( 'AIOSEO_VERSION' ) || function_exists( 'aioseo' ) ) {
+		return;
+	}
+	$description = tra_vel_v2_singular_meta_description_fallback();
+	if ( '' === $description ) {
+		return;
+	}
+	echo '<meta name="description" content="' . esc_attr( $description ) . '">' . "\n";
+}
+add_action( 'wp_head', 'tra_vel_v2_print_meta_description_fallback', 4 );
+
+/**
+ * Extract the visible FAQ question and answer pairs from stored content.
+ *
+ * The FAQ section is the heading whose literal id is faq or ends in -faq,
+ * up to the next h2. Supported visible patterns are h3 + paragraphs and
+ * details + summary. Output text is the tag-stripped visible copy, so any
+ * derived markup stays word-identical to what travelers read.
+ *
+ * @param int $post_id Optional post ID.
+ * @return array<int, array{question:string,answer:string}>
+ */
+function tra_vel_v2_visible_faq_items( $post_id = 0 ) {
+	$post_id = $post_id ? (int) $post_id : (int) get_queried_object_id();
+	$content = (string) get_post_field( 'post_content', $post_id );
+	if ( '' === $content || ! preg_match( '/<h2\b[^>]*\bid\s*=\s*(["\'])(?:[a-z0-9-]+-)?faq\1[^>]*>/i', $content, $faq_heading, PREG_OFFSET_CAPTURE ) ) {
+		return array();
+	}
+	$section = substr( $content, $faq_heading[0][1] + strlen( $faq_heading[0][0] ) );
+	$next_h2 = stripos( $section, '<h2' );
+	if ( false !== $next_h2 ) {
+		$section = substr( $section, 0, $next_h2 );
+	}
+
+	$visible_text = static function ( $html ) {
+		$text = html_entity_decode( wp_strip_all_tags( (string) $html ), ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+		return trim( preg_replace( '/\s+/u', ' ', $text ) );
+	};
+	$items = array();
+	if ( preg_match_all( '#<h3\b[^>]*>(.*?)</h3>\s*((?:<p\b[^>]*>.*?</p>\s*)+)#is', $section, $matches, PREG_SET_ORDER ) ) {
+		foreach ( $matches as $match ) {
+			$question = $visible_text( $match[1] );
+			$answer   = $visible_text( $match[2] );
+			if ( '' !== $question && '' !== $answer ) {
+				$items[] = array( 'question' => $question, 'answer' => $answer );
+			}
+		}
+	}
+	if ( ! $items && preg_match_all( '#<details\b[^>]*>\s*<summary\b[^>]*>(.*?)</summary>(.*?)</details>#is', $section, $matches, PREG_SET_ORDER ) ) {
+		foreach ( $matches as $match ) {
+			$question = $visible_text( $match[1] );
+			$answer   = $visible_text( $match[2] );
+			if ( '' !== $question && '' !== $answer ) {
+				$items[] = array( 'question' => $question, 'answer' => $answer );
+			}
+		}
+	}
+	return $items;
+}
+
+/**
+ * Build one FAQPage node from already-extracted visible pairs.
+ *
+ * Fails closed below two visible pairs so a stray heading can never
+ * manufacture a rich-result claim.
+ *
+ * @param string                                            $url   Canonical page URL.
+ * @param array<int, array{question:string,answer:string}> $items Visible pairs.
+ * @return array<string, mixed>
+ */
+function tra_vel_v2_faq_page_node( $url, $items ) {
+	if ( ! is_array( $items ) || count( $items ) < 2 ) {
+		return array();
+	}
+	$questions = array();
+	foreach ( $items as $item ) {
+		$questions[] = array(
+			'@type'          => 'Question',
+			'name'           => $item['question'],
+			'acceptedAnswer' => array(
+				'@type' => 'Answer',
+				'text'  => $item['answer'],
+			),
+		);
+	}
+	return array(
+		'@type'      => 'FAQPage',
+		'@id'        => $url . '#faq',
+		'inLanguage' => 'he-IL',
+		'mainEntity' => $questions,
+	);
+}
+
+/**
+ * Return the gated FAQPage node for one destination guide.
+ *
+ * Emission requires the complete publication contract and at least two
+ * visible question/answer pairs inside the article body.
+ *
+ * @param int $post_id Optional post ID.
+ * @return array<string, mixed>
+ */
+function tra_vel_v2_guide_faq_schema_node( $post_id = 0 ) {
+	$post_id = $post_id ? (int) $post_id : (int) get_queried_object_id();
+	if ( ! tra_vel_v2_is_destination_guide( $post_id ) || ! tra_vel_v2_is_guide_publication_ready( $post_id ) ) {
+		return array();
+	}
+	return tra_vel_v2_faq_page_node( (string) get_permalink( $post_id ), tra_vel_v2_visible_faq_items( $post_id ) );
+}
+
+/**
+ * Keep the plugin schema graph FAQ-truthful on destination guides.
+ *
+ * Foreign FAQPage nodes are removed and the only FAQPage that can remain is
+ * generated from the visible article Q&A behind the publication gate.
+ *
+ * @param array<int, array<string, mixed>> $graph Plugin graph nodes.
+ * @return array<int, array<string, mixed>>
+ */
+function tra_vel_v2_gate_guide_faq_schema_graph( $graph ) {
+	if ( ! is_array( $graph ) || ! is_singular() || ! tra_vel_v2_is_destination_guide() ) {
+		return $graph;
+	}
+	$output = array();
+	foreach ( $graph as $node ) {
+		if ( is_array( $node ) && in_array( 'FAQPage', (array) ( $node['@type'] ?? array() ), true ) ) {
+			continue;
+		}
+		$output[] = $node;
+	}
+	$faq_node = tra_vel_v2_guide_faq_schema_node();
+	if ( $faq_node ) {
+		$output[] = $faq_node;
+	}
+	return array_values( $output );
+}
+add_filter( 'wpseo_schema_graph', 'tra_vel_v2_gate_guide_faq_schema_graph', 30 );
 
 /**
  * Remove the old Europe-only name from Yoast's WebSite entity.
@@ -404,6 +614,10 @@ function tra_vel_v2_schema_data() {
 	$graph[] = $webpage;
 	$graph[] = $article;
 	$graph[] = $breadcrumb;
+	$faq_node = tra_vel_v2_guide_faq_schema_node( $post_id );
+	if ( $faq_node ) {
+		$graph[] = $faq_node;
+	}
 
 	return array( '@context' => 'https://schema.org', '@graph' => $graph );
 }
@@ -501,6 +715,9 @@ function tra_vel_v2_gate_aioseo_guide_schema( $schema ) {
 			continue;
 		}
 		$types = isset( $node['@type'] ) ? (array) $node['@type'] : array();
+		if ( in_array( 'FAQPage', $types, true ) ) {
+			continue;
+		}
 		$is_article = (bool) array_intersect( array( 'Article', 'BlogPosting', 'NewsArticle' ), $types );
 		if ( ! $ready && $is_article ) {
 			continue;
@@ -523,6 +740,10 @@ function tra_vel_v2_gate_aioseo_guide_schema( $schema ) {
 			);
 		}
 		$output[] = $node;
+	}
+	$faq_node = $ready ? tra_vel_v2_guide_faq_schema_node() : array();
+	if ( $faq_node ) {
+		$output[] = $faq_node;
 	}
 
 	return array_values( $output );

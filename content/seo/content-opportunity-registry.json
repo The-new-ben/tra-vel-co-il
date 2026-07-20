@@ -140,11 +140,11 @@
       "id": "budapest-packages",
       "canonicalPath": "/packages/budapest/",
       "pageType": "transactional-cluster",
-      "primaryIntent": "דילים וחבילות לבודפשט",
+      "primaryIntent": "חבילות נופש ודילים לבודפשט: טיסה ומלון שבודקים באמת",
       "cluster": "budapest",
       "parentPath": "/packages/",
       "mapState": "budapest",
-      "status": "backlog",
+      "status": "content-ready",
       "conversionAction": "השוו טיסה, מלון, כבודה והעברות לכל ההרכב",
       "monetization": ["packages", "flights", "hotels", "transfers"]
     },

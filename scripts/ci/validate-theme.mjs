@@ -685,7 +685,29 @@ if (!seoSource.includes('BreadcrumbList')) failures.push('Destination guides are
 if (!seoSource.includes('tra_vel_v2_guide_breadcrumb_items') || !seoSource.includes('tra_vel_v2_is_public_guide_path') || !seoSource.includes('supporting_guides')) failures.push('Nested guide breadcrumbs or directory schema support is missing.');
 if (!seoSource.includes('lastReviewed')) failures.push('Destination guide schema is missing source-review freshness.');
 if (!seoSource.includes('CollectionPage') || !seoSource.includes('ItemList')) failures.push('Editorial directories are missing CollectionPage and ItemList schema.');
-if (seoSource.includes("'FAQPage'") || seoSource.includes('"FAQPage"')) failures.push('Travel guides must not chase unavailable FAQ rich results.');
+// FAQPage is allowed only as a gated mirror of the visible article Q&A.
+// Since Google's 2023 FAQ rich-result restriction this is entity/structure
+// parity, never a manufactured rich-result claim: the markup must be parsed
+// from stored visible content, fail closed below two pairs, and stay behind
+// the publication contract.
+const faqItemsSource = seoSource.match(/function tra_vel_v2_visible_faq_items\([\s\S]*?\n\}/)?.[0] || '';
+const faqNodeSource = seoSource.match(/function tra_vel_v2_faq_page_node\([\s\S]*?\n\}/)?.[0] || '';
+const guideFaqNodeSource = seoSource.match(/function tra_vel_v2_guide_faq_schema_node\([\s\S]*?\n\}/)?.[0] || '';
+if (!faqItemsSource.includes("get_post_field( 'post_content'")) failures.push('FAQ structured data must be parsed from the stored visible article body only.');
+if (!faqItemsSource.includes('wp_strip_all_tags')) failures.push('FAQ questions and answers must stay word-identical visible text, not markup.');
+if (!faqNodeSource.includes('count( $items ) < 2')) failures.push('FAQPage emission must fail closed below two visible question/answer pairs.');
+if (/[֐-׿]/u.test(faqItemsSource + faqNodeSource)) failures.push('FAQ schema builders must not hardcode question or answer copy.');
+if (!guideFaqNodeSource.includes('tra_vel_v2_is_guide_publication_ready')) failures.push('Guide FAQPage schema is not gated by the guide publication contract.');
+if (!/add_filter\( 'wpseo_schema_graph', 'tra_vel_v2_gate_guide_faq_schema_graph'/.test(seoSource)) failures.push('The Yoast graph lacks the visible-FAQ guide gate.');
+if (!/function tra_vel_v2_gate_guide_faq_schema_graph[\s\S]*?'FAQPage'[\s\S]*?continue;/.test(seoSource)) failures.push('Foreign plugin FAQPage nodes are not removed from destination guides.');
+if (!/function tra_vel_v2_gate_aioseo_guide_schema[\s\S]*?in_array\( 'FAQPage', \$types, true \)[\s\S]*?continue;/.test(seoSource)) failures.push('AIOSEO FAQPage nodes bypass the visible-FAQ gate on guides.');
+if (!/\$faq_node = \$ready \? tra_vel_v2_guide_faq_schema_node\(\) : array\(\);/.test(seoSource)) failures.push('AIOSEO guides do not receive the gated visible-FAQ node.');
+if (!seoSource.includes("add_filter( 'wpseo_metadesc', 'tra_vel_v2_public_meta_description', 20 )") || !seoSource.includes("add_filter( 'aioseo_description', 'tra_vel_v2_public_meta_description', 20 )")) failures.push('Singular pages without a plugin meta description are missing the excerpt-based fallback.');
+if (!/function tra_vel_v2_public_meta_description[\s\S]*?'' !== trim\( \$description \)[\s\S]*?return \$description;/.test(seoSource)) failures.push('The meta description fallback may not override hand-written plugin descriptions.');
+if (!seoSource.includes("add_action( 'wp_head', 'tra_vel_v2_print_meta_description_fallback', 4 )")) failures.push('The theme-owned head is missing its meta description fallback.');
+if (!/function tra_vel_v2_print_meta_description_fallback[\s\S]*?WPSEO_VERSION[\s\S]*?return;/.test(seoSource)) failures.push('The theme meta description fallback can duplicate an active SEO plugin tag.');
+if (!seoSource.includes('חופשה ב%s: המדריך המלא לישראלים | מתי לטוס, עלויות, אזורים')) failures.push('Top-level destination hubs are missing the head-term title formula.');
+if (!/preg_match\( '#\^\/destinations\/\[a-z0-9-\]\+\/\$#', \$path \)/.test(seoSource)) failures.push('The head-term title formula must stay limited to top-level destination hubs whose sections cover it.');
 if (!seoSource.includes("$robots['noindex']")) failures.push('Faceted and personal routes are missing an explicit noindex policy.');
 for (const facet of ['focus', 'layer', 'intent', 'trip', 'max_stops', 'max_duration', 'allow_overnight', 'trip_destination', 'destination_mode', 'selection_destination', 'selection_id', 'selection_kind', 'scope', 'latitude', 'longitude', 'product', 'route', 'dates', 'departure', 'check_in', 'check_out', 'date', 'travelers', 'party', 'flexible', 'flexibility', 'hotel_area', 'transfers', 'kosher', 'accessibility', 'vibe']) {
   if (!seoSource.includes(`'${facet}'`)) failures.push(`The SEO noindex policy is missing ${facet}.`);

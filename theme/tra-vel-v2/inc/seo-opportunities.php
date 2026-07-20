@@ -375,6 +375,55 @@ function tra_vel_v2_seo_opportunity_content_metrics( $content ) {
 	);
 }
 
+/** Map an Earth owner to its public Hebrew destination name. */
+function tra_vel_v2_seo_opportunity_hebrew_name( $map_state ) {
+	$names = array(
+		'budapest' => 'בודפשט',
+		'prague'   => 'פראג',
+		'vienna'   => 'וינה',
+		'athens'   => 'אתונה',
+		'dubai'    => 'דובאי',
+		'bangkok'  => 'בנגקוק',
+		'tokyo'    => 'טוקיו',
+		'lisbon'   => 'ליסבון',
+	);
+	return $names[ sanitize_key( (string) $map_state ) ] ?? '';
+}
+
+/**
+ * Return the search-facing document title for the current owned package page.
+ *
+ * The formula carries the head term plus the demand modifiers the SERP
+ * rewards, without touching stored WordPress titles: it applies only to an
+ * identity-matched packages transactional owner with a known Hebrew name.
+ *
+ * @param int $post_id Optional post ID.
+ * @return string Empty string when the current page is not an owned package page.
+ */
+function tra_vel_v2_seo_opportunity_public_title( $post_id = 0 ) {
+	if ( ! $post_id && ! tra_vel_v2_is_seo_opportunity_page_request() ) {
+		return '';
+	}
+	$post_id = $post_id ? (int) $post_id : (int) get_queried_object_id();
+	$entry = tra_vel_v2_get_current_seo_opportunity( $post_id );
+	if ( ! tra_vel_v2_is_exposable_seo_opportunity( $entry ) || 'transactional-cluster' !== ( $entry['pageType'] ?? '' ) ) {
+		return '';
+	}
+	$segments = array_values( array_filter( explode( '/', trim( (string) ( $entry['canonicalPath'] ?? '' ), '/' ) ) ) );
+	if ( 'packages' !== ( $segments[0] ?? '' ) ) {
+		return '';
+	}
+	$name = tra_vel_v2_seo_opportunity_hebrew_name( $entry['mapState'] ?? '' );
+	if ( '' === $name ) {
+		return '';
+	}
+	return sprintf(
+		/* translators: %s: destination Hebrew name. */
+		__( 'חופשה ב%1$s: חבילות נופש ודילים ל%1$s, טיסה ומלון', 'tra-vel-v2' ),
+		$name
+	);
+}
+
 /** Map an Earth owner to the airport code consumed by commercial hubs. */
 function tra_vel_v2_seo_opportunity_airport_code( $map_state ) {
 	$codes = array(
@@ -640,6 +689,12 @@ function tra_vel_v2_seo_opportunity_schema_nodes( $post_id = 0, $entry = null ) 
 			'itemListElement' => $items,
 		),
 	);
+	if ( function_exists( 'tra_vel_v2_visible_faq_items' ) && function_exists( 'tra_vel_v2_faq_page_node' ) ) {
+		$faq_node = tra_vel_v2_faq_page_node( $url, tra_vel_v2_visible_faq_items( $post_id ) );
+		if ( $faq_node ) {
+			$nodes[] = $faq_node;
+		}
+	}
 
 	if ( 'decision-guide' !== ( $entry['pageType'] ?? '' ) ) {
 		return $nodes;
@@ -706,7 +761,7 @@ function tra_vel_v2_merge_seo_opportunity_schema_graph( $graph ) {
 		if ( array_intersect( array( 'Product', 'Offer', 'ItemList' ), $types ) ) {
 			continue;
 		}
-		if ( array_intersect( array( 'Article', 'BlogPosting', 'NewsArticle', 'BreadcrumbList' ), $types ) ) {
+		if ( array_intersect( array( 'Article', 'BlogPosting', 'NewsArticle', 'BreadcrumbList', 'FAQPage' ), $types ) ) {
 			continue;
 		}
 		if ( in_array( 'WebPage', $types, true ) ) {

@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "budapest-packages-2026",
+  "ownerId": "budapest-packages",
+  "locale": "he-IL",
+  "canonicalPath": "/packages/budapest/",
+  "pageType": "transactional-cluster",
+  "mapState": "budapest",
+  "status": "publish-ready",
+  "contentPath": "content/seo/opportunities/budapest-packages-2026.he.html",
+  "checkedAt": "2026-07-21",
+  "author": "מערכת Tra-Vel",
+  "reviewer": "מערכת Tra-Vel",
+  "seoTitle": "חופשה בבודפשט: חבילות נופש ודילים לבודפשט, טיסה ומלון | Tra-Vel",
+  "h1": "חבילות נופש ודילים לבודפשט: טיסה ומלון שבודקים באמת",
+  "excerpt": "משווים חבילות נופש ודילים לבודפשט: טיסה ומלון, רגע אחרון, אוגוסט, ספטמבר וסוכות. בלי מחירי פיתיון: בדיקת תאריכים אמיתית, העברות, ביטול והזמנה בליווי אנושי.",
+  "conversionPath": "/packages/?destination=BUD",
+  "sources": [
+    { "title": "Budapest Airport: budapest public transportation (100E, 200E, Pay&GO)", "url": "https://www.bud.hu/en/passengers/transport/public_transportation/budapest_public_transportation", "publisher": "Budapest Airport", "checkedAt": "2026-07-21" },
+    { "title": "Budapestinfo: official Budapest tourism site", "url": "https://www.budapestinfo.hu/en/learn-more", "publisher": "Budapest Brand / Budapestinfo", "checkedAt": "2026-07-21" },
+    { "title": "Budapestinfo: official Budapest Card terms", "url": "https://www.budapestinfo.hu/en/the-benefits-of-buying-budapest-card", "publisher": "Budapest Brand / Budapestinfo", "checkedAt": "2026-07-21" },
+    { "title": "Visit Hungary: Hungarian Tourism Agency", "url": "https://visithungary.com/en/", "publisher": "Hungarian Tourism Agency", "checkedAt": "2026-07-21" },
+    { "title": "Your Europe: travel documents for non-EU nationals", "url": "https://europa.eu/youreurope/citizens/travel/entry-exit/non-eu-nationals/index_en.htm", "publisher": "European Union", "checkedAt": "2026-07-21" },
+    { "title": "Your Europe: air passenger rights", "url": "https://europa.eu/youreurope/citizens/travel/passenger-rights/air/index_en.htm", "publisher": "European Union", "checkedAt": "2026-07-21" },
+    { "title": "Israel National Security Council: travel warnings", "url": "https://www.gov.il/en/departments/dynamiccollectors/travel-warnings-nsc?skip=0", "publisher": "Israel National Security Council", "checkedAt": "2026-07-21" },
+    { "title": "Embassy of Israel in Hungary", "url": "https://embassies.gov.il/hungary/en", "publisher": "Israel Ministry of Foreign Affairs", "checkedAt": "2026-07-21" },
+    { "title": "Civil Aviation Authority of Israel", "url": "https://www.gov.il/he/departments/civil_aviation_authority_of_israel/govil-landing-page", "publisher": "Civil Aviation Authority of Israel", "checkedAt": "2026-07-21" }
+  ]
+}
