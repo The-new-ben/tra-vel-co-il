@@ -590,7 +590,21 @@ function Invoke-WpRequest {
 function Find-ExactPage {
     param([Parameter(Mandatory)][string]$Slug, [Parameter(Mandatory)][int]$ParentId)
     $encodedSlug = [Uri]::EscapeDataString($Slug)
-    $candidates = @(Invoke-WpRequest -Method Get -Path "pages?slug=$encodedSlug&parent=$ParentId&status=any&context=edit&per_page=100&_fields=id,slug,parent,status,template,link,generated_slug,permalink_template,title,excerpt,content,meta")
+    $rawCandidates = @(Invoke-WpRequest -Method Get -Path "pages?slug=$encodedSlug&parent=$ParentId&status=any&context=edit&per_page=100&_fields=id,slug,parent,status,template,link,generated_slug,permalink_template,title,excerpt,content,meta")
+    # Windows PowerShell 5.1 can deserialize array responses nested one level deep
+    # (single-element or empty inner arrays); flatten to genuine page records so
+    # the strict ambiguity guard compares real candidates only.
+    $candidates = @()
+    foreach ($item in $rawCandidates) {
+        if ($null -eq $item) { continue }
+        if ($item -is [System.Collections.IEnumerable] -and $item -isnot [string] -and $null -eq $item.PSObject.Properties['id']) {
+            foreach ($nested in $item) {
+                if ($null -ne $nested -and $null -ne $nested.PSObject.Properties['id']) { $candidates += $nested }
+            }
+            continue
+        }
+        if ($null -ne $item.PSObject.Properties['id']) { $candidates += $item }
+    }
     $exact = @($candidates | Where-Object { [string]$_.slug -ceq $Slug -and [int]$_.parent -eq $ParentId })
     if ($candidates.Count -ne $exact.Count -or $exact.Count -gt 1) { throw "Ambiguous or conflicting WordPress page for '$Slug' below parent $ParentId." }
     return $(if ($exact.Count) { $exact[0] } else { $null })
