@@ -22,14 +22,31 @@ while ( have_posts() ) :
 			'prague'   => 'images/city-prague.webp',
 			'vienna'   => 'images/city-vienna.webp',
 			'thailand' => 'images/thailand.jpg',
+			'bangkok'  => 'images/thailand.jpg',
+			'dubai'    => 'images/city-dubai.webp',
+			'tokyo'    => 'images/city-tokyo.webp',
+			'lisbon'   => 'images/city-lisbon.webp',
 		);
-		$fallback_image = $fallback_images[ $destination_slug ] ?? 'images/earth-blue-marble.jpg';
-		if ( 'athens' === $destination_slug ) {
-			$image_credit = array(
+		$fallback_image_credits = array(
+			'athens' => array(
 				'label' => 'Photo: Davide Aversa, CC BY-SA 4.0',
 				'url'   => 'https://commons.wikimedia.org/wiki/File:View_of_Athen%27s_Acropolis.jpg',
-			);
-		}
+			),
+			'dubai'  => array(
+				'label' => 'Photo: Tim Reckmann, CC BY 2.0',
+				'url'   => 'https://commons.wikimedia.org/wiki/File:Dubai_Skyline_mit_Burj_Khalifa_(18241030269).jpg',
+			),
+			'tokyo'  => array(
+				'label' => 'Photo: Morio, CC BY-SA 3.0',
+				'url'   => 'https://commons.wikimedia.org/wiki/File:Skyscrapers_of_Shinjuku_2009_January_(revised).jpg',
+			),
+			'lisbon' => array(
+				'label' => 'Photo: Dale Cruse, CC BY 4.0',
+				'url'   => 'https://commons.wikimedia.org/wiki/File:Alfama_Rooftops_and_Tagus_River_View,_Lisbon_(54733698959).jpg',
+			),
+		);
+		$fallback_image = $fallback_images[ $destination_slug ] ?? 'images/earth-blue-marble.jpg';
+		$image_credit   = $fallback_image_credits[ $destination_slug ] ?? array();
 		$hero = tra_vel_v2_asset_uri( $fallback_image );
 	}
 	$title = get_the_title() ?: __( 'יעד', 'tra-vel-v2' );
