@@ -2,7 +2,7 @@
 Contributors: tra-vel
 Requires at least: 6.5
 Requires PHP: 7.4
-Stable tag: 0.9.0
+Stable tag: 0.9.1
 License: Proprietary
 
 Private AI travel planning, durable assisted-quote cases, operator progress, and protected approval foundations for Tra-Vel.
@@ -19,11 +19,19 @@ Version 0.8.0 adds the post-commit notification spine, bounded provider retries 
 
 Version 0.9.0 adds bounded acquisition attribution on quote cases and an optional, explicitly consented lead contact on quote cases and commercial intents. Both live in operator-readable storage only: traveler-visible payloads never echo them, the webhook carries at most three UTM fields plus a contact_provided boolean, and the records are deleted with their parent aggregate by the existing retention cleanup.
 
+Version 0.9.1 adds hourly-bounded provider-failure operator alerts on the committed provider_error path and admin-only configurable operator notification recipients with a truthful health count. Alerts carry failure codes only; the recipient list is a validated, deduplicated plain option because addresses are operator infrastructure, not secrets.
+
 == Security ==
 
 Use a hosting environment variable or wp-config.php constant for the OpenAI key when possible. The administrator-only encrypted-option fallback requires sodium. Keys are never returned by REST.
 
 == Changelog ==
+
+= 0.9.1 =
+
+* Provider-error operator alerts: after a provider interpretation or revision failure is durably recorded, the controller fires `tra_vel_agent_provider_error` with the internal error code and the upstream provider code; the notifier sends at most one Hebrew operator email per provider code per UTC hour through the existing send-once marker store and posts an `agent_provider.error` event to the optional encrypted webhook (payload contract 1.2.0 adds `error_code` and `provider_code` on this operational event only; assisted-quote event bodies are unchanged).
+* Configurable operator recipients: new admin-only `POST/DELETE /settings/notification-recipients` routes (confirmation phrase required) store a validated, case-insensitively deduplicated list of up to ten operator email addresses in the plain `tra_vel_agent_notification_recipients_v1` option. The notifier resolves the configured list when non-empty, keeps `admin_email` as the default otherwise, and preserves the `tra_vel_agent_notification_recipients` filter as the final override.
+* Health: the `notifications` block adds a truthful `recipients_configured` count that reports only the validated stored list, so the `admin_email` fallback truthfully reports zero.
 
 = 0.9.0 =
 
