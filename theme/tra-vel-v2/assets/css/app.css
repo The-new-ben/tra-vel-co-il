@@ -3614,3 +3614,87 @@ h3.deal-title { display: block; margin: 6px 0 12px; font-size: 22px; line-height
   .theme-map-shell .world-canvas,.theme-map-shell .world-canvas .globe,.home-globe-stack .globe { transition: none !important; }
   .globe-dive-store,.globe-dive-store * { animation: none !important; transition: none !important; }
 }
+
+/* One-click planning surfaces (theme 1.26.0): hero compare CTA, destination
+   chip row, tap date-range calendar, party stepper, and holiday planning
+   cards. Every surface stays in document flow, keeps 44px touch targets, and
+   never paints over the Earth. */
+.hero-compare-cta { display: inline-flex; align-items: center; gap: 10px; min-height: 48px; padding: 8px 13px; border: 1px solid rgba(255,255,255,.3); border-radius: 16px; background: #fff; color: var(--ink); box-shadow: 0 12px 30px rgba(255,255,255,.12); }
+.hero-compare-cta > i, .hero-compare-cta > svg { width: 19px; flex: 0 0 auto; }
+.hero-compare-cta span { display: grid; gap: 1px; }
+.hero-compare-cta strong { font-size: 15px; }
+.hero-compare-cta small { font-size: 11px; color: var(--muted); }
+.hero-compare-cta:focus-visible { outline: 3px solid var(--lime); outline-offset: 3px; }
+.hero-planner-quiet { display: inline-flex; align-items: center; gap: 7px; min-height: 44px; margin-top: 8px; color: #b5c2c6; font-size: 13px; text-decoration: underline; text-underline-offset: 3px; }
+.hero-planner-quiet :is(i,svg) { width: 15px; height: 15px; }
+.hero-planner-quiet:focus-visible { outline: 3px solid #fff; outline-offset: 3px; border-radius: 8px; }
+.home-destination-chips { display: flex; align-items: center; gap: 8px; overflow-x: auto; padding: 0 14px 10px; color: #b5c2c6; font-size: 13px; }
+.home-destination-chips > span { flex: 0 0 auto; }
+.home-destination-chips button { flex: 0 0 auto; min-height: 44px; border: 1px solid rgba(255,255,255,.16); background: rgba(8,28,35,.8); color: #fff; padding: 8px 14px; border-radius: 99px; cursor: pointer; font: 700 13px 'Heebo',sans-serif; }
+.home-destination-chips button.is-active { background: var(--lime); border-color: var(--lime); color: var(--ink); font-weight: 800; }
+.home-destination-chips button:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+label[data-party-hidden="true"] { display: none !important; }
+.search-dock .trip-calendar,.search-dock .party-panel { grid-column: 1 / -1; }
+.search-field-controls > .party-pill { grid-column: 1 / -1; }
+.flight-options-grid > .party-pill,.hotel-options-grid > .party-pill,.package-party-grid > .party-pill,.insurance-traveler-grid > .party-pill { grid-column: 1 / -1; }
+.trip-calendar { position: static; margin-top: 10px; background: #fff; color: var(--ink); border: 1px solid var(--line); border-radius: 18px; padding: 14px; display: grid; gap: 12px; }
+.trip-calendar[hidden] { display: none; }
+.trip-calendar-presets { display: flex; flex-wrap: wrap; gap: 8px; }
+.trip-calendar-presets button { min-height: 44px; padding: 8px 13px; border: 1px solid var(--line); border-radius: 99px; background: #f5f8f6; color: var(--ink); cursor: pointer; font: 700 13px 'Heebo',sans-serif; }
+.trip-calendar-presets button.is-active,.trip-calendar-presets button[aria-pressed="true"] { background: var(--lime); border-color: var(--lime); font-weight: 800; }
+.trip-calendar-presets button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+.trip-calendar-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.trip-calendar-nav { min-height: 44px; min-width: 44px; padding: 6px 12px; border: 1px solid var(--line); border-radius: 12px; background: #fff; color: var(--ink); cursor: pointer; font: 700 12px 'Heebo',sans-serif; }
+.trip-calendar-nav:disabled { opacity: .4; cursor: default; }
+.trip-calendar-nav:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+.trip-calendar-titles { display: flex; gap: 18px; justify-content: center; flex: 1; min-width: 0; font-weight: 800; font-size: 13px; }
+.trip-calendar-months { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px; }
+.trip-calendar-weekdays,.trip-calendar-grid { display: grid; grid-template-columns: repeat(7,minmax(0,1fr)); gap: 2px; }
+.trip-calendar-weekdays span { text-align: center; font-size: 11px; color: var(--muted); padding: 4px 0; }
+.trip-calendar-day { min-height: 44px; min-width: 0; border: 0; border-radius: 10px; background: transparent; color: var(--ink); cursor: pointer; font: 700 13px 'Heebo',sans-serif; }
+.trip-calendar-day:hover { background: #eef4f1; }
+.trip-calendar-day:focus-visible { outline: 3px solid var(--ink); outline-offset: -3px; }
+.trip-calendar-day[disabled] { color: #b9c4c1; cursor: default; background: transparent; }
+.trip-calendar-day[aria-current="date"] { box-shadow: inset 0 0 0 1px var(--line); }
+.trip-calendar-day.is-in-range { background: #ecf6d2; border-radius: 0; }
+.trip-calendar-day.is-edge { background: var(--lime); font-weight: 800; }
+.trip-calendar-status { margin: 0; font-size: 12px; color: var(--muted); }
+.trip-calendar-close { justify-self: start; min-height: 44px; padding: 8px 13px; border: 1px solid var(--line); border-radius: 12px; background: #fff; color: var(--ink); cursor: pointer; font: 700 12px 'Heebo',sans-serif; }
+.trip-calendar-close:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+.party-pill { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; min-height: 44px; border: 0; border-radius: 9px; background: #f5f8f6; color: var(--ink); padding: 7px 10px; cursor: pointer; font: 800 13px 'Heebo',sans-serif; text-align: right; }
+.experience-search .party-pill { border: 1px solid var(--line); background: #f7faf8; }
+.party-pill:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+.party-pill-summary { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.party-pill-caret { flex: 0 0 auto; color: var(--muted); }
+.party-panel { position: static; margin-top: 10px; background: #fff; color: var(--ink); border: 1px solid var(--line); border-radius: 18px; padding: 12px; display: grid; gap: 10px; }
+.party-panel[hidden] { display: none; }
+.party-rows { display: grid; gap: 8px; }
+.party-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.party-row-label { font-weight: 700; font-size: 13px; }
+.party-row-controls { display: flex; align-items: center; gap: 8px; }
+.party-row-controls button { min-height: 44px; min-width: 44px; border: 1px solid var(--line); border-radius: 12px; background: #f5f8f6; color: var(--ink); cursor: pointer; font: 800 16px 'Heebo',sans-serif; }
+.party-row-controls button:disabled { opacity: .35; cursor: default; }
+.party-row-controls button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+.party-row-controls b { min-width: 26px; text-align: center; font-size: 14px; }
+.party-child-ages { display: flex; flex-wrap: wrap; gap: 8px; border-top: 1px solid var(--line); padding-top: 10px; }
+.party-child-ages[hidden] { display: none; }
+.party-child-age { display: grid; gap: 2px; font-size: 11px; color: var(--muted); }
+.party-child-age select { min-height: 44px; border: 1px solid var(--line); border-radius: 9px; background: #f5f8f6; color: var(--ink); padding: 6px 8px; font: 700 13px 'Heebo',sans-serif; }
+.party-child-age select:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+.holiday-card .deal-media { position: relative; }
+.holiday-card-icon { position: absolute; inset: 50% auto auto 50%; transform: translate(-50%,-50%); width: 72px; height: 72px; }
+
+@media (max-width: 1000px) {
+  .trip-calendar-months { gap: 10px; }
+}
+
+@media (max-width: 760px) {
+  .trip-calendar { padding: 11px; border-radius: 14px; width: 100%; }
+  .trip-calendar-months { grid-template-columns: 1fr; }
+  .home-destination-chips { padding: 0 4px 10px; }
+  .holiday-grid { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trip-calendar,.trip-calendar *,.party-panel,.party-panel *,.party-pill,.home-destination-chips button,.hero-compare-cta,.holiday-card { animation: none !important; transition: none !important; }
+}

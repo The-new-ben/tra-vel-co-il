@@ -9,7 +9,7 @@ get_header();
 $map_url       = home_url( '/travel-map/' );
 $thailand_url  = home_url( '/destinations/thailand/' );
 $planner_url   = home_url( '/ai-planner/' );
-$surprise_url  = add_query_arg( 'mode', 'surprise', $planner_url );
+$surprise_url  = add_query_arg( 'destination', 'anywhere', home_url( '/' ) ) . '#search';
 $hero_campaign = tra_vel_v2_get_home_hero_campaign();
 $home_campaign_kind = in_array( $hero_campaign['kind'] ?? '', array( 'seasonal', 'evergreen' ), true ) ? $hero_campaign['kind'] : 'evergreen';
 $home_campaign_is_seasonal = 'seasonal' === $home_campaign_kind;
@@ -60,11 +60,12 @@ $home_return    = $home_now->modify( '+34 days' )->format( 'Y-m-d' );
 			<div class="hero-copy">
 				<span class="kicker"><i data-lucide="sparkles"></i><?php esc_html_e( 'מתחילים מהחופשה שמתאימה לכם', 'tra-vel-v2' ); ?></span>
 				<h1><?php esc_html_e( 'איזו חופשה', 'tra-vel-v2' ); ?><br><em><?php esc_html_e( 'מתאימה לכם עכשיו?', 'tra-vel-v2' ); ?></em></h1>
-				<p><?php esc_html_e( 'כתבו יעד, תקציב או סגנון, וקבלו כיוון לחופשה עם טיסות, לינה ופירוט עלויות.', 'tra-vel-v2' ); ?></p>
+				<p><?php esc_html_e( 'בחרו יעד, תאריכים ונוסעים בכמה הקשות, וקבלו כיוון לחופשה עם טיסות, לינה ופירוט עלויות.', 'tra-vel-v2' ); ?></p>
 				<div class="hero-agent-actions">
-					<a class="ai-prompt" href="<?php echo esc_url( $planner_url ); ?>"><i data-lucide="bot"></i><span><?php esc_html_e( 'כתבו מה אתם מחפשים', 'tra-vel-v2' ); ?></span><strong><?php esc_html_e( '“שבועיים בתאילנד לזוג עד ₪9,000, עם חוף ואוכל כשר”', 'tra-vel-v2' ); ?></strong><i data-lucide="arrow-left"></i></a>
+					<a class="hero-compare-cta" data-hero-compare href="#search"><i data-lucide="search"></i><span><strong><?php esc_html_e( 'השוו טיסה ומלון', 'tra-vel-v2' ); ?></strong><small><?php esc_html_e( 'יעד, תאריכים ונוסעים בכמה הקשות', 'tra-vel-v2' ); ?></small></span><i data-lucide="arrow-left"></i></a>
 					<a class="surprise-cta" data-home-surprise href="<?php echo esc_url( $surprise_url ); ?>"><i data-lucide="compass"></i><span><strong data-home-surprise-label><?php esc_html_e( 'תפתיעו אותי', 'tra-vel-v2' ); ?></strong><small><?php esc_html_e( 'רעיון לחופשה בלחיצה אחת. אחר כך אפשר לשנות הכול.', 'tra-vel-v2' ); ?></small></span><i data-lucide="arrow-left"></i></a>
 				</div>
+				<a class="hero-planner-quiet" data-hero-planner-quiet href="<?php echo esc_url( $planner_url ); ?>"><i data-lucide="message-circle-more"></i><span><?php esc_html_e( 'או פשוט תארו לנו במילים', 'tra-vel-v2' ); ?></span></a>
 				<?php if ( $hero_campaign ) : ?>
 					<aside class="hero-campaign" data-hero-campaign="<?php echo esc_attr( $hero_campaign['id'] ); ?>" data-campaign-kind="<?php echo esc_attr( $home_campaign_kind ); ?>"<?php echo $home_campaign_is_seasonal ? ' data-map-state="' . esc_attr( $hero_campaign['map_state'] ) . '"' : ''; ?>>
 						<div class="hero-campaign-heading"><span><i data-lucide="<?php echo esc_attr( $home_campaign_is_seasonal ? 'calendar-heart' : 'compass' ); ?>"></i><?php echo esc_html( $hero_campaign['eyebrow'] ); ?></span><small><?php echo esc_html( $home_campaign_is_seasonal ? __( 'מתאים לעונה', 'tra-vel-v2' ) : __( 'כיוון פתוח לבחירה', 'tra-vel-v2' ) ); ?></small></div>
@@ -162,7 +163,7 @@ $home_return    = $home_now->modify( '+34 days' )->format( 'Y-m-d' );
 	<section class="search-zone" id="search">
 		<div class="page-width">
 			<noscript>
-				<style>.search-zone .product-tabs,.search-zone .search-dock,.search-zone .home-search-progress{display:none!important}</style>
+				<style>.search-zone .product-tabs,.search-zone .search-dock,.search-zone .home-search-progress,.search-zone .home-destination-chips{display:none!important}</style>
 				<nav class="product-links-noscript" aria-label="<?php esc_attr_e( 'פתיחת השוואה ללא JavaScript', 'tra-vel-v2' ); ?>"><p><?php esc_html_e( 'בחרו עמוד השוואה והשלימו בו את פרטי הנסיעה.', 'tra-vel-v2' ); ?></p><a href="<?php echo esc_url( home_url( '/packages/' ) ); ?>"><?php esc_html_e( 'טיסה ומלון', 'tra-vel-v2' ); ?></a><a href="<?php echo esc_url( home_url( '/flights/' ) ); ?>"><?php esc_html_e( 'טיסות', 'tra-vel-v2' ); ?></a><a href="<?php echo esc_url( home_url( '/hotels/' ) ); ?>"><?php esc_html_e( 'מלונות', 'tra-vel-v2' ); ?></a><a href="<?php echo esc_url( home_url( '/travel-insurance/' ) ); ?>"><?php esc_html_e( 'ביטוח', 'tra-vel-v2' ); ?></a><a href="<?php echo esc_url( $map_url ); ?>"><?php esc_html_e( 'מפת היעדים', 'tra-vel-v2' ); ?></a></nav>
 			</noscript>
 			<div class="product-tabs" role="tablist" aria-label="<?php esc_attr_e( 'סוג חיפוש', 'tra-vel-v2' ); ?>" aria-orientation="horizontal">
@@ -171,6 +172,31 @@ $home_return    = $home_now->modify( '+34 days' )->format( 'Y-m-d' );
 				<button id="home-search-tab-hotels" type="button" role="tab" aria-selected="false" aria-controls="home-search-panel" tabindex="-1" data-product-kind="hotels" data-product-action="<?php echo esc_url( home_url( '/hotels/' ) ); ?>" data-submit-label="<?php esc_attr_e( 'השוו מלונות', 'tra-vel-v2' ); ?>" data-departure-label="<?php esc_attr_e( 'כניסה', 'tra-vel-v2' ); ?>" data-return-label="<?php esc_attr_e( 'יציאה', 'tra-vel-v2' ); ?>"><i data-lucide="hotel"></i><?php esc_html_e( 'מלונות', 'tra-vel-v2' ); ?></button>
 				<button id="home-search-tab-packages" type="button" role="tab" aria-selected="false" aria-controls="home-search-panel" tabindex="-1" data-product-kind="packages" data-product-action="<?php echo esc_url( home_url( '/packages/' ) ); ?>" data-submit-label="<?php esc_attr_e( 'מצאו חבילות', 'tra-vel-v2' ); ?>" data-departure-label="<?php esc_attr_e( 'יציאה', 'tra-vel-v2' ); ?>" data-return-label="<?php esc_attr_e( 'חזרה', 'tra-vel-v2' ); ?>"><i data-lucide="palmtree"></i><?php esc_html_e( 'חבילות', 'tra-vel-v2' ); ?></button>
 				<button id="home-search-tab-insurance" type="button" role="tab" aria-selected="false" aria-controls="home-search-panel" tabindex="-1" data-product-kind="insurance" data-product-action="<?php echo esc_url( home_url( '/travel-insurance/' ) ); ?>" data-submit-label="<?php esc_attr_e( 'לבדיקת נושאים לביטוח', 'tra-vel-v2' ); ?>" data-departure-label="<?php esc_attr_e( 'תחילת נסיעה', 'tra-vel-v2' ); ?>" data-return-label="<?php esc_attr_e( 'סיום נסיעה', 'tra-vel-v2' ); ?>"><i data-lucide="shield-check"></i><?php esc_html_e( 'ביטוח', 'tra-vel-v2' ); ?></button>
+			</div>
+			<div class="home-destination-chips" data-home-destination-chips role="group" aria-label="<?php esc_attr_e( 'בחירת יעד מהירה בהקשה אחת', 'tra-vel-v2' ); ?>">
+				<span><?php esc_html_e( 'לאן טסים?', 'tra-vel-v2' ); ?></span>
+				<?php
+				$home_popular_destination_ids = array( 'budapest', 'athens', 'dubai', 'bangkok', 'tokyo', 'lisbon' );
+				$home_popular_destinations    = array();
+				foreach ( $home_destinations as $destination ) {
+					$popular_candidate_id = sanitize_key( $destination['id'] ?? '' );
+					if ( in_array( $popular_candidate_id, $home_popular_destination_ids, true ) ) {
+						$home_popular_destinations[ $popular_candidate_id ] = $destination;
+					}
+				}
+				foreach ( $home_popular_destination_ids as $popular_destination_id ) :
+					if ( ! isset( $home_popular_destinations[ $popular_destination_id ] ) ) {
+						continue;
+					}
+					$popular_destination = $home_popular_destinations[ $popular_destination_id ];
+					$popular_airport     = sanitize_text_field( $popular_destination['airport']['code'] ?? '' );
+					if ( ! $popular_airport ) {
+						continue;
+					}
+					?>
+					<button type="button" data-destination-chip data-chip-slug="<?php echo esc_attr( $popular_destination_id ); ?>" data-chip-code="<?php echo esc_attr( $popular_airport ); ?>" aria-pressed="false"><?php echo esc_html( $popular_destination['city'] ?? $popular_destination_id ); ?></button>
+				<?php endforeach; ?>
+				<button type="button" data-destination-chip data-chip-slug="anywhere" data-chip-code="anywhere" aria-pressed="false"><?php esc_html_e( 'לא משנה לאן', 'tra-vel-v2' ); ?></button>
 			</div>
 			<form id="home-search-panel" class="search-dock" action="<?php echo esc_url( $map_url ); ?>" method="get" role="tabpanel" aria-labelledby="home-search-tab-package" aria-describedby="home-search-status" aria-busy="false" data-home-search data-product-kind="package" data-map-action="<?php echo esc_url( $map_url ); ?>" data-state="ready" data-uses-origin="true" data-uses-rooms="true">
 				<fieldset class="search-field search-route-field">
@@ -241,6 +267,26 @@ $home_return    = $home_now->modify( '+34 days' )->format( 'Y-m-d' );
 		<?php endforeach; ?>
 		<article class="deal-card"><div class="deal-media" style="background:linear-gradient(135deg,#0d3440,#0b6d7e)"><span class="deal-tag"><?php esc_html_e( 'מה חשוב לבדוק', 'tra-vel-v2' ); ?></span><span class="field-icon" style="position:absolute;inset:50% auto auto 50%;transform:translate(-50%,-50%);width:72px;height:72px"><i data-lucide="shield-check"></i></span></div><div class="deal-body"><div class="deal-meta"><?php esc_html_e( 'ביטוח נסיעות · מדריך לכיסויים', 'tra-vel-v2' ); ?></div><h3 class="deal-title"><?php esc_html_e( 'רפואה, כבודה וספורט: מה לבדוק בפוליסה', 'tra-vel-v2' ); ?></h3><div class="deal-footer"><div class="deal-price"><small><?php esc_html_e( 'פרטים לפני השוואה', 'tra-vel-v2' ); ?></small><strong><?php esc_html_e( 'למדריך', 'tra-vel-v2' ); ?></strong></div><a href="<?php echo esc_url( home_url( '/travel-insurance/' ) ); ?>" aria-label="<?php esc_attr_e( 'לפרטים על בדיקת ביטוח נסיעות', 'tra-vel-v2' ); ?>"><i data-lucide="arrow-left"></i></a></div></div></article>
 	</div></div></section>
+
+	<section class="section" id="holiday-planning">
+		<div class="page-width">
+			<div class="section-heading"><div><span class="eyebrow"><?php esc_html_e( 'חופשות לפי החגים', 'tra-vel-v2' ); ?></span><h2><?php esc_html_e( 'מתכננים סביב חגי ישראל', 'tra-vel-v2' ); ?></h2><p><?php esc_html_e( 'בחרו חג ופתחו את מפת היעדים. בלי הבטחות מחיר ובלי תאריכים מומצאים.', 'tra-vel-v2' ); ?></p></div><a class="text-link" href="<?php echo esc_url( $map_url ); ?>"><?php esc_html_e( 'לכל היעדים במפה', 'tra-vel-v2' ); ?> <i data-lucide="arrow-left"></i></a></div>
+			<div class="deal-grid holiday-grid" data-holiday-cards>
+				<?php
+				$holiday_cards = array(
+					array( 'name' => __( 'ראש השנה', 'tra-vel-v2' ), 'icon' => 'calendar-heart', 'intent' => 'easy', 'copy' => __( 'חופשה קצרה ונוחה סביב החג', 'tra-vel-v2' ), 'gradient' => 'linear-gradient(135deg,#0d3440,#0b6d7e)' ),
+					array( 'name' => __( 'סוכות', 'tra-vel-v2' ), 'icon' => 'trees', 'intent' => 'family', 'copy' => __( 'שבוע משפחתי בקצב שלכם', 'tra-vel-v2' ), 'gradient' => 'linear-gradient(135deg,#123a2a,#1f7a4d)' ),
+					array( 'name' => __( 'חנוכה', 'tra-vel-v2' ), 'icon' => 'sparkles', 'intent' => 'value', 'copy' => __( 'ערים וחופשות חורף במחשבה על התקציב', 'tra-vel-v2' ), 'gradient' => 'linear-gradient(135deg,#2a1a3a,#5b3d8a)' ),
+					array( 'name' => __( 'פסח', 'tra-vel-v2' ), 'icon' => 'sun', 'intent' => 'family', 'copy' => __( 'חופשת אביב לכל ההרכב', 'tra-vel-v2' ), 'gradient' => 'linear-gradient(135deg,#3a2a12,#8a6a1f)' ),
+				);
+				foreach ( $holiday_cards as $holiday_card ) :
+					$holiday_url = add_query_arg( 'intent', $holiday_card['intent'], $map_url );
+					?>
+					<article class="deal-card holiday-card"><div class="deal-media" style="background:<?php echo esc_attr( $holiday_card['gradient'] ); ?>"><span class="deal-tag"><?php echo esc_html( $holiday_card['name'] ); ?></span><span class="field-icon holiday-card-icon"><i data-lucide="<?php echo esc_attr( $holiday_card['icon'] ); ?>"></i></span></div><div class="deal-body"><div class="deal-meta"><?php echo esc_html( $holiday_card['copy'] ); ?></div><h3 class="deal-title"><?php echo esc_html( sprintf( __( 'חופשת %s', 'tra-vel-v2' ), $holiday_card['name'] ) ); ?></h3><div class="deal-footer"><div class="deal-price"><small><?php esc_html_e( 'בדקו יעדים וזמינות לתקופת החג', 'tra-vel-v2' ); ?></small><strong><?php esc_html_e( 'למפת היעדים', 'tra-vel-v2' ); ?></strong></div><a href="<?php echo esc_url( $holiday_url ); ?>" aria-label="<?php echo esc_attr( sprintf( __( 'פתחו יעדים לחופשת %s במפת החופשות', 'tra-vel-v2' ), $holiday_card['name'] ) ); ?>"><i data-lucide="arrow-left"></i></a></div></div></article>
+				<?php endforeach; ?>
+			</div>
+		</div>
+	</section>
 
 	<section class="section dark" id="ai"><div class="page-width ai-panel"><div><span class="kicker"><i data-lucide="sparkles"></i><?php esc_html_e( 'מתכנן החופשה', 'tra-vel-v2' ); ?></span><h2><?php esc_html_e( 'ספרו לנו איזו חופשה אתם רוצים', 'tra-vel-v2' ); ?></h2><p><?php esc_html_e( 'אפשר לכתוב בחופשיות. יעד, תקציב, תאריכים, נוסעים ומה חשוב לכם. נשאל רק על פרט שחסר.', 'tra-vel-v2' ); ?></p><a class="ai-input" href="<?php echo esc_url( $planner_url ); ?>"><i data-lucide="message-circle-more"></i><span><?php esc_html_e( '“טיול זוגי רגוע באסיה, 12 יום, בלי יותר מעצירה אחת...”', 'tra-vel-v2' ); ?></span><span class="ai-input-action"><?php esc_html_e( 'סדרו לי תוכנית', 'tra-vel-v2' ); ?></span></a></div><div class="ai-visual"><span class="ai-orb"><i data-lucide="sparkles"></i></span><article class="suggestion one"><i data-lucide="plane-takeoff"></i><span><small><?php esc_html_e( 'טיסה', 'tra-vel-v2' ); ?></small><strong><?php esc_html_e( 'קונקשן בכרטיס אחד עשוי לאזן זמן ופשטות', 'tra-vel-v2' ); ?></strong></span></article><article class="suggestion two"><i data-lucide="cloud-sun"></i><span><small><?php esc_html_e( 'עונה', 'tra-vel-v2' ); ?></small><strong><?php esc_html_e( 'סמנו איזה מזג אוויר מתאים לכם', 'tra-vel-v2' ); ?></strong></span></article><article class="suggestion three"><i data-lucide="route"></i><span><small><?php esc_html_e( 'קצב', 'tra-vel-v2' ); ?></small><strong><?php esc_html_e( 'בחרו בין מסלול רגוע למסלול מגוון', 'tra-vel-v2' ); ?></strong></span></article></div></div></section>
 
