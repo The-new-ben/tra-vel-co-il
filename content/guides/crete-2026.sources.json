@@ -1,0 +1,283 @@
+{
+  "schemaVersion": 1,
+  "id": "crete-2026",
+  "locale": "he-IL",
+  "title": "כרתים",
+  "excerpt": "מדריך כרתים לישראלים: בחירת בסיס בין חניה, רתימנו והרקליון, טיסות לשני שדות, רכב ותחבורה, קנוסוס וסמריה, חופים, כשרות, תקציב וכללי כניסה, עם מקורות רשמיים ותאריך בדיקה.",
+  "author": "מערכת Tra-Vel",
+  "primaryTopic": "Crete travel guide for Israelis",
+  "canonicalPath": "/destinations/crete/",
+  "status": "publish-ready",
+  "wordTargetMin": 5000,
+  "contentPath": "content/guides/crete-2026.he.html",
+  "checkedAt": "2026-07-21",
+  "mapState": "crete",
+  "reviewer": "מערכת Tra-Vel",
+  "reviewMethod": "Prioritize official Greek tourism, regional government, airport, public transport, culture-ministry ticketing, national park, port authority and Israeli consular sources. Recheck fares, timetables, opening seasons, entry rules, kosher availability and security guidance immediately before publication.",
+  "flightTime": "בדקו מסלול חי",
+  "dailyBudget": "נבנה לפי ההרכב",
+  "bestSeason": "מאי עד אוקטובר",
+  "bestFor": "5 עד 10 ימים עם בסיס אחד או שניים",
+  "sections": [
+    "Decision summary",
+    "Who Crete suits",
+    "Seasons, meltemi wind and heat planning",
+    "Heraklion versus Chania airport choice",
+    "Airport to base transport",
+    "Where to stay by region and travel style",
+    "Car rental and mountain driving decisions",
+    "Five, seven and ten day routes",
+    "Buses, ferries and no-car planning",
+    "Knossos, Heraklion museum and Spinalonga",
+    "Beaches, Samaria gorge and nature logistics",
+    "Daily budget by travel style",
+    "Cretan food and kosher options",
+    "Families, accessibility and pace",
+    "Entry rules, EES, safety and Israeli consular guidance",
+    "Booking order and FAQ"
+  ],
+  "sources": [
+    {
+      "id": "visit-greece-crete",
+      "title": "Crete island guide",
+      "publisher": "Greek National Tourism Organisation",
+      "url": "https://www.visitgreece.gr/islands/crete/",
+      "type": "official",
+      "checkedAt": "2026-07-21",
+      "supports": ["official island orientation", "west, central and east Crete regions", "Chania and Rethymno character"]
+    },
+    {
+      "id": "incredible-crete",
+      "title": "Incredible Crete official tourism site",
+      "publisher": "Region of Crete",
+      "url": "https://www.incrediblecrete.gr/en/",
+      "type": "official",
+      "checkedAt": "2026-07-21",
+      "supports": ["regional attractions", "four regional units", "culture and nature planning"]
+    },
+    {
+      "id": "chania-airport",
+      "title": "Chania International Airport",
+      "publisher": "Fraport Greece",
+      "url": "https://www.chq-airport.gr/en/",
+      "type": "official",
+      "checkedAt": "2026-07-21",
+      "supports": ["Chania airport services", "direct bus to and from the airport", "taxi guidance"]
+    },
+    {
+      "id": "heraklion-urban-bus",
+      "title": "Heraklion Urban Bus",
+      "publisher": "Heraklion Urban KTEL",
+      "url": "https://astiko-irakleiou.gr/en/",
+      "type": "official",
+      "checkedAt": "2026-07-21",
+      "supports": ["Heraklion city buses", "airport connection", "tickets and itineraries"]
+    },
+    {
+      "id": "ktel-heraklion-lasithi",
+      "title": "KTEL Heraklion Lasithi",
+      "publisher": "KTEL Heraklion Lasithi",
+      "url": "https://www.ktelherlas.gr/en/",
+      "type": "official",
+      "checkedAt": "2026-07-21",
+      "supports": ["intercity buses to Agios Nikolaos, Ierapetra and Sitia", "express north-coast line", "year-round daily routes"]
+    },
+    {
+      "id": "hellenic-heritage",
+      "title": "Hellenic Heritage official ticket service",
+      "publisher": "Hellenic Ministry of Culture and ODAP",
+      "url": "https://www.hh.gr/en/",
+      "type": "official",
+      "checkedAt": "2026-07-21",
+      "supports": ["official Knossos tickets", "Spinalonga tickets", "official cultural-site ticketing"]
+    },
+    {
+      "id": "heraklion-museum",
+      "title": "Heraklion Archaeological Museum",
+      "publisher": "Heraklion Archaeological Museum",
+      "url": "https://www.heraklionmuseum.gr/en/",
+      "type": "official",
+      "checkedAt": "2026-07-21",
+      "supports": ["museum admission fees", "opening hours", "Minoan collection context"]
+    },
+    {
+      "id": "samaria-park",
+      "title": "Samaria National Park official site",
+      "publisher": "Samaria National Park / NECCA",
+      "url": "https://www.samaria.gr/en/",
+      "type": "official",
+      "checkedAt": "2026-07-21",
+      "supports": ["gorge operating season and notices", "official e-tickets", "safety rules"]
+    },
+    {
+      "id": "heraklion-port",
+      "title": "Heraklion Port Authority",
+      "publisher": "Heraklion Port Authority",
+      "url": "https://portheraklion.gr/",
+      "type": "official",
+      "checkedAt": "2026-07-21",
+      "supports": ["ferry and coastal shipping context", "passenger port operations", "cruise berths"]
+    },
+    {
+      "id": "etz-hayyim",
+      "title": "Etz Hayyim Synagogue Hania",
+      "publisher": "Etz Hayyim Synagogue",
+      "url": "https://etz-hayyim-hania.org/",
+      "type": "primary",
+      "checkedAt": "2026-07-21",
+      "supports": ["the only active synagogue in Crete", "visits, tours and services in Chania"]
+    },
+    {
+      "id": "chabad-crete",
+      "title": "Chabad of Crete center listing",
+      "publisher": "Chabad.org",
+      "url": "https://www.chabad.org/jewish-centers/5470786/Hersonissos/Chabad-of-Crete",
+      "type": "primary",
+      "checkedAt": "2026-07-21",
+      "supports": ["Chabad presence in Hersonissos", "contact for Shabbat meals and kosher arrangements"]
+    },
+    {
+      "id": "israel-greece-travelers",
+      "title": "מידע לתיירים ישראלים ביוון",
+      "publisher": "שגרירות ישראל ביוון",
+      "url": "https://embassies.gov.il/greece/he/announcements/myd-ltyyrym-ysrlym",
+      "type": "official",
+      "checkedAt": "2026-07-21",
+      "supports": ["official traveler notices", "guidance for Israelis in Greece including Crete"]
+    },
+    {
+      "id": "israel-greece-consular",
+      "title": "המחלקה הקונסולרית של שגרירות ישראל באתונה",
+      "publisher": "שגרירות ישראל ביוון",
+      "url": "https://embassies.gov.il/greece/he/node/3195",
+      "type": "official",
+      "checkedAt": "2026-07-21",
+      "supports": ["visa exemption for Israeli tourists", "passport validity guidance", "consular assistance and lost passports"]
+    },
+    {
+      "id": "israel-travel-warnings",
+      "title": "Travel warnings",
+      "publisher": "Israel National Security Council",
+      "url": "https://www.gov.il/en/departments/dynamiccollectors/travel-warnings-nsc?skip=0",
+      "type": "official",
+      "checkedAt": "2026-07-21",
+      "supports": ["current Israeli security guidance", "warning-level definitions"]
+    },
+    {
+      "id": "eu-travel-documents",
+      "title": "Travel documents for non-EU nationals",
+      "publisher": "European Union / Your Europe",
+      "url": "https://europa.eu/youreurope/citizens/travel/entry-exit/non-eu-nationals/index_en.htm",
+      "type": "official",
+      "checkedAt": "2026-07-21",
+      "supports": ["Schengen passport rules", "90 in 180 day stay limit context"]
+    },
+    {
+      "id": "eu-ees",
+      "title": "Entry/Exit System (EES)",
+      "publisher": "European Commission, DG Home Affairs",
+      "url": "https://home-affairs.ec.europa.eu/policies/schengen-borders-and-visa/smart-borders/entry-exit-system_en",
+      "type": "official",
+      "checkedAt": "2026-07-21",
+      "supports": ["EES progressive rollout from 2025-10-12", "full operation from 2026-04-10", "biometric registration of non-EU nationals"]
+    }
+  ],
+  "facts": [
+    {
+      "id": "crete-regions-official",
+      "claim": "The Greek National Tourism Organisation presents Crete by regions, with Chania and Rethymno in the west, Heraklion as the largest urban centre and Lasithi in the east.",
+      "sourceIds": ["visit-greece-crete"],
+      "volatile": false
+    },
+    {
+      "id": "incredible-crete-official",
+      "claim": "Incredible Crete is the official tourism site of the Region of Crete covering the island's four regional units.",
+      "sourceIds": ["incredible-crete"],
+      "volatile": false
+    },
+    {
+      "id": "chania-airport-operator",
+      "claim": "Chania International Airport is operated by Fraport Greece and publishes direct bus and taxi guidance for reaching the city.",
+      "sourceIds": ["chania-airport"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "heraklion-city-buses",
+      "claim": "Heraklion Urban Bus operates the city network including the airport connection, with published itineraries and tickets.",
+      "sourceIds": ["heraklion-urban-bus"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "ktel-network",
+      "claim": "KTEL Heraklion Lasithi operates daily year-round intercity routes from Heraklion toward Agios Nikolaos, Ierapetra and Sitia plus an express north-coast service toward Chania.",
+      "sourceIds": ["ktel-heraklion-lasithi"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "knossos-official-tickets",
+      "claim": "Hellenic Heritage is the official Ministry of Culture and ODAP ticket service for Knossos and other Crete sites, listing the full Knossos ticket at 20 euros when checked on 2026-07-21.",
+      "sourceIds": ["hellenic-heritage"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "heraklion-museum-admission",
+      "claim": "The Heraklion Archaeological Museum listed full admission at 20 euros and reduced at 12 euros with long daily opening hours when checked on 2026-07-21.",
+      "sourceIds": ["heraklion-museum"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "samaria-seasonal",
+      "claim": "Samaria National Park is managed under NECCA and publishes official notices, opening information and e-tickets; the gorge operates in a defined season subject to weather closures.",
+      "sourceIds": ["samaria-park"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "heraklion-port-ferries",
+      "claim": "The Heraklion Port Authority operates one of Greece's major passenger ports, serving coastal shipping and cruise traffic that connects Crete with Piraeus and the islands.",
+      "sourceIds": ["heraklion-port"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "etz-hayyim-active",
+      "claim": "Etz Hayyim in Chania is the only active synagogue in Crete today and welcomes visitors for tours and services.",
+      "sourceIds": ["etz-hayyim"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "chabad-crete-presence",
+      "claim": "Chabad of Crete operates in Hersonissos and is the contact point for Shabbat meals and kosher arrangements on the island, with seasonal availability.",
+      "sourceIds": ["chabad-crete"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "israeli-visa-exemption-greece",
+      "claim": "The Israeli embassy in Athens states that Israeli passport holders do not need a visa for tourist visits to Greece, subject to Schengen stay limits and passport validity requirements.",
+      "sourceIds": ["israel-greece-consular", "eu-travel-documents"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "ees-operational",
+      "claim": "The European Commission states that the Entry/Exit System began progressive rollout on 2025-10-12 and became fully operational on 2026-04-10, registering non-EU nationals biometrically at external Schengen borders.",
+      "sourceIds": ["eu-ees"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "security-recheck",
+      "claim": "Israeli travelers should verify Greece in the National Security Council travel-warning system immediately before departure.",
+      "sourceIds": ["israel-travel-warnings"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    }
+  ]
+}

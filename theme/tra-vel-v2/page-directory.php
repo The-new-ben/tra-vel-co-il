@@ -64,6 +64,7 @@ get_header();
 					'budapest' => array( 38, 30 ), 'prague' => array( 29, 22 ), 'vienna' => array( 46, 38 ),
 					'thailand' => array( 72, 64 ), 'athens' => array( 54, 48 ), 'dubai' => array( 64, 54 ),
 					'tokyo' => array( 84, 34 ), 'lisbon' => array( 19, 43 ),
+					'larnaca' => array( 60, 51 ), 'crete' => array( 49, 55 ),
 				);
 				foreach ( $orbit_destinations as $destination ) :
 					$position = $positions[ $destination['id'] ] ?? array( 50, 50 );

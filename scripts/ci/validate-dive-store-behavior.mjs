@@ -166,15 +166,15 @@ const transitions = [
   [{ depth: 1, kind: 'destination', key: 'bangkok' }, { type: 'dive', kind: 'destination', key: 'bangkok' }, { depth: 2, kind: 'destination', key: 'bangkok' }],
   [{ depth: 2, kind: 'destination', key: 'bangkok' }, { type: 'dive', kind: 'destination', key: 'bangkok' }, { depth: 2, kind: 'destination', key: 'bangkok' }],
   [{ depth: 2, kind: 'destination', key: 'bangkok' }, { type: 'dive', kind: 'destination', key: 'lisbon' }, { depth: 1, kind: 'destination', key: 'lisbon' }],
-  [{ depth: 2, kind: 'destination', key: 'bangkok' }, { type: 'dive', kind: 'exploration_hub', key: 'larnaca' }, { depth: 1, kind: 'exploration_hub', key: 'larnaca' }],
-  [{ depth: 1, kind: 'exploration_hub', key: 'larnaca' }, { type: 'dive', kind: 'exploration_hub', key: 'larnaca' }, { depth: 2, kind: 'exploration_hub', key: 'larnaca' }],
+  [{ depth: 2, kind: 'destination', key: 'bangkok' }, { type: 'dive', kind: 'exploration_hub', key: 'istanbul' }, { depth: 1, kind: 'exploration_hub', key: 'istanbul' }],
+  [{ depth: 1, kind: 'exploration_hub', key: 'istanbul' }, { type: 'dive', kind: 'exploration_hub', key: 'istanbul' }, { depth: 2, kind: 'exploration_hub', key: 'istanbul' }],
   [{ depth: 1, kind: 'map_point', key: 'point:10.0:10.0' }, { type: 'dive', kind: 'map_point', key: 'point:10.0:10.0' }, { depth: 1, kind: 'map_point', key: 'point:10.0:10.0' }],
   [{ depth: 2, kind: 'destination', key: 'bangkok' }, { type: 'back' }, { depth: 1, kind: 'destination', key: 'bangkok' }],
   [{ depth: 1, kind: 'destination', key: 'bangkok' }, { type: 'back' }, { depth: 0, kind: '', key: '' }],
   [{ depth: 2, kind: 'destination', key: 'bangkok' }, { type: 'select', kind: 'destination', key: 'bangkok' }, { depth: 2, kind: 'destination', key: 'bangkok' }],
   [{ depth: 2, kind: 'destination', key: 'bangkok' }, { type: 'select', kind: 'destination', key: 'athens' }, { depth: 1, kind: 'destination', key: 'athens' }],
   [closed, { type: 'select', kind: 'destination', key: 'athens' }, { depth: 1, kind: 'destination', key: 'athens' }],
-  [{ depth: 2, kind: 'destination', key: 'bangkok' }, { type: 'select', kind: 'exploration_hub', key: 'larnaca' }, { depth: 0, kind: '', key: '' }],
+  [{ depth: 2, kind: 'destination', key: 'bangkok' }, { type: 'select', kind: 'exploration_hub', key: 'istanbul' }, { depth: 0, kind: '', key: '' }],
   [{ depth: 1, kind: 'destination', key: 'bangkok' }, { type: 'select', kind: 'map_point', key: 'point:1.0:1.0' }, { depth: 0, kind: '', key: '' }],
   [{ depth: 2, kind: 'destination', key: 'bangkok' }, { type: 'reset' }, { depth: 0, kind: '', key: '' }]
 ];
@@ -190,8 +190,8 @@ for (const [current, event, expected] of transitions) {
 assert.equal(runtime(`diveStorePointKind({selectionKind:'destination', supported:true, nearestDestination:'bangkok', latitude:13.75, longitude:100.5})`), 'destination');
 assert.equal(runtime(`diveStorePointKind({selectionKind:'destination', supported:false, nearestDestination:'bangkok', latitude:3, longitude:100})`), 'map_point',
   'A destination outside its supported radius must stay an honest map point.');
-assert.equal(runtime(`diveStorePointKind({selectionKind:'exploration_hub', hubId:'larnaca', latitude:34.9, longitude:33.62})`), 'exploration_hub');
-assert.equal(runtime(`diveStorePointKind({selectionKind:'exploration_hub', hubId:'not-a-hub', latitude:34.9, longitude:33.62})`), 'map_point');
+assert.equal(runtime(`diveStorePointKind({selectionKind:'exploration_hub', hubId:'istanbul', latitude:41.0, longitude:28.98})`), 'exploration_hub');
+assert.equal(runtime(`diveStorePointKind({selectionKind:'exploration_hub', hubId:'not-a-hub', latitude:41.0, longitude:28.98})`), 'map_point');
 assert.equal(runtime(`diveStorePointKind({latitude:-72, longitude:-150})`), 'map_point');
 assert.equal(runtime(`diveStorePointKind({latitude:120, longitude:0})`), '', 'Out-of-range coordinates must route nowhere.');
 assert.equal(runtime(`diveStoreTargetKey('map_point', {latitude:12.34, longitude:56.78})`), 'point:12.3:56.8');
@@ -204,12 +204,12 @@ function haversineKm(a, b) {
   const h = Math.sin(dLat / 2) ** 2 + Math.cos(a.latitude * rad) * Math.cos(b.latitude * rad) * Math.sin(dLng / 2) ** 2;
   return 6371 * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(Math.max(0, 1 - h)));
 }
-const larnacaPoint = { latitude: demoHubs.larnaca.latitude, longitude: demoHubs.larnaca.longitude };
+const hubPoint = { latitude: demoHubs.istanbul.latitude, longitude: demoHubs.istanbul.longitude };
 const expectedNearest = Object.values(demoDestinations)
-  .map(destination => ({ id: destination.id, distanceKm: Math.round(haversineKm(larnacaPoint, destination)) }))
+  .map(destination => ({ id: destination.id, distanceKm: Math.round(haversineKm(hubPoint, destination)) }))
   .sort((a, b) => a.distanceKm - b.distanceKm || a.id.localeCompare(b.id))
   .slice(0, 3);
-context.harnessPoint = larnacaPoint;
+context.harnessPoint = hubPoint;
 const nearest = runtime('nearestCuratedDestinations(harnessPoint, destinationData, 3)');
 assert.equal(nearest.length, 3, 'Exactly three nearest curated destinations must be offered.');
 assert.deepEqual(nearest.map(entry => ({ id: entry.id, distanceKm: entry.distanceKm })), expectedNearest,
@@ -302,9 +302,9 @@ assert.equal(worldCanvas.dataset.diveDepth, undefined, 'The globe height class m
 assert.equal(zoomCalls.length, 2);
 
 // Hub dive: four chips, then a board without prices plus nearest destinations.
-dispatchSelect({ selectionKind: 'exploration_hub', hubId: 'larnaca', latitude: 34.9003, longitude: 33.6232, supported: true }, true);
+dispatchSelect({ selectionKind: 'exploration_hub', hubId: 'istanbul', latitude: 41.0082, longitude: 28.9784, supported: true }, true);
 assert.equal(parts.chips.children.length, 4, 'A hub offers the four core service chips.');
-dispatchSelect({ selectionKind: 'exploration_hub', hubId: 'larnaca', latitude: 34.9003, longitude: 33.6232, supported: true }, true);
+dispatchSelect({ selectionKind: 'exploration_hub', hubId: 'istanbul', latitude: 41.0082, longitude: 28.9784, supported: true }, true);
 assert.equal(section.dataset.diveDepth, '2');
 assert.equal(parts.board.children.length, 5, 'The hub board must hold the banner plus four cards.');
 const hubBoardText = collectText(parts.board);

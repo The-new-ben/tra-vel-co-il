@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updated": "2026-07-18",
+  "updated": "2026-07-21",
   "locale": "he-IL",
   "evidenceBoundary": "Priorities are hypotheses informed by competitor coverage and Israeli traveler intent. They are not search-volume claims and must be rescored with Search Console, keyword-tool and supplier-conversion evidence.",
   "entries": [
@@ -771,6 +771,30 @@
       "status": "backlog",
       "conversionAction": "השוו חופשה קצרה, חוף, מלון והעברה",
       "monetization": ["packages", "hotels", "transfers"]
+    },
+    {
+      "id": "larnaca-guide",
+      "canonicalPath": "/destinations/larnaca/",
+      "pageType": "destination-hub",
+      "primaryIntent": "מדריך לרנקה לישראלים",
+      "cluster": "larnaca",
+      "parentPath": "/destinations/",
+      "mapState": "larnaca",
+      "status": "content-ready",
+      "conversionAction": "תכננו חופשה בלרנקה לפי חוף, אזור לינה ומשך",
+      "monetization": ["flights", "hotels", "packages", "transfers", "insurance"]
+    },
+    {
+      "id": "crete-guide",
+      "canonicalPath": "/destinations/crete/",
+      "pageType": "destination-hub",
+      "primaryIntent": "מדריך כרתים לישראלים",
+      "cluster": "crete",
+      "parentPath": "/destinations/",
+      "mapState": "crete",
+      "status": "content-ready",
+      "conversionAction": "בחרו בסיס בכרתים ותכננו מסלול, רכב ולינה",
+      "monetization": ["flights", "hotels", "packages", "cars", "insurance"]
     },
     {
       "id": "thailand-guide",

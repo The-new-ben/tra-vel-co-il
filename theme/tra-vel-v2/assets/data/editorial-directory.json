@@ -145,6 +145,42 @@
       "guide_path": "/destinations/lisbon/",
       "word_count": 9603,
       "source_count": 37
+    },
+    {
+      "id": "larnaca",
+      "city": "לרנקה",
+      "country": "קפריסין",
+      "region": "europe",
+      "region_label": "אירופה",
+      "experience": "beach",
+      "experience_label": "חוף, עיר וטיסה קצרה",
+      "duration": "3 עד 5 ימים",
+      "best_for": "משפחות · זוגות · חופשה קצרה",
+      "decision": "חוף עירוני ליד הטיילת מול בסיס שקט סביב המפרץ",
+      "map_state": "larnaca",
+      "image": "city-larnaca.png",
+      "guide_status": "published",
+      "guide_path": "/destinations/larnaca/",
+      "word_count": 5554,
+      "source_count": 18
+    },
+    {
+      "id": "crete",
+      "city": "כרתים",
+      "country": "יוון",
+      "region": "europe",
+      "region_label": "אירופה",
+      "experience": "beach",
+      "experience_label": "אי, חוף והרים",
+      "duration": "5 עד 8 ימים",
+      "best_for": "משפחות · זוגות · טיול רכב",
+      "decision": "בסיס אחד במערב או במרכז מול פיצול בין שני אזורים",
+      "map_state": "crete",
+      "image": "city-crete.png",
+      "guide_status": "published",
+      "guide_path": "/destinations/crete/",
+      "word_count": 5439,
+      "source_count": 16
     }
   ],
   "supporting_guides": [
