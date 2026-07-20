@@ -249,7 +249,7 @@ foreach ( array_merge( $manifest_destinations, $manifest_supporting ) as $manife
 	}
 }
 $guide_directory = tra_vel_v2_directory_item_list();
-guide_publication_assert( 9 === $guide_directory['numberOfItems'] && $expected_guide_index_items === $guide_directory['numberOfItems'], 'the guide index must contain published guides only' );
+guide_publication_assert( 11 === $guide_directory['numberOfItems'] && $expected_guide_index_items === $guide_directory['numberOfItems'], 'the guide index must contain published guides only' );
 foreach ( $guide_directory['itemListElement'] as $entry ) {
 	guide_publication_assert( ! empty( $entry['item']['url'] ), 'every item in the guide index schema must have a canonical guide URL' );
 }

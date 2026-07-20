@@ -1,0 +1,293 @@
+{
+  "schemaVersion": 1,
+  "id": "larnaca-2026",
+  "locale": "he-IL",
+  "title": "לרנקה",
+  "excerpt": "מדריך לרנקה לישראלים: טיסה קצרה, הגעה מהשדה, אזורי לינה לפי סגנון, חופים נגישים, טיולי יום, כשרות, תקציב וכללי כניסה, על בסיס מקורות רשמיים ותאריך בדיקה.",
+  "author": "מערכת Tra-Vel",
+  "primaryTopic": "Larnaca travel guide for Israelis",
+  "canonicalPath": "/destinations/larnaca/",
+  "status": "publish-ready",
+  "wordTargetMin": 5000,
+  "contentPath": "content/guides/larnaca-2026.he.html",
+  "checkedAt": "2026-07-21",
+  "mapState": "larnaca",
+  "reviewer": "מערכת Tra-Vel",
+  "reviewMethod": "Prioritize official Cyprus tourism, airport operator, public transport, regional tourism board, entry-requirement and Israeli consular sources. Recheck fares, timetables, opening hours, entry rules, kosher availability and security guidance immediately before publication.",
+  "flightTime": "בדקו מסלול חי",
+  "dailyBudget": "נבנה לפי ההרכב",
+  "bestSeason": "יוני עד אוקטובר לים",
+  "bestFor": "2 עד 5 ימים או בסיס לאי",
+  "sections": [
+    "Decision summary",
+    "Who Larnaca suits",
+    "Seasons and heat planning",
+    "Flights from Israel and baggage decisions",
+    "Airport to city comparison",
+    "Where to stay by area and travel style",
+    "Hotel and apartment vetting",
+    "Three, four and five day routes",
+    "City and island transport including left-side driving",
+    "Beaches and accessibility",
+    "Day trips across Cyprus",
+    "Daily budget by travel style",
+    "Food, meze and kosher options",
+    "Families, accessibility and pace",
+    "Entry rules, safety and Israeli consular guidance",
+    "Booking order and FAQ"
+  ],
+  "sources": [
+    {
+      "id": "visit-cyprus-larnaka",
+      "title": "Larnaka region guide",
+      "publisher": "Deputy Ministry of Tourism, Cyprus",
+      "url": "https://www.visitcyprus.com/regions/larnaka/",
+      "type": "official",
+      "checkedAt": "2026-07-21",
+      "supports": ["official destination orientation", "Larnaka attractions", "regional context"]
+    },
+    {
+      "id": "visit-cyprus-entry",
+      "title": "Entry requirements",
+      "publisher": "Deputy Ministry of Tourism, Cyprus",
+      "url": "https://www.visitcyprus.com/useful-info/entry-requirements/",
+      "type": "official",
+      "checkedAt": "2026-07-21",
+      "supports": ["recognized ports of entry", "entry via Larnaka and Pafos airports", "northern crossing context"]
+    },
+    {
+      "id": "visit-cyprus-weather",
+      "title": "Weather in Cyprus",
+      "publisher": "Deputy Ministry of Tourism, Cyprus",
+      "url": "https://www.visitcyprus.com/discover-cyprus/weather/",
+      "type": "official",
+      "checkedAt": "2026-07-21",
+      "supports": ["Mediterranean climate", "season planning", "swimming season context"]
+    },
+    {
+      "id": "cyprus-mfa-visa-free",
+      "title": "Categories of persons and countries whose nationals do not require a visa",
+      "publisher": "Ministry of Foreign Affairs, Cyprus",
+      "url": "https://www.gov.cy/mfa/en/documents/categories-of-persons-and-countries-whose-nationals-do-not-require-a-visa/",
+      "type": "official",
+      "checkedAt": "2026-07-21",
+      "supports": ["Israel visa exemption", "90-day short stay rule"]
+    },
+    {
+      "id": "hermes-public-transport",
+      "title": "Public Transportation at Larnaka and Pafos airports",
+      "publisher": "Hermes Airports",
+      "url": "https://www.hermesairports.com/prepare-your-journey/fly-in/public-transportation",
+      "type": "official",
+      "checkedAt": "2026-07-21",
+      "supports": ["airport buses", "24-hour taxi rank", "shuttle operators from LCA"]
+    },
+    {
+      "id": "cyprus-public-transport",
+      "title": "Cyprus Public Transport routes",
+      "publisher": "Cyprus Public Transport",
+      "url": "https://publictransport.com.cy/",
+      "type": "official",
+      "checkedAt": "2026-07-21",
+      "supports": ["Larnaca and Nicosia bus network", "urban and rural routes"]
+    },
+    {
+      "id": "kapnos-shuttle",
+      "title": "Kapnos Airport Shuttle",
+      "publisher": "Kapnos Airport Shuttle",
+      "url": "https://www.kapnosairportshuttle.com/",
+      "type": "primary",
+      "checkedAt": "2026-07-21",
+      "supports": ["shared airport shuttles", "Larnaca airport to Nicosia and other towns"]
+    },
+    {
+      "id": "larnaka-region",
+      "title": "Larnaka Region official visitor site",
+      "publisher": "Larnaka Tourism Board",
+      "url": "https://larnakaregion.com/",
+      "type": "official",
+      "checkedAt": "2026-07-21",
+      "supports": ["regional attractions", "events", "visitor planning"]
+    },
+    {
+      "id": "larnaka-foinikoudes",
+      "title": "Foinikoudes Promenade",
+      "publisher": "Larnaka Tourism Board",
+      "url": "https://larnakaregion.com/en/foinikoudes-promenade",
+      "type": "official",
+      "checkedAt": "2026-07-21",
+      "supports": ["Finikoudes promenade character", "seafront orientation"]
+    },
+    {
+      "id": "larnaka-beaches",
+      "title": "Organised Beaches in the Larnaka region",
+      "publisher": "Larnaka Tourism Board",
+      "url": "https://larnakaregion.com/place-be/beaches",
+      "type": "official",
+      "checkedAt": "2026-07-21",
+      "supports": ["Blue Flag organised beaches", "beach facilities", "lifeguards and beach services"]
+    },
+    {
+      "id": "larnaka-accessible",
+      "title": "Accessible Cyprus in the Larnaka region",
+      "publisher": "Larnaka Tourism Board",
+      "url": "https://larnakaregion.com/accessible-cyprus",
+      "type": "official",
+      "checkedAt": "2026-07-21",
+      "supports": ["accessible beaches", "floating beach wheelchair", "accessibility planning"]
+    },
+    {
+      "id": "chabad-larnaca",
+      "title": "Chabad of Larnaca",
+      "publisher": "Chabad Lubavitch of Cyprus",
+      "url": "https://www.chabadcyprus.com/templates/articlecco_cdo/aid/5340800/jewish/Chabad-of-Larnaca.htm",
+      "type": "primary",
+      "checkedAt": "2026-07-21",
+      "supports": ["synagogue and daily prayers", "mikveh", "community services in Larnaca"]
+    },
+    {
+      "id": "chabad-kosher-larnaca",
+      "title": "Kosher Food and Restaurants in Larnaca",
+      "publisher": "Chabad Lubavitch of Cyprus",
+      "url": "https://www.chabadcyprus.com/templates/articlecco_cdo/aid/6801642/jewish/Kosher-Food-and-Restaurants-in-Larnaca.htm",
+      "type": "primary",
+      "checkedAt": "2026-07-21",
+      "supports": ["kosher restaurant", "kosher grocery", "kosher availability by season"]
+    },
+    {
+      "id": "israel-embassy-nicosia",
+      "title": "שגרירות ישראל בניקוסיה",
+      "publisher": "משרד החוץ",
+      "url": "https://embassies.gov.il/cyprus/he",
+      "type": "official",
+      "checkedAt": "2026-07-21",
+      "supports": ["official Israeli representation in Cyprus", "traveler notices"]
+    },
+    {
+      "id": "israel-embassy-nicosia-services",
+      "title": "שירותים קונסולריים בניקוסיה",
+      "publisher": "משרד החוץ",
+      "url": "https://embassies.gov.il/cyprus/he/services",
+      "type": "official",
+      "checkedAt": "2026-07-21",
+      "supports": ["consular assistance", "lost passport procedure", "emergency documents"]
+    },
+    {
+      "id": "israel-travel-warnings",
+      "title": "Travel warnings",
+      "publisher": "Israel National Security Council",
+      "url": "https://www.gov.il/en/departments/dynamiccollectors/travel-warnings-nsc?skip=0",
+      "type": "official",
+      "checkedAt": "2026-07-21",
+      "supports": ["current Israeli security guidance", "warning-level definitions"]
+    },
+    {
+      "id": "eu-travel-documents",
+      "title": "Travel documents for non-EU nationals",
+      "publisher": "European Union / Your Europe",
+      "url": "https://europa.eu/youreurope/citizens/travel/entry-exit/non-eu-nationals/index_en.htm",
+      "type": "official",
+      "checkedAt": "2026-07-21",
+      "supports": ["Schengen rules do not apply in Cyprus", "passport validity rules"]
+    },
+    {
+      "id": "cyprus-meteorology",
+      "title": "Department of Meteorology",
+      "publisher": "Republic of Cyprus, Ministry of Agriculture",
+      "url": "https://www.moa.gov.cy/moa/dm/dm.nsf/home_en/home_en?openform=",
+      "type": "official",
+      "checkedAt": "2026-07-21",
+      "supports": ["official forecasts", "climatological data for Cyprus"]
+    }
+  ],
+  "facts": [
+    {
+      "id": "larnaca-region-official",
+      "claim": "The Cyprus Deputy Ministry of Tourism presents Larnaka as one of the island's main visitor regions, and the Larnaka Tourism Board runs a dedicated regional visitor site.",
+      "sourceIds": ["visit-cyprus-larnaka", "larnaka-region"],
+      "volatile": false
+    },
+    {
+      "id": "israel-visa-exemption",
+      "claim": "The Cyprus Ministry of Foreign Affairs lists Israel among countries whose nationals do not require a visa for stays of up to 90 days, as checked on 2026-07-21.",
+      "sourceIds": ["cyprus-mfa-visa-free"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "cyprus-not-schengen",
+      "claim": "EU guidance states that Schengen visa rules do not apply in Cyprus, which admits visitors under its own national rules.",
+      "sourceIds": ["eu-travel-documents"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "recognized-entry-points",
+      "claim": "Official Cyprus entry guidance requires travelers to use recognized ports of entry, including Larnaka and Pafos airports and the recognized seaports.",
+      "sourceIds": ["visit-cyprus-entry"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "lca-transport-modes",
+      "claim": "Hermes Airports lists public buses, a 24-hour taxi rank outside arrivals and intercity shuttle services as the ground transport options at Larnaka airport.",
+      "sourceIds": ["hermes-public-transport"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "cpt-operates-larnaca",
+      "claim": "Cyprus Public Transport operates the Larnaca and Nicosia public bus networks, including urban, rural and night routes.",
+      "sourceIds": ["cyprus-public-transport"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "kapnos-shared-shuttles",
+      "claim": "Kapnos Airport Shuttle operates shared transfer departures covering Larnaca and Paphos airports to major towns across Cyprus.",
+      "sourceIds": ["kapnos-shuttle"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "finikoudes-blue-flag",
+      "claim": "The Larnaka Tourism Board describes Finikoudes as an organised Blue Flag beach with shallow calm water, lifeguards and a free floating wheelchair for swimmers with disabilities.",
+      "sourceIds": ["larnaka-beaches", "larnaka-foinikoudes"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "accessible-beaches",
+      "claim": "The Larnaka Tourism Board publishes dedicated accessibility information for the region, including accessible beaches and beach service details.",
+      "sourceIds": ["larnaka-accessible"],
+      "volatile": false
+    },
+    {
+      "id": "chabad-larnaca-services",
+      "claim": "Chabad of Larnaca operates a synagogue with daily prayers, a mikveh and kosher food services including a kosher restaurant and grocery, with availability that changes by season.",
+      "sourceIds": ["chabad-larnaca", "chabad-kosher-larnaca"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "cyprus-climate",
+      "claim": "Official Cyprus sources describe a Mediterranean climate with long hot dry summers and mild winters, with forecasts and climatological data published by the Department of Meteorology.",
+      "sourceIds": ["visit-cyprus-weather", "cyprus-meteorology"],
+      "volatile": false
+    },
+    {
+      "id": "israeli-consular-channel",
+      "claim": "The Israeli embassy in Nicosia is the official consular channel for Israelis in Cyprus, including lost-passport and emergency document procedures.",
+      "sourceIds": ["israel-embassy-nicosia", "israel-embassy-nicosia-services"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "security-recheck",
+      "claim": "Israeli travelers should verify Cyprus in the National Security Council travel-warning system immediately before departure.",
+      "sourceIds": ["israel-travel-warnings"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    }
+  ]
+}

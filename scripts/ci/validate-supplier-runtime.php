@@ -316,7 +316,7 @@ tv2_assert( $canonical_destination_count === count( $demo_budget_response->data[
 // Smart discovery uses traveler friction, not unsourced trend or savings claims: direct service first,
 // then shorter flight and airport transfer, with destination id only as a deterministic final tie-breaker.
 tv2_assert( array( 'bangkok', 'lisbon', 'tokyo' ) === array_column( $long_trip_response->data['destinations'], 'id' ), 'long-trip smart order did not follow direct-service and travel-time friction' );
-tv2_assert( array( 'athens', 'dubai', 'budapest', 'vienna', 'prague' ) === array_column( $short_trip_response->data['destinations'], 'id' ), 'short-trip smart order did not follow direct-service and travel-time friction' );
+tv2_assert( array( 'larnaca', 'athens', 'dubai', 'budapest', 'vienna', 'prague' ) === array_column( $short_trip_response->data['destinations'], 'id' ), 'short-trip smart order did not follow direct-service and travel-time friction' );
 tv2_assert( null === $excluded_response->data['meta']['selected_destination'], 'an explicitly filtered destination was silently replaced' );
 tv2_assert( array() === $excluded_response->data['destinations'] && array() === $excluded_response->data['routes'], 'an explicitly filtered destination did not return a truthful empty state' );
 tv2_assert( 'bangkok' === $limited_response->data['meta']['selected_destination'], 'sorting and limit replaced an explicit visible destination' );
@@ -424,7 +424,7 @@ tv2_assert( 1 === $context_registry->contexts[0]['max_stops'], 'maximum stops di
 tv2_assert( 960 === $context_registry->contexts[0]['max_duration'], 'maximum duration did not reach the supplier adapter' );
 tv2_assert( false === $context_registry->contexts[0]['allow_overnight'] && true === $context_registry->contexts[1]['allow_overnight'], 'overnight preference was not normalized in supplier context' );
 tv2_assert( true === $live_budget->data['meta']['filters']['budget_applied'], 'live supplier budget was not applied' );
-tv2_assert( array( 'athens' ) === array_column( $live_budget->data['destinations'], 'id' ), 'live budget filter returned the wrong destination set' );
+tv2_assert( array( 'larnaca', 'athens' ) === array_column( $live_budget->data['destinations'], 'id' ), 'live budget filter returned the wrong destination set' );
 tv2_assert( 'partial_live' === $context_first->data['selected_plan']['cost_ledger']['state'], 'live route provenance did not activate the selected-plan ledger' );
 tv2_assert( null === $context_first->data['selected_plan']['cost_ledger']['total'], 'partial route components were presented as a full trip total' );
 tv2_assert( 12 === count( $context_first->data['selected_plan']['cost_ledger']['line_items'] ), 'live ledger dropped part of the 360-degree cost scope' );

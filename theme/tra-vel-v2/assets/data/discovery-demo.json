@@ -17,7 +17,8 @@
     "VIE": { "code": "VIE", "name": "Vienna International Airport", "destination_id": "vienna", "latitude": 48.1103, "longitude": 16.5697 },
     "BTS": { "code": "BTS", "name": "M. R. Štefánik Airport", "destination_id": null, "latitude": 48.1702, "longitude": 17.2127 },
     "ATH": { "code": "ATH", "name": "Athens International Airport", "destination_id": "athens", "latitude": 37.9364, "longitude": 23.9445 },
-    "LCA": { "code": "LCA", "name": "Larnaca International Airport", "destination_id": null, "latitude": 34.8751, "longitude": 33.6249 },
+    "LCA": { "code": "LCA", "name": "Larnaca International Airport", "destination_id": "larnaca", "latitude": 34.8751, "longitude": 33.6249 },
+    "HER": { "code": "HER", "name": "Heraklion International Airport N. Kazantzakis", "destination_id": "crete", "latitude": 35.3397, "longitude": 25.1803 },
     "DXB": { "code": "DXB", "name": "Dubai International Airport", "destination_id": "dubai", "latitude": 25.2532, "longitude": 55.3657 },
     "AMM": { "code": "AMM", "name": "Queen Alia International Airport", "destination_id": null, "latitude": 31.7226, "longitude": 35.9932 },
     "BKK": { "code": "BKK", "name": "Suvarnabhumi Airport", "destination_id": "bangkok", "latitude": 13.69, "longitude": 100.7501 },
@@ -36,7 +37,6 @@
   "exploration_hubs": [
     { "id": "jerusalem", "city": "ירושלים", "country": "ישראל", "geo": { "latitude": 31.7683, "longitude": 35.2137 }, "radius_km": 55, "live_search_scopes": ["route", "stay", "activities", "insurance", "connectivity", "equipment"] },
     { "id": "eilat", "city": "אילת", "country": "ישראל", "geo": { "latitude": 29.5577, "longitude": 34.9519 }, "radius_km": 65, "iata_search_code": "ETM", "live_search_scopes": ["route", "stay", "activities", "insurance", "connectivity", "equipment"] },
-    { "id": "larnaca", "city": "לרנקה", "country": "קפריסין", "geo": { "latitude": 34.9003, "longitude": 33.6232 }, "radius_km": 90, "iata_search_code": "LCA", "live_search_scopes": ["route", "stay", "activities", "insurance", "connectivity", "equipment"] },
     { "id": "istanbul", "city": "איסטנבול", "country": "טורקיה", "geo": { "latitude": 41.0082, "longitude": 28.9784 }, "radius_km": 140, "iata_search_code": "IST", "live_search_scopes": ["route", "stay", "activities", "insurance", "connectivity", "equipment"] },
     { "id": "rome", "city": "רומא", "country": "איטליה", "geo": { "latitude": 41.9028, "longitude": 12.4964 }, "radius_km": 140, "iata_search_code": "FCO", "live_search_scopes": ["route", "stay", "activities", "insurance", "connectivity", "equipment"] },
     { "id": "barcelona", "city": "ברצלונה", "country": "ספרד", "geo": { "latitude": 41.3874, "longitude": 2.1686 }, "radius_km": 150, "iata_search_code": "BCN", "live_search_scopes": ["route", "stay", "activities", "insurance", "connectivity", "equipment"] },
@@ -292,6 +292,58 @@
       },
       "tags": ["7 לילות", "עצירה אחת", "מלון מומלץ"],
       "image": "city-lisbon.webp"
+    },
+    {
+      "id": "larnaca",
+      "city": "לרנקה",
+      "country": "קפריסין",
+      "geo": { "latitude": 34.9003, "longitude": 33.6232 },
+      "position": { "x": 51, "y": 45 },
+      "airport": { "code": "LCA", "name": "Larnaca International", "direct": true, "flight_minutes": 55, "transfer_minutes": 15 },
+      "deal": { "headline_price": 139, "total_per_person": 429, "currency": "USD", "trend_pct": 0, "nights": 3, "total_scope": "destination_deal", "insight": "אפשרות תכנון לחופשת חוף קצרה וקרובה לישראל", "bookable": false },
+      "hotel": { "name": "דוגמת לינה ליד הטיילת", "area": "Finikoudes", "rating": 4.1, "nightly": 120, "nights": 3, "room_total": 360, "per_person_total": 180, "currency": "USD", "tour_ready": false },
+      "weather": { "temperature_c": 31, "condition": "שמשי וחם", "season_fit": "מתאים לחוף" },
+      "planning": {
+        "reviewed_on": "2026-07-21",
+        "source_label": "פרופיל התכנון של Tra-Vel",
+        "modules": {
+          "mobility": { "state": "editorial", "headline": "מהשדה לטיילת בנסיעה קצרה", "detail": "המרחק מהשדה לעיר קצר במיוחד; משווים אוטובוס עירוני, מונית והסעה לפי שעת הנחיתה, הכבודה וההרכב.", "next_action": "השוו העברות" },
+          "dining": { "state": "needs_details", "headline": "טברנות, מזה וכשרות ליד הים", "detail": "מוסיפים רמת כשרות, אלרגיות, שעות ותקציב כדי לבחור בין הטיילת, השוק והשכונות הפנימיות.", "next_action": "הוסיפו העדפות אוכל" },
+          "entry": { "state": "needs_details", "headline": "כניסה לפי דרכון ונקודת מעבר", "detail": "מאמתים דרכון, אזרחות ותנאי כניסה, כולל כללי מעבר בין חלקי האי לפי ההנחיות הרשמיות.", "next_action": "בדקו תנאי כניסה" },
+          "connectivity": { "state": "editorial", "headline": "חיבור לחופשה קצרה באי", "detail": "משווים eSIM, נדידה ו-SIM מקומי לפי מספר ימים, כיסוי ושיתוף אינטרנט למשפחה.", "next_action": "השוו חיבור" },
+          "accessibility": { "state": "needs_details", "headline": "טיילת שטוחה וחופים נגישים", "detail": "בודקים גישה לחוף, שירותי רחצה נגישים ומרחק הליכה מהמלון לפי הצרכים של כל נוסע.", "next_action": "התאימו צרכים" },
+          "equipment": { "state": "needs_details", "headline": "ציוד חוף, שמש ומשפחה", "detail": "רשימת הציוד משתנה לפי העונה, גיל הילדים וטיולי היום שמוסיפים סביב העיר.", "next_action": "בנו רשימת ציוד" }
+        },
+        "cost_scope": { "state": "partial", "categories": ["flight", "baggage", "stay", "taxes", "transfers", "local_transport", "activities", "dining", "insurance", "connectivity", "equipment", "entry"] }
+      },
+      "tags": ["טיסה קצרה", "חוף עירוני", "3 לילות"],
+      "image": "city-larnaca.png"
+    },
+    {
+      "id": "crete",
+      "city": "כרתים",
+      "country": "יוון",
+      "geo": { "latitude": 35.3387, "longitude": 25.1442 },
+      "position": { "x": 49, "y": 46 },
+      "airport": { "code": "HER", "name": "Heraklion N. Kazantzakis", "direct": true, "flight_minutes": 110, "transfer_minutes": 20 },
+      "deal": { "headline_price": 189, "total_per_person": 619, "currency": "USD", "trend_pct": 0, "nights": 5, "total_scope": "destination_deal", "insight": "אפשרות תכנון לחופשת אי של חמישה לילות", "bookable": false },
+      "hotel": { "name": "דוגמת לינה בעיר העתיקה", "area": "Chania Old Town", "rating": 4.4, "nightly": 150, "nights": 5, "room_total": 750, "per_person_total": 375, "currency": "USD", "tour_ready": false },
+      "weather": { "temperature_c": 29, "condition": "שמשי", "season_fit": "מצוין לחוף" },
+      "planning": {
+        "reviewed_on": "2026-07-21",
+        "source_label": "פרופיל התכנון של Tra-Vel",
+        "modules": {
+          "mobility": { "state": "editorial", "headline": "רכב שכור מול אוטובוסים בין ערים", "detail": "האי גדול ממה שנדמה; משווים רכב שכור, קווי אוטובוס בין הערים ומוניות לפי המסלול והבסיס שנבחר.", "next_action": "השוו העברות" },
+          "dining": { "state": "needs_details", "headline": "טברנות כפריות וכשרות בערים", "detail": "מוסיפים רמת כשרות, אלרגיות ותקציב כדי לשלב אוכל כרתי, שווקים וארוחות חוף במסלול.", "next_action": "הוסיפו העדפות אוכל" },
+          "entry": { "state": "needs_details", "headline": "בדיקת כניסה לפי דרכון ומסלול", "detail": "מאמתים דרכון, כללי שהייה ומעבר גבול לפי ההנחיות הרשמיות לפני ההזמנה.", "next_action": "בדקו תנאי כניסה" },
+          "connectivity": { "state": "editorial", "headline": "חיבור בעיר, בהר ובחוף", "detail": "משווים eSIM, נדידה ו-SIM מקומי לפי ימים, כיסוי מחוץ לערים ושיתוף אינטרנט.", "next_action": "השוו חיבור" },
+          "accessibility": { "state": "needs_details", "headline": "סמטאות, חופים ודרכי הרים", "detail": "מגבלת הליכה, עגלה ונגישות חוף משפיעות על בחירת הבסיס, הרכב והמסלול היומי.", "next_action": "התאימו צרכים" },
+          "equipment": { "state": "needs_details", "headline": "ציוד חוף, הליכה ושמש", "detail": "מחברים חופים, שבילים וימי עיר לרשימת ציוד שמפרידה בין חובה לבין מה שקונים במקום.", "next_action": "בנו רשימת ציוד" }
+        },
+        "cost_scope": { "state": "partial", "categories": ["flight", "baggage", "stay", "taxes", "transfers", "local_transport", "activities", "dining", "insurance", "connectivity", "equipment", "entry"] }
+      },
+      "tags": ["טיסה ישירה", "אי גדול", "5 לילות"],
+      "image": "city-crete.png"
     }
   ],
   "route_sets": {
@@ -613,6 +665,74 @@
         "costs": { "flight": 305, "baggage": 75, "hotel": 462, "transfers": 48, "insurance": 50, "overnight": 0, "total": 940 },
         "pros": ["ללא לינת ביניים", "כרטיס אחד כאשר מוצע כך", "עצירה אחת"],
         "cons": ["אין מסלול ישיר", "יש לאמת כבודה וזמן מעבר"]
+      }
+    ],
+    "larnaca": [
+      {
+        "id": "larnaca-direct",
+        "currency": "USD",
+        "label": "טיסה ישירה ללרנקה",
+        "badge": "הכי מהיר",
+        "duration_minutes": 55,
+        "stops": 0,
+        "via": null,
+        "ticket_mode": "single",
+        "risk": "low",
+        "emissions_kg": 95,
+        "score": 96,
+        "costs": { "flight": 139, "baggage": 30, "hotel": 180, "transfers": 20, "insurance": 24, "overnight": 0, "total": 393 },
+        "pros": ["זמן טיסה קצר במיוחד", "מתאים גם לסוף שבוע", "ללא החלפה"],
+        "cons": ["זמינות משתנה לפי עונה", "המחיר דורש אימות חי"]
+      },
+      {
+        "id": "larnaca-athens",
+        "currency": "USD",
+        "label": "דרך אתונה",
+        "badge": "חלופה בשעות אחרות",
+        "duration_minutes": 290,
+        "stops": 1,
+        "via": "ATH",
+        "ticket_mode": "single",
+        "risk": "low",
+        "emissions_kg": 420,
+        "score": 58,
+        "costs": { "flight": 168, "baggage": 40, "hotel": 180, "transfers": 25, "insurance": 24, "overnight": 0, "total": 437 },
+        "pros": ["עשוי לפתוח שעות נוספות", "כרטיס אחד כאשר מוצע כך"],
+        "cons": ["החלפת מטוס", "ארוך משמעותית מהטיסה הישירה"]
+      }
+    ],
+    "crete": [
+      {
+        "id": "crete-direct",
+        "currency": "USD",
+        "label": "טיסה ישירה להרקליון",
+        "badge": "הכי מהיר",
+        "duration_minutes": 110,
+        "stops": 0,
+        "via": null,
+        "ticket_mode": "single",
+        "risk": "low",
+        "emissions_kg": 310,
+        "score": 94,
+        "costs": { "flight": 189, "baggage": 45, "hotel": 375, "transfers": 25, "insurance": 30, "overnight": 0, "total": 664 },
+        "pros": ["טיסה ישירה לאי", "מתאים למשפחות", "ללא החלפה"],
+        "cons": ["תדירות משתנה לפי עונה", "המחיר דורש אימות חי"]
+      },
+      {
+        "id": "crete-athens",
+        "currency": "USD",
+        "label": "דרך אתונה",
+        "badge": "גמישות בשעות",
+        "duration_minutes": 320,
+        "stops": 1,
+        "via": "ATH",
+        "ticket_mode": "single",
+        "risk": "low",
+        "emissions_kg": 450,
+        "score": 62,
+        "costs": { "flight": 172, "baggage": 45, "hotel": 375, "transfers": 30, "insurance": 30, "overnight": 0, "total": 652 },
+        "pros": ["שילוב עצירה באתונה", "עשוי לפתוח שעות נוספות"],
+        "cons": ["החלפת מטוס והמתנה", "תלוי בקישור בין הטיסות"]
       }
     ]
   }
