@@ -95,6 +95,24 @@ requireMarkers(app, 'Quote-case browser client', [
   "status.dataset.state = payload?.replayed ? 'reused' : 'success'",
   "url.hostname.toLowerCase() === 'api.whatsapp.com'",
 ]);
+requireMarkers(app, 'Quote-case lead capture (theme 1.23.0)', [
+  '...(acquisition ? {acquisition} : {})',
+  'const acquisition = readAcquisition();',
+  'function openQuoteCaseContactStep(root, view, button)',
+  'function storeQuoteCaseLeadContact(contact)',
+  'async function continueQuoteCaseWhatsappHandoff(root, existingPopup = null)',
+  'continueQuoteCaseWhatsappHandoff(root, popup)',
+  'quoteCaseContactSaved',
+  'quoteCaseContactDeclined',
+  'quoteCaseContactKey',
+  "surface: 'quote_case_handoff'",
+]);
+if (!/if \(!agentRuntime\.quoteCaseContactSaved && !agentRuntime\.quoteCaseContactDeclined\) \{\s*openQuoteCaseContactStep\(root, view, button\);\s*return;\s*\}/.test(app)) {
+  failures.push('The quote-case WhatsApp continuation must offer the inline contact step exactly once before opening the conversation.');
+}
+if (!/onSkip: async \(\) => \{\s*agentRuntime\.quoteCaseContactDeclined = true;[\s\S]{0,200}await continueQuoteCaseWhatsappHandoff\(root\);/.test(app)) {
+  failures.push('Skipping the quote-case contact step must continue exactly like the pre-1.23.0 WhatsApp flow.');
+}
 if (/setInterval\s*\([^)]*(?:quote|case)/i.test(app)) {
   failures.push('Quote-case progress must not advance on a decorative interval.');
 }

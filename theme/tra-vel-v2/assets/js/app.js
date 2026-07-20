@@ -4160,6 +4160,216 @@ function normalizedCommercialCandidate(candidate = {}, commerce = {}, payload = 
   };
 }
 
+const acquisitionStorageKey = 'traVelAcquisition';
+const acquisitionUtmFields = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'];
+const leadContactConsentVersion = '2026-07-19';
+
+function boundedAcquisitionField(value) {
+  return String(value == null ? '' : value).trim().slice(0, 120);
+}
+
+/**
+ * Record first-touch acquisition once per browser. The record is written only
+ * when the landing URL carries campaign parameters or the visit arrived from
+ * another host, and an existing record always wins so later visits cannot
+ * rewrite the original attribution.
+ */
+function captureAcquisition() {
+  try {
+    if (window.localStorage.getItem(acquisitionStorageKey)) return;
+    const params = new URLSearchParams(window.location.search);
+    const hasCampaignParams = acquisitionUtmFields.some(field => boundedAcquisitionField(params.get(field)) !== '')
+      || boundedAcquisitionField(params.get('gclid')) !== ''
+      || boundedAcquisitionField(params.get('fbclid')) !== '';
+    let referrerHost = '';
+    try {
+      const referrer = String(document.referrer || '');
+      if (referrer) {
+        const host = new URL(referrer).hostname.toLowerCase();
+        if (host && host !== String(window.location.hostname || '').toLowerCase()) referrerHost = boundedAcquisitionField(host);
+      }
+    } catch (error) {
+      referrerHost = '';
+    }
+    if (!hasCampaignParams && !referrerHost) return;
+    const record = {};
+    for (const field of acquisitionUtmFields) {
+      const value = boundedAcquisitionField(params.get(field));
+      if (value) record[field] = value;
+    }
+    const landingPath = boundedAcquisitionField(window.location.pathname);
+    if (landingPath.startsWith('/')) record.landing_path = landingPath;
+    if (referrerHost) record.referrer_host = referrerHost;
+    record.first_seen_at = boundedAcquisitionField(new Date().toISOString());
+    window.localStorage.setItem(acquisitionStorageKey, JSON.stringify(record));
+  } catch (error) {
+    // First-touch attribution is optional and must never block the page.
+  }
+}
+
+/** Read the bounded first-touch acquisition record, or null when absent. */
+function readAcquisition() {
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(acquisitionStorageKey) || 'null');
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
+    const record = {};
+    for (const field of [...acquisitionUtmFields, 'landing_path', 'referrer_host', 'first_seen_at']) {
+      const value = boundedAcquisitionField(parsed[field]);
+      if (value) record[field] = value;
+    }
+    return Object.keys(record).length ? record : null;
+  } catch (error) {
+    return null;
+  }
+}
+
+/**
+ * Normalize an Israeli phone number to +972 form. Accepts mobile and landline
+ * numbers with optional +972/972 prefixes, spaces, and dashes; anything else
+ * returns an empty string so an invalid number is never stored.
+ */
+function normalizedIsraeliPhone(raw) {
+  const value = String(raw || '').trim();
+  if (!/^[+0-9][0-9 -]{6,20}$/.test(value)) return '';
+  const compact = value.replace(/[ -]/g, '');
+  let local = compact;
+  if (local.startsWith('+972')) local = `0${local.slice(4)}`;
+  else if (local.startsWith('972')) local = `0${local.slice(3)}`;
+  if (!/^0(?:[23489][0-9]{7}|[57][0-9]{8})$/.test(local)) return '';
+  return `+972${local.slice(1)}`;
+}
+
+/**
+ * Build the inline contact step shown before an assisted WhatsApp handoff.
+ * The step renders inside the existing card or panel, never as a browser
+ * modal, and resolves through exactly one of its save or skip actions.
+ */
+function buildLeadContactStep({onSave, onSkip}) {
+  const stepId = `lead-contact-${createAgentClientRequestId().replace(/[^A-Za-z0-9-]/g, '').slice(0, 24)}`;
+  const step = document.createElement('section');
+  step.className = 'lead-contact-step';
+  step.dataset.leadContactStep = '';
+  step.setAttribute('aria-labelledby', `${stepId}-title`);
+
+  const heading = document.createElement('h4');
+  heading.id = `${stepId}-title`;
+  heading.tabIndex = -1;
+  heading.textContent = 'רוצים שנחזור אליכם גם אם השיחה מתנתקת?';
+  step.append(heading);
+  appendTextElement(step, 'p', 'הפרטים נשמרים אצל Tra-Vel בלבד ומשמשים רק לחזרה אליכם על הבקשה הזו.', 'lead-contact-intro');
+
+  const fields = document.createElement('div');
+  fields.className = 'lead-contact-fields';
+  const buildField = (key, labelText, type, autocomplete) => {
+    const field = document.createElement('label');
+    field.className = 'lead-contact-field';
+    field.htmlFor = `${stepId}-${key}`;
+    appendTextElement(field, 'span', labelText);
+    const input = document.createElement('input');
+    input.type = type;
+    input.id = `${stepId}-${key}`;
+    input.name = `lead_contact_${key}`;
+    input.autocomplete = autocomplete;
+    input.maxLength = 80;
+    if (type === 'tel') {
+      input.inputMode = 'tel';
+      input.dir = 'ltr';
+    }
+    field.append(input);
+    fields.append(field);
+    return input;
+  };
+  const nameInput = buildField('name', 'שם', 'text', 'name');
+  const phoneInput = buildField('phone', 'טלפון', 'tel', 'tel');
+  step.append(fields);
+
+  const consent = document.createElement('label');
+  consent.className = 'lead-contact-consent';
+  consent.htmlFor = `${stepId}-consent`;
+  const consentInput = document.createElement('input');
+  consentInput.type = 'checkbox';
+  consentInput.id = `${stepId}-consent`;
+  consent.append(consentInput);
+  const consentCopy = document.createElement('span');
+  consentCopy.append(document.createTextNode('אני מאשר/ת ל-Tra-Vel לשמור את הפרטים וליצור קשר לגבי הבקשה הזו. '));
+  const privacyLink = document.createElement('a');
+  privacyLink.href = '/privacy-policy/';
+  privacyLink.target = '_blank';
+  privacyLink.rel = 'noopener';
+  privacyLink.textContent = 'מדיניות הפרטיות';
+  consentCopy.append(privacyLink);
+  consent.append(consentCopy);
+  step.append(consent);
+
+  const error = document.createElement('p');
+  error.className = 'lead-contact-error';
+  error.setAttribute('role', 'alert');
+  error.hidden = true;
+  step.append(error);
+
+  const showLeadContactError = (message, input) => {
+    error.textContent = message;
+    error.hidden = false;
+    if (input) {
+      input.setAttribute('aria-invalid', 'true');
+      input.focus?.();
+    }
+  };
+  const clearLeadContactError = () => {
+    error.textContent = '';
+    error.hidden = true;
+    nameInput.removeAttribute('aria-invalid');
+    phoneInput.removeAttribute('aria-invalid');
+  };
+
+  const actions = document.createElement('div');
+  actions.className = 'lead-contact-actions';
+  const save = document.createElement('button');
+  save.type = 'button';
+  save.className = 'lead-contact-save';
+  save.dataset.leadContactSave = '';
+  save.textContent = 'שמרו והמשיכו בוואטסאפ';
+  const skip = document.createElement('button');
+  skip.type = 'button';
+  skip.className = 'lead-contact-skip';
+  skip.dataset.leadContactSkip = '';
+  skip.textContent = 'המשיכו בלי להשאיר פרטים';
+  actions.append(save, skip);
+  step.append(actions);
+
+  const setBusy = busy => {
+    save.disabled = busy;
+    skip.disabled = busy;
+    if (busy) step.setAttribute('aria-busy', 'true');
+    else step.removeAttribute('aria-busy');
+  };
+
+  save.addEventListener('click', () => {
+    clearLeadContactError();
+    const phone = normalizedIsraeliPhone(phoneInput.value);
+    if (!phone) {
+      showLeadContactError('בדקו את מספר הטלפון. אפשר להזין מספר ישראלי נייד או קווי.', phoneInput);
+      return;
+    }
+    if (!consentInput.checked) {
+      showLeadContactError('כדי שנשמור את הפרטים ונחזור אליכם, סמנו את אישור שמירת הפרטים.', consentInput);
+      return;
+    }
+    const name = String(nameInput.value || '').trim().slice(0, 80);
+    const contact = {
+      ...(name ? {name} : {}),
+      phone,
+      consent: true,
+      consent_version: leadContactConsentVersion
+    };
+    onSave(contact, {setBusy, showError: message => { setBusy(false); showLeadContactError(message); }, step});
+  });
+  skip.addEventListener('click', () => onSkip({setBusy, step}));
+
+  step.focusHeading = () => heading.focus?.();
+  return step;
+}
+
 function commercialIntentBaseUrl() {
   const configured = boundedCommercialString(window.traVelV2?.commercialIntentUrl || '', 500);
   if (!configured) return '';
@@ -4234,7 +4444,11 @@ function commercialIntentRegistryEntry(vertical, commerce, payload, candidate) {
       createKey: `commercial-create-${mutationId}`,
       handoffKey: `commercial-handoff-${mutationId}`,
       intent: null,
-      inFlight: null
+      inFlight: null,
+      contact: null,
+      contactKey: '',
+      contactSaved: false,
+      contactDeclined: false
     };
     commercialIntentMutationRegistry.set(registryKey, entry);
   }
@@ -4250,20 +4464,26 @@ function rotateCommercialHandoffKey(entry) {
   return entry.handoffKey;
 }
 
-function commercialIntentCreateBody(vertical, commerce, payload, state) {
+function commercialIntentCreateBody(vertical, commerce, payload, state, contact = null) {
   const sellerReady = commercialSellerReady(payload, commerce);
   const requestedProvider = sellerReady
     ? boundedCommercialString(commerce?.provider || '', 40).toLowerCase().replace(/[^a-z0-9_-]/g, '')
     : 'tra-vel-concierge';
+  const acquisition = readAcquisition();
+  // A consented contact travels under its own operation key: the contact
+  // changes the server-side idempotency digest, so reusing the plain create
+  // key would conflict with an earlier contact-free write of the same scope.
   return {
-    idempotency_key: state.entry.createKey,
+    idempotency_key: contact ? state.entry.contactKey : state.entry.createKey,
     vertical: boundedCommercialString(vertical, 30).toLowerCase().replace(/[^a-z0-9_-]/g, ''),
     surface: `${boundedCommercialString(vertical, 30).toLowerCase().replace(/[^a-z0-9_-]/g, '')}_results`,
     data_mode: commercialDataMode(payload),
     requested_provider: requestedProvider || 'tra-vel-concierge',
     offer_id: state.offerId,
     candidate: state.candidate,
-    trip: state.trip
+    trip: state.trip,
+    ...(acquisition ? {acquisition} : {}),
+    ...(contact ? {contact} : {})
   };
 }
 
@@ -4286,7 +4506,52 @@ function configureCommercialAction(button, vertical, commerce, payload, candidat
   button.textContent = sellerReady
     ? (currentLabels[vertical] || 'בדקו מחיר והמשיכו לספק')
     : (assistedLabels[vertical] || 'שלחו את האפשרות לבדיקה');
-  button.addEventListener('click', () => startCommercialHandoff(button, vertical, {...commerce, bookable: sellerReady, purchasable: sellerReady}, payload, candidate));
+  button.addEventListener('click', () => openCommercialContactStep(button, vertical, {...commerce, bookable: sellerReady, purchasable: sellerReady}, payload, candidate));
+}
+
+/**
+ * Show the inline callback-contact step before the assisted WhatsApp handoff.
+ * Saving attaches the consented contact to the durable commercial intent;
+ * skipping continues exactly like the pre-1.23.0 flow. Either choice is
+ * remembered per result card so a retry never asks twice.
+ */
+function openCommercialContactStep(button, vertical, commerce, payload, candidate = {}) {
+  if (!button) return false;
+  // The step copy promises a WhatsApp continuation, so it appears only on the
+  // assisted-sales path. A proven live seller handoff continues unchanged.
+  if (commercialSellerReady(payload, commerce)) {
+    return startCommercialHandoff(button, vertical, commerce, payload, candidate);
+  }
+  const state = commercialIntentRegistryEntry(vertical, commerce, payload, candidate);
+  if (state.entry.inFlight) return state.entry.inFlight;
+  if (state.entry.contact || state.entry.contactSaved || state.entry.contactDeclined) {
+    return startCommercialHandoff(button, vertical, commerce, payload, candidate);
+  }
+  const host = button.parentElement || button;
+  const existing = host.querySelector?.('[data-lead-contact-step]');
+  if (existing) {
+    existing.focusHeading?.();
+    return false;
+  }
+  const step = buildLeadContactStep({
+    onSave: contact => {
+      state.entry.contact = contact;
+      if (!state.entry.contactKey) state.entry.contactKey = `commercial-contact-${createAgentClientRequestId()}`.slice(0, 100);
+      step.remove?.();
+      button.focus?.();
+      startCommercialHandoff(button, vertical, commerce, payload, candidate);
+    },
+    onSkip: () => {
+      state.entry.contactDeclined = true;
+      step.remove?.();
+      button.focus?.();
+      startCommercialHandoff(button, vertical, commerce, payload, candidate);
+    }
+  });
+  if (button.insertAdjacentElement) button.insertAdjacentElement('afterend', step);
+  else host.append?.(step);
+  step.focusHeading?.();
+  return false;
 }
 
 function commercialHandoffContext(vertical, commerce, payload = {}) {
@@ -4333,14 +4598,29 @@ async function startCommercialHandoff(button, vertical, commerce, payload, candi
   button.setAttribute('aria-busy', 'true');
   button.textContent = 'פותחים את בקשת הבדיקה...';
   try {
+    const contact = state.entry.contact && !state.entry.contactSaved ? state.entry.contact : null;
     if (!state.entry.intent) {
       const createResponse = await commercialIntentMutation(
         endpoint,
-        commercialIntentCreateBody(vertical, commerce, payload, state),
+        commercialIntentCreateBody(vertical, commerce, payload, state, contact),
         'commercial_intent_create_timeout'
       );
       state.entry.intent = normalizedCommercialIntent(createResponse);
       if (!state.entry.intent) throw new Error('Commercial intent response is invalid.');
+      if (contact) state.entry.contactSaved = true;
+    } else if (contact) {
+      // The 0.9.0 API has no intent-update route. Re-posting the same safe
+      // scope with the consented contact resumes the existing durable intent
+      // and the server explicitly attaches the contact to it, so consent
+      // given after the intent was first created is never silently dropped.
+      const attachResponse = await commercialIntentMutation(
+        endpoint,
+        commercialIntentCreateBody(vertical, commerce, payload, state, contact),
+        'commercial_intent_create_timeout'
+      );
+      const attachedIntent = normalizedCommercialIntent(attachResponse);
+      if (attachedIntent) state.entry.intent = attachedIntent;
+      state.entry.contactSaved = true;
     }
     const handoff = await commercialIntentMutation(
       `${endpoint}/${encodeURIComponent(state.entry.intent.intent_id)}/handoffs`,
@@ -9211,7 +9491,11 @@ const agentRuntime = {
   quoteCasePollController: null,
   quoteCasePollGeneration: 0,
   quoteCasePollCaseToken: '',
-  quoteCaseLoading: false
+  quoteCaseLoading: false,
+  quoteCaseContact: null,
+  quoteCaseContactKey: '',
+  quoteCaseContactSaved: false,
+  quoteCaseContactDeclined: false
 };
 
 function readAgentSessionValue(key) {
@@ -9300,6 +9584,10 @@ function resetAgentRuntime(runId = '') {
   agentRuntime.quoteCasePollController = null;
   agentRuntime.quoteCasePollCaseToken = '';
   agentRuntime.quoteCaseLoading = false;
+  agentRuntime.quoteCaseContact = null;
+  agentRuntime.quoteCaseContactKey = '';
+  agentRuntime.quoteCaseContactSaved = false;
+  agentRuntime.quoteCaseContactDeclined = false;
 }
 
 function agentRestBase() {
@@ -10402,6 +10690,7 @@ async function createAgentQuoteCase(root) {
   if (status) status.textContent = 'פותחים בדיקה אישית ושומרים את פרטי התוכנית שבדקתם...';
   setQuoteCaseError(root);
   try {
+    const acquisition = readAcquisition();
     const payload = await agentApiRequest(`/runs/${encodeURIComponent(agentRuntime.runId)}/quote-cases`, {
       method: 'POST',
       body: JSON.stringify({
@@ -10409,7 +10698,8 @@ async function createAgentQuoteCase(root) {
         expected_revision: agentRuntime.requestRevision,
         consent: true,
         consent_version: '2026-07-17',
-        idempotency_key: button.dataset.idempotencyKey
+        idempotency_key: button.dataset.idempotencyKey,
+        ...(acquisition ? {acquisition} : {})
       })
     });
     const caseData = normalizeQuoteCasePayload(payload);
@@ -10430,10 +10720,124 @@ async function createAgentQuoteCase(root) {
 async function handoffAgentQuoteCase(root) {
   const view = agentWorkbenchRoot(root);
   const button = view.querySelector('[data-quote-case-handoff]');
-  const status = view.querySelector('[data-quote-case-action-status]');
   const caseData = agentRuntime.quoteCase;
   if (!button || !caseData || button.dataset.state === 'loading') return;
-  const popup = window.open('about:blank', '_blank');
+  if (!agentRuntime.quoteCaseContactSaved && !agentRuntime.quoteCaseContactDeclined) {
+    openQuoteCaseContactStep(root, view, button);
+    return;
+  }
+  await continueQuoteCaseWhatsappHandoff(root);
+}
+
+/**
+ * Show the inline callback-contact step before the quote-case WhatsApp
+ * continuation. The 0.9.0 API attaches a contact to a quote case only at
+ * creation, so a contact consented here is stored through the durable
+ * commercial-intent lead store, bound to the public case reference. Skipping
+ * continues exactly like the pre-1.23.0 flow.
+ */
+function openQuoteCaseContactStep(root, view, button) {
+  const actionsHost = button.closest?.('.agent-quote-actions') || null;
+  const stepParent = actionsHost?.parentElement || view;
+  const existing = stepParent.querySelector?.('[data-lead-contact-step]') || view.querySelector?.('[data-lead-contact-step]');
+  if (existing) {
+    existing.focusHeading?.();
+    return;
+  }
+  const step = buildLeadContactStep({
+    onSave: async (contact, controls) => {
+      // The popup must open inside this user gesture; the contact write
+      // happens before the handoff request reuses the same window.
+      const popup = window.open('about:blank', '_blank');
+      if (popup) popup.opener = null;
+      controls.setBusy(true);
+      try {
+        await storeQuoteCaseLeadContact(contact);
+        agentRuntime.quoteCaseContact = contact;
+        agentRuntime.quoteCaseContactSaved = true;
+        step.remove?.();
+        button.focus?.();
+        await continueQuoteCaseWhatsappHandoff(root, popup);
+      } catch (error) {
+        popup?.close?.();
+        console.warn(error);
+        controls.showError('לא הצלחנו לשמור את הפרטים כרגע. נסו שוב, או המשיכו בלי להשאיר פרטים.');
+      }
+    },
+    onSkip: async () => {
+      agentRuntime.quoteCaseContactDeclined = true;
+      step.remove?.();
+      button.focus?.();
+      await continueQuoteCaseWhatsappHandoff(root);
+    }
+  });
+  if (actionsHost?.insertAdjacentElement) actionsHost.insertAdjacentElement('beforebegin', step);
+  else stepParent.append?.(step);
+  step.focusHeading?.();
+}
+
+/**
+ * Store the consented callback contact for an existing quote case. The
+ * quote-case aggregate accepts a contact only on creation in the live 0.9.0
+ * API, so the durable consent-gated commercial-intent store holds it instead,
+ * with the public TV reference as the offer identity. The write is idempotent
+ * per saved contact and repeated saves resume the same intent.
+ */
+async function storeQuoteCaseLeadContact(contact) {
+  const endpoint = commercialIntentBaseUrl();
+  const caseData = agentRuntime.quoteCase;
+  if (!endpoint || !caseData?.case_id) throw new Error('Lead contact storage is unavailable.');
+  if (!agentRuntime.quoteCaseContactKey) {
+    agentRuntime.quoteCaseContactKey = `quote-contact-${createAgentClientRequestId()}`.slice(0, 100);
+  }
+  const reference = String(caseData.reference || caseData.case_id).replace(/[^A-Za-z0-9._:-]/g, '').slice(0, 80) || 'quote-case';
+  const summary = caseData.summary && typeof caseData.summary === 'object' ? caseData.summary : {};
+  const travelers = summary.travelers && typeof summary.travelers === 'object' ? summary.travelers : {};
+  const budget = summary.budget && typeof summary.budget === 'object' ? summary.budget : {};
+  const acquisition = readAcquisition();
+  return commercialIntentMutation(endpoint, {
+    idempotency_key: agentRuntime.quoteCaseContactKey,
+    vertical: 'package',
+    surface: 'quote_case_handoff',
+    data_mode: 'demo',
+    requested_provider: 'tra-vel-concierge',
+    offer_id: reference,
+    candidate: {
+      id: reference,
+      title: boundedCommercialString(quoteCaseSummaryText(caseData), 120),
+      subtitle: '',
+      commercial_ref: '',
+      price_scope: 'personal_quote'
+    },
+    trip: {
+      origin: boundedCommercialString(summary.origin || 'TLV', 80),
+      destination: boundedCommercialString(Array.isArray(summary.destinations) ? summary.destinations.filter(Boolean).join(', ') : '', 80),
+      depart_date: '',
+      return_date: '',
+      adults: boundedCommercialInteger(travelers.adults, 1, 0, 20),
+      children: boundedCommercialInteger(travelers.children, 0, 0, 20),
+      infants: 0,
+      travelers: Math.max(1, boundedCommercialInteger(travelers.adults, 1, 0, 20) + boundedCommercialInteger(travelers.children, 0, 0, 20)),
+      rooms: boundedCommercialInteger(travelers.rooms, 1, 1, 10),
+      budget: boundedCommercialInteger(budget.amount, 0, 0, 1000000),
+      currency: ['ILS', 'USD', 'EUR', 'GBP'].includes(budget.currency) ? budget.currency : 'ILS',
+      return_path: boundedCommercialString(`${window.location.pathname}${window.location.search}`, 200)
+    },
+    ...(acquisition ? {acquisition} : {}),
+    contact
+  }, 'commercial_intent_create_timeout');
+}
+
+async function continueQuoteCaseWhatsappHandoff(root, existingPopup = null) {
+  const view = agentWorkbenchRoot(root);
+  const button = view.querySelector('[data-quote-case-handoff]');
+  const status = view.querySelector('[data-quote-case-action-status]');
+  const caseData = agentRuntime.quoteCase;
+  if (!button || !caseData || button.dataset.state === 'loading') {
+    existingPopup?.close?.();
+    return;
+  }
+  const popup = existingPopup || window.open('about:blank', '_blank');
   if (popup) popup.opener = null;
   button.dataset.state = 'loading';
   button.disabled = true;
@@ -11066,6 +11470,7 @@ function initExperienceDecisionMap() {
 function initTraVelV2() {
   if (document.documentElement.dataset.traVelV2Ready === 'true') return;
   document.documentElement.dataset.traVelV2Ready = 'true';
+  captureAcquisition();
   readDiscoveryStateFromUrl();
   explorationHubData = explorationHubsFromDom();
   window.traVelGlobe3D?.setExplorationHubs(explorationHubData);

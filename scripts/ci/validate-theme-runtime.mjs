@@ -664,6 +664,158 @@ windowStub.traVelV2 = {};
 delete context.fetch;
 vm.runInContext('commercialIntentMutationRegistry.clear()', context);
 
+// Theme 1.23.0: first-touch acquisition capture and bounded reads.
+const acquisitionInitialSearch = windowStub.location.search;
+const acquisitionInitialPathname = windowStub.location.pathname;
+windowStub.location.hostname = 'tra-vel.co.il';
+localStorageValues.delete('traVelAcquisition');
+assert.equal(context.readAcquisition(), null, 'Without a stored record readAcquisition must return null.');
+windowStub.location.search = `?utm_source=${'g'.repeat(200)}&utm_medium=cpc&utm_campaign=summer-launch`;
+windowStub.location.pathname = '/packages/';
+documentStub.referrer = 'https://www.google.com/search';
+context.captureAcquisition();
+const capturedAcquisition = context.readAcquisition();
+assert.equal(capturedAcquisition.utm_source, 'g'.repeat(120), 'Acquisition fields must be capped at 120 characters.');
+assert.equal(capturedAcquisition.utm_medium, 'cpc', 'Acquisition capture must retain the campaign medium.');
+assert.equal(capturedAcquisition.utm_campaign, 'summer-launch', 'Acquisition capture must retain the campaign name.');
+assert.equal(capturedAcquisition.landing_path, '/packages/', 'Acquisition capture must record the landing path.');
+assert.equal(capturedAcquisition.referrer_host, 'www.google.com', 'Acquisition capture must record the referrer host.');
+assert.equal(/^\d{4}-\d{2}-\d{2}T/.test(capturedAcquisition.first_seen_at), true, 'Acquisition capture must record an ISO first-seen instant.');
+windowStub.location.search = '?utm_source=later-touch';
+windowStub.location.pathname = '/hotels/';
+context.captureAcquisition();
+assert.equal(context.readAcquisition().utm_source, 'g'.repeat(120), 'First-touch attribution must win over later campaign visits.');
+localStorageValues.delete('traVelAcquisition');
+windowStub.location.search = '';
+windowStub.location.pathname = '/';
+documentStub.referrer = 'https://tra-vel.co.il/deals/';
+context.captureAcquisition();
+assert.equal(context.readAcquisition(), null, 'A same-host referrer without campaign parameters must not create an acquisition record.');
+documentStub.referrer = 'https://l.facebook.com/l.php';
+context.captureAcquisition();
+const referrerOnlyAcquisition = context.readAcquisition();
+assert.equal(referrerOnlyAcquisition.referrer_host, 'l.facebook.com', 'An external referrer alone must create a first-touch record.');
+assert.equal('utm_source' in referrerOnlyAcquisition, false, 'A referrer-only record must not invent campaign fields.');
+localStorageValues.delete('traVelAcquisition');
+delete documentStub.referrer;
+windowStub.location.search = acquisitionInitialSearch;
+windowStub.location.pathname = acquisitionInitialPathname;
+
+assert.equal(context.normalizedIsraeliPhone('050-123-4567'), '+972501234567', 'A local Israeli mobile number must normalize to +972 form.');
+assert.equal(context.normalizedIsraeliPhone('+972 50 123 4567'), '+972501234567', 'An international Israeli mobile number must normalize to +972 form.');
+assert.equal(context.normalizedIsraeliPhone('03-6317000'), '+97236317000', 'An Israeli landline must normalize to +972 form.');
+assert.equal(context.normalizedIsraeliPhone('12345'), '', 'A short number must fail Israeli phone validation.');
+assert.equal(context.normalizedIsraeliPhone('+44 20 7946 0000'), '', 'A non-Israeli number must fail Israeli phone validation.');
+
+// Theme 1.23.0: stored acquisition and a consented contact ride the durable
+// commercial-intent creation, and consent after creation resumes the scope.
+const storedAcquisitionFixture = {
+  utm_source: 'google', utm_medium: 'cpc', utm_campaign: 'summer-launch',
+  landing_path: '/packages/', referrer_host: 'www.google.com', first_seen_at: '2026-07-19T09:30:00.000Z'
+};
+localStorageValues.set('traVelAcquisition', JSON.stringify(storedAcquisitionFixture));
+windowStub.traVelV2 = {commercialIntentUrl: commercialIntentEndpoint, nonce: 'runtime-nonce'};
+vm.runInContext('commercialIntentMutationRegistry.clear()', context);
+const leadContactFixture = {name: 'דנה לוי', phone: '+972501234567', consent: true, consent_version: '2026-07-19'};
+const contactCreateRequests = [];
+context.fetch = async (url, options = {}) => {
+  const body = JSON.parse(options.body || '{}');
+  contactCreateRequests.push({url: String(url), body});
+  if (String(url) === commercialIntentEndpoint) {
+    return commercialResponse({intent: {intent_id: commercialIntentId, reference: 'TV-COM-LEAD', version: 2}});
+  }
+  return commercialResponse({
+    intent: {intent_id: commercialIntentId, reference: 'TV-COM-LEAD', version: 3},
+    handoff_url: 'https://partner.example/lead-handoff',
+    provider: {label: 'Tra-Vel'},
+    conversion_type: 'assisted_quote'
+  });
+};
+context.commercialIntentRegistryEntry('flight', commercialCommerce, commercialPayload, commercialCandidate);
+context.__leadContactFixture = leadContactFixture;
+vm.runInContext(`{
+  const leadEntry = Array.from(commercialIntentMutationRegistry.values())[0];
+  leadEntry.contact = globalThis.__leadContactFixture;
+  leadEntry.contactKey = 'commercial-contact-runtime-0001';
+}`, context);
+const leadContactButton = new FakeElement('button');
+leadContactButton.textContent = 'Continue';
+await context.startCommercialHandoff(leadContactButton, 'flight', commercialCommerce, commercialPayload, commercialCandidate);
+assert.equal(contactCreateRequests.length, 2, 'A contact-bearing handoff must create the intent once and prepare one handoff.');
+assert.equal(contactCreateRequests[0].body.idempotency_key, 'commercial-contact-runtime-0001', 'A contact-bearing create must use its dedicated contact operation key.');
+assert.deepEqual(contactCreateRequests[0].body.contact, leadContactFixture, 'The consented contact must ride the commercial-intent creation unchanged.');
+assert.deepEqual(contactCreateRequests[0].body.acquisition, storedAcquisitionFixture, 'Stored first-touch acquisition must ride the commercial-intent creation.');
+assert.equal(vm.runInContext('Array.from(commercialIntentMutationRegistry.values())[0].contactSaved', context), true, 'A confirmed contact-bearing create must mark the contact as saved.');
+assert.equal(contactCreateRequests[1].body.contact, undefined, 'The handoff preparation must never carry the contact.');
+
+vm.runInContext('commercialIntentMutationRegistry.clear()', context);
+const attachContactRequests = [];
+context.fetch = async (url, options = {}) => {
+  const body = JSON.parse(options.body || '{}');
+  attachContactRequests.push({url: String(url), body});
+  if (String(url) === commercialIntentEndpoint) {
+    const createCalls = attachContactRequests.filter(request => request.url === commercialIntentEndpoint).length;
+    return commercialResponse({intent: {intent_id: commercialIntentId, reference: 'TV-COM-ATTACH', version: createCalls === 1 ? 5 : 6}});
+  }
+  return commercialResponse({
+    intent: {intent_id: commercialIntentId, reference: 'TV-COM-ATTACH', version: 7},
+    handoff_url: 'https://partner.example/attach-handoff',
+    provider: {label: 'Tra-Vel'},
+    conversion_type: 'assisted_quote'
+  });
+};
+const attachContactButton = new FakeElement('button');
+attachContactButton.textContent = 'Continue';
+await context.startCommercialHandoff(attachContactButton, 'flight', commercialCommerce, commercialPayload, commercialCandidate);
+assert.equal(attachContactRequests.length, 2, 'The contact-free baseline must create and hand off exactly once.');
+assert.equal(attachContactRequests[0].body.contact, undefined, 'A skipped contact step must keep the create contact-free.');
+context.__attachContactFixture = {phone: '+972521234567', consent: true, consent_version: '2026-07-19'};
+vm.runInContext(`{
+  const attachEntry = Array.from(commercialIntentMutationRegistry.values())[0];
+  attachEntry.contact = globalThis.__attachContactFixture;
+  attachEntry.contactKey = 'commercial-contact-runtime-0002';
+}`, context);
+await context.startCommercialHandoff(attachContactButton, 'flight', commercialCommerce, commercialPayload, commercialCandidate);
+assert.equal(attachContactRequests.length, 4, 'Consent after intent creation must resume the scope once and prepare one fresh handoff.');
+assert.equal(attachContactRequests[2].url, commercialIntentEndpoint, 'The follow-up contact attachment must target the intent collection.');
+assert.equal(attachContactRequests[2].body.idempotency_key, 'commercial-contact-runtime-0002', 'The follow-up contact attachment must use its dedicated operation key.');
+assert.deepEqual(attachContactRequests[2].body.contact, {phone: '+972521234567', consent: true, consent_version: '2026-07-19'}, 'The follow-up attachment must carry the exact consented contact.');
+assert.equal(attachContactRequests[3].body.expected_version, 6, 'The handoff after attachment must use the resumed intent version.');
+delete context.__leadContactFixture;
+delete context.__attachContactFixture;
+
+// Theme 1.23.0: stored acquisition rides the quote-case creation payload.
+windowStub.traVelV2 = {agentRestUrl: 'https://tra-vel.co.il/wp-json/tra-vel-agent/v1', nonce: 'runtime-nonce'};
+const quoteCreateRequests = [];
+context.fetch = async (url, options = {}) => {
+  quoteCreateRequests.push({url: String(url), body: JSON.parse(options.body || '{}')});
+  return commercialResponse({case: {case_id: '99999999-8888-4777-8666-555555555555', reference: 'TV-CASE0001', status: 'queued', version: 1}});
+};
+vm.runInContext(`
+  agentRuntime.status = 'request_ready';
+  agentRuntime.runId = 'bbbbbbbb-cccc-4ddd-8eee-ffffffffffff';
+  agentRuntime.requestId = 'req_runtime_acquisition_1';
+  agentRuntime.requestRevision = 2;
+`, context);
+const quoteCreateRoot = new FakeElement('section');
+const quoteCreateButton = new FakeElement('button');
+const quoteCreateConsent = new FakeElement('input');
+quoteCreateConsent.checked = true;
+const quoteCreateStatus = new FakeElement('p');
+quoteCreateRoot.queries.set('[data-quote-case-create-button]', quoteCreateButton);
+quoteCreateRoot.queries.set('[data-quote-case-consent]', quoteCreateConsent);
+quoteCreateRoot.queries.set('[data-quote-case-create-status]', quoteCreateStatus);
+await context.createAgentQuoteCase(quoteCreateRoot);
+assert.equal(quoteCreateRequests.length, 1, 'Quote-case creation must send exactly one authoritative write.');
+assert.equal(quoteCreateRequests[0].url.endsWith('/runs/bbbbbbbb-cccc-4ddd-8eee-ffffffffffff/quote-cases'), true, 'Quote-case creation must target its run-scoped collection.');
+assert.deepEqual(quoteCreateRequests[0].body.acquisition, storedAcquisitionFixture, 'Stored first-touch acquisition must ride the quote-case creation payload.');
+assert.equal(quoteCreateRequests[0].body.consent_version, '2026-07-17', 'Quote-case creation must keep its own consent version.');
+localStorageValues.delete('traVelAcquisition');
+vm.runInContext("agentRuntime.status = ''; agentRuntime.runId = ''; agentRuntime.requestId = ''; agentRuntime.requestRevision = 0; agentRuntime.quoteCase = null;", context);
+windowStub.traVelV2 = {};
+delete context.fetch;
+vm.runInContext('commercialIntentMutationRegistry.clear()', context);
+
 const inlineOfferCard = new FakeElement('article');
 const inlineSaveAnchor = {parentElement:null,closest(selector) { return selector.includes('.flight-offer') ? inlineOfferCard : null; }};
 context.showWorkspaceToast('Inline save feedback', 'heart', inlineSaveAnchor);

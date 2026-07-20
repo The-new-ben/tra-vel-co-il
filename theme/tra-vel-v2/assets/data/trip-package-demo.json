@@ -33,15 +33,15 @@
     "position": { "x": 42, "y": 31 }
   },
   "insurance_catalog": {
-    "none": { "id": "none", "name": "ללא ביטוח בתרחיש", "daily_adult": 0, "daily_child": 0, "medical_limit": 0, "service": "לא נכלל", "purchasable": false },
-    "essential": { "id": "demo-essential", "name": "תרחיש בסיסי לדוגמה", "daily_adult": 2.4, "daily_child": 1.55, "medical_limit": 5000000, "service": "שירות חירום לדוגמה", "purchasable": false },
-    "assisted": { "id": "demo-assisted", "name": "תרחיש עם סיוע לדוגמה", "daily_adult": 3.8, "daily_child": 2.45, "medical_limit": 5000000, "service": "שירות חירום וצ׳אט לדוגמה", "purchasable": false },
-    "extended": { "id": "demo-extended", "name": "תרחיש מורחב לדוגמה", "daily_adult": 5.4, "daily_child": 3.5, "medical_limit": 10000000, "service": "שירות חירום ודיגיטל לדוגמה", "purchasable": false }
+    "none": { "id": "none", "name": "ללא ביטוח בחבילה", "daily_adult": 0, "daily_child": 0, "medical_limit": 0, "service": "לא נכלל", "purchasable": false },
+    "essential": { "id": "demo-essential", "name": "כיסוי בסיסי לדוגמה", "daily_adult": 2.4, "daily_child": 1.55, "medical_limit": 5000000, "service": "שירות חירום לדוגמה", "purchasable": false },
+    "assisted": { "id": "demo-assisted", "name": "כיסוי עם סיוע לדוגמה", "daily_adult": 3.8, "daily_child": 2.45, "medical_limit": 5000000, "service": "שירות חירום וצ׳אט לדוגמה", "purchasable": false },
+    "extended": { "id": "demo-extended", "name": "כיסוי מורחב לדוגמה", "daily_adult": 5.4, "daily_child": 3.5, "medical_limit": 10000000, "service": "שירות חירום ודיגיטל לדוגמה", "purchasable": false }
   },
   "packages": [
     {
       "id": "budapest-smart-demo",
-      "name": "תרחיש עירוני מאוזן",
+      "name": "חבילה עירונית מאוזנת",
       "badge": "איזון לדוגמה",
       "base_score": 96,
       "flight": {
@@ -90,7 +90,7 @@
     },
     {
       "id": "budapest-value-demo",
-      "name": "תרחיש בעלות נמוכה",
+      "name": "חבילה בעלות נמוכה",
       "badge": "עלות תכנון נמוכה",
       "base_score": 82,
       "flight": {
@@ -139,7 +139,7 @@
     },
     {
       "id": "budapest-flex-demo",
-      "name": "תרחיש גמיש ונוח",
+      "name": "חבילה גמישה ונוחה",
       "badge": "גמישות לדוגמה",
       "base_score": 91,
       "flight": {
@@ -188,7 +188,7 @@
     },
     {
       "id": "budapest-family-demo",
-      "name": "תרחיש משפחתי",
+      "name": "חבילה משפחתית",
       "badge": "התאמה למשפחה",
       "base_score": 92,
       "flight": {
