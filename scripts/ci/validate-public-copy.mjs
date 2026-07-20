@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -33,9 +33,17 @@ const guideFiles = readdirSync(guideRoot)
   .filter(name => name.endsWith('.he.html'))
   .map(name => join(guideRoot, name));
 
+const opportunityRoot = join(repoRoot, 'content', 'seo', 'opportunities');
+const opportunityFiles = existsSync(opportunityRoot)
+  ? readdirSync(opportunityRoot)
+    .filter(name => name.endsWith('.he.html') || name.endsWith('.meta.json'))
+    .map(name => join(opportunityRoot, name))
+  : [];
+
 const publicFiles = [
   ...themeFiles.map(name => join(themeRoot, name)),
   ...guideFiles,
+  ...opportunityFiles,
 ];
 
 const rejectedCopy = [

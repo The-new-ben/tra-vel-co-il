@@ -78,7 +78,21 @@ function add_query_arg( $key, $value = null, $url = null ) {
 }
 function tra_vel_v2_get_guide_profile( $post_id = 0 ) { global $test_profiles; return $test_profiles[ (int) $post_id ] ?? array(); }
 function tra_vel_v2_get_guide_publication_contract( $post_id = 0 ) { global $test_guide_contracts; return $test_guide_contracts[ (int) $post_id ] ?? array( 'ready' => false, 'checks' => array() ); }
+function tra_vel_v2_is_destination_guide( $post_id = null ) { return false; }
+function tra_vel_v2_is_guide_publication_ready( $post_id = null ) { return false; }
+function is_front_page() { return false; }
+function is_page( $page = '' ) { return false; }
+function is_author() { return false; }
+function is_category() { return false; }
+function is_tag() { return false; }
+function is_date() { return false; }
+function is_search() { return false; }
+function esc_attr( $value ) { return htmlspecialchars( (string) $value, ENT_QUOTES, 'UTF-8' ); }
+function get_bloginfo() { return 'Tra-Vel'; }
+function get_the_title( $post_id = 0 ) { return 'Fixture'; }
+function is_feed() { return false; }
 
+require dirname( __DIR__, 2 ) . '/theme/tra-vel-v2/inc/seo.php';
 require dirname( __DIR__, 2 ) . '/theme/tra-vel-v2/inc/seo-opportunities.php';
 tra_vel_v2_register_seo_opportunity_meta();
 
@@ -118,6 +132,7 @@ $fixture = array(
 		fixture_entry( 'tokyo-airports', '/guides/tokyo/haneda-vs-narita/', 'decision-guide', 'האנדה או נריטה איזה שדה מתאים', 'tokyo', '/destinations/tokyo/', 'tokyo', 'content-ready', 'בחרו שדה תעופה והמשיכו לתכנון', array( 'transfers', 'rail', 'hotels' ) ),
 		fixture_entry( 'tokyo-flights', '/flights/tokyo/', 'transactional-cluster', 'טיסות לטוקיו והשוואת מסלולים', 'tokyo', '/flights/', 'tokyo', 'live', 'השוו טיסות לטוקיו לפי כל התנאים', array( 'flights', 'baggage' ) ),
 		fixture_entry( 'tokyo-packages', '/packages/tokyo/', 'transactional-cluster', 'חבילות נופש לטוקיו בהתאמה אישית', 'tokyo', '/packages/', 'tokyo', 'backlog', 'בנו חבילה לטוקיו לפי ההרכב שלכם', array( 'packages', 'flights' ) ),
+		fixture_entry( 'budapest-packages', '/packages/budapest/', 'transactional-cluster', 'חבילות נופש ודילים לבודפשט לבדיקה', 'budapest', '/packages/', 'budapest', 'live', 'השוו חבילה מלאה לבודפשט', array( 'packages', 'flights', 'hotels' ) ),
 	),
 );
 $test_registry_path = tempnam( sys_get_temp_dir(), 'travel-seo-registry-' );
@@ -140,19 +155,25 @@ $ready_guide_contract = array(
 	'checks' => array( 'long_form_content' => true, 'hebrew_language' => true, 'section_depth' => true, 'decision_tables' => true, 'primary_topic' => true, 'source_freshness' => true ),
 );
 
+$faq_section = '<h2 id="faq">שאלות על חבילות</h2><h3>מה כלול בחבילה?</h3><p>טיסה ומלון יחד, ולעיתים כבודה והעברות.</p><h3>האם המחיר סופי?</h3><p>המחיר הסופי נקבע רק לפי תאריכים והרכב אמיתיים.</p>';
+$budapest_transaction_content = $transaction_content . $faq_section;
 $test_posts = array(
 	101 => array( 'template' => 'page-seo-opportunity.php', 'permalink' => 'https://example.test/guides/tokyo/haneda-vs-narita/', 'status' => 'publish', 'post_content' => $decision_content, 'post_author' => 1, 'excerpt' => 'מדריך החלטה', 'meta' => array( '_tra_vel_seo_opportunity_id' => 'tokyo-airports', '_tra_vel_seo_opportunity_ready' => true, '_tra_vel_seo_conversion_ready' => false ) ),
 	102 => array( 'template' => 'page-seo-opportunity.php', 'permalink' => 'https://example.test/flights/tokyo/', 'status' => 'publish', 'post_content' => $transaction_content, 'post_author' => 1, 'excerpt' => 'השוואת טיסות', 'meta' => array( '_tra_vel_seo_opportunity_id' => 'tokyo-flights', '_tra_vel_seo_opportunity_ready' => true, '_tra_vel_seo_conversion_ready' => true ) ),
 	103 => array( 'template' => 'page-seo-opportunity.php', 'permalink' => 'https://example.test/packages/tokyo/', 'status' => 'publish', 'post_content' => $transaction_content, 'post_author' => 1, 'excerpt' => 'חבילות טוקיו', 'meta' => array( '_tra_vel_seo_opportunity_id' => 'tokyo-packages', '_tra_vel_seo_opportunity_ready' => true, '_tra_vel_seo_conversion_ready' => true ) ),
+	104 => array( 'template' => 'page-seo-opportunity.php', 'permalink' => 'https://example.test/packages/budapest/', 'status' => 'publish', 'post_content' => $budapest_transaction_content, 'post_author' => 1, 'excerpt' => 'חבילות בודפשט', 'meta' => array( '_tra_vel_seo_opportunity_id' => 'budapest-packages', '_tra_vel_seo_opportunity_ready' => true, '_tra_vel_seo_conversion_ready' => true ) ),
 	201 => array( 'template' => 'page-destination.php', 'permalink' => 'https://example.test/destinations/tokyo/', 'status' => 'publish', 'post_content' => $decision_content, 'post_author' => 1, 'excerpt' => 'טוקיו', 'meta' => array() ),
 	301 => array( 'template' => 'page-experience.php', 'permalink' => 'https://example.test/flights/', 'status' => 'publish', 'post_content' => '', 'post_author' => 1, 'excerpt' => '', 'meta' => array() ),
+	302 => array( 'template' => 'page-experience.php', 'permalink' => 'https://example.test/packages/', 'status' => 'publish', 'post_content' => '', 'post_author' => 1, 'excerpt' => '', 'meta' => array() ),
 );
 $test_pages_by_path = array(
 	'destinations/tokyo' => 201,
 	'flights' => 301,
+	'packages' => 302,
 	'guides/tokyo/haneda-vs-narita' => 101,
 	'flights/tokyo' => 102,
 	'packages/tokyo' => 103,
+	'packages/budapest' => 104,
 );
 $test_profiles = array( 101 => $ready_profile, 201 => $ready_profile );
 $test_guide_contracts = array( 101 => $ready_guide_contract, 201 => $ready_guide_contract );
@@ -261,6 +282,43 @@ $plugin_graph = array(
 $merged = tra_vel_v2_merge_seo_opportunity_schema_graph( $plugin_graph );
 $merged_types = array_column( $merged, '@type' );
 assert_true( ! array_intersect( array( 'Product', 'Offer', 'ItemList', 'Article' ), $merged_types ), 'transaction plugin graph retained unvalidated commercial or Article nodes' );
+
+// Visible-FAQ gate: a ready transaction without a visible FAQ never earns FAQPage.
+assert_true( ! in_array( 'FAQPage', $transaction_types, true ), 'transaction without visible FAQ content emitted FAQPage' );
+assert_true( ! in_array( 'FAQPage', $merged_types, true ), 'plugin FAQPage survived on a page without visible FAQ content' );
+
+// Released packages owner: full contract, visible-FAQ node, and title formula.
+$test_current_id = 104;
+$budapest = tra_vel_v2_get_current_seo_opportunity( 104 );
+assert_true( tra_vel_v2_get_seo_opportunity_publication_contract( 104, $budapest )['ready'], 'released packages transaction did not pass its publication contract' );
+$budapest_nodes = tra_vel_v2_seo_opportunity_schema_nodes( 104, $budapest );
+$budapest_faq = null;
+foreach ( $budapest_nodes as $budapest_node ) {
+	if ( in_array( 'FAQPage', (array) ( $budapest_node['@type'] ?? array() ), true ) ) {
+		$budapest_faq = $budapest_node;
+	}
+}
+assert_true( is_array( $budapest_faq ), 'visible FAQ content did not produce a FAQPage node' );
+assert_true( 'https://example.test/packages/budapest/#faq' === ( $budapest_faq['@id'] ?? '' ) && 'he-IL' === ( $budapest_faq['inLanguage'] ?? '' ), 'FAQPage identity is wrong' );
+assert_true( 2 === count( $budapest_faq['mainEntity'] ?? array() ), 'FAQPage did not mirror exactly the visible pairs' );
+assert_true( 'מה כלול בחבילה?' === ( $budapest_faq['mainEntity'][0]['name'] ?? '' ) && 'טיסה ומלון יחד, ולעיתים כבודה והעברות.' === ( $budapest_faq['mainEntity'][0]['acceptedAnswer']['text'] ?? '' ), 'FAQPage text is not word-identical to the visible copy' );
+$budapest_merged = tra_vel_v2_merge_seo_opportunity_schema_graph( array( array( '@type' => 'WebSite' ), array( '@type' => 'FAQPage', 'mainEntity' => array( array( 'name' => 'fabricated' ) ) ) ) );
+$budapest_merged_faq = array();
+foreach ( $budapest_merged as $budapest_merged_node ) {
+	if ( in_array( 'FAQPage', (array) ( $budapest_merged_node['@type'] ?? array() ), true ) ) {
+		$budapest_merged_faq[] = $budapest_merged_node;
+	}
+}
+assert_true( 1 === count( $budapest_merged_faq ) && 'מה כלול בחבילה?' === ( $budapest_merged_faq[0]['mainEntity'][0]['name'] ?? '' ), 'plugin FAQPage was not replaced by the visible-content node' );
+$test_posts[104]['post_content'] = $transaction_content . '<h2 id="faq">שאלות</h2><h3>שאלה יחידה?</h3><p>תשובה יחידה.</p>';
+$single_pair_nodes = tra_vel_v2_seo_opportunity_schema_nodes( 104, $budapest );
+assert_true( ! in_array( 'FAQPage', array_column( $single_pair_nodes, '@type' ), true ), 'a single visible pair produced a FAQPage claim' );
+$test_posts[104]['post_content'] = $budapest_transaction_content;
+assert_true( 'חופשה בבודפשט: חבילות נופש ודילים לבודפשט, טיסה ומלון' === tra_vel_v2_seo_opportunity_public_title( 104 ), 'released packages owner did not receive the head-term title formula' );
+assert_true( 'חופשה בבודפשט: חבילות נופש ודילים לבודפשט, טיסה ומלון | Tra-Vel' === tra_vel_v2_public_seo_title( 'fallback' ), 'the Yoast title chain did not carry the packages formula' );
+assert_true( '' === tra_vel_v2_seo_opportunity_public_title( 102 ), 'a flights transaction received the packages title formula' );
+assert_true( '' === tra_vel_v2_seo_opportunity_public_title( 103 ), 'a backlog packages owner received a public title formula' );
+$test_current_id = 102;
 
 $test_posts[102]['meta']['_tra_vel_seo_opportunity_ready'] = false;
 $robots = tra_vel_v2_seo_opportunity_robots_policy( array( 'index' => true ) );

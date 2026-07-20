@@ -65,6 +65,9 @@ function get_permalink( $post_id = null ) {
 	return $GLOBALS['guide_test_permalinks'][ $post_id ] ?? '';
 }
 function get_bloginfo() { return 'Tra-Vel'; }
+function is_front_page() { return false; }
+function wp_parse_url( $url, $component = -1 ) { return parse_url( (string) $url, $component ); }
+function esc_attr( $value ) { return htmlspecialchars( (string) $value, ENT_QUOTES, 'UTF-8' ); }
 function get_the_title( $post_id = null ) {
 	$post_id = $post_id ?: $GLOBALS['guide_test_post_id'];
 	return $GLOBALS['guide_test_titles'][ $post_id ] ?? '';
@@ -284,5 +287,60 @@ guide_publication_assert( 'Athens' === ( $aioseo[0]['about']['name'] ?? '' ) && 
 
 $GLOBALS['guide_test_meta']['_tra_vel_review_method'] = '';
 guide_publication_assert( false === tra_vel_v2_is_guide_publication_ready(), 'missing review methodology must close the gate even when the article is long' );
+
+// Head-term title formula: top-level hubs only, nested guides stay neutral.
+set_complete_guide_fixture();
+guide_publication_assert( 'חופשה בAthens: המדריך המלא לישראלים | מתי לטוס, עלויות, אזורים' === tra_vel_v2_guide_title_text(), 'top-level destination hubs lost the head-term title formula' );
+guide_publication_assert( 'חופשה בAthens: המדריך המלא לישראלים | מתי לטוס, עלויות, אזורים | Tra-Vel' === tra_vel_v2_public_seo_title( 'fallback' ), 'the Yoast guide title chain lost the head-term formula' );
+$guide_title_parts = tra_vel_v2_document_title_parts( array( 'title' => 'legacy', 'site' => 'legacy' ) );
+guide_publication_assert( 'Tra-Vel' === $guide_title_parts['site'] && 'חופשה בAthens: המדריך המלא לישראלים | מתי לטוס, עלויות, אזורים' === $guide_title_parts['title'], 'core guide title parts lost the head-term formula' );
+$GLOBALS['guide_test_post_id']   = 74;
+$GLOBALS['guide_test_post_name'] = 'bangkok';
+$GLOBALS['guide_test_ancestors'] = array( 72, 71 );
+guide_publication_assert( 'Bangkok | מדריך תכנון לישראלים' === tra_vel_v2_guide_title_text(), 'nested supporting guides must keep the neutral planning title' );
+$GLOBALS['guide_test_post_id']   = 73;
+$GLOBALS['guide_test_post_name'] = 'athens';
+$GLOBALS['guide_test_ancestors'] = array( 71 );
+
+// Meta description: a hand-written plugin description wins, the excerpt only fills gaps.
+guide_publication_assert( 'תיאור שנכתב ידנית' === tra_vel_v2_public_meta_description( 'תיאור שנכתב ידנית' ), 'the excerpt fallback overrode a hand-written plugin description' );
+guide_publication_assert( 'מדריך מלא לתכנון החופשה באתונה.' === tra_vel_v2_public_meta_description( '' ), 'a singular page without a plugin description did not fall back to its excerpt' );
+$GLOBALS['guide_test_is_singular'] = false;
+guide_publication_assert( '' === tra_vel_v2_public_meta_description( '' ), 'a non-singular request received an excerpt meta description' );
+$GLOBALS['guide_test_is_singular'] = true;
+
+// FAQPage: only the complete publication contract plus visible pairs may emit it.
+set_complete_guide_fixture();
+$guide_faq_pairs = '<h2 id="faq">שאלות נפוצות על אתונה</h2><h3>כמה ימים צריך?</h3><p>שלושה ימים מלאים הם בסיס מאוזן לביקור ראשון.</p><h3>איפה לישון?</h3><p>בחרו אזור לפי רעש, הליכה ותחבורה.</p>';
+$GLOBALS['guide_test_content'] .= $guide_faq_pairs;
+$guide_faq_graph = tra_vel_v2_schema_data();
+guide_publication_assert( in_array( 'FAQPage', guide_publication_types( $guide_faq_graph ), true ), 'a complete guide with visible Q&A did not emit FAQPage' );
+$guide_faq_node = guide_publication_node( $guide_faq_graph, 'FAQPage' );
+guide_publication_assert( 2 === count( $guide_faq_node['mainEntity'] ?? array() ), 'guide FAQPage did not mirror exactly the visible pairs' );
+guide_publication_assert( 'כמה ימים צריך?' === ( $guide_faq_node['mainEntity'][0]['name'] ?? '' ) && 'שלושה ימים מלאים הם בסיס מאוזן לביקור ראשון.' === ( $guide_faq_node['mainEntity'][0]['acceptedAnswer']['text'] ?? '' ), 'guide FAQPage text is not word-identical to the visible copy' );
+$GLOBALS['guide_test_meta']['_tra_vel_publication_status'] = 'editorial-review';
+guide_publication_assert( ! in_array( 'FAQPage', guide_publication_types( tra_vel_v2_schema_data() ), true ), 'an unready guide emitted FAQPage' );
+$GLOBALS['guide_test_meta']['_tra_vel_publication_status'] = 'publish-ready';
+set_complete_guide_fixture();
+guide_publication_assert( ! in_array( 'FAQPage', guide_publication_types( tra_vel_v2_schema_data() ), true ), 'a guide without a visible FAQ section emitted FAQPage' );
+$GLOBALS['guide_test_content'] .= '<h2 id="faq">שאלות נפוצות</h2><h3>שאלה יחידה?</h3><p>תשובה יחידה.</p>';
+guide_publication_assert( ! in_array( 'FAQPage', guide_publication_types( tra_vel_v2_schema_data() ), true ), 'a single visible pair produced a FAQPage claim' );
+set_complete_guide_fixture();
+$GLOBALS['guide_test_content'] .= '<h2 id="athens-faq">שאלות נפוצות</h2><div class="faq-list"><details open><summary>כמה ימים צריך באתונה?</summary><p>שלושה ימים מלאים הם בסיס מאוזן.</p></details><details><summary>האם צריך רכב?</summary><p>למרכז העיר בדרך כלל לא.</p></details></div>';
+$guide_details_node = guide_publication_node( tra_vel_v2_schema_data(), 'FAQPage' );
+guide_publication_assert( 2 === count( $guide_details_node['mainEntity'] ?? array() ) && 'כמה ימים צריך באתונה?' === ( $guide_details_node['mainEntity'][0]['name'] ?? '' ), 'the visible details/summary FAQ format was not parsed word-identically' );
+set_complete_guide_fixture();
+$GLOBALS['guide_test_content'] .= $guide_faq_pairs;
+$gated_faq_graph = tra_vel_v2_gate_guide_faq_schema_graph( array( array( '@type' => 'WebPage' ), array( '@type' => 'FAQPage', 'mainEntity' => array( array( 'name' => 'fabricated' ) ) ) ) );
+$gated_faq_nodes = array_values( array_filter( $gated_faq_graph, static function ( $node ) { return in_array( 'FAQPage', (array) ( $node['@type'] ?? array() ), true ); } ) );
+guide_publication_assert( 1 === count( $gated_faq_nodes ) && 'כמה ימים צריך?' === ( $gated_faq_nodes[0]['mainEntity'][0]['name'] ?? '' ), 'a foreign plugin FAQPage node survived the visible-FAQ gate' );
+guide_publication_assert( in_array( 'WebPage', guide_publication_types( array( '@graph' => $gated_faq_graph ) ), true ), 'the visible-FAQ gate dropped unrelated graph nodes' );
+$aioseo_faq_ready = tra_vel_v2_gate_aioseo_guide_schema( array( array( '@type' => 'FAQPage', 'mainEntity' => array( array( 'name' => 'fabricated' ) ) ), array( '@type' => 'Article', 'headline' => 'Complete guide' ) ) );
+$aioseo_faq_nodes = array_values( array_filter( $aioseo_faq_ready, static function ( $node ) { return in_array( 'FAQPage', (array) ( $node['@type'] ?? array() ), true ); } ) );
+guide_publication_assert( 1 === count( $aioseo_faq_nodes ) && 'כמה ימים צריך?' === ( $aioseo_faq_nodes[0]['mainEntity'][0]['name'] ?? '' ), 'AIOSEO did not replace a fabricated FAQPage with the visible-content node' );
+$GLOBALS['guide_test_meta']['_tra_vel_publication_status'] = 'editorial-review';
+$aioseo_faq_unready = tra_vel_v2_gate_aioseo_guide_schema( array( array( '@type' => 'FAQPage', 'mainEntity' => array( array( 'name' => 'fabricated' ) ) ) ) );
+guide_publication_assert( array() === array_values( array_filter( $aioseo_faq_unready, static function ( $node ) { return in_array( 'FAQPage', (array) ( $node['@type'] ?? array() ), true ); } ) ), 'AIOSEO kept a FAQPage claim on an unready guide' );
+$GLOBALS['guide_test_meta']['_tra_vel_publication_status'] = 'publish-ready';
 
 echo "Tra-Vel guide publication runtime validation passed.\n";

@@ -23,6 +23,12 @@ function fail(message) {
   failures.push(message);
 }
 
+function isIsoDate(value) {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = new Date(`${value}T00:00:00Z`);
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
+}
+
 function readJson(path, label) {
   if (!existsSync(path)) {
     fail(`${label} is missing.`);
@@ -109,6 +115,90 @@ if (existsSync(guideDir)) {
   }
 }
 
+// Transactional owners publish through their dedicated runtime gate; the repo
+// still requires an authored evidence packet whose article satisfies the same
+// thresholds the runtime publication contract enforces (800 visible words,
+// 70% Hebrew, four H2 sections) plus verified-source and copy hygiene.
+const opportunityDir = join(repoRoot, 'content', 'seo', 'opportunities');
+const opportunityPackets = new Map();
+
+function visibleContentMetrics(content) {
+  const plain = String(content || '').replace(/<[^>]+>/g, ' ');
+  const words = plain.match(/[\p{L}\p{N}][\p{L}\p{N}־'’]*/gu) || [];
+  const hebrewWords = words.filter(word => /[֐-׿]/u.test(word));
+  return {
+    wordCount: words.length,
+    hebrewRatio: hebrewWords.length / Math.max(words.length, 1),
+    h2Count: (String(content || '').match(/<h2\b/gi) || []).length,
+  };
+}
+
+function validateOpportunityPacket(file, packet) {
+  const label = `Opportunity packet ${file}`;
+  if (packet.schemaVersion !== 1) fail(`${label}: schemaVersion must be 1.`);
+  if (packet.locale !== 'he-IL') fail(`${label}: locale must be he-IL.`);
+  if (!/^[a-z0-9-]+$/.test(packet.ownerId || '')) fail(`${label}: ownerId must be a lowercase slug.`);
+  if (!/^\/(?:flights|hotels|packages)\/[a-z0-9-]+\/$/.test(packet.canonicalPath || '')) fail(`${label}: canonicalPath must be a transactional vertical path.`);
+  if (packet.pageType !== 'transactional-cluster') fail(`${label}: pageType must be transactional-cluster.`);
+  if (packet.status !== 'publish-ready') fail(`${label}: status must be publish-ready.`);
+  if (!knownMapStates.has(packet.mapState)) fail(`${label}: mapState is not present in discovery data.`);
+  if (!isIsoDate(packet.checkedAt || '')) fail(`${label}: checkedAt must be an ISO date.`);
+  if (isIsoDate(packet.checkedAt || '') && packet.checkedAt > projectToday) fail(`${label}: checkedAt cannot be in the future.`);
+  for (const field of ['seoTitle', 'h1', 'excerpt', 'author', 'reviewer']) {
+    if (typeof packet[field] !== 'string' || !packet[field].trim()) fail(`${label}: ${field} is required.`);
+    if (/[—–]/u.test(packet[field] || '')) fail(`${label}: ${field} must not use em dash or en dash punctuation.`);
+  }
+  if (!/[֐-׿]/u.test(packet.excerpt || '')) fail(`${label}: excerpt must be Hebrew traveler-facing copy.`);
+  const sources = Array.isArray(packet.sources) ? packet.sources : [];
+  if (sources.length < 8) fail(`${label}: at least eight verified sources are required.`);
+  for (const source of sources) {
+    if (!source || typeof source.title !== 'string' || !source.title.trim() || !/^https:\/\//.test(source.url || '')) {
+      fail(`${label}: every source requires a title and HTTPS URL.`);
+      continue;
+    }
+    if (!isIsoDate(source.checkedAt || '')) fail(`${label}: source ${source.url} needs an ISO checkedAt date.`);
+    else if (isIsoDate(packet.checkedAt || '') && source.checkedAt > packet.checkedAt) fail(`${label}: source ${source.url} was checked after the packet review date.`);
+  }
+  const contentPath = join(repoRoot, String(packet.contentPath || ''));
+  if (typeof packet.contentPath !== 'string' || !packet.contentPath.startsWith('content/seo/opportunities/') || !existsSync(contentPath)) {
+    fail(`${label}: contentPath must reference an existing repo opportunity article.`);
+    return;
+  }
+  const article = readFileSync(contentPath, 'utf8');
+  if (/[—–]/u.test(article)) fail(`${label}: article body must not use em dash or en dash punctuation.`);
+  const metrics = visibleContentMetrics(article);
+  if (metrics.wordCount < 800) fail(`${label}: article has ${metrics.wordCount} visible words; 800 are required.`);
+  if (metrics.hebrewRatio < 0.7) fail(`${label}: article must contain at least 70% Hebrew words.`);
+  if (metrics.h2Count < 4) fail(`${label}: article requires at least four H2 sections.`);
+}
+
+if (existsSync(opportunityDir)) {
+  for (const file of readdirSync(opportunityDir).filter(name => name.endsWith('.meta.json'))) {
+    const packet = readJson(join(opportunityDir, file), `Opportunity packet ${file}`);
+    validateOpportunityPacket(file, packet);
+    if (packet.canonicalPath) {
+      if (opportunityPackets.has(packet.canonicalPath)) fail(`Opportunity packet ${file}: duplicate canonicalPath ${packet.canonicalPath}.`);
+      opportunityPackets.set(packet.canonicalPath, packet);
+    }
+  }
+}
+
+function transactionalEvidenceBindingErrors(entry, packet) {
+  const errors = [];
+  if (entry.pageType !== 'transactional-cluster') return errors;
+  if (publicRegistryStatuses.has(entry.status)) {
+    if (!packet) {
+      errors.push(`transactional owner with status ${entry.status} requires an exact publish-ready opportunity packet.`);
+    } else {
+      if (packet.ownerId !== entry.id) errors.push('opportunity packet ownerId does not match its registry owner.');
+      if (packet.mapState !== entry.mapState) errors.push('registry owner and opportunity packet mapState differ.');
+    }
+  } else if (packet) {
+    errors.push('a publish-ready opportunity packet requires a content-ready or live transactional owner.');
+  }
+  return errors;
+}
+
 if (registry.schemaVersion !== 1) fail('Registry schemaVersion must be 1.');
 if (registry.locale !== 'he-IL') fail('Registry locale must be he-IL.');
 if (!/^\d{4}-\d{2}-\d{2}$/.test(registry.updated || '')) fail('Registry updated must be an ISO date.');
@@ -181,6 +271,9 @@ for (const entry of entries) {
   for (const message of publicationPacketBindingErrors(entry, guidePackets.get(entry.canonicalPath))) {
     fail(`${entry.id}: ${message}`);
   }
+  for (const message of transactionalEvidenceBindingErrors(entry, opportunityPackets.get(entry.canonicalPath))) {
+    fail(`${entry.id}: ${message}`);
+  }
 }
 
 const destinationSupportFixture = {
@@ -240,6 +333,28 @@ for (const [canonicalPath, packet] of guidePackets) {
   if (packet.status !== 'publish-ready') continue;
   const owner = entriesByPath.get(canonicalPath);
   if (!owner) fail(`${packet.id}: publish-ready guide packet has no exact content registry owner.`);
+}
+
+for (const [canonicalPath, packet] of opportunityPackets) {
+  if (!entriesByPath.get(canonicalPath)) fail(`${packet.id || canonicalPath}: opportunity packet has no exact content registry owner.`);
+}
+
+const transactionalReleaseOwnerFixture = {
+  id: 'budapest-packages', canonicalPath: '/packages/budapest/', pageType: 'transactional-cluster',
+  cluster: 'budapest', parentPath: '/packages/', status: 'content-ready', mapState: 'budapest'
+};
+const transactionalReleasePacketFixture = { ownerId: 'budapest-packages', canonicalPath: '/packages/budapest/', status: 'publish-ready', mapState: 'budapest' };
+if (transactionalEvidenceBindingErrors(transactionalReleaseOwnerFixture, transactionalReleasePacketFixture).length) {
+  fail('Transactional evidence validator rejects a valid exact owner and publish-ready packet.');
+}
+if (!transactionalEvidenceBindingErrors(transactionalReleaseOwnerFixture, null).length) {
+  fail('Transactional evidence validator accepts a public owner without a repo evidence packet.');
+}
+if (!transactionalEvidenceBindingErrors({ ...transactionalReleaseOwnerFixture, status: 'backlog' }, transactionalReleasePacketFixture).length) {
+  fail('Transactional evidence validator accepts a publish-ready packet for a backlog owner.');
+}
+if (!transactionalEvidenceBindingErrors(transactionalReleaseOwnerFixture, { ...transactionalReleasePacketFixture, ownerId: 'someone-else' }).length) {
+  fail('Transactional evidence validator accepts a packet owned by a different registry owner.');
 }
 
 if (failures.length) {

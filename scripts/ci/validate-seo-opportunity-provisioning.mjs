@@ -48,8 +48,34 @@ let registry = { entries: [] };
 try { registry = JSON.parse(registrySource); } catch (error) { fail(`SEO registry is invalid JSON: ${error.message}`); }
 const opportunities = (registry.entries || []).filter(entry => ['decision-guide', 'transactional-cluster'].includes(entry.pageType));
 if (!opportunities.length) fail('SEO registry has no decision or transactional opportunities.');
+
+// Child opportunities go public one explicit release at a time. Every exposed
+// owner must be named here with its full repo evidence file; anything else in
+// live/content-ready status still fails the build.
+const approvedExposedOwners = new Map([
+  ['budapest-packages', {
+    pageType: 'transactional-cluster',
+    canonicalPath: '/packages/budapest/',
+    mapState: 'budapest',
+    evidencePath: join(repoRoot, 'content', 'seo', 'opportunities', 'budapest-packages-2026.meta.json'),
+  }],
+]);
 const exposedRealEntries = opportunities.filter(entry => ['live', 'content-ready'].includes(entry.status));
-if (exposedRealEntries.length) fail(`Current registry unexpectedly exposes child opportunities: ${exposedRealEntries.map(entry => entry.id).join(', ')}.`);
+const unapprovedExposed = exposedRealEntries.filter(entry => !approvedExposedOwners.has(entry.id));
+if (unapprovedExposed.length) fail(`Registry exposes child opportunities without a named release: ${unapprovedExposed.map(entry => entry.id).join(', ')}.`);
+for (const [ownerId, release] of approvedExposedOwners) {
+  const entry = exposedRealEntries.find(item => item.id === ownerId);
+  if (!entry) {
+    fail(`Approved release owner ${ownerId} is not exposed by the registry.`);
+    continue;
+  }
+  if (entry.pageType !== release.pageType || entry.canonicalPath !== release.canonicalPath || entry.mapState !== release.mapState) {
+    fail(`Approved release owner ${ownerId} drifted from its released identity.`);
+  }
+  if (!existsSync(release.evidencePath)) {
+    fail(`Approved release owner ${ownerId} is missing its repo evidence packet.`);
+  }
+}
 
 for (const id of ['bangkok-hotels', 'larnaca-packages', 'paphos-packages']) {
   const entry = opportunities.find(item => item.id === id);
@@ -221,4 +247,4 @@ if (failures.length) {
   process.exit(1);
 }
 
-console.log(`Tra-Vel SEO opportunity provisioning validation passed (${opportunities.length} backlog owners remain unexposed).`);
+console.log(`Tra-Vel SEO opportunity provisioning validation passed (${opportunities.length - exposedRealEntries.length} backlog owners remain unexposed; released: ${exposedRealEntries.map(entry => entry.id).join(', ') || 'none'}).`);
