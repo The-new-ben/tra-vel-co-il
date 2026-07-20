@@ -123,7 +123,7 @@ function Assert-RegistryContract {
     $allowedKeys = @('id', 'canonicalPath', 'pageType', 'primaryIntent', 'cluster', 'parentPath', 'mapState', 'status', 'conversionAction', 'monetization')
     $allowedTypes = @('commercial-hub', 'planning-tool', 'audience-hub', 'destination-hub', 'destination-support', 'transactional-cluster', 'decision-guide')
     $allowedStatuses = @('live', 'content-ready', 'backlog')
-    $allowedMapStates = @('budapest', 'prague', 'vienna', 'athens', 'dubai', 'bangkok', 'tokyo', 'lisbon')
+    $allowedMapStates = @('budapest', 'prague', 'vienna', 'athens', 'dubai', 'bangkok', 'tokyo', 'lisbon', 'larnaca', 'crete')
     $ids = @{}
     $paths = @{}
     $intents = @{}
