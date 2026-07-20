@@ -4,6 +4,24 @@
   const DEG = Math.PI / 180;
   const controllers = [];
 
+  // Living-globe tuning (theme 1.24.0). Idle motion stays inside the
+  // event-driven render contract: frames self-schedule only while an
+  // animation or the guarded idle spin is actually running.
+  const IDLE_SPIN_YAW_PER_MS = 0.00006;          // ~0.0576deg per frame at 60fps
+  const IDLE_SPIN_RESUME_DELAY_MS = 4000;        // resume ~4s after the last direct interaction
+  const IDLE_MARKER_SYNC_INTERVAL_MS = 33;       // ~30fps marker declutter budget during idle spin
+  const TOUR_START_DELAY_MS = 3000;              // auto-fly tour arms after ~3s of load idle
+  const TOUR_RETRY_DELAY_MS = 1500;              // re-check cadence while the tour is blocked
+  const TOUR_DEFAULT_DWELL_MS = 2600;            // pause on each destination between hops
+  const TOUR_DEFAULT_HOP_DURATION_MS = 1500;     // camera travel time per hop
+  const DOUBLE_TAP_WINDOW_MS = 300;              // two taps inside this window dive
+  const DOUBLE_TAP_RADIUS_PX = 24;               // and inside this radius
+  const DOUBLE_CLICK_DIVE_DISTANCE = 0.6;        // camera distance removed per dive
+  const DOUBLE_CLICK_DIVE_DURATION_MS = 700;
+  const MARKER_COLLISION_BUDGET = 60;            // front-hemisphere markers entering the collision pass per frame
+  const NEAR_LOD_DISTANCE = 2.8;                 // closer than this: budgeted hub city labels join the layout
+  const NEAR_LOD_HUB_LABEL_BUDGET = 12;          // labeled hubs per frame at near zoom
+
   function shouldReduceMotion() {
     return window.matchMedia('(prefers-reduced-motion: reduce)').matches || navigator.connection?.saveData === true;
   }
@@ -411,7 +429,23 @@
       routeTimer: 0,
       textureReady: false,
       failed: false,
-      suppressPinActivationUntil: 0
+      suppressPinActivationUntil: 0,
+      lastMarkerSyncAt: 0,
+      lastTap: null,
+      suppressDiveUntil: 0,
+      idleSpin: { lastTick: 0, resumeAt: 0, resumeTimer: 0 },
+      tour: {
+        active: false,
+        cancelled: false,
+        hopping: false,
+        ids: [],
+        index: 0,
+        timer: 0,
+        autoTimer: 0,
+        dwell: TOUR_DEFAULT_DWELL_MS,
+        duration: TOUR_DEFAULT_HOP_DURATION_MS,
+        suspendedUntil: 0
+      }
     };
     const origin = {
       latitude: Number(root.dataset.originLatitude || 32.0005),
@@ -436,6 +470,9 @@
       state.textureReady = false;
       state.animation = null;
       state.pointer = null;
+      stopTour(true);
+      if (state.idleSpin.resumeTimer) window.clearTimeout(state.idleSpin.resumeTimer);
+      state.idleSpin.resumeTimer = 0;
       if (state.frame) window.cancelAnimationFrame(state.frame);
       state.frame = 0;
       root.classList.remove('is-webgl-ready', 'is-dragging', 'is-routing');
@@ -481,6 +518,12 @@
     function updateMarkers(width, height) {
       const mobile = window.matchMedia('(max-width: 1000px)').matches;
       const homeGlobe = Boolean(root.closest('.home-globe-stack'));
+      // Distance level of detail: far away the layout keeps destination price
+      // pins plus hub dots; closer, a bounded set of front hubs gains its city
+      // label. CSS reads the level from data-globe-lod.
+      const nearLod = state.distance <= NEAR_LOD_DISTANCE;
+      const lodLevel = nearLod ? 'near' : 'far';
+      if (root.dataset.globeLod !== lodLevel) root.dataset.globeLod = lodLevel;
       const projected = new Map();
       const candidates = [];
       markers().forEach(marker => {
@@ -531,12 +574,29 @@
         const labelLength = String(marker.dataset.city || marker.textContent || '').trim().length;
         const markerWidth = active || focused ? Math.min(126, Math.max(72, labelLength * 9 + 30)) : 44;
 		const markerHeight = active || focused ? 88 : 44;
-		candidates.push({ marker, point, active, focused, width: markerWidth, height: markerHeight, kind: 'hub', priority: 1 });
+		candidates.push({ marker, point, active, focused, width: markerWidth, height: markerHeight, kind: 'hub', priority: 1, labelLength });
       });
 
       candidates.sort((a, b) => Number(b.focused) - Number(a.focused) || Number(b.active) - Number(a.active) || b.priority - a.priority || b.point.depth - a.point.depth);
+      // Marker budget: only the highest-priority front-hemisphere markers run
+      // the O(n^2) collision pass each frame; anything beyond the budget stays
+      // hidden until the camera brings it forward.
+      let lodLabelSlots = nearLod ? NEAR_LOD_HUB_LABEL_BUDGET : 0;
       const placed = [];
-      candidates.forEach(candidate => {
+      candidates.forEach((candidate, candidateIndex) => {
+		if (candidateIndex >= MARKER_COLLISION_BUDGET && !candidate.active && !candidate.focused) {
+			candidate.marker.hidden = true;
+			return;
+		}
+		if (candidate.kind === 'hub') {
+			const lodLabeled = !candidate.active && !candidate.focused && lodLabelSlots > 0;
+			if (lodLabeled) {
+				lodLabelSlots -= 1;
+				candidate.width = Math.max(candidate.width, Math.min(126, Math.max(72, candidate.labelLength * 9 + 30)));
+				candidate.height = Math.max(candidate.height, 88);
+			}
+			candidate.lodLabeled = lodLabeled;
+		}
 		let placement = collisionFreeMarkerPlacement(candidate, placed, width, height);
 		if (!placement && (candidate.active || candidate.focused)) {
 			const halfWidth = candidate.width / 2;
@@ -558,7 +618,11 @@
 		candidate.marker.dataset.collisionDisplaced = String(placement.displaced);
 		candidate.marker.dataset.collisionForced = String(Boolean(placement.forced));
 		candidate.marker.style.setProperty('--globe-depth', String(clamp(0.86 + candidate.point.depth * 0.17, 0.82, 1.05)));
-		if (candidate.kind === 'hub') candidate.marker.setAttribute('aria-pressed', String(candidate.active));
+		if (candidate.kind === 'hub') {
+			candidate.marker.setAttribute('aria-pressed', String(candidate.active));
+			const labelState = candidate.active || candidate.focused || candidate.lodLabeled ? 'visible' : 'dot';
+			if (candidate.marker.dataset.globeLabel !== labelState) candidate.marker.dataset.globeLabel = labelState;
+		}
 		placed.push(placement.box);
       });
       const originMarker = root.querySelector('[data-globe-origin]');
@@ -598,6 +662,16 @@
           if (progress >= 1) state.animation = null;
         }
 
+        let idleSpinning = false;
+        if (!state.animation && idleSpinEligible(timestamp)) {
+          const step = state.idleSpin.lastTick > 0 ? Math.min(timestamp - state.idleSpin.lastTick, 64) : 16.7;
+          state.yaw = normalizeAngle(state.yaw + IDLE_SPIN_YAW_PER_MS * step);
+          state.idleSpin.lastTick = timestamp;
+          idleSpinning = true;
+        } else {
+          state.idleSpin.lastTick = 0;
+        }
+
         if (gl.isContextLost()) throw new Error('WebGL context is unavailable.');
         const dimensions = resize();
         const model = multiply4(rotationX4(state.pitch), rotationY4(state.yaw));
@@ -621,10 +695,16 @@
         gl.drawElements(gl.TRIANGLES, sphere.count, gl.UNSIGNED_SHORT, 0);
         const renderError = gl.getError();
         if (renderError !== gl.NO_ERROR) throw new Error(`WebGL render error ${renderError}.`);
-        updateMarkers(dimensions.width, dimensions.height);
+        // Idle spin moves slowly, so marker declutter can run at ~30fps while
+        // the sphere itself stays at full frame rate. Interactions and camera
+        // animations keep the full-rate marker path.
+        if (!idleSpinning || timestamp - state.lastMarkerSyncAt >= IDLE_MARKER_SYNC_INTERVAL_MS) {
+          updateMarkers(dimensions.width, dimensions.height);
+          state.lastMarkerSyncAt = timestamp;
+        }
 
         if (state.textureReady) root.classList.add('is-webgl-ready');
-        if (state.animation) requestRender();
+        if (state.animation || idleSpinning) requestRender();
       } catch (error) {
         activateStaticFallback(error);
       }
@@ -671,12 +751,143 @@
       if (state.routeTimer) window.clearTimeout(state.routeTimer);
       state.routeTimer = 0;
       root.classList.remove('is-routing');
+      suspendTour(IDLE_SPIN_RESUME_DELAY_MS);
       requestRender();
+      return true;
+    }
+
+    // --- Guarded idle motion (theme 1.24.0) -------------------------------
+    // The slow ambient spin runs only while every guard holds: the globe is
+    // inside the viewport, the tab is visible, no pointer is down, no camera
+    // animation or tour dwell is in progress, and the visitor has not asked
+    // for reduced motion. Any direct interaction pauses it for ~4s.
+    function idleSpinEligible(now) {
+      return !state.failed
+        && state.visible
+        && document.visibilityState === 'visible'
+        && !state.pointer
+        && !state.animation
+        && !state.tour.active
+        && now >= state.idleSpin.resumeAt
+        && !shouldReduceMotion();
+    }
+
+    function scheduleIdleSpinResume() {
+      if (state.idleSpin.resumeTimer) window.clearTimeout(state.idleSpin.resumeTimer);
+      state.idleSpin.resumeTimer = window.setTimeout(() => {
+        state.idleSpin.resumeTimer = 0;
+        requestRender();
+      }, IDLE_SPIN_RESUME_DELAY_MS + 60);
+    }
+
+    // A direct gesture on the globe pauses the idle spin for ~4s and cancels
+    // the auto-fly tour permanently for this page view.
+    function noteDirectInteraction() {
+      state.idleSpin.resumeAt = performance.now() + IDLE_SPIN_RESUME_DELAY_MS;
+      scheduleIdleSpinResume();
+      stopTour(true);
+    }
+
+    // --- Auto-fly tour (theme 1.24.0) --------------------------------------
+    // Programmatic camera work from the page (reveal previews, hydration
+    // focus, zoom fallbacks) defers the next hop instead of fighting it.
+    function suspendTour(milliseconds) {
+      state.tour.suspendedUntil = Math.max(state.tour.suspendedUntil, performance.now() + milliseconds);
+    }
+
+    function stopTour(permanent = false) {
+      if (permanent) state.tour.cancelled = true;
+      if (state.tour.autoTimer) window.clearTimeout(state.tour.autoTimer);
+      state.tour.autoTimer = 0;
+      if (state.tour.timer) window.clearTimeout(state.tour.timer);
+      state.tour.timer = 0;
+      state.tour.active = false;
+      return true;
+    }
+
+    function scheduleTourHop(delay) {
+      if (state.tour.timer) window.clearTimeout(state.tour.timer);
+      state.tour.timer = window.setTimeout(tourHop, delay);
+    }
+
+    function tourHop() {
+      state.tour.timer = 0;
+      if (!state.tour.active) return;
+      if (state.tour.cancelled || state.failed || root.classList.contains('globe-3d-unavailable') || shouldReduceMotion()) {
+        stopTour(true);
+        return;
+      }
+      if (!state.visible || document.visibilityState !== 'visible') {
+        scheduleTourHop(TOUR_RETRY_DELAY_MS);
+        return;
+      }
+      const now = performance.now();
+      if (state.pointer || state.animation || now < state.tour.suspendedUntil) {
+        scheduleTourHop(Math.max(400, state.tour.suspendedUntil - now));
+        return;
+      }
+      const ids = state.tour.ids.filter(id => state.available.has(id));
+      if (ids.length < 2) {
+        stopTour(false);
+        return;
+      }
+      const id = ids[state.tour.index % ids.length];
+      state.tour.index += 1;
+      state.tour.hopping = true;
+      const focused = focusDestination(id, {
+        animate: true,
+        pulse: true,
+        announce: false,
+        rotations: 0,
+        duration: state.tour.duration
+      });
+      state.tour.hopping = false;
+      if (!focused) {
+        scheduleTourHop(TOUR_RETRY_DELAY_MS);
+        return;
+      }
+      scheduleTourHop(state.tour.duration + state.tour.dwell);
+    }
+
+    function startTour(ids = null, options = {}) {
+      if (state.tour.cancelled || state.failed || root.classList.contains('globe-3d-unavailable') || shouldReduceMotion()) return false;
+      const requested = Array.isArray(ids) && ids.length
+        ? ids.map(id => String(id))
+        : markers().map(marker => marker.dataset.destination || '');
+      const availableIds = requested.filter(id => state.available.has(id));
+      if (availableIds.length < 2) return false;
+      state.tour.ids = availableIds;
+      state.tour.dwell = clamp(Number(options.dwell) || TOUR_DEFAULT_DWELL_MS, 800, 20000);
+      state.tour.duration = clamp(Number(options.duration) || TOUR_DEFAULT_HOP_DURATION_MS, 180, 3200);
+      const selectedIndex = availableIds.indexOf(state.selected);
+      state.tour.index = selectedIndex >= 0 ? selectedIndex + 1 : 0;
+      state.tour.active = true;
+      scheduleTourHop(Math.max(0, Number(options.delay) || 0));
+      return true;
+    }
+
+    // Google-Earth style dive: double-click or double-tap re-centers on the
+    // struck coordinate and steps the camera closer. Zoom stays limited to
+    // buttons, double activation, and the existing pinch path; the globe
+    // never binds wheel or scroll listeners.
+    function diveToScreenPoint(clientX, clientY) {
+      if (root.classList.contains('globe-3d-unavailable')) return false;
+      const rectangle = root.getBoundingClientRect();
+      const point = globePointFromScreen(clientX - rectangle.left, clientY - rectangle.top, rectangle.width, rectangle.height, state);
+      if (!point) return false;
+      state.visible = document.visibilityState !== 'hidden';
+      animateTo(
+        -point.longitude * DEG,
+        point.latitude * DEG,
+        clamp(state.distance - DOUBLE_CLICK_DIVE_DISTANCE, 2.25, 4.8),
+        DOUBLE_CLICK_DIVE_DURATION_MS
+      );
       return true;
     }
 
     function focusDestination(id, options = true) {
       if (root.classList.contains('globe-3d-unavailable')) return false;
+      if (!state.tour.hopping) suspendTour(IDLE_SPIN_RESUME_DELAY_MS);
       const animate = typeof options === 'object' ? options.animate !== false : Boolean(options);
       const pulse = typeof options === 'object' ? options.pulse === true : Boolean(options);
       const announce = typeof options === 'object' ? options.announce !== false : true;
@@ -785,6 +996,7 @@
       const hub = hubFromMarker(marker);
       if (!hub || !state.availableHubs.has(hub.id)) return false;
       const unavailable = root.classList.contains('globe-3d-unavailable');
+      suspendTour(IDLE_SPIN_RESUME_DELAY_MS);
       const animate = !unavailable && (typeof options === 'object' ? options.animate !== false : Boolean(options));
       const announce = typeof options === 'object' ? options.announce !== false : true;
       state.selected = '';
@@ -895,6 +1107,7 @@
 
     function zoom(direction) {
       if (root.classList.contains('globe-3d-unavailable')) return false;
+      noteDirectInteraction();
       state.visible = document.visibilityState !== 'hidden';
       const change = direction === 'in' ? -0.32 : 0.32;
       animateTo(state.yaw, state.pitch, clamp(state.distance + change, 2.25, 4.8), 260);
@@ -936,6 +1149,7 @@
       state.selected = '';
       state.selectedHub = '';
       state.animation = null;
+      suspendTour(IDLE_SPIN_RESUME_DELAY_MS);
       if (!preservePoint) state.selectedPoint = null;
       markers().forEach(marker => {
         marker.classList.remove('is-active');
@@ -990,6 +1204,7 @@
     });
 
     root.addEventListener('pointerdown', event => {
+      noteDirectInteraction();
       if (!event.isPrimary || event.button !== 0) return;
       state.visible = document.visibilityState !== 'hidden';
       state.pointer = {
@@ -1010,6 +1225,7 @@
       const pin = event.target.closest('.price-pin');
       const hub = event.target.closest('[data-exploration-hub]');
       if (!pin && !hub) return;
+      noteDirectInteraction();
       if (performance.now() < state.suppressPinActivationUntil) {
         event.preventDefault();
         event.stopImmediatePropagation();
@@ -1064,6 +1280,26 @@
       if (root.hasPointerCapture(event.pointerId)) root.releasePointerCapture(event.pointerId);
       if (pointer.moved && pointer.startedOnPin) state.suppressPinActivationUntil = performance.now() + 500;
       if (pointer.moved && pointer.startedOnHub) state.suppressPinActivationUntil = performance.now() + 500;
+      state.idleSpin.resumeAt = performance.now() + IDLE_SPIN_RESUME_DELAY_MS;
+      scheduleIdleSpinResume();
+      if (event.type === 'pointerup' && !pointer.moved && !pointer.startedOnPin && !pointer.startedOnHub) {
+        const previousTap = state.lastTap;
+        const tap = { at: performance.now(), x: event.clientX, y: event.clientY, touch: pointer.type === 'touch' };
+        state.lastTap = tap;
+        if (previousTap
+          && tap.at - previousTap.at <= DOUBLE_TAP_WINDOW_MS
+          && Math.hypot(tap.x - previousTap.x, tap.y - previousTap.y) <= DOUBLE_TAP_RADIUS_PX) {
+          state.lastTap = null;
+          if (tap.touch) {
+            // Second touch tap dives directly; a synthetic dblclick that some
+            // browsers still emit for the same gesture is swallowed below.
+            state.suppressDiveUntil = tap.at + 420;
+            diveToScreenPoint(event.clientX, event.clientY);
+          }
+          // The second half of a double activation never re-selects the point.
+          return;
+        }
+      }
       if (event.type === 'pointerup' && !pointer.moved && !pointer.startedOnPin && !pointer.startedOnHub && performance.now() - pointer.startedAt < 700) {
         selectScreenPoint(event.clientX, event.clientY, 'pointer');
       }
@@ -1071,8 +1307,23 @@
     root.addEventListener('pointerup', endPointer);
     root.addEventListener('pointercancel', endPointer);
     root.addEventListener('lostpointercapture', endPointer);
+    root.addEventListener('dblclick', event => {
+      if (event.target.closest('.price-pin,[data-exploration-hub]')) return;
+      noteDirectInteraction();
+      if (performance.now() < state.suppressDiveUntil) {
+        event.preventDefault();
+        return;
+      }
+      if (diveToScreenPoint(event.clientX, event.clientY)) event.preventDefault();
+    });
+    // Focus moving into the globe (root or any marker) is a direct engagement:
+    // it permanently hands camera control back to the visitor for this view.
+    root.addEventListener('focusin', () => {
+      noteDirectInteraction();
+    });
     root.addEventListener('keydown', event => {
       if (event.target.closest('.price-pin,[data-exploration-hub]')) return;
+      noteDirectInteraction();
       state.visible = document.visibilityState !== 'hidden';
       const step = event.shiftKey ? 18 * DEG : 8 * DEG;
       if (event.key === 'ArrowLeft') {
@@ -1129,8 +1380,16 @@
     if (contextualDestination && state.available.has(contextualDestination)) {
       focusDestination(contextualDestination, { animate: false, pulse: false, announce: false });
     }
+    // Discovery globes (homepage and travel map) arm the auto-fly tour after
+    // ~3s of load idle. Guide and destination globes never tour.
+    if (root.matches('[data-discovery-globe]')) {
+      state.tour.autoTimer = window.setTimeout(() => {
+        state.tour.autoTimer = 0;
+        startTour();
+      }, TOUR_START_DELAY_MS);
+    }
     requestRender();
-    return { root, focusDestination, focusHub, zoom, setDestinations, setExplorationHubs, clearSelection, pulseRoute, cancelMotion, requestRender };
+    return { root, focusDestination, focusHub, zoom, setDestinations, setExplorationHubs, clearSelection, pulseRoute, cancelMotion, requestRender, startTour, stopTour };
   }
 
   function initialize() {
@@ -1184,6 +1443,23 @@
         if (!targetRoot || controller.root === targetRoot) handled = controller.cancelMotion() || handled;
       });
       return handled;
+    },
+    startTour(ids = null, options = {}) {
+      const targetRoot = typeof options === 'object' && options ? options.root : null;
+      let started = false;
+      controllers.forEach(controller => {
+        if (!targetRoot || controller.root === targetRoot) started = controller.startTour(ids, options) || started;
+      });
+      return started;
+    },
+    stopTour(options = {}) {
+      const targetRoot = typeof options === 'object' && options ? options.root : null;
+      const permanent = typeof options === 'object' && options ? options.permanent === true : false;
+      let stopped = false;
+      controllers.forEach(controller => {
+        if (!targetRoot || controller.root === targetRoot) stopped = controller.stopTour(permanent) || stopped;
+      });
+      return stopped;
     },
     requestRender() {
       controllers.forEach(controller => controller.requestRender());

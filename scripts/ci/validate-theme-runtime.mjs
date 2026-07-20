@@ -3215,6 +3215,8 @@ assert.equal(globeRuntimeImages.length, 1, 'The focused globe runtime must initi
 globeRuntimeImages[0].trigger('load');
 flushGlobeRuntimeFrames();
 assert.equal(runtimeGlobe.classList.contains('is-webgl-ready'), true, 'A successful texture upload and render must replace the static Earth fallback.');
+assert.equal(runtimeGlobe.dataset.globeLod, 'far', 'At the default camera distance the marker pass must publish the far level of detail.');
+assert.equal(runtimeHub.dataset.globeLabel, 'dot', 'A non-selected hub at far zoom must stay a dot without a city label.');
 
 runtimeGlobe.dispatch('pointerdown', {isPrimary:true,button:0,pointerId:7,pointerType:'mouse',clientX:100,clientY:100,target:runtimePin});
 runtimeGlobe.dispatch('pointermove', {pointerId:7,clientX:108,clientY:100,target:runtimePin});
@@ -3257,6 +3259,11 @@ assert.deepEqual(JSON.parse(JSON.stringify({
   scopes:['route','stay','activities','insurance','connectivity','equipment']
 }, 'A hub tap must publish the complete geographic planning context into the same Earth-selection event.');
 
+const diveDoubleClick = runtimeGlobe.dispatch('dblclick', {clientX:200, clientY:200, target:runtimeGlobe});
+assert.equal(diveDoubleClick.defaultPrevented, true, 'A double click on the visible Earth must dive toward the struck coordinate and consume the event.');
+const outsideDoubleClick = runtimeGlobe.dispatch('dblclick', {clientX:2, clientY:2, target:runtimeGlobe});
+assert.equal(outsideDoubleClick.defaultPrevented, false, 'A double click outside the sphere must leave the event to the page.');
+
 runtimeGl.errors.push(1282);
 globeRuntimeWindow.traVelGlobe3D.requestRender();
 flushGlobeRuntimeFrames();
@@ -3275,5 +3282,18 @@ assert.doesNotMatch(frontPageSource, /data-home-plan-summary[^>]*(?:role="status
 assert.match(cssSource, /\.home-reveal-feedback button \{[^}]*min-height: 44px;/, 'The visible Stop control must meet the 44px touch-target floor.');
 assert.match(cssSource, /\.home-globe-stack \.globe-webgl \.price-pin \{[^}]*min-width: 44px;[^}]*min-height: 44px;/, 'Every homepage Earth pin must expose a real 44 by 44 CSS-pixel target.');
 assert.match(appSource, /document\.dispatchEvent\(new CustomEvent\('tra-vel:funnel',[\s\S]*?if \(Array\.isArray\(window\.dataLayer\)\)/, 'Homepage funnel measurement must always use a local DOM event and mirror only into an existing dataLayer.');
+
+// Theme 1.24.0 living globe: the idle spin and auto-fly tour stay inside the
+// visibility, interaction, and reduced-motion guards, and the globe never
+// binds a wheel or scroll listener (the scroll law).
+assert.doesNotMatch(globeSource, /addEventListener\(\s*['"](?:wheel|mousewheel|scroll|touchmove)['"]/, 'The globe must never trap page scrolling with wheel, scroll, or touchmove listeners.');
+assert.match(globeSource, /function idleSpinEligible\(now\) \{[\s\S]*?!state\.failed[\s\S]*?state\.visible[\s\S]*?document\.visibilityState === 'visible'[\s\S]*?!state\.pointer[\s\S]*?!state\.animation[\s\S]*?!state\.tour\.active[\s\S]*?now >= state\.idleSpin\.resumeAt[\s\S]*?!shouldReduceMotion\(\)/, 'The idle spin must hold every guard: alive, on-screen, visible tab, no pointer, no animation, no tour dwell, past the resume delay, and motion allowed.');
+assert.match(globeSource, /if \(state\.animation \|\| idleSpinning\) requestRender\(\);/, 'Frames must self-schedule only while a camera animation or the guarded idle spin is running.');
+assert.match(globeSource, /function noteDirectInteraction\(\) \{[\s\S]{0,260}state\.idleSpin\.resumeAt = performance\.now\(\) \+ IDLE_SPIN_RESUME_DELAY_MS;[\s\S]{0,160}stopTour\(true\);/, 'Direct interaction must pause the idle spin for the resume delay and cancel the tour permanently.');
+assert.match(globeSource, /function tourHop\(\) \{[\s\S]*?shouldReduceMotion\(\)[\s\S]*?stopTour\(true\);[\s\S]*?document\.visibilityState !== 'visible'[\s\S]*?state\.pointer \|\| state\.animation \|\| now < state\.tour\.suspendedUntil[\s\S]*?focusDestination\(id, \{[\s\S]*?pulse: true,[\s\S]*?announce: false,[\s\S]*?rotations: 0,/, 'Tour hops must stop under reduced motion, wait while hidden or busy, and arrive through the pulsed focusDestination selection pipeline.');
+assert.match(globeSource, /root\.matches\('\[data-discovery-globe\]'\)[\s\S]{0,240}startTour\(\);[\s\S]{0,120}TOUR_START_DELAY_MS\)/, 'Only discovery globes may arm the auto-fly tour, and only after the load-idle delay.');
+assert.match(globeSource, /function startTour\(ids = null, options = \{\}\) \{\s*if \(state\.tour\.cancelled \|\| state\.failed \|\| root\.classList\.contains\('globe-3d-unavailable'\) \|\| shouldReduceMotion\(\)\) return false;/, 'A cancelled, failed, fallback, or reduced-motion globe must refuse to start a tour.');
+assert.match(globeSource, /candidateIndex >= MARKER_COLLISION_BUDGET/, 'The collision pass must stay inside the bounded front-hemisphere marker budget.');
+assert.match(globeSource, /timestamp - state\.lastMarkerSyncAt >= IDLE_MARKER_SYNC_INTERVAL_MS/, 'Idle-spin marker declutter must throttle to the bounded interval while the sphere renders at full rate.');
 
 console.log('Tra-Vel animated journey runtime checks passed.');

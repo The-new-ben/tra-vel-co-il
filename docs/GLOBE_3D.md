@@ -6,13 +6,21 @@ The production globe is a progressively enhanced travel-discovery surface. It us
 
 ## Runtime architecture
 
-- `assets/js/globe-3d.js` is loaded only for `page-map.php`.
+- `assets/js/globe-3d.js` is loaded for the front page, `page-map.php`, `page-destination.php`, `page-seo-opportunity.php`, and single destination guides (see `inc/assets.php`).
 - `earth-blue-marble-2048.jpg` is a 2048 by 1024 power-of-two texture optimized from the existing 5400 by 2700 source.
 - The sphere contains 56 latitude segments and 88 longitude segments.
 - Device pixel ratio is capped at 1.75 to control mobile GPU memory and fill rate.
-- Rendering is event driven. The globe redraws after interaction, resize, selection, or focus animation instead of running a permanent animation loop.
-- Intersection and document-visibility observers stop rendering work when the globe is outside the active view.
-- WebGL context loss or initialization failure switches to the static Earth fallback. A successful WebGL initialization keeps that image absent rather than hidden under the model.
+- Rendering is event driven. The globe redraws after interaction, resize, selection, or focus animation instead of running a permanent animation loop. Since theme 1.24.0 one bounded exception exists: while the guarded idle spin or auto-fly tour is actually moving the camera, frames self-schedule; the moment a guard fails (globe off-screen, tab hidden, pointer down, reduced motion, or user takeover) the frame chain stops and rendering returns to purely event-driven.
+- Intersection and document-visibility observers stop rendering work when the globe is outside the active view. The idle spin and the tour obey the same observers.
+- WebGL context loss or initialization failure switches to the static Earth fallback and permanently disables idle motion and the tour. A successful WebGL initialization keeps that image absent rather than hidden under the model.
+
+## Living globe (theme 1.24.0)
+
+- **Guarded idle spin.** The Earth turns slowly (`yaw += 0.00006 * dt`, about 0.0576 degrees per 60fps frame) only while all guards hold: the globe intersects the viewport, `document.visibilityState === 'visible'`, no pointer is down, no camera animation or tour dwell is running, and the visitor does not prefer reduced motion (including Save-Data). Any direct interaction pauses the spin; it resumes about four seconds after the last interaction ends.
+- **Auto-fly tour.** Discovery globes (homepage and travel map) arm `startTour()` about three seconds after load. The tour cycles through the destination pins with `focusDestination(id, { rotations: 0, pulse: true, duration: ~1500 })` and dwells about 2600 ms on each stop, so every hop updates the same pin selection state, labels, and route pulse as a manual destination focus. Hops are not announced to the polite live region; that channel remains reserved for traveler-initiated selections, matching the automatic reveal previews. The tour never starts under reduced motion, never hops while the globe is off-screen or the tab is hidden, and is cancelled permanently for the page view by any direct interaction with the globe: pointerdown, double click or double tap, keyboard input, marker activation, zoom controls, or focus entering the globe. Programmatic camera work (reveal previews, hydration focus) only defers the next hop by about four seconds.
+- **Double-click and double-tap dive.** A double click, or two touch taps within 300 ms and 24 px, ray-casts the struck screen point through `globePointFromScreen`, re-centers the camera on that coordinate, and steps `state.distance` down by 0.6 (clamped to the existing 2.25 to 4.8 range) over about 700 ms. The second half of a double activation never creates a second point selection.
+- **Scroll law.** The globe never traps page scrolling. No wheel or scroll listener is bound anywhere in the globe runtime; zoom remains buttons, keyboard plus and minus, double click or double tap, and the browser's native pinch path. `touch-action: pan-y` stays intact so vertical swipes keep scrolling the page.
+- **Marker budget and level of detail.** Both discovery globes render all reviewed destinations as full price pins plus every exploration hub as a 44 px dot control. Each frame, only the `MARKER_COLLISION_BUDGET` (60) highest-priority front-hemisphere markers enter the O(n^2) collision pass; the rest stay hidden until the camera brings them forward. Far away (`distance > 2.8`) the layout shows destination labels and hub dots only; closer, up to twelve front hubs gain their city label through the same collision pass (`data-globe-lod` and `data-globe-label`). During idle spin, marker declutter is throttled to about 30fps while the sphere renders at full rate. Hub markers carry no price; commercial values remain governed by the supplier data-mode gates in `app.js`.
 
 ## Interaction contract
 
@@ -26,8 +34,9 @@ The production globe is a progressively enhanced travel-discovery surface. It us
 - Selecting or focusing a destination rotates it to the center and updates the information section below the map.
 - Plus and minus controls provide a simple-pointer zoom alternative.
 - Arrow keys rotate the globe, plus and minus zoom, Home resets the view, and Enter or Space selects the geographic point at the center of the current view.
-- Reduced-motion preferences disable animated camera transitions.
-- Mobile non-selected destinations retain 44 by 44 pixel hit targets with smaller visual dots.
+- Double click, or two touch taps within 300 ms and 24 px, dives toward the struck Earth coordinate; the gesture never creates a duplicate selection.
+- Reduced-motion preferences disable animated camera transitions, the idle spin, and the auto-fly tour.
+- Mobile non-selected destinations retain 44 by 44 pixel hit targets with smaller visual dots; exploration hubs keep the same 44 px floor at every width.
 
 Tap and drag are separated by an eight-pixel movement threshold and a 700 ms tap window. Pointer capture begins only after horizontal drag intent is established. Vertical browser scrolling remains available through `touch-action: pan-y`; a cancelled or vertical browser gesture cannot rotate the Earth or become a selection.
 
