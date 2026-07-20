@@ -450,8 +450,9 @@ if (!appCss.includes('.whatsapp-button { display: none !important; }')) failures
 if (!appCss.includes('.theme-map-shell .globe-webgl .price-pin:not(.is-active) { width: 44px; height: 44px; min-width: 44px;')) failures.push('Mobile globe destination targets must retain a 44px hit area.');
 if (!/\.theme-map-shell \.globe-webgl \.exploration-hub \{[^}]*z-index:\s*6;[^}]*width:\s*44px;[^}]*height:\s*44px;[^}]*min-width:\s*44px;[^}]*min-height:\s*44px;/.test(appCss)) failures.push('Every exploration hub must remain a subtle 44 by 44 CSS-pixel control below destination-marker priority.');
 if (!/\.home-globe-stack \.globe-webgl \.exploration-hub \{[^}]*z-index:\s*6;[^}]*width:\s*44px;[^}]*height:\s*44px;[^}]*min-width:\s*44px;[^}]*min-height:\s*44px;/.test(appCss)) failures.push('Every homepage exploration hub must retain a subtle 44 by 44 CSS-pixel control below destination-marker priority.');
-if (!appCss.includes('.theme-map-shell .globe-webgl .exploration-hub:is(:focus-visible,.is-active) .exploration-hub-label { opacity: 1; visibility: visible;') || appCss.includes('.exploration-hub:hover .exploration-hub-label')) failures.push('Exploration-hub labels must appear only for keyboard focus or committed selection.');
-if (!appCss.includes('.home-globe-stack .globe-webgl .exploration-hub:is(:focus-visible,.is-active) .exploration-hub-label { opacity: 1; visibility: visible;')) failures.push('Homepage exploration-hub labels must appear only after keyboard focus or committed selection.');
+if (!appCss.includes('.theme-map-shell .globe-webgl .exploration-hub:is(:focus-visible,.is-active) .exploration-hub-label { opacity: 1; visibility: visible;') || appCss.includes('.exploration-hub:hover .exploration-hub-label')) failures.push('Exploration-hub labels must appear only for keyboard focus, committed selection, or the bounded near-zoom label budget - never hover.');
+if (!appCss.includes('.home-globe-stack .globe-webgl .exploration-hub:is(:focus-visible,.is-active) .exploration-hub-label { opacity: 1; visibility: visible;')) failures.push('Homepage exploration-hub labels must appear only after keyboard focus, committed selection, or the bounded near-zoom label budget.');
+if (!appCss.includes('.theme-map-shell .globe-webgl[data-globe-lod="near"] .exploration-hub[data-globe-label="visible"] .exploration-hub-label { opacity: 1; visibility: visible;') || !appCss.includes('.home-globe-stack .globe-webgl[data-globe-lod="near"] .exploration-hub[data-globe-label="visible"] .exploration-hub-label { opacity: 1; visibility: visible;')) failures.push('The near-zoom hub label level of detail is missing its bounded CSS path on one of the discovery globes.');
 if (!appCss.includes('.theme-map-shell .world-canvas { direction: rtl; min-width: 0; min-height: 650px; position: relative; overflow: hidden;') || !/\.exploration-hub-label \{[^}]*pointer-events:\s*none;/.test(appCss)) failures.push('Exploration-hub labels must remain clipped to the Earth surface and cannot intercept mobile controls.');
 if (!appCss.includes('.theme-map-shell .globe-webgl.globe-3d-unavailable .exploration-hub { left: var(--hub-static-x) !important; top: var(--hub-static-y) !important;')) failures.push('The static Earth fallback must retain deterministic server-rendered exploration-hub coordinates.');
 if (!appCss.includes('.home-globe-stack .globe-webgl.is-webgl-ready,\n.compact-map .globe-webgl.is-webgl-ready,\n.theme-map-shell .globe-webgl.is-webgl-ready { background-image: none; }')) failures.push('Every loaded 3D Earth must keep the static fallback out of the paint stack.');
@@ -637,6 +638,44 @@ if (!appCss.includes('.theme-map-shell .world-canvas .globe { width: min(640px,1
 if (!appCss.includes('.map-selection-rail.is-updating .map-selection-signal,.map-selection-rail.is-updating .map-selection-copy') || !appCss.includes('.home-globe-stack .globe-selection-point::after,.theme-map-shell .globe-selection-point::after') || !appCss.includes('.theme-map-shell .globe-webgl.is-routing .globe-route-layer path { animation: none !important; }')) failures.push('New globe progress motion is missing its reduced-motion path.');
 const globeTextureSize = statSync(join(themeRoot, 'assets/images/earth-blue-marble-2048.jpg')).size;
 if (globeTextureSize > 500000) failures.push(`The mobile globe texture is too large (${globeTextureSize} bytes).`);
+
+// Theme 1.24.0 living globe: guarded idle spin, auto-fly tour, double-click
+// dive, the scroll law, and the marker performance budget.
+if (/addEventListener\(\s*['"](?:wheel|mousewheel|scroll|touchmove)['"]/.test(globeJs)) failures.push('The globe must never bind wheel, scroll, or touchmove listeners; page scrolling stays with the browser.');
+if (!appCss.includes('.theme-map-shell .globe-webgl { isolation: isolate; touch-action: pan-y pinch-zoom;')) failures.push('The map globe must keep touch-action: pan-y so vertical swipes scroll the page.');
+for (const marker of [
+  'const IDLE_SPIN_YAW_PER_MS = 0.00006;',
+  'const IDLE_SPIN_RESUME_DELAY_MS = 4000;',
+  'const IDLE_MARKER_SYNC_INTERVAL_MS = 33;',
+  'const TOUR_START_DELAY_MS = 3000;',
+  'const TOUR_DEFAULT_DWELL_MS = 2600;',
+  'const TOUR_DEFAULT_HOP_DURATION_MS = 1500;',
+  'const DOUBLE_TAP_WINDOW_MS = 300;',
+  'const DOUBLE_TAP_RADIUS_PX = 24;',
+  'const DOUBLE_CLICK_DIVE_DISTANCE = 0.6;',
+  'const DOUBLE_CLICK_DIVE_DURATION_MS = 700;',
+  'const MARKER_COLLISION_BUDGET = 60;',
+  'const NEAR_LOD_HUB_LABEL_BUDGET = 12;'
+]) {
+  if (!globeJs.includes(marker)) failures.push(`The living-globe motion contract is missing ${marker}`);
+}
+const idleSpinEligibleSource = globeJs.match(/function idleSpinEligible\(now\) \{[\s\S]*?\n    \}/)?.[0] || '';
+for (const guard of ["document.visibilityState === 'visible'", '!state.pointer', '!state.animation', '!state.tour.active', 'state.visible', 'now >= state.idleSpin.resumeAt', '!shouldReduceMotion()']) {
+  if (!idleSpinEligibleSource.includes(guard)) failures.push(`The idle spin is missing its ${guard} guard.`);
+}
+if (!globeJs.includes('if (state.animation || idleSpinning) requestRender();')) failures.push('The render loop must stay conditional: frames self-schedule only while animating or idle-spinning.');
+if (!globeJs.includes('state.yaw = normalizeAngle(state.yaw + IDLE_SPIN_YAW_PER_MS * step);')) failures.push('The idle spin must advance yaw through the frame-time-scaled constant.');
+if (!/root\.addEventListener\('pointerdown', event => \{\s*noteDirectInteraction\(\);/.test(globeJs)) failures.push('A pointer touching the globe must pause idle motion and cancel the tour permanently.');
+if (!/function noteDirectInteraction\(\) \{[\s\S]{0,240}stopTour\(true\);/.test(globeJs)) failures.push('Direct interaction must cancel the auto-fly tour for the rest of the session.');
+const tourHopSource = globeJs.match(/function tourHop\(\) \{[\s\S]*?\n    \}/)?.[0] || '';
+if (!tourHopSource.includes('shouldReduceMotion()') || !tourHopSource.includes("document.visibilityState !== 'visible'") || !tourHopSource.includes('state.pointer || state.animation')) failures.push('Tour hops must respect reduced motion, visibility, and active interaction before moving the camera.');
+if (!tourHopSource.includes('pulse: true') || !tourHopSource.includes('rotations: 0') || !tourHopSource.includes('announce: false') || !tourHopSource.includes('focusDestination(id, {')) failures.push('Tour hops must reuse the focusDestination selection pipeline with a pulsed, non-announced, rotation-free arrival.');
+if (!/root\.matches\('\[data-discovery-globe\]'\)[\s\S]{0,220}startTour\(\);[\s\S]{0,80}TOUR_START_DELAY_MS\)/.test(globeJs)) failures.push('The auto-fly tour must arm only on discovery globes after the load-idle delay.');
+if (!/root\.addEventListener\('dblclick'[\s\S]{0,700}diveToScreenPoint\(event\.clientX, event\.clientY\)\) event\.preventDefault\(\);/.test(globeJs)) failures.push('Double-click must dive through the shared ray-cast helper and consume the event.');
+if (!/function diveToScreenPoint\([\s\S]{0,700}globePointFromScreen\([\s\S]{0,700}DOUBLE_CLICK_DIVE_DURATION_MS/.test(globeJs)) failures.push('The dive must ray-cast the struck coordinate and animate with the bounded dive duration.');
+if (!globeJs.includes('tap.at - previousTap.at <= DOUBLE_TAP_WINDOW_MS') || !globeJs.includes('<= DOUBLE_TAP_RADIUS_PX')) failures.push('Touch double-tap detection must use the bounded 300ms/24px window.');
+if (!globeJs.includes('candidateIndex >= MARKER_COLLISION_BUDGET') || !globeJs.includes('timestamp - state.lastMarkerSyncAt >= IDLE_MARKER_SYNC_INTERVAL_MS')) failures.push('The marker pass is missing its collision budget or the ~30fps idle declutter throttle.');
+if (!globeJs.includes("root.dataset.globeLod = lodLevel;") || !globeJs.includes("candidate.marker.dataset.globeLabel = labelState;")) failures.push('The marker level of detail must publish its state for the bounded CSS label path.');
 
 const assetSource = readFileSync(join(themeRoot, 'inc/assets.php'), 'utf8');
 if (!assetSource.includes('is_front_page()') || !assetSource.includes("is_page_template( 'page-map.php' )") || !assetSource.includes("is_page_template( 'page-destination.php' )") || !assetSource.includes('tra-vel-v2-globe-3d')) failures.push('The WebGL globe must load on the homepage, map, and destination templates.');

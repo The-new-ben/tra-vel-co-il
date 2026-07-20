@@ -652,6 +652,8 @@ img { display: block; max-width: 100%; }
 .home-globe-stack .globe-webgl .exploration-hub:is(:focus-visible,.is-active) { z-index: 8; }
 .home-globe-stack .globe-webgl .exploration-hub:is(:focus-visible,.is-active)::before { width: 12px; height: 12px; border-color: #07171d; background: var(--lime); box-shadow: 0 0 0 5px rgba(217,255,89,.24),0 5px 14px rgba(0,0,0,.38); }
 .home-globe-stack .globe-webgl .exploration-hub:is(:focus-visible,.is-active) .exploration-hub-label { opacity: 1; visibility: visible; transform: translateX(-50%) translateY(0); transition-delay: 0s; }
+/* Near-zoom level of detail (theme 1.24.0): a bounded, collision-placed set of front hubs shows its city label while zoomed in. */
+.home-globe-stack .globe-webgl[data-globe-lod="near"] .exploration-hub[data-globe-label="visible"] .exploration-hub-label { opacity: 1; visibility: visible; transform: translateX(-50%) translateY(0); transition-delay: 0s; }
 .home-globe-stack .globe-webgl .exploration-hub:focus-visible { outline: 3px solid #fff; outline-offset: -4px; }
 .home-globe-stack .globe-webgl.globe-3d-unavailable .exploration-hub { left: var(--hub-static-x) !important; top: var(--hub-static-y) !important; transform: translate(-50%,-50%); }
 .home-globe-stack .globe-webgl .price-pin[hidden],.home-globe-stack .globe-webgl .exploration-hub[hidden],.home-globe-stack .globe-webgl .origin-point[hidden] { display: none !important; }
@@ -2708,10 +2710,24 @@ h3.deal-title { display: block; margin: 6px 0 12px; font-size: 22px; line-height
 .theme-map-shell .globe-webgl .exploration-hub:is(:focus-visible,.is-active) { z-index: 8; }
 .theme-map-shell .globe-webgl .exploration-hub:is(:focus-visible,.is-active)::before { width: 12px; height: 12px; border-color: #07171d; background: var(--lime); box-shadow: 0 0 0 5px rgba(217,255,89,.24),0 5px 14px rgba(0,0,0,.38); }
 .theme-map-shell .globe-webgl .exploration-hub:is(:focus-visible,.is-active) .exploration-hub-label { opacity: 1; visibility: visible; transform: translateX(-50%) translateY(0); transition-delay: 0s; }
+/* Near-zoom level of detail (theme 1.24.0): a bounded, collision-placed set of front hubs shows its city label while zoomed in. */
+.theme-map-shell .globe-webgl[data-globe-lod="near"] .exploration-hub[data-globe-label="visible"] .exploration-hub-label { opacity: 1; visibility: visible; transform: translateX(-50%) translateY(0); transition-delay: 0s; }
 .theme-map-shell .globe-webgl .exploration-hub:focus-visible { outline: 3px solid #fff; outline-offset: -4px; }
 .theme-map-shell .globe-webgl.globe-3d-unavailable .exploration-hub { left: var(--hub-static-x) !important; top: var(--hub-static-y) !important; transform: translate(-50%,-50%); }
 .theme-map-shell .globe-webgl .price-pin[hidden],.theme-map-shell .globe-webgl .exploration-hub[hidden],.theme-map-shell .globe-webgl .origin-point[hidden],.theme-map-shell .globe-selection-point[hidden] { display: none !important; }
 .theme-map-shell .map-imagery-attribution { color: #526970; font-size: 10px; text-decoration: underline; white-space: nowrap; }
+
+/* Small-phone globe audit (theme 1.24.0, 360/390/430px): the Earth fills the
+   available column, hub city text stays legible, and every pin or hub keeps
+   its 44px target. No fixed-pixel canvas below this width. */
+@media (max-width: 430px) {
+  .home-globe-stack .globe,.home-reveal-feedback { width: min(550px,100%); }
+  .home-globe-stack .globe-halo { width: min(430px,94vw); height: min(430px,94vw); }
+  .theme-map-shell .world-canvas .globe { width: min(430px,100%); }
+  .home-globe-stack .globe-webgl .exploration-hub-label small,.theme-map-shell .globe-webgl .exploration-hub-label small { font-size: 10px; }
+  .home-globe-stack .globe-webgl .exploration-hub-label,.theme-map-shell .globe-webgl .exploration-hub-label { max-width: 118px; }
+  .home-globe-stack .globe-webgl .price-pin { max-width: 104px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
 
 @media (max-width: 1000px) {
   .theme-map-shell .globe-webgl .price-pin:not(.is-active) { width: 44px; height: 44px; min-width: 44px; padding: 0; border: 0; background: transparent; box-shadow: none; transform: translate(-50%,-50%); }
@@ -2726,6 +2742,7 @@ h3.deal-title { display: block; margin: 6px 0 12px; font-size: 22px; line-height
   .home-plan-ledger summary::after,.home-globe-stack .globe-webgl [data-globe-canvas],.home-globe-stack .price-pin { transition: none !important; }
   .destination-plan-options > a { transition: none; }
   .theme-map-shell .globe-webgl .exploration-hub-label { transition: none; }
+  .home-globe-stack .globe-webgl .exploration-hub-label { transition: none; }
 }
 
 /* Every globe selection resolves into an in-flow 360-degree decision cockpit. */
