@@ -27,8 +27,8 @@ const agentWorkflow = read('.github/workflows/deploy-agent-core.yml');
 const themeWorkflow = read('.github/workflows/deploy-theme.yml');
 const themeCi = read('.github/workflows/theme-ci.yml');
 
-if (!/\* Version: 0\.9\.1/.test(main) || !/TRA_VEL_AGENT_VERSION', '0\.9\.1'/.test(main)) {
-  failures.push('Agent Core header and runtime version must both identify release 0.9.1.');
+if (!/\* Version: 0\.9\.2/.test(main) || !/TRA_VEL_AGENT_VERSION', '0\.9\.2'/.test(main)) {
+  failures.push('Agent Core header and runtime version must both identify release 0.9.2.');
 }
 
 for (const marker of [
@@ -94,8 +94,8 @@ for (const marker of ['tra_vel_assisted_proposal_db_version', 'tra_vel_assisted_
   requireText(uninstall, marker, `Opt-in uninstall is missing ${marker}.`);
 }
 
-if (!readme.includes('Stable tag: 0.9.1') || !readme.includes('= 0.9.1 =')) {
-  failures.push('Agent Core readme must identify release 0.9.1.');
+if (!readme.includes('Stable tag: 0.9.2') || !readme.includes('= 0.9.2 =')) {
+  failures.push('Agent Core readme must identify release 0.9.2.');
 }
 if (!themeStyle.includes('Version: 1.26.0') || !themeFunctions.includes("define( 'TRA_VEL_V2_VERSION', '1.26.0' )")) {
   failures.push('Theme header and runtime version must both identify release 1.26.0.');

@@ -23,16 +23,16 @@ def check(condition: bool, message: str) -> None:
 
 
 MANIFEST = {
-    "version": "0.9.1",
+    "version": "0.9.2",
     "sha256": "a" * 64,
     "content_sha256": "b" * 64,
 }
 DEPLOYED = dict(MANIFEST)
 HEALTH = {
     "ok": True,
-    "plugin_version": "0.9.1",
+    "plugin_version": "0.9.2",
     "contract_version": "1.0.0",
-    "provider": {"configured": True},
+    "provider": {"configured": True, "model": "gpt-5.6-terra", "model_source": "default"},
     "capabilities": {
         "account_plan_history": True,
         "assisted_quote_cases": True,
@@ -153,6 +153,26 @@ def expect_remote_rejection(candidate: dict, message: str) -> None:
     except VerificationError:
         pass
 
+
+missing_provider_block = deepcopy(HEALTH)
+missing_provider_block.pop("provider")
+expect_remote_rejection(missing_provider_block, "A health payload without a provider block passed deployment verification.")
+
+missing_model_source = deepcopy(HEALTH)
+missing_model_source["provider"].pop("model_source")
+expect_remote_rejection(missing_model_source, "A provider block without model_source passed deployment verification.")
+
+untruthful_model_source = deepcopy(HEALTH)
+untruthful_model_source["provider"]["model_source"] = "hardcoded"
+expect_remote_rejection(untruthful_model_source, "An untruthful model_source value passed deployment verification.")
+
+missing_model = deepcopy(HEALTH)
+missing_model["provider"]["model"] = ""
+expect_remote_rejection(missing_model, "A provider block without an active model identifier passed deployment verification.")
+
+leaked_provider_credential = deepcopy(HEALTH)
+leaked_provider_credential["provider"]["api_key"] = "sk-should-never-appear"
+expect_remote_rejection(leaked_provider_credential, "A provider block disclosing credential material passed deployment verification.")
 
 missing_capability = deepcopy(HEALTH)
 missing_capability["capabilities"].pop("audited_proposal_actions")
