@@ -152,6 +152,7 @@ $default_map_airport = sanitize_text_field( $default_map_data['airport']['code']
 						<?php endforeach; ?>
 						<span class="sr-only" data-globe-live role="status" aria-live="polite" aria-atomic="true"></span>
 					</div>
+					<?php tra_vel_v2_voice_dock(); ?>
 				</div>
 			</div>
 

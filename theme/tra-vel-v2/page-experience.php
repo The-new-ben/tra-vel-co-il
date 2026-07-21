@@ -494,6 +494,14 @@ get_header();
 					<noscript><p class="agent-noscript"><?php esc_html_e( 'מתכנן החופשה דורש JavaScript. הבקשה לא נשלחה.', 'tra-vel-v2' ); ?></p></noscript>
 				</form>
 
+				<div class="voice-theater" data-agent-theater data-state="idle" hidden>
+					<ol aria-label="<?php esc_attr_e( 'שלבי הטיפול בבקשה', 'tra-vel-v2' ); ?>">
+						<li data-agent-theater-stage="understand" data-state="waiting"><i data-lucide="brain-circuit" aria-hidden="true"></i><span><?php esc_html_e( 'מבינים את הבקשה', 'tra-vel-v2' ); ?></span></li>
+						<li data-agent-theater-stage="scan" data-state="waiting"><i data-lucide="scan-search" aria-hidden="true"></i><span><?php esc_html_e( 'סורקים תוכניות ומסלולים', 'tra-vel-v2' ); ?></span></li>
+						<li data-agent-theater-stage="ready" data-state="waiting"><i data-lucide="badge-check" aria-hidden="true"></i><span><?php esc_html_e( 'ההצעה מוכנה', 'tra-vel-v2' ); ?></span></li>
+					</ol>
+				</div>
+
 				<section class="agent-run-workbench" data-agent-workbench aria-labelledby="agent-run-title" hidden>
 					<header class="agent-run-head">
 						<div><span class="eyebrow"><?php esc_html_e( 'החופשה שלכם', 'tra-vel-v2' ); ?></span><h2 id="agent-run-title" tabindex="-1"><?php esc_html_e( 'מה כבר קרה ומה הצעד הבא', 'tra-vel-v2' ); ?></h2></div>

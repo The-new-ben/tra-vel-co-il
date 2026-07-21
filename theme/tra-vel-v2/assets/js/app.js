@@ -11153,6 +11153,7 @@ async function createAgentRun(root) {
   setAgentJourneyConnecting(root);
   submit.disabled = true;
   root.dataset.state = 'loading';
+  beginAgentTheater(root);
   try {
     const payload = await agentApiRequest('/runs', {
       method: 'POST',
@@ -11171,6 +11172,7 @@ async function createAgentRun(root) {
     resetAgentRuntime(run.run_id);
     const stored = storeAgentRunSession(run.run_id);
     renderAgentRun(root, run, true);
+    settleAgentTheater(root);
     if (!stored) {
       setAgentWorkbenchError(root, 'התוכנית נפתחה, אבל הדפדפן חסם את שמירתה הזמנית בלשונית. העדכונים הראשונים מוצגים, אך לא יתבצע עדכון נוסף.');
       pauseAgentJourneyTransport(root, 'התוכנית נפתחה, אך עדכוני ההמשך נעצרו בדפדפן. המצב המאושר נשאר מוצג.');
@@ -11178,6 +11180,7 @@ async function createAgentRun(root) {
     }
     scheduleAgentPoll(root);
   } catch (error) {
+    collapseAgentTheater(root);
     setAgentWorkbenchStatus(root, 'לא התקבל אישור לפתיחת תוכנית פרטית', 'error');
     setAgentWorkbenchError(root, agentErrorMessage(error));
     failAgentJourneyConnection(root);
@@ -11290,6 +11293,124 @@ async function resumeAgentRun(root) {
   }
 }
 
+// --- Agent theater (theme 1.29.0) -----------------------------------------
+// A staged progress strip near the planner composer. It narrates only real
+// milestones of the one request that is actually in flight: stage one lights
+// when the request is dispatched, stage two after a modest delay while the
+// request is genuinely still pending (the transport exposes completion only,
+// no first-byte signal), and stage three strictly after the confirmed
+// response rendered. An error collapses the strip and leaves the existing
+// error surfaces untouched.
+let agentTheaterTimer = 0;
+
+function agentTheaterElements(root) {
+  const theater = agentWorkbenchRoot(root).querySelector('[data-agent-theater]');
+  if (!theater) return null;
+  return {
+    theater,
+    understand: theater.querySelector('[data-agent-theater-stage="understand"]'),
+    scan: theater.querySelector('[data-agent-theater-stage="scan"]'),
+    ready: theater.querySelector('[data-agent-theater-stage="ready"]')
+  };
+}
+
+function setAgentTheaterStage(stage, stageState) {
+  if (stage) stage.dataset.state = stageState;
+}
+
+function beginAgentTheater(root) {
+  const parts = agentTheaterElements(root);
+  if (!parts) return;
+  if (agentTheaterTimer) window.clearTimeout(agentTheaterTimer);
+  parts.theater.hidden = false;
+  parts.theater.dataset.state = 'running';
+  setAgentTheaterStage(parts.understand, 'active');
+  setAgentTheaterStage(parts.scan, 'waiting');
+  setAgentTheaterStage(parts.ready, 'waiting');
+  agentTheaterTimer = window.setTimeout(() => {
+    agentTheaterTimer = 0;
+    if (parts.theater.hidden || parts.theater.dataset.state !== 'running') return;
+    setAgentTheaterStage(parts.understand, 'complete');
+    setAgentTheaterStage(parts.scan, 'active');
+  }, 1200);
+}
+
+function settleAgentTheater(root) {
+  const parts = agentTheaterElements(root);
+  if (!parts || parts.theater.hidden || parts.theater.dataset.state !== 'running') return;
+  if (agentTheaterTimer) {
+    window.clearTimeout(agentTheaterTimer);
+    agentTheaterTimer = 0;
+  }
+  parts.theater.dataset.state = 'done';
+  setAgentTheaterStage(parts.understand, 'complete');
+  setAgentTheaterStage(parts.scan, 'complete');
+  setAgentTheaterStage(parts.ready, 'complete');
+}
+
+function collapseAgentTheater(root) {
+  const parts = agentTheaterElements(root);
+  if (!parts) return;
+  if (agentTheaterTimer) {
+    window.clearTimeout(agentTheaterTimer);
+    agentTheaterTimer = 0;
+  }
+  parts.theater.dataset.state = 'idle';
+  parts.theater.hidden = true;
+  setAgentTheaterStage(parts.understand, 'waiting');
+  setAgentTheaterStage(parts.scan, 'waiting');
+  setAgentTheaterStage(parts.ready, 'waiting');
+}
+
+// --- Voice dock arrival (theme 1.29.0) -------------------------------------
+// The globe voice dock hands its reviewed text to the planner through the
+// voice_prompt query parameter. The parameters are consumed once (and removed
+// from the address bar) so a refresh never repeats a submission.
+function consumeVoiceArrivalRequest() {
+  let params;
+  try {
+    params = new URLSearchParams(window.location.search);
+  } catch (error) {
+    return null;
+  }
+  if (!params.has('voice_prompt')) return null;
+  const text = String(params.get('voice_prompt') || '').replace(/\s+/g, ' ').trim().slice(0, 4000);
+  const spoken = params.get('voice') === '1';
+  params.delete('voice_prompt');
+  params.delete('voice');
+  const query = params.toString();
+  try {
+    window.history.replaceState(window.history.state, '', `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`);
+  } catch (error) {
+    // Leave the address bar unchanged when history is unavailable.
+  }
+  if (text.length < 4) return null;
+  return { text, spoken };
+}
+
+function applyVoiceArrival(root, arrival, tools) {
+  if (!arrival) return false;
+  const { prompt, status, confirmation, confirmed } = tools;
+  prompt.value = arrival.text;
+  prompt.setCustomValidity('');
+  root.scrollIntoView({ behavior: preferredScrollBehavior(), block: 'start' });
+  if (arrival.spoken) {
+    // The text came from the microphone, so the planner's existing voice
+    // contract stays authoritative: the traveler reviews and confirms the
+    // transcript here, and nothing is sent on their behalf.
+    root.dataset.agentInputKind = 'voice';
+    if (confirmed) confirmed.checked = false;
+    if (confirmation) confirmation.hidden = false;
+    status.textContent = 'התמלול מופיע בשדה. בדקו אותו ואשרו לפני שמתחילים.';
+    (confirmed || prompt).focus({ preventScroll: true });
+    return true;
+  }
+  root.dataset.agentInputKind = 'typed';
+  if (typeof root.requestSubmit === 'function') root.requestSubmit();
+  else createAgentRun(root);
+  return true;
+}
+
 function initAIConversationEntry() {
   const root = document.querySelector('[data-ai-conversation-entry]');
   const button = root?.querySelector('[data-ai-voice]');
@@ -11302,6 +11423,7 @@ function initAIConversationEntry() {
   root.dataset.agentInputKind = 'typed';
   const submit = root.querySelector('[data-agent-submit]');
   if (submit) submit.disabled = false;
+  const voiceArrival = consumeVoiceArrivalRequest();
   const revisionForm = agentWorkbenchRoot(root).querySelector('[data-agent-revision-form]');
   const revisionMessage = revisionForm?.querySelector('[data-agent-revision-message]');
   const quoteConsent = agentWorkbenchRoot(root).querySelector('[data-quote-case-consent]');
@@ -11353,7 +11475,7 @@ function initAIConversationEntry() {
       status.textContent = 'הכתבה קולית אינה זמינה בדפדפן הזה. אפשר לכתוב את הבקשה באותו שדה.';
       prompt.focus();
     });
-    resumeAgentRun(root);
+    if (!applyVoiceArrival(root, voiceArrival, { prompt, status, confirmation, confirmed })) resumeAgentRun(root);
     return;
   }
 
@@ -11397,7 +11519,7 @@ function initAIConversationEntry() {
     status.textContent = 'לא הצלחנו לקלוט את הבקשה. אפשר לנסות שוב או לכתוב אותה.';
   });
   recognition.addEventListener('end', () => setListening(false));
-  resumeAgentRun(root);
+  if (!applyVoiceArrival(root, voiceArrival, { prompt, status, confirmation, confirmed })) resumeAgentRun(root);
 }
 
 function initDirectory() {
