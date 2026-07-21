@@ -56,11 +56,12 @@ $home_return    = $home_now->modify( '+34 days' )->format( 'Y-m-d' );
 ?>
 <main id="main-content" data-tra-vel-page="home">
 	<section class="home-hero">
-		<div class="hero-grid page-width">
+		<div class="home-globe-stack">
+			<div class="hero-arrival-stage">
 			<div class="hero-copy">
-				<span class="kicker"><i data-lucide="sparkles"></i><?php esc_html_e( 'מתחילים מהחופשה שמתאימה לכם', 'tra-vel-v2' ); ?></span>
-				<h1><?php esc_html_e( 'איזו חופשה', 'tra-vel-v2' ); ?><br><em><?php esc_html_e( 'מתאימה לכם עכשיו?', 'tra-vel-v2' ); ?></em></h1>
-				<p><?php esc_html_e( 'בחרו יעד, תאריכים ונוסעים בכמה הקשות, וקבלו כיוון לחופשה עם טיסות, לינה ופירוט עלויות.', 'tra-vel-v2' ); ?></p>
+				<span class="kicker"><i data-lucide="plane-landing"></i><?php esc_html_e( 'נחתתם במקום הנכון', 'tra-vel-v2' ); ?></span>
+				<h1><?php esc_html_e( 'החופשה הבאה שלכם', 'tra-vel-v2' ); ?><br><em><?php esc_html_e( 'כבר מתוכננת.', 'tra-vel-v2' ); ?></em></h1>
+				<p><?php esc_html_e( 'תגידו לאן, או תנו לכדור הארץ להציע. אנחנו בודקים, משווים ומאמתים מחיר, זמינות ותנאים לפני התשלום.', 'tra-vel-v2' ); ?></p>
 				<div class="hero-agent-actions">
 					<a class="hero-compare-cta" data-hero-compare href="#search"><i data-lucide="search"></i><span><strong><?php esc_html_e( 'השוו טיסה ומלון', 'tra-vel-v2' ); ?></strong><small><?php esc_html_e( 'יעד, תאריכים ונוסעים בכמה הקשות', 'tra-vel-v2' ); ?></small></span><i data-lucide="arrow-left"></i></a>
 					<a class="surprise-cta" data-home-surprise href="<?php echo esc_url( $surprise_url ); ?>"><i data-lucide="compass"></i><span><strong data-home-surprise-label><?php esc_html_e( 'תפתיעו אותי', 'tra-vel-v2' ); ?></strong><small><?php esc_html_e( 'רעיון לחופשה בלחיצה אחת. אחר כך אפשר לשנות הכול.', 'tra-vel-v2' ); ?></small></span><i data-lucide="arrow-left"></i></a>
@@ -75,10 +76,9 @@ $home_return    = $home_now->modify( '+34 days' )->format( 'Y-m-d' );
 					</aside>
 				<?php endif; ?>
 			</div>
-			<div class="home-globe-stack">
 			<div class="globe-panel" aria-label="<?php esc_attr_e( 'מפת יעדים אינטראקטיבית', 'tra-vel-v2' ); ?>">
 				<div class="globe-halo"></div>
-				<div class="globe globe-webgl" data-globe-3d data-discovery-globe data-home-globe data-default-destination="<?php echo esc_attr( $home_default_destination ); ?>" data-campaign-kind="<?php echo esc_attr( $home_campaign_kind ); ?>" data-origin-latitude="32.0005" data-origin-longitude="34.8708" data-supported-radius-km="100" data-texture="<?php echo esc_url( tra_vel_v2_asset_uri( 'images/earth-blue-marble-2048.jpg' ) ); ?>" tabindex="0" role="group" aria-label="<?php esc_attr_e( 'גלובוס תלת ממדי של רעיונות לחופשה. גררו לסיבוב או בחרו יעד.', 'tra-vel-v2' ); ?>">
+				<div class="globe globe-webgl" data-globe-3d data-discovery-globe data-globe-arrival="true" data-home-globe data-default-destination="<?php echo esc_attr( $home_default_destination ); ?>" data-campaign-kind="<?php echo esc_attr( $home_campaign_kind ); ?>" data-origin-latitude="32.0005" data-origin-longitude="34.8708" data-supported-radius-km="100" data-texture="<?php echo esc_url( tra_vel_v2_asset_uri( 'images/earth-blue-marble-2048.jpg' ) ); ?>" tabindex="0" role="group" aria-label="<?php esc_attr_e( 'גלובוס תלת ממדי של רעיונות לחופשה. גררו לסיבוב או בחרו יעד.', 'tra-vel-v2' ); ?>">
 					<canvas data-globe-canvas aria-hidden="true"></canvas>
 					<noscript><img class="globe-noscript-image" src="<?php echo esc_url( tra_vel_v2_asset_uri( 'images/earth-blue-marble-2048.jpg' ) ); ?>" alt="<?php esc_attr_e( 'מפת עולם סטטית', 'tra-vel-v2' ); ?>"></noscript>
 					<svg class="globe-route-layer" data-globe-routes width="100%" height="100%" aria-hidden="true"><path data-globe-route></path></svg>
@@ -119,6 +119,7 @@ $home_return    = $home_now->modify( '+34 days' )->format( 'Y-m-d' );
 				<div class="globe-tools"><button data-map-zoom="in" type="button" aria-label="<?php esc_attr_e( 'הגדלה', 'tra-vel-v2' ); ?>"><i data-lucide="plus"></i></button><button data-map-zoom="out" type="button" aria-label="<?php esc_attr_e( 'הקטנה', 'tra-vel-v2' ); ?>"><i data-lucide="minus"></i></button><a href="<?php echo esc_url( $map_url ); ?>" aria-label="<?php esc_attr_e( 'מפה מלאה', 'tra-vel-v2' ); ?>"><i data-lucide="maximize-2"></i></a></div>
 				<div class="home-reveal-feedback" data-home-reveal data-state="ready"><span><i data-lucide="sparkles"></i><span><small data-home-reveal-context><?php echo esc_html( $home_campaign_is_seasonal ? __( 'כיוון שמתאים לעונה', 'tra-vel-v2' ) : __( 'כיוון להתחלת החיפוש', 'tra-vel-v2' ) ); ?></small><strong data-home-reveal-status><?php esc_html_e( 'בחרו יעד או לחצו על תפתיעו אותי.', 'tra-vel-v2' ); ?></strong></span></span><button data-home-reveal-cancel type="button" hidden><?php esc_html_e( 'עצרו', 'tra-vel-v2' ); ?></button></div>
 			</div>
+			</div>
 				<section class="globe-dive-store" data-dive-store data-dive-depth="0" hidden aria-label="<?php esc_attr_e( 'שירותים ומוצרים לנקודה שנבחרה על הגלובוס', 'tra-vel-v2' ); ?>">
 					<div class="dive-store-topline">
 						<nav class="dive-breadcrumb" data-dive-breadcrumb aria-label="<?php esc_attr_e( 'רמת הצלילה על הגלובוס', 'tra-vel-v2' ); ?>"></nav>
@@ -135,7 +136,7 @@ $home_return    = $home_now->modify( '+34 days' )->format( 'Y-m-d' );
 					<p class="dive-footnote" data-dive-footnote hidden><?php esc_html_e( 'המחירים להמחשה; המחיר הסופי מאומת לפני התשלום.', 'tra-vel-v2' ); ?></p>
 					<span class="sr-only" data-dive-live role="status" aria-live="polite" aria-atomic="true"></span>
 				</section>
-				<article class="map-result" data-map-result>
+				<article class="map-result" id="home-selection-details" data-map-result>
 					<img class="map-result-image" data-result-image src="<?php echo esc_url( tra_vel_v2_asset_uri( 'images/' . $home_default_image ) ); ?>" alt="<?php echo esc_attr( $home_default_label ); ?>">
 					<div class="map-result-body"><div class="result-top"><div><small data-result-context><?php echo esc_html( $home_default_context ); ?></small><h3 data-result-city><?php echo esc_html( $home_default_label ); ?></h3></div><button class="save-button" type="button" aria-label="<?php esc_attr_e( 'שמירה', 'tra-vel-v2' ); ?>"><i data-lucide="heart"></i></button></div><div class="result-tags" data-result-tags><?php foreach ( array_slice( (array) ( $home_default_data['tags'] ?? array() ), 0, 3 ) as $tag ) : ?><span><?php echo esc_html( $tag ); ?></span><?php endforeach; ?></div><div class="result-price"><div><small><?php esc_html_e( 'מחיר לתכנון לאדם', 'tra-vel-v2' ); ?></small><strong data-result-price><?php echo esc_html( $home_default_price ); ?></strong></div><p data-result-note><?php esc_html_e( 'המחיר הסופי מאומת מול הספק לפני התשלום.', 'tra-vel-v2' ); ?></p></div>
 					<div class="home-plan-360" data-home-plan data-destination="<?php echo esc_attr( $home_default_destination ); ?>"><div><span><?php esc_html_e( 'כל החופשה במקום אחד', 'tra-vel-v2' ); ?></span><strong data-home-plan-summary><?php echo esc_html( sprintf( __( 'פתחו וערכו כל חלק בתכנון החופשה ל%s.', 'tra-vel-v2' ), $home_default_city ) ); ?></strong></div>
@@ -156,7 +157,6 @@ $home_return    = $home_now->modify( '+34 days' )->format( 'Y-m-d' );
 					</div></div>
 				</article>
 				<?php tra_vel_v2_demo_disclosure(); ?>
-			</div>
 		</div>
 	</section>
 
