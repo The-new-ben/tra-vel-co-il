@@ -106,6 +106,33 @@ function publicationPacketBindingErrors(entry, packet) {
 const registry = readJson(registryPath, 'Content opportunity registry');
 const discovery = readJson(discoveryPath, 'Discovery dataset');
 const knownMapStates = new Set((discovery.destinations || []).map(destination => destination.id));
+
+// The theme runtime rejects the whole registry, fail-closed, when any entry
+// carries a mapState its destinations map does not know. Registry and runtime
+// must therefore never drift: every mapState referenced here has to exist as a
+// key of tra_vel_v2_seo_opportunity_destinations() in the deployed theme.
+const runtimePath = join(repoRoot, 'theme', 'tra-vel-v2', 'inc', 'seo-opportunities.php');
+const runtimeMapStates = (() => {
+  if (!existsSync(runtimePath)) {
+    fail('Theme runtime inc/seo-opportunities.php is missing.');
+    return new Set();
+  }
+  const runtimeSource = readFileSync(runtimePath, 'utf8');
+  const destinationsBlock = runtimeSource.match(/function tra_vel_v2_seo_opportunity_destinations\(\)\s*\{[\s\S]*?\n\}/);
+  if (!destinationsBlock) {
+    fail('Theme runtime must define tra_vel_v2_seo_opportunity_destinations() as the single map-state source of truth.');
+    return new Set();
+  }
+  const keys = [...destinationsBlock[0].matchAll(/'([a-z0-9-]+)'\s*=>\s*array\(\s*'name'/g)].map(match => match[1]);
+  if (!keys.length) fail('Theme runtime destinations map declares no map states.');
+  return new Set(keys);
+})();
+for (const entry of Array.isArray(registry.entries) ? registry.entries : []) {
+  const mapState = entry?.mapState;
+  if (typeof mapState === 'string' && mapState && !runtimeMapStates.has(mapState)) {
+    fail(`Theme runtime destinations map is missing registry map state "${mapState}" (${entry?.id || 'unknown entry'}); the live registry would fail closed.`);
+  }
+}
 const guidePackets = new Map();
 
 if (existsSync(guideDir)) {

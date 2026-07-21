@@ -37,6 +37,9 @@ param(
 $ErrorActionPreference = 'Stop'
 $RepoRoot = (Resolve-Path (Join-Path (Join-Path $PSScriptRoot '..') '..')).Path
 $DefaultProductionCredentialPath = "$env:USERPROFILE\Documents\.codex-secrets\wordpress-app-passwords\tra-vel.co.il.credential.xml"
+# Mirror of the theme's tra_vel_v2_seo_opportunity_destinations() keys; CI keeps
+# registry, discovery and theme runtime aligned via validate-content-opportunity-registry.mjs.
+$script:SupportedMapStates = @('budapest', 'prague', 'vienna', 'athens', 'dubai', 'bangkok', 'tokyo', 'lisbon', 'larnaca', 'crete')
 if (-not $RegistryPath) {
     $RegistryPath = Join-Path (Join-Path (Join-Path $RepoRoot 'content') 'seo') 'content-opportunity-registry.json'
 }
@@ -123,7 +126,7 @@ function Assert-RegistryContract {
     $allowedKeys = @('id', 'canonicalPath', 'pageType', 'primaryIntent', 'cluster', 'parentPath', 'mapState', 'status', 'conversionAction', 'monetization')
     $allowedTypes = @('commercial-hub', 'planning-tool', 'audience-hub', 'destination-hub', 'destination-support', 'transactional-cluster', 'decision-guide')
     $allowedStatuses = @('live', 'content-ready', 'backlog')
-    $allowedMapStates = @('budapest', 'prague', 'vienna', 'athens', 'dubai', 'bangkok', 'tokyo', 'lisbon', 'larnaca', 'crete')
+    $allowedMapStates = $script:SupportedMapStates
     $ids = @{}
     $paths = @{}
     $intents = @{}
@@ -299,7 +302,7 @@ function Assert-TransactionalEvidence {
     if ($metrics.WordCount -lt 800) { throw "Transactional page has $($metrics.WordCount) visible words; 800 are required." }
     if ($metrics.HebrewRatio -lt 0.70) { throw 'Transactional page must contain at least 70% Hebrew words.' }
     if ($metrics.H2Count -lt 4) { throw 'Transactional page requires at least four H2 sections.' }
-    if ($ExpectedMapState -notin @('budapest', 'prague', 'vienna', 'athens', 'dubai', 'bangkok', 'tokyo', 'lisbon')) {
+    if ($ExpectedMapState -notin $script:SupportedMapStates) {
         throw 'Transactional page requires a supported contextual Earth map state.'
     }
     return $metrics
@@ -804,7 +807,30 @@ try {
         else {
             Assert-TransactionalEvidence -Page $readyReadback -ExpectedMapState ([string]$entry.mapState) | Out-Null
         }
-        Write-Host "Published after fail-closed two-phase verification: $($entry.id) at $($readyReadback.link)."
+
+        # Phase three verifies the real public render. REST evidence alone once
+        # reported success while the live route failed closed, so readiness is
+        # reverted unless the anonymous, cache-busted response proves the owned
+        # template rendered as an indexable page.
+        $liveUrl = ($siteUri.AbsoluteUri.TrimEnd('/')) + [string]$entry.canonicalPath + '?tvverify=' + ([DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds())
+        $liveFailure = ''
+        try {
+            $liveResponse = Invoke-WebRequest -Uri $liveUrl -Method Get -UseBasicParsing -TimeoutSec $RequestTimeoutSeconds -Headers @{ 'Cache-Control' = 'no-cache' }
+            $liveBody = [string]$liveResponse.Content
+            if ([int]$liveResponse.StatusCode -ne 200) { $liveFailure = "live route returned HTTP $([int]$liveResponse.StatusCode)" }
+            elseif ($liveBody -notmatch 'data-tra-vel-page="seo-opportunity"') { $liveFailure = 'live route did not render the owned opportunity template' }
+            elseif ($liveBody -match 'data-tra-vel-page="seo-opportunity-unavailable"') { $liveFailure = 'live route rendered the unavailable fallback shell' }
+            elseif ($liveBody -match 'name=["'']robots["''][^>]*noindex') { $liveFailure = 'live route still carries a noindex robots directive' }
+        }
+        catch {
+            $liveFailure = "live route request failed: $($_.Exception.Message)"
+        }
+        if ($liveFailure) {
+            $revertBody = @{ meta = (New-OpportunityReadinessMeta -Entry $entry -State 'unready') }
+            Invoke-WpRequest -Method Post -Path "pages/$([int]$page.id)" -Body $revertBody | Out-Null
+            throw "Live render verification failed for $($entry.id) ($liveFailure); readiness reverted to fail-closed."
+        }
+        Write-Host "Published after fail-closed two-phase verification and live render proof: $($entry.id) at $($readyReadback.link)."
     }
 }
 finally {
