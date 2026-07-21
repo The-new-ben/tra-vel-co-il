@@ -28,6 +28,31 @@
   const NEAR_LOD_HUB_LABEL_BUDGET = 12;          // labeled hubs per frame at near zoom
   const TAP_PREVIEW_DELAY_MS = DOUBLE_TAP_WINDOW_MS; // free-point preview waits out the double-tap window so a dive never fires a preview first
   const DIVE_REGION_DISTANCE = 2.9;              // 'explore the region' medium camera height
+  // Theme 1.28.0 arrival: the homepage globe opens zoomed out, west of a
+  // device-local timezone anchor, and flies in once per browser session.
+  // Anchors come from Intl device data only: no network call, no permission.
+  const ARRIVAL_SESSION_KEY = 'traVelArrivalPlayed';
+  const ARRIVAL_START_DISTANCE = 4.35;           // default camera height 3.15 plus the 1.2 fly-in offset
+  const ARRIVAL_START_WEST_OFFSET = 70 * DEG;    // the flight approaches the anchor from ~70deg of longitude west
+  const ARRIVAL_DURATION_MS = 2800;
+  const LONG_PRESS_SELECT_MS = 500;              // a held touch is an explicit selection: immediate, never a dive
+  const ARRIVAL_TIMEZONE_ANCHORS = {
+    'Europe/London': { latitude: 51.5, longitude: -0.12 },
+    'Europe/Paris': { latitude: 48.85, longitude: 2.35 },
+    'Europe/Berlin': { latitude: 52.5, longitude: 13.4 },
+    'Europe/Amsterdam': { latitude: 52.37, longitude: 4.9 },
+    'Europe/Athens': { latitude: 37.98, longitude: 23.73 },
+    'Europe/Budapest': { latitude: 47.5, longitude: 19.05 },
+    'Europe/Lisbon': { latitude: 38.72, longitude: -9.14 },
+    'America/New_York': { latitude: 40.7, longitude: -74 },
+    'America/Toronto': { latitude: 43.65, longitude: -79.38 },
+    'America/Los_Angeles': { latitude: 34.05, longitude: -118.24 },
+    'Asia/Dubai': { latitude: 25.2, longitude: 55.27 },
+    'Asia/Bangkok': { latitude: 13.75, longitude: 100.5 },
+    'Asia/Tokyo': { latitude: 35.68, longitude: 139.69 }
+  };
+  // Asia/Jerusalem and every unlisted timezone resolve to the globe's own
+  // origin coordinates (Tel Aviv on the homepage), so the default stays local.
 
   function shouldReduceMotion() {
     return window.matchMedia('(prefers-reduced-motion: reduce)').matches || navigator.connection?.saveData === true;
@@ -439,6 +464,9 @@
       suppressPinActivationUntil: 0,
       lastMarkerSyncAt: 0,
       lastTap: null,
+      lastMarkerTap: null,
+      lastPointerHold: null,
+      markerBypass: false,
       suppressDiveUntil: 0,
       previewTimer: 0,
       idleSpin: { lastTick: 0, resumeAt: 0, resumeTimer: 0 },
@@ -460,6 +488,59 @@
       longitude: Number(root.dataset.originLongitude || 34.8708)
     };
 
+    // --- Arrival opening (theme 1.28.0) ------------------------------------
+    // Only the globe carrying data-globe-arrival="true" (the homepage hero)
+    // takes part; map, destination, and money-page globes never enter here.
+    const arrivalGlobe = root.dataset.globeArrival === 'true';
+
+    function resolveArrivalAnchor() {
+      let timeZone = '';
+      try {
+        timeZone = String(Intl.DateTimeFormat().resolvedOptions().timeZone || '');
+      } catch (error) {
+        timeZone = '';
+      }
+      const anchor = ARRIVAL_TIMEZONE_ANCHORS[timeZone];
+      if (anchor && Number.isFinite(anchor.latitude) && Number.isFinite(anchor.longitude)) return anchor;
+      return { latitude: origin.latitude, longitude: origin.longitude };
+    }
+
+    function arrivalAlreadyPlayed() {
+      try {
+        return window.sessionStorage.getItem(ARRIVAL_SESSION_KEY) === 'true';
+      } catch (error) {
+        return false;
+      }
+    }
+
+    function markArrivalPlayed() {
+      try {
+        window.sessionStorage.setItem(ARRIVAL_SESSION_KEY, 'true');
+      } catch (error) {
+        // Storage unavailable (private mode): the flight simply replays.
+      }
+    }
+
+    const arrivalAnchor = arrivalGlobe ? resolveArrivalAnchor() : null;
+    if (arrivalAnchor) {
+      // Every arrival load parks on the anchor; the fly-in itself plays only
+      // once per session and only when motion is allowed.
+      state.yaw = normalizeAngle(-arrivalAnchor.longitude * DEG);
+      state.pitch = clamp(arrivalAnchor.latitude * DEG, -70 * DEG, 70 * DEG);
+    }
+
+    function beginArrivalFlight() {
+      if (!arrivalAnchor || state.failed || root.classList.contains('globe-3d-unavailable')) return;
+      if (shouldReduceMotion() || arrivalAlreadyPlayed()) return;
+      if (state.pointer || state.animation) return;
+      markArrivalPlayed();
+      const anchorYaw = -arrivalAnchor.longitude * DEG;
+      const anchorPitch = clamp(arrivalAnchor.latitude * DEG, -70 * DEG, 70 * DEG);
+      state.yaw = normalizeAngle(anchorYaw + ARRIVAL_START_WEST_OFFSET);
+      state.distance = clamp(ARRIVAL_START_DISTANCE, 2.25, 4.8);
+      animateTo(anchorYaw, anchorPitch, 3.15, ARRIVAL_DURATION_MS);
+    }
+
     gl.enable(gl.DEPTH_TEST);
     gl.enable(gl.CULL_FACE);
     gl.cullFace(gl.BACK);
@@ -480,6 +561,7 @@
       state.pointer = null;
       stopTour(true);
       cancelPendingPreview();
+      hideArrivalCard();
       if (state.idleSpin.resumeTimer) window.clearTimeout(state.idleSpin.resumeTimer);
       state.idleSpin.resumeTimer = 0;
       if (state.frame) window.cancelAnimationFrame(state.frame);
@@ -654,6 +736,7 @@
           selectionMarker.style.setProperty('--globe-depth', String(clamp(0.88 + selection.depth * 0.14, 0.84, 1.04)));
         }
       }
+      positionArrivalCard(width, height);
       updateRoute(width, height, projected);
     }
 
@@ -907,6 +990,28 @@
       if (!state.previewTimer) return;
       window.clearTimeout(state.previewTimer);
       state.previewTimer = 0;
+    }
+
+    // Theme 1.28.0: one deferred-selection slot. Arrival-globe marker taps
+    // and the lone free-point preview share state.previewTimer, so a new
+    // pointer gesture or a dive cancels whichever selection is pending
+    // through the same cancelPendingPreview() choke point.
+    function deferSelection(run) {
+      cancelPendingPreview();
+      state.previewTimer = window.setTimeout(() => {
+        state.previewTimer = 0;
+        run();
+      }, TAP_PREVIEW_DELAY_MS);
+    }
+
+    // A touch held for the long-press window is an explicit selection; the
+    // click that follows it must stay immediate and must never dive.
+    function recentTouchHold() {
+      const hold = state.lastPointerHold;
+      return Boolean(hold
+        && hold.type === 'touch'
+        && hold.heldMs >= LONG_PRESS_SELECT_MS
+        && performance.now() - hold.at <= 600);
     }
 
     // Explore-the-region flight (theme 1.25.0): the services panel can fly the
@@ -1203,7 +1308,10 @@
       state.selectedHub = '';
       state.animation = null;
       suspendTour(IDLE_SPIN_RESUME_DELAY_MS);
-      if (!preservePoint) state.selectedPoint = null;
+      if (!preservePoint) {
+        state.selectedPoint = null;
+        hideArrivalCard();
+      }
       markers().forEach(marker => {
         marker.classList.remove('is-active');
         marker.setAttribute('aria-pressed', 'false');
@@ -1217,6 +1325,142 @@
         selectionMarker.classList.remove('is-new');
       }
       if (routePath) routePath.setAttribute('d', '');
+      requestRender();
+    }
+
+    // --- Arrival selection card (theme 1.28.0) -----------------------------
+    // Gated to the homepage arrival globe: a compact glass card floats near
+    // the projected selection point with the place name and the two existing
+    // follow-up surfaces (the full map and the details panel below the
+    // globe). The below-globe publications that feed the dive store are
+    // untouched; this card is purely additive.
+    let arrivalCard = null;
+    let arrivalCardParts = null;
+    let arrivalCardOpen = false;
+    let arrivalCardPoint = null;
+
+    function hideArrivalCard(returnFocus = false) {
+      arrivalCardOpen = false;
+      arrivalCardPoint = null;
+      if (arrivalCard) arrivalCard.hidden = true;
+      if (returnFocus && typeof root.focus === 'function') root.focus();
+    }
+
+    function ensureArrivalCard() {
+      if (arrivalCard) return arrivalCard;
+      const card = document.createElement('div');
+      card.className = 'globe-arrival-card';
+      card.setAttribute('data-globe-arrival-card', 'true');
+      card.setAttribute('role', 'group');
+      card.setAttribute('aria-label', 'הנקודה שנבחרה על הגלובוס');
+      card.setAttribute('tabindex', '-1');
+      card.hidden = true;
+      const close = document.createElement('button');
+      close.type = 'button';
+      close.className = 'globe-arrival-card-close';
+      close.setAttribute('aria-label', 'סגירת כרטיס הבחירה');
+      close.textContent = '×';
+      close.addEventListener('click', () => hideArrivalCard(true));
+      const title = document.createElement('strong');
+      const subtitle = document.createElement('small');
+      const links = document.createElement('div');
+      links.className = 'globe-arrival-card-links';
+      const mapLink = document.createElement('a');
+      mapLink.textContent = 'פתיחה במפה המלאה';
+      const detailsLink = document.createElement('a');
+      detailsLink.setAttribute('href', '#home-selection-details');
+      detailsLink.textContent = 'לפרטים מתחת לגלובוס';
+      links.append(mapLink, detailsLink);
+      card.append(close, title, subtitle, links);
+      // The card is a UI surface, not Earth: its gestures stay off the
+      // camera, the tap previews, and the dive detector.
+      ['pointerdown', 'pointerup', 'dblclick'].forEach(type => {
+        card.addEventListener(type, event => event.stopPropagation());
+      });
+      card.addEventListener('keydown', event => {
+        if (event.key !== 'Escape') return;
+        event.stopPropagation();
+        hideArrivalCard(true);
+      });
+      root.append(card);
+      arrivalCard = card;
+      arrivalCardParts = { title, subtitle, mapLink, detailsLink };
+      return card;
+    }
+
+    function positionArrivalCard(width, height) {
+      if (!arrivalCard || !arrivalCardOpen || !arrivalCardPoint) return;
+      const projectedCard = projectedPoint(arrivalCardPoint.latitude, arrivalCardPoint.longitude, state, width, height);
+      if (!projectedCard.visible) {
+        arrivalCard.hidden = true;
+        return;
+      }
+      arrivalCard.hidden = false;
+      const cardWidth = arrivalCard.offsetWidth || 236;
+      const cardHeight = arrivalCard.offsetHeight || 138;
+      const halfWidth = cardWidth / 2;
+      const halfHeight = cardHeight / 2;
+      const x = clamp(projectedCard.x, halfWidth + 6, Math.max(halfWidth + 6, width - halfWidth - 6));
+      const y = clamp(projectedCard.y - halfHeight - 24, halfHeight + 6, Math.max(halfHeight + 6, height - halfHeight - 6));
+      arrivalCard.style.left = `${x}px`;
+      arrivalCard.style.top = `${y}px`;
+    }
+
+    function arrivalCardMapHref(detail) {
+      const tools = root.parentElement ? root.parentElement.querySelector('.globe-tools a[href]') : null;
+      const base = tools ? tools.getAttribute('href') : '/travel-map/';
+      try {
+        const url = new URL(base, window.location.href);
+        url.searchParams.set('latitude', String(detail.latitude));
+        url.searchParams.set('longitude', String(detail.longitude));
+        url.searchParams.set('selection_kind', detail.selectionKind === 'destination' ? 'destination' : 'map_point');
+        if (detail.selectionKind === 'destination' && detail.nearestDestination) {
+          url.searchParams.set('selection_destination', detail.nearestDestination);
+          url.searchParams.set('destination', detail.nearestDestination);
+        }
+        return url.toString();
+      } catch (error) {
+        return base;
+      }
+    }
+
+    function renderArrivalCard(detail = {}) {
+      const latitude = Number(detail.latitude);
+      const longitude = Number(detail.longitude);
+      if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
+      const card = ensureArrivalCard();
+      const parts = arrivalCardParts;
+      let title = 'נקודה על הגלובוס';
+      let subtitle = '';
+      if (detail.selectionKind === 'destination' && detail.nearestLabel) {
+        title = String(detail.nearestLabel);
+        subtitle = 'היעד נבחר. הפרטים המלאים מוצגים מתחת לגלובוס.';
+      } else if (detail.selectionKind === 'exploration_hub' && detail.hubCity) {
+        title = detail.hubCountry ? `${detail.hubCity}, ${detail.hubCountry}` : String(detail.hubCity);
+        subtitle = 'האזור נבחר. כל חלקי החופשה נפתחו מתחת לגלובוס.';
+      }
+      parts.title.textContent = title;
+      if (subtitle) {
+        parts.subtitle.textContent = subtitle;
+      } else {
+        parts.subtitle.textContent = '';
+        const coordinates = document.createElement('bdi');
+        coordinates.setAttribute('dir', 'ltr');
+        coordinates.textContent = `${latitude.toFixed(2)}°, ${longitude.toFixed(2)}°`;
+        parts.subtitle.append('הנקודה נשמרה בתכנון ', coordinates);
+      }
+      parts.mapLink.setAttribute('href', arrivalCardMapHref(detail));
+      arrivalCardPoint = { latitude, longitude };
+      arrivalCardOpen = true;
+      card.hidden = false;
+      card.classList.remove('is-new');
+      if (!shouldReduceMotion()) {
+        void card.offsetWidth;
+        card.classList.add('is-new');
+      }
+      const rectangle = root.getBoundingClientRect();
+      positionArrivalCard(rectangle.width, rectangle.height);
+      if (detail.inputType === 'keyboard' && typeof card.focus === 'function') card.focus();
       requestRender();
     }
 
@@ -1246,6 +1490,11 @@
       activateStaticFallback(new Error('Earth texture failed to load.'));
     }, { once: true });
     image.src = root.dataset.texture;
+
+    if (arrivalGlobe) {
+      root.addEventListener('travelglobe:ready', beginArrivalFlight, { once: true });
+      root.addEventListener('travelglobe:select', event => renderArrivalCard(event.detail || {}));
+    }
 
     markers().forEach(marker => {
       marker.addEventListener('focus', requestRender);
@@ -1283,6 +1532,38 @@
       if (performance.now() < state.suppressPinActivationUntil) {
         event.preventDefault();
         event.stopImmediatePropagation();
+        return;
+      }
+      // Arrival globe (theme 1.28.0): pointer marker taps wait out the
+      // double-tap window through the shared deferred-selection slot, so a
+      // second click inside the window cancels the pending selection and
+      // dives instead. Keyboard activations, the deferred replay, and the
+      // click after a touch long-press stay immediate. All other globes keep
+      // the synchronous marker contract.
+      if (arrivalGlobe && !state.markerBypass && event.detail !== 0 && !recentTouchHold()) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        const now = performance.now();
+        const previousTap = state.lastMarkerTap;
+        state.lastMarkerTap = { at: now, x: event.clientX, y: event.clientY };
+        if (previousTap
+          && now - previousTap.at <= DOUBLE_TAP_WINDOW_MS
+          && Math.hypot(event.clientX - previousTap.x, event.clientY - previousTap.y) <= DOUBLE_TAP_RADIUS_PX) {
+          state.lastMarkerTap = null;
+          cancelPendingPreview();
+          diveToScreenPoint(event.clientX, event.clientY);
+          return;
+        }
+        const marker = hub || pin;
+        deferSelection(() => {
+          state.markerBypass = true;
+          try {
+            if (hub) selectHubMarker(hub, 'pointer');
+            else if (typeof marker.click === 'function') marker.click();
+          } finally {
+            state.markerBypass = false;
+          }
+        });
         return;
       }
       if (hub) {
@@ -1334,6 +1615,9 @@
       if (root.hasPointerCapture(event.pointerId)) root.releasePointerCapture(event.pointerId);
       if (pointer.moved && pointer.startedOnPin) state.suppressPinActivationUntil = performance.now() + 500;
       if (pointer.moved && pointer.startedOnHub) state.suppressPinActivationUntil = performance.now() + 500;
+      state.lastPointerHold = pointer.moved
+        ? null
+        : { type: pointer.type, heldMs: performance.now() - pointer.startedAt, at: performance.now() };
       state.idleSpin.resumeAt = performance.now() + IDLE_SPIN_RESUME_DELAY_MS;
       scheduleIdleSpinResume();
       if (event.type === 'pointerup' && !pointer.moved && !pointer.startedOnPin && !pointer.startedOnHub) {
@@ -1354,6 +1638,15 @@
           // the dive publishes the gesture's only selection.
           return;
         }
+      }
+      // Touch long-press (theme 1.28.0): a stationary hold past the window is
+      // an explicit selection. It publishes immediately, skips the deferred
+      // preview, and can never be the second tap of a dive gesture.
+      if (event.type === 'pointerup' && !pointer.moved && !pointer.startedOnPin && !pointer.startedOnHub
+        && pointer.type === 'touch' && performance.now() - pointer.startedAt >= LONG_PRESS_SELECT_MS) {
+        state.lastTap = null;
+        selectScreenPoint(event.clientX, event.clientY, 'pointer');
+        return;
       }
       if (event.type === 'pointerup' && !pointer.moved && !pointer.startedOnPin && !pointer.startedOnHub && performance.now() - pointer.startedAt < 700) {
         const { clientX, clientY } = event;
