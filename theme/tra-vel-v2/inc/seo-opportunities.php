@@ -13,6 +13,30 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Single source of truth for every Earth owner the opportunity system knows.
+ *
+ * The registry validator, runtime allowlist, Hebrew naming, airport routing
+ * and contextual globe all derive from this one map, so adding a destination
+ * is one edit instead of four copies that can drift apart.
+ *
+ * @return array<string,array{name:string,airport:string,latitude:string,longitude:string}>
+ */
+function tra_vel_v2_seo_opportunity_destinations() {
+	return array(
+		'budapest' => array( 'name' => 'בודפשט', 'airport' => 'BUD', 'latitude' => '47.4979', 'longitude' => '19.0402' ),
+		'prague'   => array( 'name' => 'פראג', 'airport' => 'PRG', 'latitude' => '50.0755', 'longitude' => '14.4378' ),
+		'vienna'   => array( 'name' => 'וינה', 'airport' => 'VIE', 'latitude' => '48.2082', 'longitude' => '16.3738' ),
+		'athens'   => array( 'name' => 'אתונה', 'airport' => 'ATH', 'latitude' => '37.9838', 'longitude' => '23.7275' ),
+		'dubai'    => array( 'name' => 'דובאי', 'airport' => 'DXB', 'latitude' => '25.2048', 'longitude' => '55.2708' ),
+		'bangkok'  => array( 'name' => 'בנגקוק', 'airport' => 'BKK', 'latitude' => '13.7563', 'longitude' => '100.5018' ),
+		'tokyo'    => array( 'name' => 'טוקיו', 'airport' => '', 'latitude' => '35.6762', 'longitude' => '139.6503' ),
+		'lisbon'   => array( 'name' => 'ליסבון', 'airport' => 'LIS', 'latitude' => '38.7223', 'longitude' => '-9.1393' ),
+		'larnaca'  => array( 'name' => 'לרנקה', 'airport' => 'LCA', 'latitude' => '34.9003', 'longitude' => '33.6232' ),
+		'crete'    => array( 'name' => 'כרתים', 'airport' => 'HER', 'latitude' => '35.3387', 'longitude' => '25.1442' ),
+	);
+}
+
 /** Return the authoritative registry path for this installation. */
 function tra_vel_v2_seo_opportunity_registry_path() {
 	$bundled = TRA_VEL_V2_PATH . '/content/seo/content-opportunity-registry.json';
@@ -78,7 +102,7 @@ function tra_vel_v2_load_seo_opportunity_registry( $path = '' ) {
 	$allowed_statuses = array( 'live', 'content-ready', 'backlog' );
 	$allowed_map_states = (array) apply_filters(
 		'tra_vel_v2_seo_opportunity_map_states',
-		array( 'budapest', 'prague', 'vienna', 'athens', 'dubai', 'bangkok', 'tokyo', 'lisbon' )
+		array_keys( tra_vel_v2_seo_opportunity_destinations() )
 	);
 	$ids = array();
 	$paths = array();
@@ -377,17 +401,8 @@ function tra_vel_v2_seo_opportunity_content_metrics( $content ) {
 
 /** Map an Earth owner to its public Hebrew destination name. */
 function tra_vel_v2_seo_opportunity_hebrew_name( $map_state ) {
-	$names = array(
-		'budapest' => 'בודפשט',
-		'prague'   => 'פראג',
-		'vienna'   => 'וינה',
-		'athens'   => 'אתונה',
-		'dubai'    => 'דובאי',
-		'bangkok'  => 'בנגקוק',
-		'tokyo'    => 'טוקיו',
-		'lisbon'   => 'ליסבון',
-	);
-	return $names[ sanitize_key( (string) $map_state ) ] ?? '';
+	$destinations = tra_vel_v2_seo_opportunity_destinations();
+	return $destinations[ sanitize_key( (string) $map_state ) ]['name'] ?? '';
 }
 
 /**
@@ -426,16 +441,8 @@ function tra_vel_v2_seo_opportunity_public_title( $post_id = 0 ) {
 
 /** Map an Earth owner to the airport code consumed by commercial hubs. */
 function tra_vel_v2_seo_opportunity_airport_code( $map_state ) {
-	$codes = array(
-		'budapest' => 'BUD',
-		'prague'   => 'PRG',
-		'vienna'   => 'VIE',
-		'athens'   => 'ATH',
-		'dubai'    => 'DXB',
-		'bangkok'  => 'BKK',
-		'lisbon'   => 'LIS',
-	);
-	return $codes[ $map_state ] ?? '';
+	$destinations = tra_vel_v2_seo_opportunity_destinations();
+	return $destinations[ sanitize_key( (string) $map_state ) ]['airport'] ?? '';
 }
 
 /** Verify that a transactional child leads to a published comparison surface. */
@@ -525,18 +532,15 @@ function tra_vel_v2_seo_opportunity_breadcrumb_items( $entry, $post_id = 0 ) { /
 
 /** Coordinates consumed by the compact contextual Earth. */
 function tra_vel_v2_seo_opportunity_coordinates( $map_state ) {
-	$points = array(
-		'budapest' => array( 'latitude' => '47.4979', 'longitude' => '19.0402' ),
-		'prague'   => array( 'latitude' => '50.0755', 'longitude' => '14.4378' ),
-		'vienna'   => array( 'latitude' => '48.2082', 'longitude' => '16.3738' ),
-		'athens'   => array( 'latitude' => '37.9838', 'longitude' => '23.7275' ),
-		'dubai'    => array( 'latitude' => '25.2048', 'longitude' => '55.2708' ),
-		'bangkok'  => array( 'latitude' => '13.7563', 'longitude' => '100.5018' ),
-		'tokyo'    => array( 'latitude' => '35.6762', 'longitude' => '139.6503' ),
-		'lisbon'   => array( 'latitude' => '38.7223', 'longitude' => '-9.1393' ),
+	$destinations = tra_vel_v2_seo_opportunity_destinations();
+	$destination = $destinations[ sanitize_key( (string) $map_state ) ] ?? null;
+	if ( ! is_array( $destination ) ) {
+		return null;
+	}
+	return array(
+		'latitude'  => $destination['latitude'],
+		'longitude' => $destination['longitude'],
 	);
-	$map_state = sanitize_key( (string) $map_state );
-	return $points[ $map_state ] ?? null;
 }
 
 /**
