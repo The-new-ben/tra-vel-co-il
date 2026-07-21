@@ -3825,3 +3825,23 @@ label[data-party-hidden="true"] { display: none !important; }
   .voice-dock-button::after,.voice-sheet-mic.is-listening :is(i,svg) { animation: none !important; }
   .voice-sheet { transition: none !important; }
 }
+
+/* Agent theater (theme 1.29.0): three staged milestones near the planner
+   composer. Stages light only on real signals from the one in-flight
+   request; an error hides the strip entirely. */
+.voice-theater { margin-top: 14px; padding: 13px 15px; border: 1px solid rgba(255,255,255,.14); border-radius: 17px; background: rgba(255,255,255,.05); }
+.voice-theater[hidden] { display: none !important; }
+.voice-theater ol { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 8px; margin: 0; padding: 0; list-style: none; }
+.voice-theater li { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 8px 10px; border: 1px solid rgba(255,255,255,.12); border-radius: 12px; color: #8ea4aa; background: rgba(255,255,255,.04); font-size: 12px; font-weight: 800; opacity: .62; transition: opacity var(--motion-fast) var(--ease-standard), color var(--motion-fast) var(--ease-standard), border-color var(--motion-fast) var(--ease-standard); }
+.voice-theater li :is(i,svg) { width: 17px; height: 17px; flex: 0 0 auto; }
+.voice-theater li[data-state="active"] { color: #f2fbfd; border-color: rgba(217,255,89,.45); background: rgba(217,255,89,.09); opacity: 1; }
+.voice-theater li[data-state="active"] :is(i,svg) { color: var(--lime); animation: voiceTheaterWorking var(--motion-working) ease-in-out infinite alternate; }
+.voice-theater li[data-state="complete"] { color: #d7ffb0; border-color: rgba(56,214,149,.4); background: rgba(56,214,149,.08); opacity: 1; }
+.voice-theater li[data-state="complete"] :is(i,svg) { color: var(--green); }
+@keyframes voiceTheaterWorking { from { transform: scale(1); opacity: .75; } to { transform: scale(1.14); opacity: 1; } }
+@media (max-width: 640px) {
+  .voice-theater ol { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .voice-theater li,.voice-theater li :is(i,svg) { animation: none !important; transition: none !important; }
+}
