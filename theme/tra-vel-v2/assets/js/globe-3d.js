@@ -1338,10 +1338,33 @@
     let arrivalCardParts = null;
     let arrivalCardOpen = false;
     let arrivalCardPoint = null;
+    let arrivalCardEscapeBound = false;
+
+    // Theme 1.29.0 fold-in: Escape closes the arrival card even while focus
+    // sits outside it. The document listener exists only while a card is
+    // open, never consumes an event another surface already claimed, and is
+    // removed the moment the card hides.
+    function handleArrivalCardDocumentKeydown(event) {
+      if (event.key !== 'Escape' || event.defaultPrevented || !arrivalCardOpen) return;
+      hideArrivalCard(true);
+    }
+
+    function bindArrivalCardEscape() {
+      if (arrivalCardEscapeBound || typeof document.removeEventListener !== 'function') return;
+      document.addEventListener('keydown', handleArrivalCardDocumentKeydown);
+      arrivalCardEscapeBound = true;
+    }
+
+    function unbindArrivalCardEscape() {
+      if (!arrivalCardEscapeBound) return;
+      document.removeEventListener('keydown', handleArrivalCardDocumentKeydown);
+      arrivalCardEscapeBound = false;
+    }
 
     function hideArrivalCard(returnFocus = false) {
       arrivalCardOpen = false;
       arrivalCardPoint = null;
+      unbindArrivalCardEscape();
       if (arrivalCard) arrivalCard.hidden = true;
       if (returnFocus && typeof root.focus === 'function') root.focus();
     }
@@ -1452,6 +1475,7 @@
       parts.mapLink.setAttribute('href', arrivalCardMapHref(detail));
       arrivalCardPoint = { latitude, longitude };
       arrivalCardOpen = true;
+      bindArrivalCardEscape();
       card.hidden = false;
       card.classList.remove('is-new');
       if (!shouldReduceMotion()) {
