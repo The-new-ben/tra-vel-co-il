@@ -65,6 +65,42 @@
       "monetization": ["activities", "packages", "insurance", "flights"]
     },
     {
+      "id": "cruises-hub",
+      "canonicalPath": "/cruises/",
+      "pageType": "commercial-hub",
+      "primaryIntent": "חופשות שיט וקרוזים מנמלי העולם",
+      "cluster": "cruises",
+      "parentPath": "/",
+      "mapState": null,
+      "status": "live",
+      "conversionAction": "בחרו נמל יציאה ואזור שיט ותכננו סביבם הפלגה",
+      "monetization": ["packages", "flights", "hotels", "transfers", "insurance"]
+    },
+    {
+      "id": "family-hub",
+      "canonicalPath": "/family-tools/",
+      "pageType": "commercial-hub",
+      "primaryIntent": "חופשה משפחתית וכלים לתכנון עם ילדים",
+      "cluster": "family",
+      "parentPath": "/",
+      "mapState": null,
+      "status": "live",
+      "conversionAction": "התאימו יעד לגיל הילדים ולאורך הטיסה",
+      "monetization": ["packages", "hotels", "flights", "activities", "insurance"]
+    },
+    {
+      "id": "conventions-hub",
+      "canonicalPath": "/conventions/",
+      "pageType": "commercial-hub",
+      "primaryIntent": "נסיעות עסקים וכנסים בערי העולם",
+      "cluster": "conventions",
+      "parentPath": "/",
+      "mapState": null,
+      "status": "live",
+      "conversionAction": "בחרו עיר כנסים ומלון במרחק נכון מהמתחם",
+      "monetization": ["flights", "hotels", "esim", "transfers", "insurance"]
+    },
+    {
       "id": "last-minute-hub",
       "canonicalPath": "/last-minute/",
       "pageType": "commercial-hub",
