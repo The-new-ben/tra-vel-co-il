@@ -3913,3 +3913,32 @@ label[data-party-hidden="true"] { display: none !important; }
 @media (prefers-reduced-motion: reduce) {
   .pillar-site-card,.pillar-globe-panel .globe-arrival-card,.pillar-globe-panel .globe-arrival-card * { animation: none !important; transition: none !important; }
 }
+
+/* Next-action guidance (theme 1.32.0): one shared beacon, planner refinement
+   chips, the intent-memory hint, and the quiet planner completion status.
+   The beacon paints with outline and box-shadow only, so nothing moves,
+   nothing is covered, and no layout shifts; reduced motion swaps the pulse
+   for a static ring. */
+.next-action-beacon { outline: 2px solid var(--lime-2); outline-offset: 2px; box-shadow: 0 0 0 0 rgba(191,233,52,.55); animation: nextActionPulse 1.7s var(--ease-standard) infinite; }
+.next-action-beacon-static { animation: none; box-shadow: 0 0 0 6px rgba(191,233,52,.26); }
+@keyframes nextActionPulse { 0% { box-shadow: 0 0 0 0 rgba(191,233,52,.55); } 72% { box-shadow: 0 0 0 13px rgba(191,233,52,0); } 100% { box-shadow: 0 0 0 0 rgba(191,233,52,0); } }
+.next-action-live { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.planner-chips { display: grid; gap: 10px; }
+.planner-chips[hidden] { display: none !important; }
+.planner-chip-group { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; }
+.planner-chip-group > small { flex: 0 0 auto; color: var(--muted); font-size: 12px; font-weight: 800; }
+.planner-chip-group button { min-height: 44px; padding: 8px 13px; border: 1px solid transparent; border-radius: 99px; background: #eff3f1; color: #4b6268; cursor: pointer; font: inherit; font-size: 13.5px; font-weight: 700; }
+.planner-chip-group button:hover { border-color: #99b43a; color: #4a6700; }
+.planner-chip-group button:focus-visible { outline: 3px solid var(--lime-2); outline-offset: 2px; }
+.planner-chip-group button.is-active { color: #456200; background: #e8ffc0; border-color: #98b83c; }
+.planner-chip-group button.is-remembered:not(.is-active) { border-color: #c9d99f; background: #f6ffdf; }
+.planner-intent-hint { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; margin: 0; color: #45595f; font-size: 12.5px; font-weight: 700; }
+.planner-intent-hint[hidden] { display: none !important; }
+.planner-intent-hint button { min-height: 44px; padding: 6px 12px; border: 1px solid var(--line); border-radius: 99px; background: #fff; color: #45595f; cursor: pointer; font: inherit; font-size: 12px; font-weight: 800; }
+.planner-intent-hint button:focus-visible { outline: 3px solid var(--lime-2); outline-offset: 2px; }
+.planner-autofill-status { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0; padding: 10px 13px; border: 1px solid #bfd08a; border-radius: 13px; background: #f6ffdf; color: #344408; font-size: 12.5px; font-weight: 700; }
+.planner-autofill-status[hidden] { display: none !important; }
+.planner-autofill-status b { font-weight: 900; }
+@media (prefers-reduced-motion: reduce) {
+  .next-action-beacon { animation: none !important; box-shadow: 0 0 0 6px rgba(191,233,52,.26); }
+}

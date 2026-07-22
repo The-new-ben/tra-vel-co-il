@@ -41,6 +41,15 @@ Sequencing note: stages of item 3 that require real prices depend on the Release
 affiliate data feeds; until those land, autopilot completes plans with honest
 approximations from item 6 and routes closure through the assisted path.
 
+Shipped v1 (theme 1.32.0): the guided next-action beacon (globe selection card,
+home search dock steps, settled planner responses), planner refinement chips for
+party, month and budget, device-local intent memory (traVelIntent) with a visible
+reset, and the scoped planner silent completion: after six idle seconds an empty
+composer fills stage by stage with a visible countdown, any touch stops it for
+the page view, and it only marks the existing submit button. It never submits,
+never prices, and never contacts a supplier. Items 4, 5, 6, 8 and the priced
+end-to-end stage of item 3 remain gated on Release 2 data.
+
 Source: owner strategy document (2026-07-21), adapted against the verified live state
 (theme 1.27.1, agent-core 0.9.2, Travelpayouts project 552866 active, 11 indexable hubs,
 /packages/budapest/ money page live). This file is the operating plan of record; update it
