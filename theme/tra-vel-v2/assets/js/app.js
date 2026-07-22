@@ -10997,6 +10997,7 @@ function renderAgentRun(root, run, focusWorkbench = false) {
   if (!run || typeof run !== 'object' || typeof run.run_id !== 'string') {
     throw new Error('לא התקבלה תוכנית פרטית תקינה.');
   }
+  const previousAgentRunStatus = agentRuntime.status;
   agentRuntime.runId = run.run_id;
   agentRuntime.status = String(run.status || 'created');
   agentRuntime.requestId = String(run.trip_request?.request_id || '');
@@ -11015,6 +11016,11 @@ function renderAgentRun(root, run, focusWorkbench = false) {
     setAgentWorkbenchError(root);
   }
   if (focusWorkbench) agentWorkbenchRoot(root).querySelector('#agent-run-title')?.focus({preventScroll: true});
+  // Theme 1.32.0: once the response settles (no more polling) the shared
+  // next-action beacon marks the one control that moves the plan forward.
+  if (agentRuntime.status !== previousAgentRunStatus && !shouldPollAgentRun(agentRuntime.status)) {
+    agentRunSettledNextAction(root);
+  }
 }
 
 function agentErrorMessage(error) {
@@ -12905,6 +12911,312 @@ function initMapPlanScopeFocus() {
   window.setTimeout(() => anchor.scrollIntoView({ behavior: preferredScrollBehavior(), block: 'start' }), 80);
 }
 
+// --- Next-action guidance (theme 1.32.0) -----------------------------------
+// assets/js/next-action.js ships the shared beacon, the traVelIntent device
+// memory, and the reversible chip text helpers; it loads only on globe pages
+// and on the planner. This section wires those capabilities into the real
+// moments: the globe arrival/pillar selection card, the homepage search dock
+// commits, the planner refinement chips, and the planner idle completion with
+// its visible countdown. Nothing in this section submits a run or contacts a
+// supplier, and the beacon never scrolls the page or moves focus.
+const plannerChipGroups = [
+  ['party', 'מי נוסע?', [
+    ['couple', 'זוג', 'זוג'],
+    ['couple_2', 'זוג + 2 ילדים', 'זוג עם 2 ילדים'],
+    ['family', 'משפחה גדולה', 'משפחה גדולה'],
+    ['friends', 'חברים', 'קבוצת חברים']
+  ]],
+  ['month', 'מתי?', [
+    ['this_month', 'החודש', 'יציאה החודש'],
+    ['next_month', 'חודש הבא', 'יציאה בחודש הבא'],
+    ['flex', 'גמיש', 'בתאריכים גמישים']
+  ]],
+  ['budget', 'תקציב?', [
+    ['b3000', 'עד 3,000₪ לאדם', 'תקציב עד 3,000₪ לאדם'],
+    ['b5000', 'עד 5,000₪ לאדם', 'תקציב עד 5,000₪ לאדם'],
+    ['treat', 'פנקו אותי', 'מחפשים חופשה מפנקת']
+  ]]
+];
+const plannerIdleFillDelayMs = 6000;
+const plannerIdleFillTickMs = 400; // Three countdown ticks form each 1.2s stage gap.
+
+function nextActionModule() {
+  return window.traVelNextAction || null;
+}
+
+// The planner composer arrives with a server example that starts with
+// "למשל". Untouched, that example counts as empty, so chips and the idle
+// completion replace it; carried prompts (voice arrivals, map handoffs, the
+// surprise flow) never count as empty and are never touched.
+function plannerComposerUntouchedExample(box) {
+  const value = String(box?.value || '').trim();
+  const initial = String(box?.defaultValue || '').trim();
+  return value !== '' && value === initial && initial.indexOf('למשל') === 0;
+}
+
+function plannerComposerIsEmpty(box) {
+  return String(box?.value || '').trim() === '' || plannerComposerUntouchedExample(box);
+}
+
+function initNextActionBeacons() {
+  const guide = nextActionModule();
+  if (!guide) return;
+
+  // (a) A published globe selection: globe-3d.js renders the arrival or
+  // pillar card before this bubbling listener runs, so the card's primary
+  // link (the full map) is the next step.
+  document.addEventListener('travelglobe:select', event => {
+    const globe = event.target;
+    if (!globe || typeof globe.querySelector !== 'function') return;
+    const card = globe.querySelector('[data-globe-arrival-card]');
+    if (!card || card.hidden) return;
+    guide.show(card.querySelector('.globe-arrival-card-links a'));
+  });
+
+  // (b) Homepage search dock: the existing pickers already announce every
+  // commit with bubbled input/change events, so each committed choice marks
+  // the next control and stores a clean preference when the values map to one.
+  const form = document.querySelector('[data-home-search]');
+  if (!form) return;
+  form.addEventListener('change', event => {
+    const name = String(event.target?.name || '');
+    if (name === 'destination') {
+      guide.show(form.querySelector('[data-home-departure]'), 'בחירת תאריכים');
+      return;
+    }
+    if (name === 'departure_date' || name === 'return_date') {
+      const departure = form.querySelector('[data-home-departure]');
+      const returnField = form.querySelector('[data-home-return]');
+      const isoPattern = /^\d{4}-\d{2}-\d{2}$/;
+      if (!isoPattern.test(String(departure?.value || '')) || !isoPattern.test(String(returnField?.value || ''))) return;
+      const flexibility = form.querySelector('[data-trip-flexibility]');
+      if (flexibility && flexibility.disabled === false && String(flexibility.value || '') !== '') {
+        guide.writeIntentMemory({ month: 'flex' });
+      } else {
+        const now = new Date();
+        const monthDifference = Number(departure.value.slice(0, 4)) * 12 + Number(departure.value.slice(5, 7)) - 1 - (now.getFullYear() * 12 + now.getMonth());
+        if (monthDifference === 0 || monthDifference === 1) guide.writeIntentMemory({ month: monthDifference === 0 ? 'this_month' : 'next_month' });
+      }
+      guide.show(form.querySelector('[data-party-pill]') || form.querySelector('[data-home-search-submit]'), 'בחירת הנוסעים');
+      return;
+    }
+    if (['adults', 'children', 'rooms'].includes(name)) {
+      const adults = Number(form.querySelector('[data-home-adults]')?.value);
+      const children = Number(form.querySelector('[data-home-children]')?.value);
+      if (Number.isInteger(adults) && Number.isInteger(children)) {
+        if (adults === 2 && children === 0) guide.writeIntentMemory({ party: 'couple' });
+        else if (adults === 2 && children === 2) guide.writeIntentMemory({ party: 'couple_2' });
+        else if (adults + children >= 5) guide.writeIntentMemory({ party: 'family' });
+        else if (adults >= 3 && children === 0) guide.writeIntentMemory({ party: 'friends' });
+      }
+      guide.show(form.querySelector('[data-home-search-submit]'));
+    }
+  });
+}
+
+function initPlannerRefinementChips() {
+  const guide = nextActionModule();
+  const form = document.querySelector('[data-agent-entry-form]');
+  const box = form?.querySelector('[data-agent-prompt]');
+  const submit = form?.querySelector('[data-agent-submit]');
+  if (!guide || !form || !box || form.dataset.nextActionChips === 'true') return;
+  form.dataset.nextActionChips = 'true';
+
+  const memory = guide.readIntentMemory();
+  const chips = {};
+  const selected = {};
+  const host = document.createElement('div');
+  host.className = 'planner-chips';
+  host.setAttribute('data-planner-chips', 'true');
+  host.setAttribute('role', 'group');
+  host.setAttribute('aria-label', 'השלמה מהירה של פרטי החופשה');
+
+  if (memory && plannerComposerIsEmpty(box)) {
+    const hintRow = document.createElement('p');
+    hintRow.className = 'planner-intent-hint';
+    hintRow.setAttribute('data-intent-hint', 'true');
+    appendTextElement(hintRow, 'span', 'ממשיכים מאיפה שעצרתם');
+    const reset = appendTextElement(hintRow, 'button', 'איפוס העדפות');
+    reset.type = 'button';
+    reset.setAttribute('data-intent-reset', 'true');
+    reset.addEventListener('click', () => {
+      guide.resetIntentMemory();
+      Object.values(chips).forEach(entry => entry.button.classList.remove('is-remembered'));
+      hintRow.hidden = true;
+    });
+    host.append(hintRow);
+  }
+
+  plannerChipGroups.forEach(([group, label, options]) => {
+    const row = document.createElement('div');
+    row.className = 'planner-chip-group';
+    row.setAttribute('role', 'group');
+    row.setAttribute('aria-label', label);
+    appendTextElement(row, 'small', label);
+    options.forEach(([id, chipLabel, fragment]) => {
+      const button = appendTextElement(row, 'button', chipLabel);
+      button.type = 'button';
+      button.setAttribute('data-planner-chip', `${group}:${id}`);
+      button.setAttribute('aria-pressed', 'false');
+      if (memory && memory[group] === id) button.classList.add('is-remembered');
+      button.addEventListener('click', () => applyPlannerChip(group, id));
+      chips[`${group}:${id}`] = { button, fragment };
+    });
+    host.append(row);
+  });
+
+  const fillStatus = document.createElement('p');
+  fillStatus.className = 'planner-autofill-status';
+  fillStatus.setAttribute('data-autofill-status', 'true');
+  fillStatus.setAttribute('role', 'status');
+  fillStatus.setAttribute('aria-live', 'polite');
+  fillStatus.hidden = true;
+  const fillStatusText = appendTextElement(fillStatus, 'span', '');
+  const fillStatusCount = appendTextElement(fillStatus, 'b', '');
+  host.append(fillStatus);
+
+  host.hidden = !plannerComposerIsEmpty(box);
+  const anchor = typeof box.closest === 'function' ? box.closest('.ai-conversation-prompt') : null;
+  if (anchor?.parentNode) anchor.parentNode.insertBefore(host, anchor.nextSibling);
+  else form.append(host);
+
+  const setChipPressed = (entry, pressed) => {
+    entry.button.classList.toggle('is-active', pressed);
+    entry.button.setAttribute('aria-pressed', String(pressed));
+    if (pressed) entry.button.classList.remove('is-remembered');
+  };
+
+  function applyPlannerChip(group, id, fromFill = false) {
+    const entry = chips[`${group}:${id}`];
+    if (!entry) return false;
+    if (plannerComposerUntouchedExample(box)) box.value = '';
+    const currentId = selected[group];
+    if (currentId && currentId !== id) {
+      const current = chips[`${group}:${currentId}`];
+      box.value = guide.removeChipText(box.value, current.fragment);
+      setChipPressed(current, false);
+      delete selected[group];
+    }
+    const removing = currentId === id;
+    box.value = removing ? guide.removeChipText(box.value, entry.fragment) : guide.composeChipText(box.value, entry.fragment);
+    setChipPressed(entry, !removing);
+    if (removing) delete selected[group];
+    else selected[group] = id;
+    if (!fromFill) guide.writeIntentMemory({ [group]: removing ? null : id });
+    box.dispatchEvent(new Event('input', { bubbles: true }));
+    return !removing;
+  }
+
+  box.addEventListener('input', () => {
+    const text = String(box.value || '');
+    Object.keys(selected).forEach(group => {
+      const entry = chips[`${group}:${selected[group]}`];
+      if (entry && !text.includes(entry.fragment)) {
+        setChipPressed(entry, false);
+        delete selected[group];
+      }
+    });
+    if (host.hidden && plannerComposerIsEmpty(box)) host.hidden = false;
+  });
+
+  // Scoped silent completion (planner only): after six quiet seconds an
+  // empty composer fills stage by stage through the same chip pipeline, a
+  // visible countdown announces every advance, any pointer or key press
+  // hands control back for the rest of the page view, and the finish only
+  // marks the existing submit button. It never submits and never calls an API.
+  const idleFill = { state: 'armed', timer: 0, stages: [], index: 0, count: 3 };
+  const setFillCountdown = () => setTextContentIfChanged(fillStatusCount, `ממשיכים בעוד ${idleFill.count}…`);
+
+  function armPlannerIdleFill() {
+    if (idleFill.state !== 'armed') return;
+    if (idleFill.timer) window.clearTimeout(idleFill.timer);
+    idleFill.timer = window.setTimeout(firePlannerIdleFill, plannerIdleFillDelayMs);
+  }
+
+  function firePlannerIdleFill() {
+    idleFill.timer = 0;
+    if (idleFill.state !== 'armed' || !plannerComposerIsEmpty(box) || form.dataset.state === 'loading') return;
+    const workbench = document.querySelector('[data-agent-workbench]');
+    if (workbench && workbench.hidden !== true) return;
+    const stored = guide.readIntentMemory() || {};
+    idleFill.stages = [['party', stored.party || 'couple'], ['month', stored.month || 'flex']];
+    if (stored.budget) idleFill.stages.push(['budget', stored.budget]);
+    idleFill.index = 0;
+    idleFill.state = 'running';
+    host.hidden = false;
+    fillStatus.hidden = false;
+    setTextContentIfChanged(fillStatusText, 'משלימים פרטים בשבילכם… אפשר לעצור בכל רגע');
+    if (prefersReducedMotion()) {
+      idleFill.stages.forEach(stage => applyPlannerChip(stage[0], stage[1], true));
+      finishPlannerIdleFill();
+      return;
+    }
+    idleFill.count = 3;
+    setFillCountdown();
+    idleFill.timer = window.setTimeout(tickPlannerIdleFill, plannerIdleFillTickMs);
+  }
+
+  function tickPlannerIdleFill() {
+    idleFill.timer = 0;
+    if (idleFill.state !== 'running') return;
+    idleFill.count -= 1;
+    if (idleFill.count > 0) {
+      setFillCountdown();
+      idleFill.timer = window.setTimeout(tickPlannerIdleFill, plannerIdleFillTickMs);
+      return;
+    }
+    const stage = idleFill.stages[idleFill.index];
+    if (stage) applyPlannerChip(stage[0], stage[1], true);
+    idleFill.index += 1;
+    if (idleFill.index >= idleFill.stages.length) {
+      finishPlannerIdleFill();
+      return;
+    }
+    idleFill.count = 3;
+    setFillCountdown();
+    idleFill.timer = window.setTimeout(tickPlannerIdleFill, plannerIdleFillTickMs);
+  }
+
+  function finishPlannerIdleFill() {
+    idleFill.state = 'done';
+    setTextContentIfChanged(fillStatusCount, '');
+    setTextContentIfChanged(fillStatusText, 'הפרטים הושלמו ואפשר לערוך אותם. שולחים רק כשאתם בוחרים.');
+    if (submit) guide.show(submit);
+  }
+
+  const onPlannerActivity = () => {
+    if (idleFill.state === 'running') {
+      // The traveler acted, so control is theirs for the rest of this view.
+      idleFill.state = 'stopped';
+      if (idleFill.timer) window.clearTimeout(idleFill.timer);
+      idleFill.timer = 0;
+      fillStatus.hidden = true;
+      return;
+    }
+    if (idleFill.state === 'armed') armPlannerIdleFill();
+  };
+  document.addEventListener('pointerdown', onPlannerActivity, true);
+  document.addEventListener('keydown', onPlannerActivity, true);
+  armPlannerIdleFill();
+}
+
+// (c) A settled planner response: the next-step control inside the rendered
+// response area gets the beacon, chosen from what the existing UI shows.
+function agentRunSettledNextAction(root) {
+  const guide = nextActionModule();
+  if (!guide || ['failed', 'provider_error', 'cancelled'].includes(agentRuntime.status)) return;
+  const view = agentWorkbenchRoot(root);
+  const create = view.querySelector('[data-quote-case-create]');
+  if (create && create.hidden !== true) {
+    const consent = view.querySelector('[data-quote-case-consent]');
+    const target = (consent && typeof consent.closest === 'function' && consent.closest('label')) || consent;
+    if (target && guide.show(target, 'אישור והעברה לבדיקה אישית')) return;
+  }
+  const composer = view.querySelector('[data-agent-revision-composer]');
+  const revisionSubmit = composer && composer.hidden !== true ? composer.querySelector('[data-agent-revision-submit]') : null;
+  if (revisionSubmit) guide.show(revisionSubmit);
+}
+
 function initTraVelV2() {
   if (document.documentElement.dataset.traVelV2Ready === 'true') return;
   document.documentElement.dataset.traVelV2Ready = 'true';
@@ -12965,6 +13277,8 @@ function initTraVelV2() {
   initMapPlanScopeFocus();
   initControls();
   initAIConversationEntry();
+  initNextActionBeacons();
+  initPlannerRefinementChips();
   initDirectory();
   initExperienceDecisionMap();
   initFlightSearch();
