@@ -3851,10 +3851,11 @@ label[data-party-hidden="true"] { display: none !important; }
   .voice-theater li,.voice-theater li :is(i,svg) { animation: none !important; transition: none !important; }
 }
 
-/* Pillar Earth hubs (theme 1.30.0): a vertical's world points above its
-   pillar article. The hero reuses the compact-map Earth shell; the anchored
-   selection card gets the same glass treatment it has on the homepage. All
-   surfaces stay in document flow and never cover the sphere. */
+/* Pillar Earth hubs (theme 1.30.0, badge verticals 1.31.0): a vertical's
+   world points above its pillar article. The hero reuses the compact-map
+   Earth shell; the anchored selection card gets the same glass treatment it
+   has on the homepage. All surfaces stay in document flow and never cover
+   the sphere. Pins show difficulty stars (diving) or a region badge. */
 .pillar-hero .page-width { position: relative; z-index: 1; display: grid; gap: 46px; justify-items: center; }
 .pillar-hero-copy { max-width: 880px; display: grid; gap: 0; justify-items: center; text-align: center; }
 .pillar-hero-copy h1 { margin: 16px 0 18px; font-size: clamp(44px,5.6vw,76px); line-height: 1.02; letter-spacing: -3px; }
@@ -3868,6 +3869,7 @@ label[data-party-hidden="true"] { display: none !important; }
 .pillar-pin-stars { font-size: 9px; line-height: 1; letter-spacing: 2px; color: #0c8f5e; }
 .pillar-pin-stars[data-difficulty="2"] { color: #b07a00; }
 .pillar-pin-stars[data-difficulty="3"] { color: #c2483a; }
+.pillar-pin-badge { font-size: 8.5px; line-height: 1.15; letter-spacing: .2px; color: #55707a; font-weight: 800; white-space: nowrap; }
 .pillar-globe-panel .globe-webgl.globe-3d-unavailable .price-pin { left: var(--pin-static-x) !important; top: var(--pin-static-y) !important; transform: translate(-50%,-50%); }
 .pillar-globe-panel > .button-link { color: #fff; }
 .pillar-globe-panel .globe-arrival-card { position: absolute; z-index: 10; width: min(248px, 76%); display: grid; gap: 8px; padding: 12px 12px 11px; border: 1px solid rgba(255,255,255,.2); border-radius: 15px; color: #fff; background: rgba(5,20,26,.74); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); box-shadow: 0 18px 48px rgba(0,0,0,.45); text-align: right; transform: translate(-50%, -50%); }
