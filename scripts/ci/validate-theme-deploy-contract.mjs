@@ -46,7 +46,7 @@ const releaseDependency = Array.isArray(releaseRequirements.dependencies) ? rele
 if (
   releaseRequirements.contract_version !== '1.0.0'
   || releaseRequirements.theme?.slug !== 'tra-vel-v2'
-  || releaseRequirements.theme?.version !== '1.29.0'
+  || releaseRequirements.theme?.version !== '1.29.1'
   || releaseRequirements.theme?.requires_wordpress !== '6.6'
   || releaseRequirements.deploy_gateway?.min_version !== '0.3.0'
   || releaseRequirements.public_http?.unknown_status !== 404
@@ -63,7 +63,7 @@ if (
 ) {
   failures.push('Theme release requirements no longer express the WordPress, gateway, Agent Core, capability, and real-404 launch floor.');
 }
-if (!themeStyle.includes('Version: 1.29.0') || !themeStyle.includes('Requires at least: 6.6') || !themeFunctions.includes("define( 'TRA_VEL_V2_VERSION', '1.29.0' )")) {
+if (!themeStyle.includes('Version: 1.29.1') || !themeStyle.includes('Requires at least: 6.6') || !themeFunctions.includes("define( 'TRA_VEL_V2_VERSION', '1.29.1' )")) {
   failures.push('Theme headers, runtime version, and release requirements are not aligned.');
 }
 
