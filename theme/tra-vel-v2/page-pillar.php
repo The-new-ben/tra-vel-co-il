@@ -6,7 +6,9 @@
  * A vertical pillar hub: the 3D Earth covered with one vertical's points
  * above server-rendered Hebrew pillar content. The vertical is derived from
  * the page slug and everything renders from tra_vel_v2_pillar_config(), so
- * diving today and cruises, family or conventions later share this file.
+ * diving, cruises, family and conventions all share this file. Points carry
+ * either a 1..3 difficulty rendered as stars (diving) or a short region
+ * badge plus per-point facts (the other verticals).
  *
  * @package TraVelV2
  */
@@ -32,9 +34,10 @@ if ( ! $pillar || ! $pillar_ready ) :
 	return;
 endif;
 
-$pillar_points  = $pillar['points'];
-$pillar_cta_url = add_query_arg( 'destination', $pillar['planner_destination'], $planner_url );
-$pillar_spokes  = tra_vel_v2_pillar_published_spokes( $pillar );
+$pillar_points        = $pillar['points'];
+$pillar_cta_url       = add_query_arg( 'destination', $pillar['planner_destination'], $planner_url );
+$pillar_spokes        = tra_vel_v2_pillar_published_spokes( $pillar );
+$pillar_badge_heading = isset( $pillar['badge_heading'] ) ? trim( (string) $pillar['badge_heading'] ) : __( 'אזור', 'tra-vel-v2' );
 ?>
 <main id="main-content" class="pillar-page" data-tra-vel-page="pillar" data-pillar-kind="<?php echo esc_attr( $pillar_kind ); ?>">
 	<header class="directory-hero pillar-hero">
@@ -64,12 +67,18 @@ $pillar_spokes  = tra_vel_v2_pillar_published_spokes( $pillar );
 							continue;
 						}
 						$point_difficulty = max( 1, min( 3, (int) ( $pillar_point['difficulty'] ?? 2 ) ) );
+						$point_badge      = isset( $pillar_point['badge'] ) ? trim( (string) $pillar_point['badge'] ) : '';
 						$point_static_x   = round( ( ( $point_longitude + 180 ) / 360 ) * 100, 3 );
 						$point_static_y   = round( ( ( 90 - $point_latitude ) / 180 ) * 100, 3 );
-						/* translators: 1: site name, 2: difficulty label. */
-						$point_aria = sprintf( __( '%1$s, רמת קושי %2$s. פתיחת פרטי האתר.', 'tra-vel-v2' ), $pillar_point['name'], tra_vel_v2_pillar_difficulty_label( $point_difficulty ) );
+						if ( '' !== $point_badge ) {
+							/* translators: 1: point name, 2: region label. */
+							$point_aria = sprintf( __( '%1$s, %2$s. פתיחת פרטי היעד.', 'tra-vel-v2' ), $pillar_point['name'], $point_badge );
+						} else {
+							/* translators: 1: site name, 2: difficulty label. */
+							$point_aria = sprintf( __( '%1$s, רמת קושי %2$s. פתיחת פרטי האתר.', 'tra-vel-v2' ), $pillar_point['name'], tra_vel_v2_pillar_difficulty_label( $point_difficulty ) );
+						}
 						?>
-						<button class="price-pin pillar-pin" type="button" data-destination="<?php echo esc_attr( $point_id ); ?>" data-latitude="<?php echo esc_attr( $point_latitude ); ?>" data-longitude="<?php echo esc_attr( $point_longitude ); ?>" data-selection-bound="true" data-site-name="<?php echo esc_attr( $pillar_point['name'] ); ?>" style="--pin-static-x:<?php echo esc_attr( $point_static_x ); ?>%;--pin-static-y:<?php echo esc_attr( $point_static_y ); ?>%;" aria-label="<?php echo esc_attr( $point_aria ); ?>" aria-pressed="false"><span class="pillar-pin-name"><?php echo esc_html( $pillar_point['pin_label'] ); ?></span><span class="pillar-pin-stars" data-difficulty="<?php echo esc_attr( $point_difficulty ); ?>" aria-hidden="true"><?php echo esc_html( tra_vel_v2_pillar_difficulty_stars( $point_difficulty ) ); ?></span></button>
+						<button class="price-pin pillar-pin" type="button" data-destination="<?php echo esc_attr( $point_id ); ?>" data-latitude="<?php echo esc_attr( $point_latitude ); ?>" data-longitude="<?php echo esc_attr( $point_longitude ); ?>" data-selection-bound="true" data-site-name="<?php echo esc_attr( $pillar_point['name'] ); ?>" style="--pin-static-x:<?php echo esc_attr( $point_static_x ); ?>%;--pin-static-y:<?php echo esc_attr( $point_static_y ); ?>%;" aria-label="<?php echo esc_attr( $point_aria ); ?>" aria-pressed="false"><span class="pillar-pin-name"><?php echo esc_html( $pillar_point['pin_label'] ); ?></span><?php if ( '' !== $point_badge ) : ?><span class="pillar-pin-badge" aria-hidden="true"><?php echo esc_html( $point_badge ); ?></span><?php else : ?><span class="pillar-pin-stars" data-difficulty="<?php echo esc_attr( $point_difficulty ); ?>" aria-hidden="true"><?php echo esc_html( tra_vel_v2_pillar_difficulty_stars( $point_difficulty ) ); ?></span><?php endif; ?></button>
 					<?php endforeach; ?>
 					<span class="screen-reader-text" data-globe-live role="status" aria-live="polite" aria-atomic="true"></span>
 				</div>
@@ -91,6 +100,8 @@ $pillar_spokes  = tra_vel_v2_pillar_published_spokes( $pillar );
 					continue;
 				}
 				$point_difficulty = max( 1, min( 3, (int) ( $pillar_point['difficulty'] ?? 2 ) ) );
+				$point_badge      = isset( $pillar_point['badge'] ) ? trim( (string) $pillar_point['badge'] ) : '';
+				$point_facts      = isset( $pillar_point['facts'] ) && is_array( $pillar_point['facts'] ) ? $pillar_point['facts'] : array();
 				$point_depth_min  = (int) ( $pillar_point['depth_min'] ?? 0 );
 				$point_depth_max  = (int) ( $pillar_point['depth_max'] ?? 0 );
 				?>
@@ -99,14 +110,31 @@ $pillar_spokes  = tra_vel_v2_pillar_published_spokes( $pillar );
 						<h3><?php echo esc_html( $pillar_point['name'] ); ?></h3>
 						<small><bdi dir="ltr"><?php echo esc_html( $pillar_point['name_en'] ); ?></bdi></small>
 					</header>
-					<p class="pillar-site-difficulty"><span class="pillar-pin-stars" data-difficulty="<?php echo esc_attr( $point_difficulty ); ?>" aria-hidden="true"><?php echo esc_html( tra_vel_v2_pillar_difficulty_stars( $point_difficulty ) ); ?></span><span><?php
-					/* translators: %s: difficulty label. */
-					echo esc_html( sprintf( __( 'רמת קושי: %s', 'tra-vel-v2' ), tra_vel_v2_pillar_difficulty_label( $point_difficulty ) ) ); ?></span></p>
+					<?php if ( '' !== $point_badge ) : ?>
+						<p class="pillar-site-difficulty"><span><?php echo esc_html( $pillar_badge_heading . ': ' . $point_badge ); ?></span></p>
+					<?php else : ?>
+						<p class="pillar-site-difficulty"><span class="pillar-pin-stars" data-difficulty="<?php echo esc_attr( $point_difficulty ); ?>" aria-hidden="true"><?php echo esc_html( tra_vel_v2_pillar_difficulty_stars( $point_difficulty ) ); ?></span><span><?php
+						/* translators: %s: difficulty label. */
+						echo esc_html( sprintf( __( 'רמת קושי: %s', 'tra-vel-v2' ), tra_vel_v2_pillar_difficulty_label( $point_difficulty ) ) ); ?></span></p>
+					<?php endif; ?>
 					<dl class="pillar-site-facts">
-						<div><dt><?php esc_html_e( 'טווח עומק אופייני', 'tra-vel-v2' ); ?></dt><dd><?php
-						/* translators: 1: minimum depth in meters, 2: maximum depth in meters. */
-						echo esc_html( sprintf( __( '%1$d עד %2$d מטר', 'tra-vel-v2' ), $point_depth_min, $point_depth_max ) ); ?></dd></div>
-						<div><dt><?php esc_html_e( 'עונה מקובלת', 'tra-vel-v2' ); ?></dt><dd><?php echo esc_html( $pillar_point['season'] ); ?></dd></div>
+						<?php if ( $point_facts ) : ?>
+							<?php
+							foreach ( $point_facts as $point_fact ) :
+								$point_fact_label = isset( $point_fact['label'] ) ? trim( (string) $point_fact['label'] ) : '';
+								$point_fact_value = isset( $point_fact['value'] ) ? trim( (string) $point_fact['value'] ) : '';
+								if ( '' === $point_fact_label || '' === $point_fact_value ) {
+									continue;
+								}
+								?>
+								<div><dt><?php echo esc_html( $point_fact_label ); ?></dt><dd><?php echo esc_html( $point_fact_value ); ?></dd></div>
+							<?php endforeach; ?>
+						<?php else : ?>
+							<div><dt><?php esc_html_e( 'טווח עומק אופייני', 'tra-vel-v2' ); ?></dt><dd><?php
+							/* translators: 1: minimum depth in meters, 2: maximum depth in meters. */
+							echo esc_html( sprintf( __( '%1$d עד %2$d מטר', 'tra-vel-v2' ), $point_depth_min, $point_depth_max ) ); ?></dd></div>
+							<div><dt><?php esc_html_e( 'עונה מקובלת', 'tra-vel-v2' ); ?></dt><dd><?php echo esc_html( $pillar_point['season'] ); ?></dd></div>
+						<?php endif; ?>
 					</dl>
 					<p class="pillar-site-summary"><?php echo esc_html( $pillar_point['summary'] ); ?></p>
 					<button class="pillar-site-focus" type="button" data-pillar-site-focus="<?php echo esc_attr( $point_id ); ?>" hidden><i data-lucide="earth"></i><?php esc_html_e( 'הצגה על הכדור', 'tra-vel-v2' ); ?></button>
