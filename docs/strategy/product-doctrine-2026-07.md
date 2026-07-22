@@ -1,5 +1,46 @@
 # Tra-Vel product doctrine — adopted 2026-07-21
 
+## Amendment A — the intent machine (owner dictations, 2026-07-22)
+
+The internal codename for this mechanism is "autopilot"; the word never appears in the
+interface. It operates across the whole site.
+
+1. Guided next action: after every meaningful choice (a map selection above all), one
+   unmissable pulsing cue marks the next step. A first-time visitor sent by a friend must
+   be able to reach an offer without help; a real-user test failing this blocks release.
+2. Choices are chips, never chat-dumps: refinement questions render as tappable answer
+   chips (party, dates, budget). Menus and destination pickers never redirect into the
+   chat composer.
+3. Silent-user completion: when the traveler stops feeding input, the system visibly and
+   animatedly fills the logical details itself, from stored intent memory and honest
+   context rules, then keeps going stage by stage all the way to a complete, fully priced
+   offer standing one click from closure. A visible timer accompanies each auto-advance
+   ("ממשיכים בעוד..."), and any touch pauses it and hands control back.
+4. The payment threshold is absolute: autopilot assembles, prices, and proposes; it never
+   charges, books, or engages suppliers. At the threshold it stops, presents the complete
+   offer with every part editable, and waits for an explicit human yes. Consent and
+   truthful-UX contracts outrank autopilot at every stage.
+5. Composition tray: the offer carries optional add-ons from our catalog (store products,
+   site services, VIP, eSIM, insurance, transfers) and pack tiers (basic / with products /
+   premium) selectable like a set-menu order.
+6. Price memory: known supplier and agent prices are cached with timestamps and served as
+   instant approximations, always labeled with their freshness; AI and live feeds run only
+   when data is stale or the traveler advances toward closure. Approximations are never
+   presented as bookable prices.
+7. Intent memory: every choice a traveler makes becomes a default for their next visit
+   (device-local first, account-level later), with a one-tap reset.
+8. Zero-click points: club and card points surface with minimal effort (deep link or scan),
+   and the Earth then shows what those points buy. Live balance integrations are a
+   partnership decision reserved to the owner; public conversion-value content ships first.
+9. Vertical pillar Earths: cruises, diving, family tools, and conventions each get a hub
+   whose hero is the Earth carrying that vertical's real points, above original pillar
+   content that anchors a pillar-and-spoke SEO cluster. Spokes publish through the
+   existing fail-closed editorial contracts; hubs never link to pages that do not exist.
+
+Sequencing note: stages of item 3 that require real prices depend on the Release 2
+affiliate data feeds; until those land, autopilot completes plans with honest
+approximations from item 6 and routes closure through the assisted path.
+
 Source: owner strategy document (2026-07-21), adapted against the verified live state
 (theme 1.27.1, agent-core 0.9.2, Travelpayouts project 552866 active, 11 indexable hubs,
 /packages/budapest/ money page live). This file is the operating plan of record; update it
