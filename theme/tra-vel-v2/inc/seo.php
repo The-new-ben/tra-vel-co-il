@@ -117,8 +117,16 @@ function tra_vel_v2_singular_meta_description_fallback( $post_id = 0 ) {
 	if ( ! $post_id ) {
 		return '';
 	}
-	$excerpt = wp_strip_all_tags( (string) get_the_excerpt( $post_id ) );
-	return trim( preg_replace( '/\s+/u', ' ', $excerpt ) );
+	$excerpt = trim( preg_replace( '/\s+/u', ' ', wp_strip_all_tags( (string) get_the_excerpt( $post_id ) ) ) );
+	if ( '' !== $excerpt ) {
+		return $excerpt;
+	}
+	// Pillar Earth hubs render from their vertical config, so an authored
+	// excerpt still wins and the config description only closes the gap.
+	if ( is_page_template( 'page-pillar.php' ) && function_exists( 'tra_vel_v2_pillar_meta_description' ) ) {
+		return tra_vel_v2_pillar_meta_description( $post_id );
+	}
+	return '';
 }
 
 /**
@@ -309,6 +317,10 @@ function tra_vel_v2_should_noindex_public_request() {
 	$private_page = is_page_template( 'page-saved.php' ) || is_page_template( 'page-account.php' ) || is_page( array( 'saved', 'account' ) );
 	$thin_archive = function_exists( 'is_author' ) && ( is_author() || is_category() || is_tag() || is_date() || is_search() );
 	$incomplete_guide = is_singular() && tra_vel_v2_is_destination_guide() && ! tra_vel_v2_is_guide_publication_ready();
+	// Pillar Earth hubs fail closed: a pillar page whose vertical config is
+	// missing or empty must never enter the index.
+	$thin_pillar = is_page_template( 'page-pillar.php' )
+		&& ( ! function_exists( 'tra_vel_v2_pillar_page_is_publishable' ) || ! tra_vel_v2_pillar_page_is_publishable() );
 	$facet_keys   = array(
 		'q', 'origin', 'destination', 'destination_mode', 'selection_destination', 'product', 'focus', 'layer', 'depart', 'departure', 'return', 'departure_date', 'return_date', 'date', 'dates', 'route', 'checkin', 'checkout', 'check_in', 'check_out', 'start_date', 'end_date', 'adults', 'children', 'infants', 'rooms', 'travelers', 'party',
 		'currency', 'sort', 'stops', 'budget', 'hotel_class', 'amenities',
@@ -318,7 +330,7 @@ function tra_vel_v2_should_noindex_public_request() {
 	);
 	$has_facets   = (bool) array_intersect( $facet_keys, array_keys( wp_unslash( $_GET ) ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 
-	return $private_page || $thin_archive || $has_facets || $incomplete_guide;
+	return $private_page || $thin_archive || $has_facets || $incomplete_guide || $thin_pillar;
 }
 
 /**

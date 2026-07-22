@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updated": "2026-07-21",
+  "updated": "2026-07-22",
   "locale": "he-IL",
   "evidenceBoundary": "Priorities are hypotheses informed by competitor coverage and Israeli traveler intent. They are not search-volume claims and must be rescored with Search Console, keyword-tool and supplier-conversion evidence.",
   "entries": [
@@ -51,6 +51,18 @@
       "status": "live",
       "conversionAction": "בחרו אזור ואז השוו חדר, תנאים ועלות מלאה",
       "monetization": ["hotels", "transfers", "activities"]
+    },
+    {
+      "id": "diving-hub",
+      "canonicalPath": "/diving/",
+      "pageType": "commercial-hub",
+      "primaryIntent": "חופשות צלילה ואתרי צלילה בעולם",
+      "cluster": "diving",
+      "parentPath": "/",
+      "mapState": null,
+      "status": "live",
+      "conversionAction": "בחרו אתר צלילה ותכננו סביבו חופשה מלאה",
+      "monetization": ["activities", "packages", "insurance", "flights"]
     },
     {
       "id": "last-minute-hub",
