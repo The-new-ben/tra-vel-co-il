@@ -3782,7 +3782,7 @@ label[data-party-hidden="true"] { display: none !important; }
 @media (max-height: 700px) {
 	.hero-arrival-stage { min-height: auto; padding-block-end: 18px; }
 	.hero-arrival-stage .globe-panel .globe { width: min(52svh, 44vw); height: min(52svh, 44vw); }
-	.hero-arrival-stage .voice-dock { inset-block-end: 10px; }
+	.hero-arrival-stage .voice-dock { inset-block-start: 10px; inset-block-end: auto; }
 }
 .voice-dock[hidden],.voice-sheet[hidden],.voice-sheet-note[hidden] { display: none !important; }
 .voice-dock-button { position: relative; width: 54px; height: 54px; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.24); border-radius: 50%; color: #fff; background: rgba(5,20,26,.62); box-shadow: 0 14px 34px rgba(0,0,0,.38), inset 0 1px rgba(255,255,255,.14); backdrop-filter: blur(10px); cursor: pointer; }

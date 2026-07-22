@@ -2,7 +2,7 @@
   "contract_version": "1.0.0",
   "theme": {
     "slug": "tra-vel-v2",
-    "version": "1.29.1",
+    "version": "1.29.2",
     "requires_wordpress": "6.6",
     "requires_php": "7.4"
   },
