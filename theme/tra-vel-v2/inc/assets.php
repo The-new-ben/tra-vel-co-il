@@ -32,7 +32,7 @@ function tra_vel_v2_enqueue_assets() {
 		true
 	);
 
-	if ( is_front_page() || is_page_template( 'page-map.php' ) || is_page_template( 'page-destination.php' ) || is_page_template( 'page-seo-opportunity.php' ) || is_singular( 'destination' ) ) {
+	if ( is_front_page() || is_page_template( 'page-map.php' ) || is_page_template( 'page-destination.php' ) || is_page_template( 'page-seo-opportunity.php' ) || is_page_template( 'page-pillar.php' ) || is_singular( 'destination' ) ) {
 		wp_enqueue_script(
 			'tra-vel-v2-globe-3d',
 			TRA_VEL_V2_URI . '/assets/js/globe-3d.js',
@@ -47,6 +47,16 @@ function tra_vel_v2_enqueue_assets() {
 			TRA_VEL_V2_URI . '/assets/js/voice-dock.js',
 			array(),
 			tra_vel_v2_asset_version( '/assets/js/voice-dock.js' ),
+			true
+		);
+	}
+
+	if ( is_page_template( 'page-pillar.php' ) ) {
+		wp_enqueue_script(
+			'tra-vel-v2-pillar-earth',
+			TRA_VEL_V2_URI . '/assets/js/pillar-earth.js',
+			array( 'tra-vel-v2-globe-3d' ),
+			tra_vel_v2_asset_version( '/assets/js/pillar-earth.js' ),
 			true
 		);
 	}
@@ -130,7 +140,7 @@ function tra_vel_v2_enqueue_assets() {
 add_action( 'wp_enqueue_scripts', 'tra_vel_v2_enqueue_assets' );
 
 function tra_vel_v2_script_attributes( $tag, $handle ) {
-	if ( ! in_array( $handle, array( 'tra-vel-v2-app', 'tra-vel-v2-globe-3d', 'tra-vel-v2-voice-dock', 'tra-vel-v2-customer-trip-cockpit', 'tra-vel-v2-lucide' ), true ) ) {
+	if ( ! in_array( $handle, array( 'tra-vel-v2-app', 'tra-vel-v2-globe-3d', 'tra-vel-v2-voice-dock', 'tra-vel-v2-pillar-earth', 'tra-vel-v2-customer-trip-cockpit', 'tra-vel-v2-lucide' ), true ) ) {
 		return $tag;
 	}
 	return str_replace( ' src=', ' defer src=', $tag );
