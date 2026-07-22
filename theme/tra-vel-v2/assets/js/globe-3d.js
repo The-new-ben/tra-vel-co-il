@@ -492,6 +492,10 @@
     // Only the globe carrying data-globe-arrival="true" (the homepage hero)
     // takes part; map, destination, and money-page globes never enter here.
     const arrivalGlobe = root.dataset.globeArrival === 'true';
+    // Pillar Earth hubs (theme 1.30.0) reuse exactly two arrival behaviors:
+    // the anchored selection card and the deferred marker click. They never
+    // run the arrival flight and never touch sessionStorage.
+    const pillarGlobe = root.dataset.globePillar === 'true';
 
     function resolveArrivalAnchor() {
       let timeZone = '';
@@ -1391,7 +1395,9 @@
       const mapLink = document.createElement('a');
       mapLink.textContent = 'פתיחה במפה המלאה';
       const detailsLink = document.createElement('a');
-      detailsLink.setAttribute('href', '#home-selection-details');
+      // Pillar hubs point the card at their own below-globe details anchor;
+      // without the override the homepage target is kept byte-identical.
+      detailsLink.setAttribute('href', root.dataset.globeCardDetails || '#home-selection-details');
       detailsLink.textContent = 'לפרטים מתחת לגלובוס';
       links.append(mapLink, detailsLink);
       card.append(close, title, subtitle, links);
@@ -1517,6 +1523,8 @@
 
     if (arrivalGlobe) {
       root.addEventListener('travelglobe:ready', beginArrivalFlight, { once: true });
+    }
+    if (arrivalGlobe || pillarGlobe) {
       root.addEventListener('travelglobe:select', event => renderArrivalCard(event.detail || {}));
     }
 
@@ -1558,13 +1566,14 @@
         event.stopImmediatePropagation();
         return;
       }
-      // Arrival globe (theme 1.28.0): pointer marker taps wait out the
-      // double-tap window through the shared deferred-selection slot, so a
-      // second click inside the window cancels the pending selection and
-      // dives instead. Keyboard activations, the deferred replay, and the
-      // click after a touch long-press stay immediate. All other globes keep
-      // the synchronous marker contract.
-      if (arrivalGlobe && !state.markerBypass && event.detail !== 0 && !recentTouchHold()) {
+      // Arrival and pillar globes (themes 1.28.0/1.30.0): pointer marker
+      // taps wait out the double-tap window through the shared
+      // deferred-selection slot, so a second click inside the window
+      // cancels the pending selection and dives instead. Keyboard
+      // activations, the deferred replay, and the click after a touch
+      // long-press stay immediate. All other globes keep the synchronous
+      // marker contract.
+      if ((arrivalGlobe || pillarGlobe) && !state.markerBypass && event.detail !== 0 && !recentTouchHold()) {
         event.preventDefault();
         event.stopImmediatePropagation();
         const now = performance.now();

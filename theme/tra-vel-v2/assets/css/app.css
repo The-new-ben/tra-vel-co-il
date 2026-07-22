@@ -3850,3 +3850,64 @@ label[data-party-hidden="true"] { display: none !important; }
 @media (prefers-reduced-motion: reduce) {
   .voice-theater li,.voice-theater li :is(i,svg) { animation: none !important; transition: none !important; }
 }
+
+/* Pillar Earth hubs (theme 1.30.0): a vertical's world points above its
+   pillar article. The hero reuses the compact-map Earth shell; the anchored
+   selection card gets the same glass treatment it has on the homepage. All
+   surfaces stay in document flow and never cover the sphere. */
+.pillar-hero .page-width { position: relative; z-index: 1; display: grid; gap: 46px; justify-items: center; }
+.pillar-hero-copy { max-width: 880px; display: grid; gap: 0; justify-items: center; text-align: center; }
+.pillar-hero-copy h1 { margin: 16px 0 18px; font-size: clamp(44px,5.6vw,76px); line-height: 1.02; letter-spacing: -3px; }
+.pillar-hero-copy h1 em { font-style: normal; color: var(--lime); }
+.pillar-hero-copy > p { max-width: 780px; margin: 0; color: #c4d5d8; font-size: 19px; line-height: 1.75; }
+.pillar-hero-copy .directory-hero-actions { justify-content: center; flex-wrap: wrap; }
+.pillar-globe-panel { width: 100%; }
+.pillar-globe-panel .globe { width: min(620px,100%); }
+.pillar-pin { display: inline-grid; gap: 2px; place-items: center; padding: 6px 10px 7px; }
+.pillar-pin-name { font-size: 11.5px; line-height: 1.1; white-space: nowrap; }
+.pillar-pin-stars { font-size: 9px; line-height: 1; letter-spacing: 2px; color: #0c8f5e; }
+.pillar-pin-stars[data-difficulty="2"] { color: #b07a00; }
+.pillar-pin-stars[data-difficulty="3"] { color: #c2483a; }
+.pillar-globe-panel .globe-webgl.globe-3d-unavailable .price-pin { left: var(--pin-static-x) !important; top: var(--pin-static-y) !important; transform: translate(-50%,-50%); }
+.pillar-globe-panel > .button-link { color: #fff; }
+.pillar-globe-panel .globe-arrival-card { position: absolute; z-index: 10; width: min(248px, 76%); display: grid; gap: 8px; padding: 12px 12px 11px; border: 1px solid rgba(255,255,255,.2); border-radius: 15px; color: #fff; background: rgba(5,20,26,.74); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); box-shadow: 0 18px 48px rgba(0,0,0,.45); text-align: right; transform: translate(-50%, -50%); }
+.pillar-globe-panel .globe-arrival-card[hidden] { display: none !important; }
+.pillar-globe-panel .globe-arrival-card > strong { padding-inline-end: 34px; font-size: 14px; line-height: 1.3; overflow-wrap: anywhere; }
+.pillar-globe-panel .globe-arrival-card > small { color: #b9c8cc; font-size: 11px; line-height: 1.45; overflow-wrap: anywhere; }
+.pillar-globe-panel .globe-arrival-card-links { display: grid; gap: 6px; }
+.pillar-globe-panel .globe-arrival-card-links a { min-height: 40px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 7px 10px; border: 1px solid rgba(255,255,255,.2); border-radius: 10px; color: #fff; background: rgba(255,255,255,.07); font-size: 12px; font-weight: 800; }
+.pillar-globe-panel .globe-arrival-card-links a:first-child { color: var(--ink); background: var(--lime); border-color: var(--lime); }
+.pillar-globe-panel .globe-arrival-card-close { position: absolute; top: 6px; left: 6px; width: 40px; height: 40px; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.22); border-radius: 10px; color: #fff; background: rgba(255,255,255,.08); cursor: pointer; font-size: 16px; line-height: 1; }
+.pillar-globe-panel .globe-arrival-card :is(a, button):focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
+.pillar-globe-panel .globe-arrival-card.is-new { animation: globeArrivalCard .34s cubic-bezier(.2,.8,.2,1) both; }
+.pillar-site-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 16px; }
+.pillar-site-card { position: relative; display: grid; gap: 9px; align-content: start; padding: 18px 18px 16px; border: 1px solid var(--line); border-radius: 17px; background: #fff; box-shadow: var(--soft-shadow); transition: border-color .2s, box-shadow .2s; }
+.pillar-site-card.is-selected { border-color: var(--lime-2); box-shadow: 0 14px 34px rgba(10,30,36,.14); }
+.pillar-site-head { display: grid; gap: 2px; }
+.pillar-site-head h3 { margin: 0; font-size: 20px; letter-spacing: -.4px; }
+.pillar-site-head small { color: var(--muted); font-size: 11.5px; }
+.pillar-site-difficulty { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 13px; font-weight: 700; color: #2d4148; }
+.pillar-site-difficulty .pillar-pin-stars { font-size: 13px; }
+.pillar-site-facts { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; margin: 0; }
+.pillar-site-facts > div { border: 1px solid var(--line); border-radius: 11px; padding: 8px 10px; background: #f7faf8; }
+.pillar-site-facts dt { color: var(--muted); font-size: 10.5px; font-weight: 700; }
+.pillar-site-facts dd { margin: 2px 0 0; font-size: 13px; font-weight: 800; color: var(--ink); }
+.pillar-site-summary { margin: 0; color: #364c53; font-size: 14px; line-height: 1.65; }
+.pillar-site-focus { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 9px 13px; border: 1px solid var(--line); border-radius: 12px; color: var(--ink); background: #f2f6f3; cursor: pointer; font: inherit; font-size: 13px; font-weight: 800; }
+.pillar-site-focus:hover { background: #e9f0ea; }
+.pillar-site-focus :is(i,svg) { width: 16px; height: 16px; }
+.pillar-site-focus:focus-visible { outline: 3px solid var(--lime-2); outline-offset: 2px; }
+.pillar-safety-note { display: flex; gap: 10px; align-items: flex-start; margin: 22px 0 0; padding: 14px 16px; border: 1px solid var(--line); border-radius: 14px; background: #fff; color: #364c53; font-size: 14px; line-height: 1.6; }
+.pillar-safety-note :is(i,svg) { width: 18px; height: 18px; flex: 0 0 auto; color: #b07a00; }
+.pillar-spokes-empty { margin: 0; padding: 16px 18px; border: 1px dashed var(--line); border-radius: 14px; color: var(--muted); font-size: 15px; }
+@media (max-width: 1000px) {
+  .pillar-site-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}
+@media (max-width: 760px) {
+  .pillar-hero-copy h1 { letter-spacing: -1.6px; }
+  .pillar-site-grid { grid-template-columns: 1fr; }
+  .pillar-globe-panel .globe-arrival-card { width: min(228px, 82%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pillar-site-card,.pillar-globe-panel .globe-arrival-card,.pillar-globe-panel .globe-arrival-card * { animation: none !important; transition: none !important; }
+}
