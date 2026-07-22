@@ -97,13 +97,13 @@ for (const marker of ['tra_vel_assisted_proposal_db_version', 'tra_vel_assisted_
 if (!readme.includes('Stable tag: 0.9.2') || !readme.includes('= 0.9.2 =')) {
   failures.push('Agent Core readme must identify release 0.9.2.');
 }
-if (!themeStyle.includes('Version: 1.31.0') || !themeFunctions.includes("define( 'TRA_VEL_V2_VERSION', '1.31.0' )")) {
-  failures.push('Theme header and runtime version must both identify release 1.31.0.');
+if (!themeStyle.includes('Version: 1.32.0') || !themeFunctions.includes("define( 'TRA_VEL_V2_VERSION', '1.32.0' )")) {
+  failures.push('Theme header and runtime version must both identify release 1.32.0.');
 }
 
 const dependency = requirements.dependencies?.find(item => item.id === 'tra-vel-agent-core');
-if (requirements.theme?.version !== '1.31.0' || dependency?.min_version !== '0.7.0') {
-  failures.push('Theme release requirements must bind theme 1.31.0 to Agent Core 0.7.0 or newer.');
+if (requirements.theme?.version !== '1.32.0' || dependency?.min_version !== '0.7.0') {
+  failures.push('Theme release requirements must bind theme 1.32.0 to Agent Core 0.7.0 or newer.');
 }
 for (const capability of ['audited_proposal_actions', 'sourced_assisted_proposals']) {
   if (!dependency?.required_capabilities?.includes(capability)) failures.push(`Theme preflight does not require ${capability}.`);
