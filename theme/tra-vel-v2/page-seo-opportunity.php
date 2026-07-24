@@ -73,6 +73,7 @@ get_header();
 					<a class="header-cta" href="<?php echo esc_url( $action_url ); ?>"><i data-lucide="arrow-left"></i><?php echo esc_html( $entry['conversionAction'] ); ?></a>
 					<a href="<?php echo esc_url( $map_url ); ?>"><i data-lucide="earth"></i><?php esc_html_e( 'פתחו את המפה המלאה', 'tra-vel-v2' ); ?></a>
 				</div>
+				<?php tra_vel_v2_render_found_price( $map_state ); ?>
 			</div>
 			<div class="compact-map" aria-label="<?php echo esc_attr( $globe_label ); ?>">
 				<div class="destination-globe-toolbar"><span><i data-lucide="move-3d"></i><?php esc_html_e( 'גררו לסיבוב', 'tra-vel-v2' ); ?></span><div><button data-map-zoom="in" type="button" aria-label="<?php esc_attr_e( 'הגדלת הגלובוס', 'tra-vel-v2' ); ?>"><i data-lucide="plus"></i></button><button data-map-zoom="out" type="button" aria-label="<?php esc_attr_e( 'הקטנת הגלובוס', 'tra-vel-v2' ); ?>"><i data-lucide="minus"></i></button></div></div>

@@ -316,7 +316,7 @@ tv2_assert( $canonical_destination_count === count( $demo_budget_response->data[
 // Smart discovery uses traveler friction, not unsourced trend or savings claims: direct service first,
 // then shorter flight and airport transfer, with destination id only as a deterministic final tie-breaker.
 tv2_assert( array( 'bangkok', 'lisbon', 'tokyo' ) === array_column( $long_trip_response->data['destinations'], 'id' ), 'long-trip smart order did not follow direct-service and travel-time friction' );
-tv2_assert( array( 'larnaca', 'athens', 'dubai', 'budapest', 'vienna', 'prague' ) === array_column( $short_trip_response->data['destinations'], 'id' ), 'short-trip smart order did not follow direct-service and travel-time friction' );
+tv2_assert( array( 'larnaca', 'athens', 'dubai', 'budapest', 'warsaw', 'vienna', 'prague' ) === array_column( $short_trip_response->data['destinations'], 'id' ), 'short-trip smart order did not follow direct-service and travel-time friction' );
 tv2_assert( null === $excluded_response->data['meta']['selected_destination'], 'an explicitly filtered destination was silently replaced' );
 tv2_assert( array() === $excluded_response->data['destinations'] && array() === $excluded_response->data['routes'], 'an explicitly filtered destination did not return a truthful empty state' );
 tv2_assert( 'bangkok' === $limited_response->data['meta']['selected_destination'], 'sorting and limit replaced an explicit visible destination' );

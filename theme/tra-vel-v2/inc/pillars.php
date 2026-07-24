@@ -958,6 +958,20 @@ function tra_vel_v2_family_destinations() {
 			'summary'   => __( 'עיר מסודרת ונוחה להתניידות עם ילדים: הפראטר עם הגלגל הענק, ארמון שנברון וגן החיות שבתוכו.', 'tra-vel-v2' ),
 		),
 		array(
+			'id'        => 'warsaw',
+			'name'      => __( 'ורשה', 'tra-vel-v2' ),
+			'pin_label' => __( 'ורשה', 'tra-vel-v2' ),
+			'name_en'   => 'Warsaw',
+			'latitude'  => 52.23,
+			'longitude' => 21.012,
+			'badge'     => __( 'מרכז אירופה', 'tra-vel-v2' ),
+			'facts'     => array(
+				array( 'label' => $flight, 'value' => __( 'כשלוש שעות וחצי', 'tra-vel-v2' ) ),
+				array( 'label' => $season, 'value' => __( 'מאי עד ספטמבר', 'tra-vel-v2' ) ),
+			),
+			'summary'   => __( 'עיר גדולה עם מרחקים סבירים ותחבורה ציבורית נוחה: העיר העתיקה המשוחזרת, פארקים רחבים ומוזיאונים שילדים נהנים בהם.', 'tra-vel-v2' ),
+		),
+		array(
 			'id'        => 'paris',
 			'name'      => __( 'פריז', 'tra-vel-v2' ),
 			'pin_label' => __( 'פריז', 'tra-vel-v2' ),

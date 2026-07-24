@@ -39,7 +39,7 @@ $RepoRoot = (Resolve-Path (Join-Path (Join-Path $PSScriptRoot '..') '..')).Path
 $DefaultProductionCredentialPath = "$env:USERPROFILE\Documents\.codex-secrets\wordpress-app-passwords\tra-vel.co.il.credential.xml"
 # Mirror of the theme's tra_vel_v2_seo_opportunity_destinations() keys; CI keeps
 # registry, discovery and theme runtime aligned via validate-content-opportunity-registry.mjs.
-$script:SupportedMapStates = @('budapest', 'prague', 'vienna', 'athens', 'dubai', 'bangkok', 'tokyo', 'lisbon', 'larnaca', 'crete')
+$script:SupportedMapStates = @('budapest', 'prague', 'vienna', 'athens', 'dubai', 'bangkok', 'tokyo', 'lisbon', 'larnaca', 'crete', 'warsaw')
 if (-not $RegistryPath) {
     $RegistryPath = Join-Path (Join-Path (Join-Path $RepoRoot 'content') 'seo') 'content-opportunity-registry.json'
 }
