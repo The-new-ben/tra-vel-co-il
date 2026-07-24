@@ -13,6 +13,7 @@ $discovery_path = TRA_VEL_V2_PATH . '/assets/data/discovery-demo.json';
 $discovery_data = file_exists( $discovery_path ) ? json_decode( file_get_contents( $discovery_path ), true ) : array();
 $map_destinations = isset( $discovery_data['destinations'] ) && is_array( $discovery_data['destinations'] ) ? $discovery_data['destinations'] : array();
 $map_exploration_hubs = isset( $discovery_data['exploration_hubs'] ) && is_array( $discovery_data['exploration_hubs'] ) ? $discovery_data['exploration_hubs'] : array();
+$map_found_prices = function_exists( 'tra_vel_v2_get_all_destination_prices' ) ? tra_vel_v2_get_all_destination_prices() : array();
 $requested_map_destination = isset( $_GET['destination'] ) ? sanitize_key( wp_unslash( $_GET['destination'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 $known_map_destination_ids = array_values( array_filter( array_map( 'sanitize_key', array_column( $map_destinations, 'id' ) ) ) );
 $default_map_destination = in_array( $requested_map_destination, $known_map_destination_ids, true ) ? $requested_map_destination : 'bangkok';
@@ -129,8 +130,14 @@ $default_map_airport = sanitize_text_field( $default_map_data['airport']['code']
 								continue;
 							}
 							$is_default_destination = $default_map_destination === $destination_id;
+							$destination_city = sanitize_text_field( $destination['city'] ?? $destination_id );
+							$found_price      = isset( $map_found_prices[ $destination_id ] ) ? $map_found_prices[ $destination_id ] : null;
+							$found_price_tag  = tra_vel_v2_found_price_pin_label( $found_price );
+							$pin_label        = $found_price_tag
+								? sprintf( '%1$s, %2$s', $destination_city, tra_vel_v2_found_price_headline( $found_price ) )
+								: '';
 							?>
-							<button class="price-pin pin-<?php echo esc_attr( $destination_id ); ?><?php echo $is_default_destination ? ' is-active' : ''; ?>" data-destination="<?php echo esc_attr( $destination_id ); ?>" data-latitude="<?php echo esc_attr( $latitude ); ?>" data-longitude="<?php echo esc_attr( $longitude ); ?>" aria-pressed="<?php echo $is_default_destination ? 'true' : 'false'; ?>" type="button"><?php echo esc_html( $destination['city'] ?? $destination_id ); ?></button>
+							<button class="price-pin pin-<?php echo esc_attr( $destination_id ); ?><?php echo $is_default_destination ? ' is-active' : ''; ?>" data-destination="<?php echo esc_attr( $destination_id ); ?>" data-latitude="<?php echo esc_attr( $latitude ); ?>" data-longitude="<?php echo esc_attr( $longitude ); ?>"<?php echo $found_price_tag ? ' data-found-price="' . esc_attr( $found_price_tag ) . '"' : ''; ?><?php echo $pin_label ? ' aria-label="' . esc_attr( $pin_label ) . '"' : ''; ?> aria-pressed="<?php echo $is_default_destination ? 'true' : 'false'; ?>" type="button"><?php echo esc_html( $destination_city ); ?></button>
 						<?php endforeach; ?>
 						<?php foreach ( $map_exploration_hubs as $exploration_hub ) :
 							$hub_id        = sanitize_key( $exploration_hub['id'] ?? '' );

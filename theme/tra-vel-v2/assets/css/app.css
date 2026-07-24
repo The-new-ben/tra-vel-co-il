@@ -3942,3 +3942,32 @@ label[data-party-hidden="true"] { display: none !important; }
 @media (prefers-reduced-motion: reduce) {
   .next-action-beacon { animation: none !important; box-shadow: 0 0 0 6px rgba(191,233,52,.26); }
 }
+
+/* Found flight prices (theme 1.33.0). A price we actually observed upstream is
+   surfaced as a tag on the Earth and as one honest line next to the primary
+   call to action. The pin tag is CSS generated from data-found-price so it
+   survives the discovery layer swap that rewrites pin text, and so a pin
+   without a verified price renders exactly as it does today. */
+.globe-webgl .price-pin[data-found-price] { display: inline-grid; place-items: center; row-gap: 1px; line-height: 1.1; }
+.globe-webgl .price-pin[data-found-price]::before { content: attr(data-found-price); order: 1; direction: ltr; unicode-bidi: isolate; color: #3f6b00; font-size: 11px; font-weight: 900; letter-spacing: .01em; white-space: nowrap; }
+.globe-webgl .price-pin[data-found-price]:hover::before,.globe-webgl .price-pin[data-found-price].is-active::before { color: #2c4c00; }
+.found-price { max-width: 430px; display: grid; gap: 5px; justify-items: start; margin: 15px 0 0; padding: 13px 15px; border: 1px solid rgba(7,23,29,.14); border-radius: 15px; background: rgba(255,255,255,.96); box-shadow: 0 10px 26px rgba(0,0,0,.16); color: #12262c; text-align: start; }
+.found-price-headline { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 15px; }
+.found-price-headline i { width: 18px; height: 18px; flex: 0 0 auto; color: #5f8a00; }
+.found-price-headline strong { font-weight: 900; }
+.found-price-freshness { margin: 0; color: #4b6268; font-size: 12.5px; font-weight: 700; }
+.found-price-cta { min-height: 44px; display: inline-flex; align-items: center; gap: 7px; margin-top: 2px; padding: 9px 15px; border-radius: 99px; background: var(--lime); color: #24350a; font-size: 13.5px; font-weight: 800; text-decoration: none; }
+.found-price-cta i { width: 16px; height: 16px; flex: 0 0 auto; }
+.found-price-cta:hover { background: var(--lime-2); }
+.found-price-cta:focus-visible { outline: 3px solid #07171d; outline-offset: 2px; }
+.found-price-scope { margin: 0; color: #52646a; font-size: 11.5px; font-weight: 600; line-height: 1.45; }
+.found-price.is-stale { border-color: rgba(7,23,29,.1); background: rgba(255,255,255,.9); }
+.found-price.is-stale .found-price-headline i,.found-price.is-stale .found-price-headline strong { color: #4b6268; }
+.found-price.is-stale .found-price-cta { background: #eff3f1; color: #2c3f45; }
+.pillar-site-card .found-price { max-width: 100%; box-shadow: none; }
+@media (max-width: 560px) {
+  .found-price { max-width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .found-price-cta { transition: none !important; }
+}

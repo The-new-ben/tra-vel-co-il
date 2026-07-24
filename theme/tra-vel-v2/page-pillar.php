@@ -137,6 +137,7 @@ $pillar_badge_heading = isset( $pillar['badge_heading'] ) ? trim( (string) $pill
 						<?php endif; ?>
 					</dl>
 					<p class="pillar-site-summary"><?php echo esc_html( $pillar_point['summary'] ); ?></p>
+					<?php tra_vel_v2_render_found_price( $point_id ); ?>
 					<button class="pillar-site-focus" type="button" data-pillar-site-focus="<?php echo esc_attr( $point_id ); ?>" hidden><i data-lucide="earth"></i><?php esc_html_e( 'הצגה על הכדור', 'tra-vel-v2' ); ?></button>
 				</article>
 			<?php endforeach; ?>

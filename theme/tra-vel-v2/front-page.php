@@ -49,6 +49,7 @@ foreach ( (array) ( $home_editorial_data['destinations'] ?? array() ) as $editor
 		break;
 	}
 }
+$home_found_prices = function_exists( 'tra_vel_v2_get_all_destination_prices' ) ? tra_vel_v2_get_all_destination_prices() : array();
 $home_now       = current_datetime();
 $home_today     = $home_now->format( 'Y-m-d' );
 $home_departure = $home_now->modify( '+30 days' )->format( 'Y-m-d' );
@@ -93,8 +94,13 @@ $home_return    = $home_now->modify( '+34 days' )->format( 'Y-m-d' );
 							continue;
 						}
 						$is_default_destination = $home_default_destination === $destination_id;
+						$found_price     = isset( $home_found_prices[ $destination_id ] ) ? $home_found_prices[ $destination_id ] : null;
+						$found_price_tag = tra_vel_v2_found_price_pin_label( $found_price );
+						$pin_label       = $found_price_tag
+							? sprintf( '%1$s, %2$s', $airport_code, tra_vel_v2_found_price_headline( $found_price ) )
+							: '';
 						?>
-						<button class="price-pin pin-<?php echo esc_attr( $destination_id ); ?><?php echo $is_default_destination ? ' is-active' : ''; ?>" data-destination="<?php echo esc_attr( $destination_id ); ?>" data-latitude="<?php echo esc_attr( $latitude ); ?>" data-longitude="<?php echo esc_attr( $longitude ); ?>" aria-pressed="<?php echo $is_default_destination ? 'true' : 'false'; ?>" type="button"><bdi dir="ltr"><?php echo esc_html( $airport_code ); ?></bdi></button>
+						<button class="price-pin pin-<?php echo esc_attr( $destination_id ); ?><?php echo $is_default_destination ? ' is-active' : ''; ?>" data-destination="<?php echo esc_attr( $destination_id ); ?>" data-latitude="<?php echo esc_attr( $latitude ); ?>" data-longitude="<?php echo esc_attr( $longitude ); ?>"<?php echo $found_price_tag ? ' data-found-price="' . esc_attr( $found_price_tag ) . '"' : ''; ?><?php echo $pin_label ? ' aria-label="' . esc_attr( $pin_label ) . '"' : ''; ?> aria-pressed="<?php echo $is_default_destination ? 'true' : 'false'; ?>" type="button"><bdi dir="ltr"><?php echo esc_html( $airport_code ); ?></bdi></button>
 					<?php endforeach; ?>
 					<?php foreach ( $home_exploration_hubs as $exploration_hub ) :
 						$hub_id        = sanitize_key( $exploration_hub['id'] ?? '' );
