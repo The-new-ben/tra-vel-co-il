@@ -26,6 +26,7 @@
     "ICN": { "code": "ICN", "name": "Incheon International Airport", "destination_id": null, "latitude": 37.4602, "longitude": 126.4407 },
     "LIS": { "code": "LIS", "name": "Humberto Delgado Airport", "destination_id": "lisbon", "latitude": 38.7742, "longitude": -9.1342 },
     "FCO": { "code": "FCO", "name": "Rome Fiumicino Airport", "destination_id": null, "latitude": 41.8003, "longitude": 12.2389 },
+    "WAW": { "code": "WAW", "name": "Warsaw Chopin Airport", "destination_id": "warsaw", "latitude": 52.1657, "longitude": 20.9671 },
     "MAD": { "code": "MAD", "name": "Adolfo Suárez Madrid-Barajas Airport", "destination_id": null, "latitude": 40.4983, "longitude": -3.5676 }
   },
   "provider_status": {
@@ -292,6 +293,32 @@
       },
       "tags": ["7 לילות", "עצירה אחת", "מלון מומלץ"],
       "image": "city-lisbon.webp"
+    },
+    {
+      "id": "warsaw",
+      "city": "ורשה",
+      "country": "פולין",
+      "geo": { "latitude": 52.2297, "longitude": 21.0122 },
+      "position": { "x": 45, "y": 26 },
+      "airport": { "code": "WAW", "name": "Warsaw Chopin", "direct": true, "flight_minutes": 220, "transfer_minutes": 30 },
+      "deal": { "headline_price": 219, "total_per_person": 574, "currency": "USD", "trend_pct": 0, "nights": 4, "total_scope": "destination_deal", "insight": "מרכז מרוכז והעברה קצרה משדה התעופה בחישוב", "bookable": false },
+      "hotel": { "name": "דוגמת לינה במרכז ורשה", "area": "Srodmiescie", "rating": 4.3, "nightly": 125, "nights": 4, "room_total": 500, "per_person_total": 250, "currency": "USD", "tour_ready": false },
+      "weather": { "temperature_c": 21, "condition": "נעים", "season_fit": "טוב" },
+      "planning": {
+        "reviewed_on": "2026-07-22",
+        "source_label": "פרופיל התכנון של Tra-Vel",
+        "modules": {
+          "mobility": { "state": "editorial", "headline": "מהשדה למרכז וברחבי העיר", "detail": "מתחילים מזמן העברה משוער של 30 דקות, ואז בודקים רכבת עירונית, אוטובוס ומונית לפי שעת הנחיתה והמלון.", "next_action": "השוו העברות" },
+          "dining": { "state": "needs_details", "headline": "אוכל וכשרות לפי אזור הלינה", "detail": "רמת כשרות, אלרגיות, ילדים ותקציב לארוחה נדרשים לפני בניית מסלול מסעדות.", "next_action": "הוסיפו העדפות אוכל" },
+          "entry": { "state": "needs_details", "headline": "בדיקת כניסה לפי דרכון ותאריך", "detail": "מאמתים אזרחות, תוקף דרכון ודרישות כניסה מול מקור רשמי לפני רכישת הכרטיס.", "next_action": "בדקו תנאי כניסה" },
+          "connectivity": { "state": "editorial", "headline": "eSIM מול נדידה ו-Wi-Fi", "detail": "משווים חבילה לפי ארבעה ימי שימוש, נפח גלישה, שיתוף אינטרנט וכיסוי מחוץ למרכז.", "next_action": "השוו חיבור" },
+          "accessibility": { "state": "needs_details", "headline": "קצב הליכה, מעליות והרכב המשפחתי", "detail": "גילים, עגלה, מגבלת הליכה וחדרים מחוברים קובעים את האזור ואת סדר הימים.", "next_action": "התאימו צרכים" },
+          "equipment": { "state": "needs_details", "headline": "כבודה וציוד לפי עונה", "detail": "מחברים מזג אוויר, פעילויות ותנאי כבודה לרשימה אחת לפני היציאה, כולל שכבה חמה לחודשי המעבר.", "next_action": "בנו רשימת ציוד" }
+        },
+        "cost_scope": { "state": "partial", "categories": ["flight", "baggage", "stay", "taxes", "transfers", "local_transport", "activities", "dining", "insurance", "connectivity", "equipment", "entry"] }
+      },
+      "tags": ["טיסה ישירה", "4 לילות", "עיר ומוזיאונים"],
+      "image": "city-warsaw.png"
     },
     {
       "id": "larnaca",
@@ -665,6 +692,40 @@
         "costs": { "flight": 305, "baggage": 75, "hotel": 462, "transfers": 48, "insurance": 50, "overnight": 0, "total": 940 },
         "pros": ["ללא לינת ביניים", "כרטיס אחד כאשר מוצע כך", "עצירה אחת"],
         "cons": ["אין מסלול ישיר", "יש לאמת כבודה וזמן מעבר"]
+      }
+    ],
+    "warsaw": [
+      {
+        "id": "warsaw-direct",
+        "currency": "USD",
+        "label": "טיסה ישירה לורשה",
+        "badge": "הכי פשוט",
+        "duration_minutes": 220,
+        "stops": 0,
+        "via": null,
+        "ticket_mode": "single",
+        "risk": "low",
+        "emissions_kg": 470,
+        "score": 90,
+        "costs": { "flight": 219, "baggage": 45, "hotel": 250, "transfers": 30, "insurance": 34, "overnight": 0, "total": 578 },
+        "pros": ["הדרך הקצרה ביותר", "ללא החלפת מטוס", "כרטיס אחד"],
+        "cons": ["פחות גמישות בשעות", "המחיר דורש אימות חי"]
+      },
+      {
+        "id": "warsaw-vienna",
+        "currency": "USD",
+        "label": "דרך וינה, החלפת מטוס",
+        "badge": "חלופה גמישה",
+        "duration_minutes": 375,
+        "stops": 1,
+        "via": "VIE",
+        "ticket_mode": "separate",
+        "risk": "medium",
+        "emissions_kg": 430,
+        "score": 74,
+        "costs": { "flight": 186, "baggage": 55, "hotel": 250, "transfers": 45, "insurance": 34, "overnight": 0, "total": 570 },
+        "pros": ["אפשרות לשלב יעד נוסף", "חלופה כאשר הישיר אינו מתאים"],
+        "cons": ["שני מקטעים נפרדים", "זמן דרך ארוך יותר"]
       }
     ],
     "larnaca": [

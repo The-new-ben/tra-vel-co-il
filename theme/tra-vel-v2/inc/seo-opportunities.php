@@ -34,6 +34,7 @@ function tra_vel_v2_seo_opportunity_destinations() {
 		'lisbon'   => array( 'name' => 'ליסבון', 'airport' => 'LIS', 'latitude' => '38.7223', 'longitude' => '-9.1393' ),
 		'larnaca'  => array( 'name' => 'לרנקה', 'airport' => 'LCA', 'latitude' => '34.9003', 'longitude' => '33.6232' ),
 		'crete'    => array( 'name' => 'כרתים', 'airport' => 'HER', 'latitude' => '35.3387', 'longitude' => '25.1442' ),
+		'warsaw'   => array( 'name' => 'ורשה', 'airport' => 'WAW', 'latitude' => '52.2297', 'longitude' => '21.0122' ),
 	);
 }
 

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated": "2026-07-20",
+  "updated": "2026-07-24",
   "destinations": [
     {
       "id": "budapest",
@@ -145,6 +145,21 @@
       "guide_path": "/destinations/lisbon/",
       "word_count": 9603,
       "source_count": 37
+    },
+    {
+      "id": "warsaw",
+      "city": "ורשה",
+      "country": "פולין",
+      "region": "europe",
+      "region_label": "אירופה",
+      "experience": "city",
+      "experience_label": "עיר, היסטוריה ומוזיאונים",
+      "duration": "3 עד 5 ימים",
+      "best_for": "זוגות · משפחות · תקציב",
+      "decision": "מרכז מודרני ליד התחבורה מול העיר העתיקה המשוחזרת",
+      "map_state": "warsaw",
+      "image": "city-warsaw.png",
+      "guide_status": "research"
     },
     {
       "id": "larnaca",
