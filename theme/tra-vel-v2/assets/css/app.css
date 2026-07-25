@@ -4084,3 +4084,6 @@ label[data-party-hidden="true"] { display: none !important; }
 .experience-metasearch #tpwl-search, .experience-metasearch #tpwl-tickets { direction: rtl; }
 .experience-metasearch #tpwl-tickets:empty { display: none; }
 @media (max-width: 760px) { .experience-metasearch { padding: 16px; border-radius: 20px; } }
+/* The metasearch section must never promise availability it is not showing:
+   when the provider widget has not mounted, the whole block stays hidden. */
+.experience-metasearch:has(#tpwl-search:empty) { display: none; }
