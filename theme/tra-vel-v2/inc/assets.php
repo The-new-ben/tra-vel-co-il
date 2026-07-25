@@ -209,8 +209,10 @@ function tra_vel_v2_metasearch_is_enabled() {
 function tra_vel_v2_script_attributes( $tag, $handle ) {
 	if ( 'tra-vel-v2-metasearch' === $handle ) {
 		// The White Label bundle is published as an ES module and refuses to
-		// boot when it is loaded as a classic script.
-		return str_replace( '<script ', '<script type="module" async ', str_replace( " type='text/javascript'", '', $tag ) );
+		// boot when it is loaded as a classic script. It must NOT be async:
+		// a module already defers, while async lets it execute before the
+		// mount containers exist, and it then silently renders nothing.
+		return str_replace( '<script ', '<script type="module" ', str_replace( " type='text/javascript'", '', $tag ) );
 	}
 	if ( ! in_array( $handle, array( 'tra-vel-v2-app', 'tra-vel-v2-globe-3d', 'tra-vel-v2-voice-dock', 'tra-vel-v2-pillar-earth', 'tra-vel-v2-customer-trip-cockpit', 'tra-vel-v2-next-action', 'tra-vel-v2-decision-card', 'tra-vel-v2-lucide' ), true ) ) {
 		return $tag;
