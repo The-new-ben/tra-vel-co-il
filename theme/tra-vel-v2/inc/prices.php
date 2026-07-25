@@ -638,6 +638,262 @@ function tra_vel_v2_price_unschedule_refresh() {
 add_action( 'switch_theme', 'tra_vel_v2_price_unschedule_refresh' );
 
 /**
+ * Whether the current request can render a found price.
+ *
+ * @return bool
+ */
+function tra_vel_v2_price_surface() {
+	$surface = is_front_page()
+		|| is_page_template( 'page-map.php' )
+		|| is_page_template( 'page-destination.php' )
+		|| is_page_template( 'page-seo-opportunity.php' )
+		|| is_page_template( 'page-pillar.php' )
+		|| is_singular( 'destination' );
+
+	/**
+	 * Filter whether this request may render prices and the currency switcher.
+	 *
+	 * @param bool $surface Whether this request renders prices.
+	 */
+	return (bool) apply_filters( 'tra_vel_v2_price_surface', $surface );
+}
+
+/**
+ * Reduce any candidate to a same site path we are willing to return to.
+ *
+ * Absolute URLs, protocol relative URLs, schemes, hosts, traversal and header
+ * injection are all rejected outright, and any currency argument that somehow
+ * reached the URL is stripped. What survives is a leading slash path, which
+ * wp_safe_redirect resolves against this host and no other.
+ *
+ * @param mixed $candidate Candidate path or URL.
+ * @return string Same site path, or an empty string.
+ */
+function tra_vel_v2_currency_sanitize_return_path( $candidate ) {
+	$candidate = is_string( $candidate ) ? trim( wp_unslash( $candidate ) ) : '';
+	if ( '' === $candidate || strlen( $candidate ) > 600 ) {
+		return '';
+	}
+	if ( 0 !== strpos( $candidate, '/' ) || 0 === strpos( $candidate, '//' ) || preg_match( '/[\x00-\x1f\x7f]/', $candidate ) ) {
+		return '';
+	}
+
+	$parts = wp_parse_url( $candidate );
+	if ( ! is_array( $parts ) || isset( $parts['scheme'] ) || isset( $parts['host'] ) ) {
+		return '';
+	}
+
+	$path = isset( $parts['path'] ) ? $parts['path'] : '/';
+	if ( '' === $path || 0 !== strpos( $path, '/' ) || false !== strpos( $path, '..' ) ) {
+		return '';
+	}
+
+	$args = array();
+	if ( isset( $parts['query'] ) && '' !== $parts['query'] ) {
+		wp_parse_str( $parts['query'], $args );
+	}
+	// The hard SEO law of this release: a currency never survives into a URL.
+	foreach ( array( 'currency', 'cur', TRA_VEL_V2_CURRENCY_COOKIE ) as $forbidden ) {
+		unset( $args[ $forbidden ] );
+	}
+
+	return $args ? $path . '?' . http_build_query( $args ) : $path;
+}
+
+/**
+ * The path this request should return to after a currency switch.
+ *
+ * @return string Same site path.
+ */
+function tra_vel_v2_currency_return_path() {
+	$request = isset( $_SERVER['REQUEST_URI'] ) ? (string) $_SERVER['REQUEST_URI'] : '';
+	$path    = tra_vel_v2_currency_sanitize_return_path( $request );
+
+	return '' === $path ? '/' : $path;
+}
+
+/**
+ * The traveler facing name of one currency.
+ *
+ * @param string $currency Currency code.
+ * @return string
+ */
+function tra_vel_v2_currency_name( $currency ) {
+	$currency = tra_vel_v2_normalize_currency( $currency );
+	$names    = array(
+		'ils' => __( 'שקל', 'tra-vel-v2' ),
+		'usd' => __( 'דולר', 'tra-vel-v2' ),
+		'eur' => __( 'אירו', 'tra-vel-v2' ),
+	);
+
+	return isset( $names[ $currency ] ) ? $names[ $currency ] : strtoupper( $currency );
+}
+
+/**
+ * The currency switcher for the site header.
+ *
+ * A real form that posts to admin-post.php and redirects back to the same
+ * path. It works with JavaScript disabled, it is reachable by keyboard, and it
+ * never puts the choice in a URL.
+ *
+ * @return void
+ */
+function tra_vel_v2_render_currency_switcher() {
+	if ( ! tra_vel_v2_price_surface() ) {
+		return;
+	}
+
+	$currencies = tra_vel_v2_supported_currencies();
+	if ( count( $currencies ) < 2 ) {
+		return;
+	}
+
+	$current = tra_vel_v2_current_currency();
+	?>
+	<form class="currency-switcher" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+		<input type="hidden" name="action" value="<?php echo esc_attr( TRA_VEL_V2_CURRENCY_ACTION ); ?>">
+		<input type="hidden" name="tra_vel_return" value="<?php echo esc_attr( tra_vel_v2_currency_return_path() ); ?>">
+		<?php wp_nonce_field( TRA_VEL_V2_CURRENCY_ACTION, 'tra_vel_currency_nonce', false ); ?>
+		<div class="currency-switcher-pills" role="group" aria-label="<?php esc_attr_e( 'מטבע התצוגה', 'tra-vel-v2' ); ?>">
+			<?php foreach ( $currencies as $code => $symbol ) : ?>
+				<?php $is_current = $code === $current; ?>
+				<button
+					class="currency-pill<?php echo $is_current ? ' is-current' : ''; ?>"
+					type="submit"
+					name="currency"
+					value="<?php echo esc_attr( $code ); ?>"
+					aria-pressed="<?php echo $is_current ? 'true' : 'false'; ?>"
+					aria-label="<?php echo esc_attr( sprintf( /* translators: %s: currency name. */ __( 'הצגת מחירים ב%s', 'tra-vel-v2' ), tra_vel_v2_currency_name( $code ) ) ); ?>"
+				><span aria-hidden="true"><?php echo esc_html( $symbol ); ?></span></button>
+			<?php endforeach; ?>
+		</div>
+	</form>
+	<?php
+}
+
+/**
+ * Whether a currency switch request really came from this site.
+ *
+ * The nonce is the primary check. A nonce is also a timestamped value, and
+ * this form is rendered inside pages that a page cache may hold for longer
+ * than a nonce lives, so an expired nonce must not turn the control into a
+ * button that silently does nothing. When the nonce has aged out we fall back
+ * to a strict same origin check on the request itself, which is the same
+ * property the nonce was there to prove. The action writes one three letter
+ * display preference and nothing else.
+ *
+ * @return bool
+ */
+function tra_vel_v2_currency_request_is_trusted() {
+	$nonce = isset( $_POST['tra_vel_currency_nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['tra_vel_currency_nonce'] ) ) : '';
+	if ( '' !== $nonce && wp_verify_nonce( $nonce, TRA_VEL_V2_CURRENCY_ACTION ) ) {
+		return true;
+	}
+
+	$origin = isset( $_SERVER['HTTP_ORIGIN'] ) ? esc_url_raw( wp_unslash( $_SERVER['HTTP_ORIGIN'] ) ) : '';
+	if ( '' === $origin ) {
+		$referer = wp_get_raw_referer();
+		$origin  = is_string( $referer ) ? $referer : '';
+	}
+	if ( '' === $origin ) {
+		return false;
+	}
+
+	$origin_host = wp_parse_url( $origin, PHP_URL_HOST );
+	$site_host   = wp_parse_url( home_url( '/' ), PHP_URL_HOST );
+
+	return is_string( $origin_host ) && is_string( $site_host ) && strtolower( $origin_host ) === strtolower( $site_host );
+}
+
+/**
+ * Persist the chosen currency and return the visitor to the same page.
+ *
+ * @return void
+ */
+function tra_vel_v2_handle_currency_switch() {
+	$return = isset( $_POST['tra_vel_return'] ) ? tra_vel_v2_currency_sanitize_return_path( $_POST['tra_vel_return'] ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing
+	if ( '' === $return ) {
+		$referer = wp_get_referer();
+		$referer = is_string( $referer ) ? (string) wp_parse_url( $referer, PHP_URL_PATH ) : '';
+		$return  = tra_vel_v2_currency_sanitize_return_path( $referer );
+	}
+	if ( '' === $return ) {
+		$return = '/';
+	}
+
+	if ( tra_vel_v2_currency_request_is_trusted() ) {
+		$requested = isset( $_POST['currency'] ) ? sanitize_text_field( wp_unslash( $_POST['currency'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing
+		$currency  = tra_vel_v2_normalize_currency( $requested );
+		setcookie(
+			TRA_VEL_V2_CURRENCY_COOKIE,
+			$currency,
+			array(
+				'expires'  => time() + TRA_VEL_V2_CURRENCY_COOKIE_TTL,
+				'path'     => '/',
+				'domain'   => defined( 'COOKIE_DOMAIN' ) && COOKIE_DOMAIN ? COOKIE_DOMAIN : '',
+				'secure'   => is_ssl(),
+				'httponly' => true,
+				'samesite' => 'Lax',
+			)
+		);
+		$_COOKIE[ TRA_VEL_V2_CURRENCY_COOKIE ] = $currency;
+	}
+
+	// A relative path can only resolve against this host, and wp_safe_redirect
+	// rejects anything that is not local. 303 turns the POST into a clean GET
+	// of the same page, with no currency argument anywhere in the URL.
+	wp_safe_redirect( $return, 303 );
+	exit;
+}
+add_action( 'admin_post_' . TRA_VEL_V2_CURRENCY_ACTION, 'tra_vel_v2_handle_currency_switch' );
+add_action( 'admin_post_nopriv_' . TRA_VEL_V2_CURRENCY_ACTION, 'tra_vel_v2_handle_currency_switch' );
+
+/**
+ * Keep price pages cacheable for the default currency and private otherwise.
+ *
+ * A page that renders prices now differs by one cookie, so it announces Vary:
+ * Cookie. That alone is enough for a well behaved shared cache, but a
+ * WordPress page cache plugin usually ignores Vary and serves the first
+ * rendered copy to everyone. Rather than fight that, we keep the default
+ * shekel render fully cacheable, which is what almost every visitor sees, and
+ * mark only the non default currency requests as private and unstorable. A
+ * dollar visitor costs one uncached render; a shekel visitor costs nothing.
+ *
+ * @return void
+ */
+function tra_vel_v2_price_send_cache_headers() {
+	if ( is_admin() || is_feed() || is_robots() || headers_sent() || ! tra_vel_v2_price_surface() ) {
+		return;
+	}
+
+	$vary = array( 'Cookie' );
+	foreach ( headers_list() as $sent ) {
+		if ( 0 !== stripos( $sent, 'vary:' ) ) {
+			continue;
+		}
+		foreach ( explode( ',', substr( $sent, 5 ) ) as $token ) {
+			$token = trim( $token );
+			if ( '' !== $token && ! in_array( strtolower( $token ), array_map( 'strtolower', $vary ), true ) ) {
+				$vary[] = $token;
+			}
+		}
+	}
+	header( 'Vary: ' . implode( ', ', $vary ) );
+
+	if ( TRA_VEL_V2_PRICE_DEFAULT_CURRENCY === tra_vel_v2_current_currency() ) {
+		return;
+	}
+
+	header( 'Cache-Control: private, no-store' );
+	if ( defined( 'LSCWP_V' ) ) {
+		// Cooperate with LiteSpeed through its own documented control instead
+		// of relying on a header it does not read.
+		do_action( 'litespeed_control_set_nocache', 'tra-vel non default display currency' );
+	}
+}
+add_action( 'template_redirect', 'tra_vel_v2_price_send_cache_headers', 20 );
+
+/**
  * Format one found amount for public display.
  *
  * The symbol comes from the payload itself, which carries the currency the

@@ -53,6 +53,7 @@ $overlay_header = is_front_page() || is_page_template( 'page-destination.php' ) 
 			<a class="nav-link" href="<?php echo esc_url( home_url( '/ai-planner/' ) ); ?>"><?php esc_html_e( 'מתכנן החופשה', 'tra-vel-v2' ); ?></a>
 		</nav>
 		<div class="header-actions">
+			<?php if ( function_exists( 'tra_vel_v2_render_currency_switcher' ) ) { tra_vel_v2_render_currency_switcher(); } ?>
 			<a class="round-button" href="<?php echo esc_url( home_url( '/saved/' ) ); ?>" aria-label="<?php esc_attr_e( 'נסיעות שמורות', 'tra-vel-v2' ); ?>"><i data-lucide="heart"></i></a>
 			<a class="round-button account-button" href="<?php echo esc_url( home_url( '/account/' ) ); ?>" aria-label="<?php esc_attr_e( 'החשבון שלי', 'tra-vel-v2' ); ?>"><i data-lucide="user-round"></i></a>
 			<a class="header-cta" href="<?php echo esc_url( home_url( '/#search' ) ); ?>"><?php esc_html_e( 'השוו טיסה ומלון', 'tra-vel-v2' ); ?></a>

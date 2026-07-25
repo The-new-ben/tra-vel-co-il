@@ -3971,3 +3971,22 @@ label[data-party-hidden="true"] { display: none !important; }
 @media (prefers-reduced-motion: reduce) {
   .found-price-cta { transition: none !important; }
 }
+
+/* Display currency (theme 1.34.0). Three pills in the header, posted as a real
+   form so the choice survives without JavaScript and never reaches a URL. */
+.currency-switcher { margin: 0; display: flex; align-items: center; }
+.currency-switcher-pills { display: flex; align-items: center; gap: 2px; padding: 3px; border: 1px solid rgba(255,255,255,.2); border-radius: 14px; background: rgba(255,255,255,.07); }
+.on-light .currency-switcher-pills { border-color: var(--line); background: #fff; }
+.currency-pill {
+  min-width: 40px; min-height: 36px; padding: 0 9px; border: 0; border-radius: 11px; background: transparent;
+  color: inherit; cursor: pointer; font: 800 14px 'Heebo',sans-serif; line-height: 1; display: grid; place-items: center;
+}
+.currency-pill span { direction: ltr; unicode-bidi: isolate; }
+.currency-pill[aria-pressed="true"] { background: var(--lime); color: #24350a; }
+.currency-pill:hover:not([aria-pressed="true"]) { background: rgba(255,255,255,.14); }
+.on-light .currency-pill:hover:not([aria-pressed="true"]) { background: #f0f4ee; }
+.currency-pill:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
+.on-light .currency-pill:focus-visible { outline-color: var(--ink); }
+@media (max-width: 760px) {
+  .currency-pill { min-width: 38px; padding: 0 7px; font-size: 13px; }
+}
