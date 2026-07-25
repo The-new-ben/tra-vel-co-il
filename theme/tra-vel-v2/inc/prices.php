@@ -1,12 +1,21 @@
 <?php
 /**
- * Found flight prices for the Earth (theme 1.33.0).
+ * Found flight prices for the Earth (theme 1.34.0).
  *
  * Travelpayouts publishes fares that travelers found in recent searches. They
  * are not our inventory, we never sell them, and they can move at any moment.
  * Every value that leaves this file therefore carries the moment it was
  * retrieved, is labelled as a found price in the templates, and links out to
  * the supplier that actually owns the fare.
+ *
+ * Money is never converted here. The upstream endpoint honours a currency
+ * parameter natively, so a shekel price and a dollar price are two separate
+ * upstream observations with two separate caches. There is no exchange rate
+ * table, no multiplication and no client side conversion anywhere in this
+ * theme: a number we display is a number a supplier published in that exact
+ * currency. Because the response record itself carries no currency field, the
+ * currency is proven from the record's own supplier link before the number is
+ * allowed onto a page.
  *
  * Nothing here may block or break a page render. The visitor is always served
  * from cache, a twice daily cron job keeps that cache warm, and every failure
@@ -24,6 +33,10 @@ define( 'TRA_VEL_V2_PRICE_BOOKING_ORIGIN', 'https://www.aviasales.com' );
 define( 'TRA_VEL_V2_PRICE_MARKER', '552866.tra-vel' );
 define( 'TRA_VEL_V2_PRICE_ORIGIN_AIRPORT', 'TLV' );
 define( 'TRA_VEL_V2_PRICE_CURRENCY', 'ILS' );
+define( 'TRA_VEL_V2_PRICE_DEFAULT_CURRENCY', 'ils' );
+define( 'TRA_VEL_V2_CURRENCY_COOKIE', 'tra_vel_currency' );
+define( 'TRA_VEL_V2_CURRENCY_ACTION', 'tra_vel_currency' );
+define( 'TRA_VEL_V2_CURRENCY_COOKIE_TTL', YEAR_IN_SECONDS );
 define( 'TRA_VEL_V2_PRICE_TRANSIENT_PREFIX', 'tra_vel_v2_price_' );
 define( 'TRA_VEL_V2_PRICE_STALE_TRANSIENT_PREFIX', 'tra_vel_v2_price_stale_' );
 define( 'TRA_VEL_V2_PRICE_UNAVAILABLE', 'unavailable' );
@@ -34,6 +47,98 @@ define( 'TRA_VEL_V2_PRICE_STALE_TTL', 7 * DAY_IN_SECONDS );
 define( 'TRA_VEL_V2_PRICE_STALE_AFTER', DAY_IN_SECONDS );
 define( 'TRA_VEL_V2_PRICE_HTTP_TIMEOUT', 6 );
 define( 'TRA_VEL_V2_PRICE_MAX_AMOUNT', 100000 );
+
+/**
+ * The currencies this site is allowed to display, mapped to their symbol.
+ *
+ * The default currency can never be filtered away: every unknown, unsupported
+ * or hostile value resolves to it, so it has to exist.
+ *
+ * @return array<string,string> Lower case ISO code to display symbol.
+ */
+function tra_vel_v2_supported_currencies() {
+	$base = array(
+		'ils' => '₪',
+		'usd' => '$',
+		'eur' => '€',
+	);
+
+	/**
+	 * Filter the currencies the site may display.
+	 *
+	 * @param array<string,string> $base Lower case ISO code to display symbol.
+	 */
+	$filtered = apply_filters( 'tra_vel_v2_supported_currencies', $base );
+	if ( ! is_array( $filtered ) || ! $filtered ) {
+		return $base;
+	}
+
+	$supported = array();
+	foreach ( $filtered as $code => $symbol ) {
+		$code   = is_string( $code ) ? strtolower( trim( $code ) ) : '';
+		$symbol = is_string( $symbol ) ? trim( $symbol ) : '';
+		if ( ! preg_match( '/^[a-z]{3}$/', $code ) || '' === $symbol ) {
+			continue;
+		}
+		$supported[ $code ] = function_exists( 'mb_substr' ) ? mb_substr( $symbol, 0, 4 ) : substr( $symbol, 0, 4 );
+	}
+
+	if ( ! isset( $supported[ TRA_VEL_V2_PRICE_DEFAULT_CURRENCY ] ) ) {
+		$supported = array_merge(
+			array( TRA_VEL_V2_PRICE_DEFAULT_CURRENCY => $base[ TRA_VEL_V2_PRICE_DEFAULT_CURRENCY ] ),
+			$supported
+		);
+	}
+
+	return $supported;
+}
+
+/**
+ * Resolve any candidate into a currency we are allowed to display.
+ *
+ * @param mixed $currency Candidate currency code.
+ * @return string Lower case supported ISO code.
+ */
+function tra_vel_v2_normalize_currency( $currency ) {
+	$currency = is_string( $currency ) ? strtolower( trim( $currency ) ) : '';
+	if ( ! preg_match( '/^[a-z]{3}$/', $currency ) ) {
+		return TRA_VEL_V2_PRICE_DEFAULT_CURRENCY;
+	}
+
+	return isset( tra_vel_v2_supported_currencies()[ $currency ] ) ? $currency : TRA_VEL_V2_PRICE_DEFAULT_CURRENCY;
+}
+
+/**
+ * The display symbol for one currency.
+ *
+ * @param string $currency Currency code.
+ * @return string Display symbol.
+ */
+function tra_vel_v2_currency_symbol( $currency ) {
+	$currencies = tra_vel_v2_supported_currencies();
+	$currency   = tra_vel_v2_normalize_currency( $currency );
+
+	return isset( $currencies[ $currency ] ) ? $currencies[ $currency ] : $currencies[ TRA_VEL_V2_PRICE_DEFAULT_CURRENCY ];
+}
+
+/**
+ * The currency this request displays.
+ *
+ * The preference lives only in a cookie, never in a URL: a currency query
+ * argument would create a second crawlable copy of every indexed page. We also
+ * never guess from IP or Accept-Language. A Hebrew page is a shekel page until
+ * the visitor says otherwise.
+ *
+ * @return string Lower case supported ISO code.
+ */
+function tra_vel_v2_current_currency() {
+	// A display preference, not an authenticated action: reading it is safe
+	// without a nonce, and the value is re-derived against the allowlist.
+	$cookie = isset( $_COOKIE[ TRA_VEL_V2_CURRENCY_COOKIE ] ) ? $_COOKIE[ TRA_VEL_V2_CURRENCY_COOKIE ] : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+	$cookie = is_string( $cookie ) ? wp_unslash( $cookie ) : '';
+
+	return tra_vel_v2_normalize_currency( $cookie );
+}
 
 /**
  * The Travelpayouts API token.
@@ -132,17 +237,67 @@ function tra_vel_v2_price_deep_link( $link ) {
 }
 
 /**
+ * Prove that one record really is denominated in the currency we asked for.
+ *
+ * This is the reason release 1.34.0 exists. The endpoint honours the currency
+ * parameter, but the response record carries no currency field at all, so a
+ * record on its own can never tell us what its number means. The supplier link
+ * inside the same record does: it carries expected_price_currency and
+ * expected_price, which is the amount the traveler will see on the supplier
+ * side. A record is trustworthy only when that link agrees with both the
+ * currency we requested and the amount the record published. Anything else is
+ * a number whose currency we cannot prove, and we would rather show nothing.
+ *
+ * @param mixed  $link     Raw link value from the API record.
+ * @param string $currency Lower case currency that was requested.
+ * @param int    $amount   Amount published by the same record.
+ * @return bool Whether the record may be displayed in that currency.
+ */
+function tra_vel_v2_price_link_confirms_currency( $link, $currency, $amount ) {
+	if ( ! is_string( $link ) || '' === $link || ! preg_match( '/^[a-z]{3}$/', (string) $currency ) ) {
+		return false;
+	}
+
+	$query = wp_parse_url( $link, PHP_URL_QUERY );
+	if ( ! is_string( $query ) || '' === $query ) {
+		return false;
+	}
+
+	$args = array();
+	wp_parse_str( $query, $args );
+
+	$link_currency = isset( $args['expected_price_currency'] ) && is_scalar( $args['expected_price_currency'] )
+		? strtolower( trim( (string) $args['expected_price_currency'] ) )
+		: '';
+	if ( ! preg_match( '/^[a-z]{3}$/', $link_currency ) || $link_currency !== $currency ) {
+		return false;
+	}
+
+	$link_amount = isset( $args['expected_price'] ) && is_scalar( $args['expected_price'] )
+		? trim( (string) $args['expected_price'] )
+		: '';
+	if ( ! preg_match( '/^\d+$/', $link_amount ) ) {
+		return false;
+	}
+
+	return (int) $link_amount === (int) $amount;
+}
+
+/**
  * Normalize one raw API record into our published price shape.
  *
  * @param mixed  $record    Raw API record.
  * @param string $airport   Expected destination IATA code.
  * @param string $fetched_at RFC3339 retrieval instant.
+ * @param string $currency   Lower case currency that was requested.
  * @return array<string,mixed>|null Normalized price, or null when untrustworthy.
  */
-function tra_vel_v2_price_normalize_record( $record, $airport, $fetched_at ) {
+function tra_vel_v2_price_normalize_record( $record, $airport, $fetched_at, $currency = TRA_VEL_V2_PRICE_DEFAULT_CURRENCY ) {
 	if ( ! is_array( $record ) ) {
 		return null;
 	}
+
+	$currency = tra_vel_v2_normalize_currency( $currency );
 
 	$amount = isset( $record['price'] ) && is_numeric( $record['price'] ) ? (int) $record['price'] : 0;
 	if ( $amount <= 0 || $amount >= TRA_VEL_V2_PRICE_MAX_AMOUNT || (float) $amount !== (float) $record['price'] ) {
@@ -164,7 +319,12 @@ function tra_vel_v2_price_normalize_record( $record, $airport, $fetched_at ) {
 		return null;
 	}
 
-	$deep_link = tra_vel_v2_price_deep_link( isset( $record['link'] ) ? $record['link'] : '' );
+	$raw_link = isset( $record['link'] ) ? $record['link'] : '';
+	if ( ! tra_vel_v2_price_link_confirms_currency( $raw_link, $currency, $amount ) ) {
+		return null;
+	}
+
+	$deep_link = tra_vel_v2_price_deep_link( $raw_link );
 	if ( '' === $deep_link ) {
 		return null;
 	}
@@ -178,30 +338,36 @@ function tra_vel_v2_price_normalize_record( $record, $airport, $fetched_at ) {
 	$gate = function_exists( 'mb_substr' ) ? mb_substr( $gate, 0, 60 ) : substr( $gate, 0, 60 );
 
 	return array(
-		'price'          => $amount,
-		'currency'       => TRA_VEL_V2_PRICE_CURRENCY,
-		'departure_date' => $departure_date,
-		'return_date'    => tra_vel_v2_price_sanitize_date( isset( $record['return_at'] ) ? $record['return_at'] : '' ),
-		'airline'        => $airline,
-		'transfers'      => $transfers,
-		'gate'           => $gate,
-		'deep_link'      => $deep_link,
-		'fetched_at'     => $fetched_at,
-		'is_stale'       => false,
+		'price'           => $amount,
+		'currency'        => strtoupper( $currency ),
+		'currency_symbol' => tra_vel_v2_currency_symbol( $currency ),
+		'departure_date'  => $departure_date,
+		'return_date'     => tra_vel_v2_price_sanitize_date( isset( $record['return_at'] ) ? $record['return_at'] : '' ),
+		'airline'         => $airline,
+		'transfers'       => $transfers,
+		'gate'            => $gate,
+		'deep_link'       => $deep_link,
+		'fetched_at'      => $fetched_at,
+		'is_stale'        => false,
 	);
 }
 
 /**
  * Ask Travelpayouts for the cheapest round trip we can currently observe.
  *
+ * The currency is requested upstream, never derived locally. A dollar price is
+ * a separate call, not a multiplication of the shekel price.
+ *
  * Any failure returns null. The token never reaches a log, an error message or
  * a stored value.
  *
- * @param string $airport Destination IATA code.
+ * @param string $airport  Destination IATA code.
+ * @param string $currency Lower case currency to request.
  * @return array<string,mixed>|null Normalized price, or null.
  */
-function tra_vel_v2_price_fetch( $airport ) {
-	$token = tra_vel_v2_travelpayouts_api_token();
+function tra_vel_v2_price_fetch( $airport, $currency = TRA_VEL_V2_PRICE_DEFAULT_CURRENCY ) {
+	$token    = tra_vel_v2_travelpayouts_api_token();
+	$currency = tra_vel_v2_normalize_currency( $currency );
 	if ( '' === $token || ! preg_match( '/^[A-Z]{3}$/', (string) $airport ) ) {
 		return null;
 	}
@@ -210,7 +376,7 @@ function tra_vel_v2_price_fetch( $airport ) {
 		array(
 			'origin'      => TRA_VEL_V2_PRICE_ORIGIN_AIRPORT,
 			'destination' => $airport,
-			'currency'    => strtolower( TRA_VEL_V2_PRICE_CURRENCY ),
+			'currency'    => $currency,
 			'sorting'     => 'price',
 			'limit'       => 3,
 			'one_way'     => 'false',
@@ -243,8 +409,12 @@ function tra_vel_v2_price_fetch( $airport ) {
 
 	$fetched_at = gmdate( 'c' );
 	$best       = null;
+	// Every returned record is judged on its own. One record whose link proves
+	// a different currency, or an amount that disagrees with its own link, is
+	// dropped and the next candidate is examined. If none survive we publish
+	// nothing at all for this destination in this currency.
 	foreach ( $body['data'] as $record ) {
-		$candidate = tra_vel_v2_price_normalize_record( $record, $airport, $fetched_at );
+		$candidate = tra_vel_v2_price_normalize_record( $record, $airport, $fetched_at, $currency );
 		if ( null === $candidate ) {
 			continue;
 		}
@@ -308,33 +478,65 @@ function tra_vel_v2_price_may_fetch() {
 }
 
 /**
+ * The cache key for one destination in one currency.
+ *
+ * Currency is part of every key. Two currencies are two independent upstream
+ * observations, and a shekel entry must never be able to answer a dollar
+ * request. The negative marker is written to the same key, so an unavailable
+ * dollar price never suppresses an available shekel price.
+ *
+ * @param string $prefix    Transient prefix.
+ * @param string $map_state Destination map state.
+ * @param string $currency  Lower case currency.
+ * @return string Transient key.
+ */
+function tra_vel_v2_price_cache_key( $prefix, $map_state, $currency ) {
+	return $prefix . sanitize_key( (string) $map_state ) . '_' . tra_vel_v2_normalize_currency( $currency );
+}
+
+/**
+ * Whether a cached payload can still prove the currency it is being read for.
+ *
+ * @param mixed  $price    Cached payload.
+ * @param string $currency Lower case currency the caller asked for.
+ * @return bool
+ */
+function tra_vel_v2_price_currency_matches( $price, $currency ) {
+	return is_array( $price )
+		&& isset( $price['price'], $price['currency'] )
+		&& strtolower( (string) $price['currency'] ) === tra_vel_v2_normalize_currency( $currency );
+}
+
+/**
  * The found price for one destination, or null.
  *
- * @param string $map_state Destination map state.
+ * @param string      $map_state Destination map state.
+ * @param string|null $currency  Currency to display, or null for this request's currency.
  * @return array<string,mixed>|null Normalized price payload, or null.
  */
-function tra_vel_v2_get_destination_price( $map_state ) {
+function tra_vel_v2_get_destination_price( $map_state, $currency = null ) {
 	$map_state = sanitize_key( (string) $map_state );
+	$currency  = null === $currency ? tra_vel_v2_current_currency() : tra_vel_v2_normalize_currency( $currency );
 	$airport   = tra_vel_v2_price_destination_airport( $map_state );
 	if ( '' === $airport ) {
 		return null;
 	}
 
-	$fresh_key = TRA_VEL_V2_PRICE_TRANSIENT_PREFIX . $map_state;
-	$stale_key = TRA_VEL_V2_PRICE_STALE_TRANSIENT_PREFIX . $map_state;
+	$fresh_key = tra_vel_v2_price_cache_key( TRA_VEL_V2_PRICE_TRANSIENT_PREFIX, $map_state, $currency );
+	$stale_key = tra_vel_v2_price_cache_key( TRA_VEL_V2_PRICE_STALE_TRANSIENT_PREFIX, $map_state, $currency );
 	$cached    = get_transient( $fresh_key );
-	if ( is_array( $cached ) && isset( $cached['price'] ) ) {
+	if ( tra_vel_v2_price_currency_matches( $cached, $currency ) ) {
 		return tra_vel_v2_price_apply_freshness( $cached );
 	}
 
 	$stale = get_transient( $stale_key );
-	$stale = is_array( $stale ) && isset( $stale['price'] ) ? tra_vel_v2_price_apply_freshness( $stale ) : null;
+	$stale = tra_vel_v2_price_currency_matches( $stale, $currency ) ? tra_vel_v2_price_apply_freshness( $stale ) : null;
 
 	if ( TRA_VEL_V2_PRICE_UNAVAILABLE === $cached || ! tra_vel_v2_price_may_fetch() ) {
 		return $stale;
 	}
 
-	$price = tra_vel_v2_price_fetch( $airport );
+	$price = tra_vel_v2_price_fetch( $airport, $currency );
 	if ( null === $price ) {
 		set_transient( $fresh_key, TRA_VEL_V2_PRICE_UNAVAILABLE, TRA_VEL_V2_PRICE_NEGATIVE_TTL );
 		return $stale;
@@ -350,18 +552,22 @@ function tra_vel_v2_get_destination_price( $map_state ) {
  * Every destination price we can currently stand behind.
  *
  * Safe to call on any page: destinations without an airport are skipped, and
- * the per request refresh budget bounds a cold cache.
+ * the per request refresh budget bounds a cold cache. A visitor who selected a
+ * currency the cron does not warm therefore sees prices appear gradually
+ * instead of waiting on a chain of upstream calls.
  *
+ * @param string|null $currency Currency to display, or null for this request's currency.
  * @return array<string,array<string,mixed>> Map state to price payload.
  */
-function tra_vel_v2_get_all_destination_prices() {
+function tra_vel_v2_get_all_destination_prices( $currency = null ) {
 	if ( ! function_exists( 'tra_vel_v2_seo_opportunity_destinations' ) ) {
 		return array();
 	}
 
-	$prices = array();
+	$currency = null === $currency ? tra_vel_v2_current_currency() : tra_vel_v2_normalize_currency( $currency );
+	$prices   = array();
 	foreach ( array_keys( tra_vel_v2_seo_opportunity_destinations() ) as $map_state ) {
-		$price = tra_vel_v2_get_destination_price( $map_state );
+		$price = tra_vel_v2_get_destination_price( $map_state, $currency );
 		if ( is_array( $price ) ) {
 			$prices[ $map_state ] = $price;
 		}
@@ -373,6 +579,12 @@ function tra_vel_v2_get_all_destination_prices() {
 /**
  * Warm every destination price so visitors virtually always hit the cache.
  *
+ * Only the default currency is warmed, and deliberately so. Warming every
+ * supported currency would multiply the upstream call volume by the size of
+ * the allowlist for a preference most visitors never change. Shekel visitors
+ * stay instant, and a dollar or euro visitor pays for one bounded call on the
+ * first view of a destination and hits the cache from then on.
+ *
  * @return void
  */
 function tra_vel_v2_refresh_all_destination_prices() {
@@ -380,18 +592,20 @@ function tra_vel_v2_refresh_all_destination_prices() {
 		return;
 	}
 
+	$currency = TRA_VEL_V2_PRICE_DEFAULT_CURRENCY;
 	foreach ( array_keys( tra_vel_v2_seo_opportunity_destinations() ) as $map_state ) {
 		$airport = tra_vel_v2_price_destination_airport( $map_state );
 		if ( '' === $airport ) {
 			continue;
 		}
-		$price = tra_vel_v2_price_fetch( $airport );
+		$fresh_key = tra_vel_v2_price_cache_key( TRA_VEL_V2_PRICE_TRANSIENT_PREFIX, $map_state, $currency );
+		$price     = tra_vel_v2_price_fetch( $airport, $currency );
 		if ( null === $price ) {
-			set_transient( TRA_VEL_V2_PRICE_TRANSIENT_PREFIX . $map_state, TRA_VEL_V2_PRICE_UNAVAILABLE, TRA_VEL_V2_PRICE_NEGATIVE_TTL );
+			set_transient( $fresh_key, TRA_VEL_V2_PRICE_UNAVAILABLE, TRA_VEL_V2_PRICE_NEGATIVE_TTL );
 			continue;
 		}
-		set_transient( TRA_VEL_V2_PRICE_TRANSIENT_PREFIX . $map_state, $price, TRA_VEL_V2_PRICE_FRESH_TTL );
-		set_transient( TRA_VEL_V2_PRICE_STALE_TRANSIENT_PREFIX . $map_state, $price, TRA_VEL_V2_PRICE_STALE_TTL );
+		set_transient( $fresh_key, $price, TRA_VEL_V2_PRICE_FRESH_TTL );
+		set_transient( tra_vel_v2_price_cache_key( TRA_VEL_V2_PRICE_STALE_TRANSIENT_PREFIX, $map_state, $currency ), $price, TRA_VEL_V2_PRICE_STALE_TTL );
 	}
 }
 add_action( TRA_VEL_V2_PRICE_CRON_HOOK, 'tra_vel_v2_refresh_all_destination_prices' );
@@ -426,6 +640,11 @@ add_action( 'switch_theme', 'tra_vel_v2_price_unschedule_refresh' );
 /**
  * Format one found amount for public display.
  *
+ * The symbol comes from the payload itself, which carries the currency the
+ * supplier link proved. A bare amount without a payload can only be the
+ * default currency, because that is the only currency we could have observed
+ * without knowing which one was requested.
+ *
  * @param array<string,mixed>|int $price Price payload or raw amount.
  * @return string Formatted amount such as the shekel sign followed by 463.
  */
@@ -435,7 +654,14 @@ function tra_vel_v2_format_found_price( $price ) {
 		return '';
 	}
 
-	return '₪' . number_format_i18n( $amount, 0 );
+	$symbol = is_array( $price ) && isset( $price['currency_symbol'] ) && is_string( $price['currency_symbol'] )
+		? trim( $price['currency_symbol'] )
+		: '';
+	if ( '' === $symbol ) {
+		$symbol = tra_vel_v2_currency_symbol( TRA_VEL_V2_PRICE_DEFAULT_CURRENCY );
+	}
+
+	return $symbol . number_format_i18n( $amount, 0 );
 }
 
 /**
