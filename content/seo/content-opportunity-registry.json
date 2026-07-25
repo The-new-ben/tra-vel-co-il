@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updated": "2026-07-24",
+  "updated": "2026-07-25",
   "locale": "he-IL",
   "evidenceBoundary": "Priorities are hypotheses informed by competitor coverage and Israeli traveler intent. They are not search-volume claims and must be rescored with Search Console, keyword-tool and supplier-conversion evidence.",
   "entries": [
@@ -855,6 +855,18 @@
       "status": "backlog",
       "conversionAction": "תכננו את ורשה על המפה ובדקו תאריכים",
       "monetization": ["flights", "hotels", "packages", "insurance"]
+    },
+    {
+      "id": "warsaw-flight-cost",
+      "canonicalPath": "/flights/warsaw-cost/",
+      "pageType": "transactional-cluster",
+      "primaryIntent": "כמה עולה טיסה לוורשה",
+      "cluster": "warsaw",
+      "parentPath": "/flights/",
+      "mapState": "warsaw",
+      "status": "backlog",
+      "conversionAction": "בדקו את המחיר שנמצא ועברו לספק ההזמנה",
+      "monetization": ["flights", "packages"]
     },
     {
       "id": "thailand-guide",

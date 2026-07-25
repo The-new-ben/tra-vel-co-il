@@ -9,7 +9,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'TRA_VEL_V2_VERSION', '1.37.2' );
+define( 'TRA_VEL_V2_VERSION', '1.38.0' );
 define( 'TRA_VEL_V2_PATH', get_template_directory() );
 define( 'TRA_VEL_V2_URI', get_template_directory_uri() );
 
@@ -24,6 +24,7 @@ require_once TRA_VEL_V2_PATH . '/inc/seo.php';
 require_once TRA_VEL_V2_PATH . '/inc/seo-opportunities.php';
 require_once TRA_VEL_V2_PATH . '/inc/prices.php';
 require_once TRA_VEL_V2_PATH . '/inc/price-history.php';
+require_once TRA_VEL_V2_PATH . '/inc/cost-answers.php';
 require_once TRA_VEL_V2_PATH . '/inc/auth.php';
 require_once TRA_VEL_V2_PATH . '/inc/suppliers/bootstrap.php';
 require_once TRA_VEL_V2_PATH . '/inc/discovery.php';

@@ -117,6 +117,15 @@ function tra_vel_v2_singular_meta_description_fallback( $post_id = 0 ) {
 	if ( ! $post_id ) {
 		return '';
 	}
+	// Cost answer pages carry no authored excerpt by design: the description is
+	// the same live answer sentence the page opens with, so the snippet and the
+	// page can never claim two different prices. It therefore wins here.
+	if ( is_page_template( 'page-cost-answer.php' ) && function_exists( 'tra_vel_v2_cost_answer_meta_description' ) ) {
+		$cost_answer_description = tra_vel_v2_cost_answer_meta_description( $post_id );
+		if ( '' !== $cost_answer_description ) {
+			return $cost_answer_description;
+		}
+	}
 	$excerpt = trim( preg_replace( '/\s+/u', ' ', wp_strip_all_tags( (string) get_the_excerpt( $post_id ) ) ) );
 	if ( '' !== $excerpt ) {
 		return $excerpt;
@@ -175,12 +184,18 @@ add_action( 'wp_head', 'tra_vel_v2_print_meta_description_fallback', 4 );
  * details + summary. Output text is the tag-stripped visible copy, so any
  * derived markup stays word-identical to what travelers read.
  *
- * @param int $post_id Optional post ID.
+ * Stored article bodies are the default source. A template that server-renders
+ * its own visible FAQ passes that exact rendered markup as $visible_markup, so
+ * it is parsed by this one extractor rather than by a second copy of these
+ * rules: the source of the words changes, the word-for-word law does not.
+ *
+ * @param int         $post_id        Optional post ID.
+ * @param string|null $visible_markup Optional rendered markup to parse instead.
  * @return array<int, array{question:string,answer:string}>
  */
-function tra_vel_v2_visible_faq_items( $post_id = 0 ) {
+function tra_vel_v2_visible_faq_items( $post_id = 0, $visible_markup = null ) {
 	$post_id = $post_id ? (int) $post_id : (int) get_queried_object_id();
-	$content = (string) get_post_field( 'post_content', $post_id );
+	$content = is_string( $visible_markup ) ? $visible_markup : (string) get_post_field( 'post_content', $post_id );
 	if ( '' === $content || ! preg_match( '/<h2\b[^>]*\bid\s*=\s*(["\'])(?:[a-z0-9-]+-)?faq\1[^>]*>/i', $content, $faq_heading, PREG_OFFSET_CAPTURE ) ) {
 		return array();
 	}
@@ -530,6 +545,14 @@ function tra_vel_v2_schema_data() {
 			'isPartOf'   => array( '@id' => $site_id ),
 			'mainEntity' => tra_vel_v2_directory_item_list(),
 		);
+		return array( '@context' => 'https://schema.org', '@graph' => $graph );
+	}
+
+	if ( is_page_template( 'page-cost-answer.php' ) && function_exists( 'tra_vel_v2_cost_answer_schema_nodes' ) ) {
+		$cost_answer_nodes = tra_vel_v2_cost_answer_schema_nodes( get_queried_object_id() );
+		if ( $cost_answer_nodes ) {
+			$graph = array_merge( $graph, $cost_answer_nodes );
+		}
 		return array( '@context' => 'https://schema.org', '@graph' => $graph );
 	}
 

@@ -4087,3 +4087,41 @@ label[data-party-hidden="true"] { display: none !important; }
 /* The metasearch section must never promise availability it is not showing:
    when the provider widget has not mounted, the whole block stays hidden. */
 .experience-metasearch:has(#tpwl-search:empty) { display: none; }
+
+/* Cost answers: the extractable answer, the real comparison and the honest
+   unknowns. No script runs on this template, so every state below is a static
+   paint that arrives finished. */
+.cost-answer-page { background: var(--paper); color: var(--ink); }
+.cost-answer-hero { padding: 34px 0 10px; background: radial-gradient(circle at 18% 10%,#12363f,#06161c 62%); color: #fff; }
+.cost-answer-hero .breadcrumbs { margin-bottom: 12px; }
+.cost-answer-hero .eyebrow { color: var(--lime); }
+.cost-answer-hero h1 { max-width: 22ch; margin: 8px 0 18px; font-size: clamp(30px,4.2vw,54px); line-height: 1.04; letter-spacing: -1.5px; }
+.cost-answer-card { max-width: 74ch; margin: 0 0 34px; padding: 20px; border-radius: var(--radius); border: 1px solid rgba(255,255,255,.14); background: rgba(6,25,31,.6); display: grid; gap: 10px; }
+.cost-answer-sentence { margin: 0; font-size: clamp(18px,2.1vw,23px); line-height: 1.45; }
+.cost-answer-sentence strong { font-weight: 800; }
+.cost-answer-freshness { margin: 0; display: flex; align-items: center; gap: 7px; color: var(--lime); font-size: 14px; font-weight: 700; }
+.cost-answer-freshness i { width: 16px; height: 16px; }
+.cost-answer-scope { margin: 0; color: rgba(255,255,255,.74); font-size: 13px; line-height: 1.5; }
+.cost-answer-cta { min-height: 44px; align-self: start; display: inline-flex; align-items: center; gap: 8px; padding: 11px 17px; border-radius: 14px; background: var(--lime); color: var(--ink); font-weight: 900; }
+.cost-answer-cta:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+.cost-answer-pending-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.cost-answer-pending-actions .button-link { color: #fff; }
+.cost-answer-section .section-heading { margin-bottom: 6px; }
+.cost-answer-section .section-heading p { max-width: 76ch; }
+.cost-answer-note { max-width: 82ch; margin: 12px 0 0; color: var(--muted); font-size: 14px; line-height: 1.6; }
+.cost-answer-table caption { color: var(--ink); }
+.cost-answer-table th[scope="row"] { color: var(--ink); font-weight: 800; }
+.cost-answer-row-unknown td:nth-child(2) { color: var(--ink); font-weight: 700; }
+.cost-answer-tips { max-width: 88ch; margin: 18px 0 0; padding-inline-start: 22px; display: grid; gap: 16px; }
+.cost-answer-tips li h3 { margin: 0 0 5px; font-size: 18px; }
+.cost-answer-tips li p { margin: 0; color: #465b61; font-size: 15px; line-height: 1.6; }
+.cost-answer-guidance { max-width: 84ch; margin: 14px 0 0; padding-inline-start: 22px; display: grid; gap: 8px; color: #465b61; font-size: 15px; line-height: 1.6; }
+.cost-answer-faq h2 { margin-top: 0; }
+.cost-answer-faq h3 { margin: 22px 0 6px; font-size: 19px; }
+.cost-answer-faq p { margin: 0; max-width: 84ch; }
+@media (max-width: 760px) {
+  .cost-answer-hero { padding: 24px 0 8px; }
+  .cost-answer-card { padding: 15px; border-radius: 18px; }
+  .cost-answer-sentence { font-size: 17px; }
+  .cost-answer-tips { gap: 13px; }
+}

@@ -16,6 +16,7 @@ const themeFiles = [
   'index.php',
   'single-destination.php',
   'page-account.php',
+  'page-cost-answer.php',
   'page-destination.php',
   'page-directory.php',
   'page-experience.php',
