@@ -4075,3 +4075,12 @@ label[data-party-hidden="true"] { display: none !important; }
   .decision-card-fill { display: none; }
   .decision-card-fill-line { transition: none; opacity: 1; transform: none; }
 }
+
+/* Travelpayouts White Label metasearch: real availability under the instant price card. */
+.experience-metasearch { margin-block: 26px 8px; padding: 22px; border-radius: 26px; border: 1px solid rgba(255,255,255,.12); background: rgba(6,25,31,.55); }
+.experience-metasearch-heading { margin-block-end: 16px; }
+.experience-metasearch-heading h2 { margin: 6px 0 6px; font-size: clamp(20px, 2.4vw, 26px); }
+.experience-metasearch-heading p { margin: 0; color: rgba(255,255,255,.72); font-size: 15px; max-width: 62ch; }
+.experience-metasearch #tpwl-search, .experience-metasearch #tpwl-tickets { direction: rtl; }
+.experience-metasearch #tpwl-tickets:empty { display: none; }
+@media (max-width: 760px) { .experience-metasearch { padding: 16px; border-radius: 20px; } }
