@@ -66,6 +66,7 @@ jobs:
           php scripts/ci/validate-commercial-provenance-runtime.php
           php scripts/ci/validate-guide-publication-runtime.php
           php scripts/ci/validate-seo-opportunity-runtime.php
+          php scripts/ci/validate-decision-card-runtime.php
           php scripts/ci/validate-traveler-workspace-runtime.php
           php scripts/ci/validate-supplier-handoff-runtime.php
           php scripts/ci/validate-home-hero-queue-runtime.php
@@ -138,6 +139,7 @@ jobs:
           node scripts/ci/validate-theme.mjs
           node scripts/ci/validate-theme-runtime.mjs
           node scripts/ci/validate-one-click-behavior.mjs
+          node scripts/ci/validate-decision-card-behavior.mjs
           node scripts/ci/validate-public-copy.mjs
           node scripts/ci/validate-discovery-contract.mjs
           node scripts/ci/validate-flight-search-contract.mjs
@@ -200,6 +202,7 @@ jobs:
           php scripts/ci/validate-commercial-provenance-runtime.php
           php scripts/ci/validate-guide-publication-runtime.php
           php scripts/ci/validate-seo-opportunity-runtime.php
+          php scripts/ci/validate-decision-card-runtime.php
           php scripts/ci/validate-traveler-workspace-runtime.php
           php scripts/ci/validate-supplier-handoff-runtime.php
           php scripts/ci/validate-home-hero-queue-runtime.php
@@ -263,6 +266,7 @@ jobs:
         run: |
           node --check theme/tra-vel-v2/assets/js/app.js
           node --check theme/tra-vel-v2/assets/js/globe-3d.js
+          node --check theme/tra-vel-v2/assets/js/decision-card.js
           node --check plugin/tra-vel-agent-core/assets/admin/quote-cases.js
 
       - name: Validate PowerShell syntax

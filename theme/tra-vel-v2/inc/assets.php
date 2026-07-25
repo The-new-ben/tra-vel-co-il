@@ -65,6 +65,19 @@ function tra_vel_v2_enqueue_assets() {
 		);
 	}
 
+	// The decision card is finished before it reaches the browser. This file
+	// only adds the opening sequence and the traveler stepper on top of it, so
+	// it loads exactly where the card can appear and nowhere else.
+	if ( is_page_template( 'page-experience.php' ) ) {
+		wp_enqueue_script(
+			'tra-vel-v2-decision-card',
+			TRA_VEL_V2_URI . '/assets/js/decision-card.js',
+			array(),
+			tra_vel_v2_asset_version( '/assets/js/decision-card.js' ),
+			true
+		);
+	}
+
 	if ( is_page_template( 'page-pillar.php' ) ) {
 		wp_enqueue_script(
 			'tra-vel-v2-pillar-earth',
@@ -154,7 +167,7 @@ function tra_vel_v2_enqueue_assets() {
 add_action( 'wp_enqueue_scripts', 'tra_vel_v2_enqueue_assets' );
 
 function tra_vel_v2_script_attributes( $tag, $handle ) {
-	if ( ! in_array( $handle, array( 'tra-vel-v2-app', 'tra-vel-v2-globe-3d', 'tra-vel-v2-voice-dock', 'tra-vel-v2-pillar-earth', 'tra-vel-v2-customer-trip-cockpit', 'tra-vel-v2-next-action', 'tra-vel-v2-lucide' ), true ) ) {
+	if ( ! in_array( $handle, array( 'tra-vel-v2-app', 'tra-vel-v2-globe-3d', 'tra-vel-v2-voice-dock', 'tra-vel-v2-pillar-earth', 'tra-vel-v2-customer-trip-cockpit', 'tra-vel-v2-next-action', 'tra-vel-v2-decision-card', 'tra-vel-v2-lucide' ), true ) ) {
 		return $tag;
 	}
 	return str_replace( ' src=', ' defer src=', $tag );
