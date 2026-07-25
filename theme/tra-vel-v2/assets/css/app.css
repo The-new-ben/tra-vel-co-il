@@ -4010,3 +4010,65 @@ label[data-party-hidden="true"] { display: none !important; }
   .trip-cost { padding: 16px; }
   .trip-cost-head h2 { font-size: 20px; }
 }
+
+/* One screen decision card (theme 1.35.0). Three real options side by side, a
+   traveler stepper that only multiplies, and an opening sequence that covers
+   the finished card instead of replacing it, so nothing moves when it ends. */
+.decision-card { position: relative; margin: 0 auto 18px; padding: 18px 20px; border: 1px solid var(--line); border-radius: 22px; background: #fff; box-shadow: var(--soft-shadow); display: grid; gap: 12px; }
+.decision-card-head { display: grid; gap: 4px; }
+.decision-card-head h2 { margin: 0; font-size: clamp(21px,2.4vw,30px); line-height: 1.12; letter-spacing: -.6px; }
+.decision-card-lede { margin: 0; color: #4b6268; font-size: 13px; font-weight: 600; line-height: 1.45; }
+.decision-card-fill { position: absolute; inset: 0; z-index: 2; margin: 0; padding: 20px; border-radius: 22px; background: #fff; display: grid; align-content: center; justify-items: center; gap: 12px; text-align: center; }
+.decision-card-fill-line { opacity: 0; transform: translateY(var(--motion-shift-sm)); transition: opacity var(--motion-base) var(--ease-standard), transform var(--motion-base) var(--ease-standard); color: #12262c; font-size: 17px; font-weight: 800; }
+.decision-card-fill-line[data-decision-card-fill-shown="true"] { opacity: 1; transform: none; }
+.decision-card-travelers { display: flex; align-items: center; gap: 8px; }
+.decision-card-travelers-label { font-size: 13px; font-weight: 700; color: #4b6268; }
+.decision-card-step { min-width: 44px; min-height: 44px; padding: 0; border: 1px solid var(--line); border-radius: 99px; background: #f5f8f6; color: var(--ink); cursor: pointer; font: 900 18px 'Heebo',sans-serif; }
+.decision-card-step:disabled { opacity: .45; cursor: default; }
+.decision-card-step:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+.decision-card-travelers-value { min-width: 34px; text-align: center; font-size: 18px; font-weight: 900; color: var(--ink); }
+.decision-card-tiers { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; }
+.decision-tier { display: grid; gap: 7px; align-content: start; padding: 14px 15px; border: 1px solid var(--line); border-radius: 18px; background: #f9fbf9; }
+.decision-tier-label { justify-self: start; padding: 4px 10px; border-radius: 99px; background: var(--lime); color: var(--ink); font-size: 12px; font-weight: 900; }
+.decision-tier-total { margin: 0; display: grid; gap: 2px; }
+.decision-tier-total strong { font-size: 27px; font-weight: 900; line-height: 1.05; color: #0b1f26; }
+.decision-tier-party { color: #4b6268; font-size: 12px; font-weight: 700; }
+.decision-tier-person { margin: 0; color: #12262c; font-size: 13px; font-weight: 700; }
+.decision-tier-facts { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; color: #52646a; font-size: 12.5px; font-weight: 600; }
+.decision-tier-facts li { display: flex; align-items: center; gap: 6px; }
+.decision-tier-facts i { width: 14px; height: 14px; flex: 0 0 auto; }
+.decision-tier-cta { min-height: 44px; display: flex; align-items: center; justify-content: center; gap: 7px; padding: 10px 12px; border-radius: 13px; background: var(--ink); color: #fff; font-size: 14px; font-weight: 900; text-align: center; }
+.decision-tier-cta i { width: 15px; height: 15px; }
+.decision-tier-cta:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+.decision-tier.is-stale .decision-tier-label { background: var(--yellow); }
+.decision-card-live { margin: 0; height: 0; overflow: hidden; }
+.decision-card-freshness { margin: 0; color: #4b6268; font-size: 12px; font-weight: 700; }
+.decision-card-scope { margin: 0; color: #52646a; font-size: 11.5px; font-weight: 600; line-height: 1.45; }
+.decision-card-pending { display: grid; gap: 11px; }
+.decision-card-pending-copy { margin: 0; color: #12262c; font-size: 15px; font-weight: 600; line-height: 1.5; }
+.decision-card-pending-actions { display: flex; flex-wrap: wrap; gap: 9px; }
+.decision-card-pending-primary,.decision-card-pending-secondary { min-height: 44px; display: inline-flex; align-items: center; gap: 7px; padding: 10px 15px; border-radius: 13px; font-size: 14px; font-weight: 900; }
+.decision-card-pending-primary { background: var(--ink); color: #fff; }
+.decision-card-pending-secondary { background: #f5f8f6; border: 1px solid var(--line); color: var(--ink); }
+.decision-card-pending-primary:focus-visible,.decision-card-pending-secondary:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+@media (max-width: 760px) {
+  .decision-card { padding: 14px; gap: 9px; border-radius: 18px; }
+  .decision-card-head h2 { font-size: 19px; }
+  .decision-card-lede { font-size: 12px; }
+  .decision-card-fill { padding: 14px; border-radius: 18px; }
+  .decision-card-fill-line { font-size: 15px; }
+  .decision-card-tiers { grid-template-columns: 1fr; gap: 7px; }
+  .decision-tier { grid-template-columns: minmax(0,1fr) auto; align-items: center; gap: 4px 10px; padding: 9px 11px; border-radius: 14px; }
+  .decision-tier-label { grid-column: 1; font-size: 11px; padding: 3px 8px; }
+  .decision-tier-total { grid-column: 2; grid-row: 1 / span 2; justify-items: end; text-align: end; }
+  .decision-tier-total strong { font-size: 22px; }
+  .decision-tier-person { grid-column: 1; font-size: 12px; }
+  .decision-tier-facts { grid-column: 1 / -1; grid-auto-flow: column; grid-auto-columns: max-content; justify-content: start; gap: 9px; font-size: 11.5px; }
+  .decision-tier-cta { grid-column: 1 / -1; min-height: 40px; padding: 8px 10px; font-size: 13px; }
+  .decision-card-freshness { font-size: 11px; }
+  .decision-card-scope { font-size: 10.5px; line-height: 1.4; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .decision-card-fill { display: none; }
+  .decision-card-fill-line { transition: none; opacity: 1; transform: none; }
+}
