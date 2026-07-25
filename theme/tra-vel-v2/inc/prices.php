@@ -767,6 +767,16 @@ function tra_vel_v2_price_store_records( $map_state, $currency, $records ) {
 	set_transient( $fresh_price, $records[0], TRA_VEL_V2_PRICE_FRESH_TTL );
 	set_transient( $stale_price, $records[0], TRA_VEL_V2_PRICE_STALE_TTL );
 
+	// Release 1.36.0: this is the single point every successful observation
+	// passes through, so it is where the reading stops being disposable. The
+	// recorder writes down the cheapest record that was just cached, adds no
+	// upstream call, records only the default currency, keeps at most one row
+	// per destination per hour, and swallows every failure of its own. Whatever
+	// happens inside it, this function still returns the records it just cached.
+	if ( function_exists( 'tra_vel_v2_price_history_record' ) ) {
+		tra_vel_v2_price_history_record( $map_state, $currency, $records[0] );
+	}
+
 	return $records;
 }
 

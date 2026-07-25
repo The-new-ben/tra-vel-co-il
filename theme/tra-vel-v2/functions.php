@@ -23,6 +23,7 @@ require_once TRA_VEL_V2_PATH . '/inc/pillars.php';
 require_once TRA_VEL_V2_PATH . '/inc/seo.php';
 require_once TRA_VEL_V2_PATH . '/inc/seo-opportunities.php';
 require_once TRA_VEL_V2_PATH . '/inc/prices.php';
+require_once TRA_VEL_V2_PATH . '/inc/price-history.php';
 require_once TRA_VEL_V2_PATH . '/inc/auth.php';
 require_once TRA_VEL_V2_PATH . '/inc/suppliers/bootstrap.php';
 require_once TRA_VEL_V2_PATH . '/inc/discovery.php';
