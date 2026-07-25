@@ -1,7 +1,8 @@
 /**
- * Tra-Vel next-action library (theme 1.32.0).
+ * Tra-Vel next-action library (theme 1.34.0).
  *
- * Three small shared capabilities that app.js wires into real moments:
+ * Three small shared capabilities that app.js wires into real moments, plus
+ * the trip cost stepper, which owns nothing but a multiplication:
  * - Beacon: one soft pulsing cue on a single element at a time, with an
  *   optional polite live-region hint. It never scrolls, never steals focus,
  *   never shifts layout, and any interaction with the marked element clears
@@ -11,6 +12,10 @@
  *   unknown values are dropped on read, and reset removes the key.
  * - Chip text helpers: compose or remove a natural Hebrew fragment inside
  *   composer text so refinement chips stay reversible.
+ * - Trip cost stepper: the server already rendered the correct default, so
+ *   this only re-multiplies one server proven fare by a traveler count, in the
+ *   currency the server already chose. It never converts money, never invents
+ *   a component we have not observed, and listens for clicks only.
  */
 (function () {
   'use strict';
@@ -115,6 +120,33 @@
     return source.trim();
   }
 
+  function groupAmount(amount) {
+    return String(amount).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  }
+
+  function initTripCost() {
+    const block = document.querySelector('[data-trip-cost]');
+    if (!block) return;
+    const total = block.querySelector('[data-trip-cost-total]');
+    const buttons = Array.prototype.slice.call(block.querySelectorAll('[data-trip-cost-travelers]'));
+    const unit = Number(block.getAttribute('data-trip-cost-unit'));
+    const symbol = String(block.getAttribute('data-trip-cost-symbol') || '');
+    if (!total || !buttons.length || !Number.isInteger(unit) || unit <= 0 || !symbol) return;
+    buttons.forEach(button => button.addEventListener('click', () => {
+      const travelers = Number(button.getAttribute('data-trip-cost-travelers'));
+      if (!Number.isInteger(travelers) || travelers < 1 || travelers > 9) return;
+      buttons.forEach(other => {
+        const chosen = other === button;
+        other.setAttribute('aria-pressed', chosen ? 'true' : 'false');
+        other.classList.toggle('is-current', chosen);
+      });
+      total.textContent = symbol + groupAmount(unit * travelers);
+    }));
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initTripCost);
+  else initTripCost();
+
   window.traVelNextAction = {
     show: showBeacon,
     clear: clearBeacon,
@@ -124,6 +156,8 @@
     writeIntentMemory,
     resetIntentMemory,
     composeChipText,
-    removeChipText
+    removeChipText,
+    groupAmount,
+    initTripCost
   };
 })();

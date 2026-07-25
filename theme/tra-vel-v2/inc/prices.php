@@ -1045,6 +1045,75 @@ function tra_vel_v2_render_found_price( $map_state, $args = array() ) {
 }
 
 /**
+ * The traveler counts the trip cost block offers.
+ *
+ * @return array<int,int>
+ */
+function tra_vel_v2_trip_cost_traveler_counts() {
+	return array( 1, 2, 3, 4 );
+}
+
+/**
+ * The default traveler count the server renders.
+ *
+ * @return int
+ */
+function tra_vel_v2_trip_cost_default_travelers() {
+	return 2;
+}
+
+/**
+ * What the trip actually costs, using only what we actually know.
+ *
+ * One found fare multiplied by one traveler count. That is the whole
+ * calculation, and the block says so: no accommodation number, no total, no
+ * estimate for anything we have not observed. An invented hotel line would be
+ * the easiest number on this page to produce and the only dishonest one.
+ *
+ * @param string $map_state Destination map state.
+ * @return void
+ */
+function tra_vel_v2_render_trip_cost( $map_state ) {
+	$price = tra_vel_v2_get_destination_price( $map_state );
+	if ( ! is_array( $price ) || empty( $price['price'] ) ) {
+		return;
+	}
+
+	$unit      = (int) $price['price'];
+	$symbol    = isset( $price['currency_symbol'] ) && is_string( $price['currency_symbol'] ) && '' !== trim( $price['currency_symbol'] )
+		? trim( $price['currency_symbol'] )
+		: tra_vel_v2_currency_symbol( TRA_VEL_V2_PRICE_DEFAULT_CURRENCY );
+	$travelers = tra_vel_v2_trip_cost_default_travelers();
+	$default   = tra_vel_v2_format_found_price(
+		array(
+			'price'           => $unit * $travelers,
+			'currency_symbol' => $symbol,
+		)
+	);
+	if ( '' === $default ) {
+		return;
+	}
+	?>
+	<section class="trip-cost page-width" id="trip-cost" aria-labelledby="trip-cost-title" data-trip-cost data-trip-cost-unit="<?php echo esc_attr( (string) $unit ); ?>" data-trip-cost-symbol="<?php echo esc_attr( $symbol ); ?>">
+		<div class="trip-cost-head">
+			<span class="eyebrow"><?php esc_html_e( 'טיסות בלבד', 'tra-vel-v2' ); ?></span>
+			<h2 id="trip-cost-title"><?php esc_html_e( 'כמה זה עולה לכם', 'tra-vel-v2' ); ?></h2>
+		</div>
+		<div class="trip-cost-controls" role="group" aria-label="<?php esc_attr_e( 'מספר הנוסעים', 'tra-vel-v2' ); ?>">
+			<span class="trip-cost-controls-label"><?php esc_html_e( 'נוסעים', 'tra-vel-v2' ); ?></span>
+			<?php foreach ( tra_vel_v2_trip_cost_traveler_counts() as $count ) : ?>
+				<?php $is_current = $count === $travelers; ?>
+				<button class="trip-cost-traveler<?php echo $is_current ? ' is-current' : ''; ?>" type="button" data-trip-cost-travelers="<?php echo esc_attr( (string) $count ); ?>" aria-pressed="<?php echo $is_current ? 'true' : 'false'; ?>"><?php echo esc_html( number_format_i18n( $count ) ); ?></button>
+			<?php endforeach; ?>
+		</div>
+		<p class="trip-cost-output" aria-live="polite"><span><?php esc_html_e( 'טיסות לכל הנוסעים:', 'tra-vel-v2' ); ?></span> <strong><bdi dir="ltr" data-trip-cost-total><?php echo esc_html( $default ); ?></bdi></strong></p>
+		<p class="trip-cost-missing"><?php esc_html_e( 'עוד לא כלול: לינה, העברות, ביטוח וכבודה. נוסיף אותם כשהמחירים יהיו זמינים.', 'tra-vel-v2' ); ?></p>
+		<p class="trip-cost-note"><?php echo esc_html( tra_vel_v2_found_price_currency_note( isset( $price['currency'] ) ? $price['currency'] : null ) ); ?></p>
+	</section>
+	<?php
+}
+
+/**
  * The pin attribute payload for one destination, ready for the Earth.
  *
  * @param array<string,mixed>|null $price Price payload.

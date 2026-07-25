@@ -3991,3 +3991,22 @@ label[data-party-hidden="true"] { display: none !important; }
 @media (max-width: 760px) {
   .currency-pill { min-width: 38px; padding: 0 7px; font-size: 13px; }
 }
+
+/* Trip cost (theme 1.34.0). One observed fare times one traveler count, and an
+   explicit list of everything that is deliberately not in the number. */
+.trip-cost { margin: 26px auto 0; padding: 18px 20px; border: 1px solid var(--line); border-radius: 20px; background: #fff; display: grid; gap: 11px; justify-items: start; }
+.trip-cost-head { display: grid; gap: 4px; }
+.trip-cost-head h2 { margin: 0; font-size: 23px; line-height: 1.2; }
+.trip-cost-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.trip-cost-controls-label { font-size: 13px; font-weight: 700; color: #4b6268; }
+.trip-cost-traveler { min-width: 44px; min-height: 44px; padding: 8px 13px; border: 1px solid var(--line); border-radius: 99px; background: #f5f8f6; color: var(--ink); cursor: pointer; font: 700 14px 'Heebo',sans-serif; }
+.trip-cost-traveler[aria-pressed="true"] { background: var(--lime); border-color: var(--lime); font-weight: 900; }
+.trip-cost-traveler:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+.trip-cost-output { margin: 0; font-size: 17px; color: #12262c; }
+.trip-cost-output strong { font-weight: 900; font-size: 21px; }
+.trip-cost-missing { margin: 0; color: #4b6268; font-size: 13px; font-weight: 600; line-height: 1.5; }
+.trip-cost-note { margin: 0; color: #52646a; font-size: 11.5px; font-weight: 600; line-height: 1.45; }
+@media (max-width: 760px) {
+  .trip-cost { padding: 16px; }
+  .trip-cost-head h2 { font-size: 20px; }
+}
