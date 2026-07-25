@@ -930,6 +930,27 @@ function tra_vel_v2_found_price_scope_note() {
 }
 
 /**
+ * What the chosen display currency actually means at the payment moment.
+ *
+ * We show a number a supplier published in that currency, but we are not the
+ * merchant and we do not know what the supplier will charge or what a card
+ * issuer will do with it. Saying that plainly is the entire point of this
+ * release. No fee percentage is invented here, because we do not know one.
+ *
+ * @param string|null $currency Currency being displayed, or null for this request's.
+ * @return string
+ */
+function tra_vel_v2_found_price_currency_note( $currency = null ) {
+	$currency = null === $currency ? tra_vel_v2_current_currency() : tra_vel_v2_normalize_currency( $currency );
+
+	if ( TRA_VEL_V2_PRICE_DEFAULT_CURRENCY === $currency ) {
+		return __( 'המחיר מוצג בשקלים. אם ספק ההזמנה גובה במטבע אחר, ייתכן הפרש המרה בכרטיס.', 'tra-vel-v2' );
+	}
+
+	return __( 'התשלום בפועל מתבצע אצל ספק ההזמנה, לעיתים במטבע אחר. חברת האשראי עשויה לגבות עמלת המרה.', 'tra-vel-v2' );
+}
+
+/**
  * The headline line for a found price, including its honest route shape.
  *
  * @param array<string,mixed> $price Price payload.
@@ -1018,6 +1039,7 @@ function tra_vel_v2_render_found_price( $map_state, $args = array() ) {
 		<p class="found-price-freshness"><?php echo esc_html( tra_vel_v2_found_price_freshness( $price ) ); ?></p>
 		<a class="found-price-cta" href="<?php echo esc_url( $price['deep_link'] ); ?>" target="_blank" rel="sponsored nofollow noopener"><?php echo esc_html( $args['cta_label'] ); ?><i data-lucide="external-link" aria-hidden="true"></i></a>
 		<p class="found-price-scope"><?php echo esc_html( tra_vel_v2_found_price_scope_note() ); ?></p>
+		<p class="found-price-scope found-price-currency-note"><?php echo esc_html( tra_vel_v2_found_price_currency_note( isset( $price['currency'] ) ? $price['currency'] : null ) ); ?></p>
 	</div>
 	<?php
 }

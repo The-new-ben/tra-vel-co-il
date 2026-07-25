@@ -3965,6 +3965,7 @@ label[data-party-hidden="true"] { display: none !important; }
 .found-price.is-stale .found-price-headline i,.found-price.is-stale .found-price-headline strong { color: #4b6268; }
 .found-price.is-stale .found-price-cta { background: #eff3f1; color: #2c3f45; }
 .pillar-site-card .found-price { max-width: 100%; box-shadow: none; }
+.found-price-currency-note { color: #5c6e74; }
 @media (max-width: 560px) {
   .found-price { max-width: 100%; }
 }
