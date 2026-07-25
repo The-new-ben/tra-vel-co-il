@@ -1,6 +1,6 @@
 <?php
 /**
- * Found flight prices for the Earth (theme 1.34.0).
+ * Found flight prices for the Earth (theme 1.35.0).
  *
  * Travelpayouts publishes fares that travelers found in recent searches. They
  * are not our inventory, we never sell them, and they can move at any moment.
@@ -22,6 +22,14 @@
  * mode degrades to no price at all instead of to a price we cannot stand
  * behind. We never emit Offer, Product or AggregateOffer schema for these
  * numbers: they are third party observations, not our commercial offer.
+ *
+ * Release 1.35.0 adds the option set. One upstream response already contains
+ * several genuinely different fares, so the same single call that produces the
+ * headline price now also produces up to three real choices: the cheapest, the
+ * cheapest non stop and the shortest. A tier exists only when a real record
+ * stands behind it, and two records that would read identically to a traveler
+ * collapse into one. There is no fourth call, no synthetic option and no
+ * placeholder tier.
  *
  * @package TraVelV2
  */
@@ -47,6 +55,14 @@ define( 'TRA_VEL_V2_PRICE_STALE_TTL', 7 * DAY_IN_SECONDS );
 define( 'TRA_VEL_V2_PRICE_STALE_AFTER', DAY_IN_SECONDS );
 define( 'TRA_VEL_V2_PRICE_HTTP_TIMEOUT', 6 );
 define( 'TRA_VEL_V2_PRICE_MAX_AMOUNT', 100000 );
+define( 'TRA_VEL_V2_PRICE_OPTIONS_TRANSIENT_PREFIX', 'tra_vel_v2_price_opts_' );
+define( 'TRA_VEL_V2_PRICE_OPTIONS_STALE_TRANSIENT_PREFIX', 'tra_vel_v2_price_opts_stale_' );
+define( 'TRA_VEL_V2_PRICE_OPTIONS_LIMIT', 10 );
+define( 'TRA_VEL_V2_PRICE_OPTIONS_MAX', 3 );
+define( 'TRA_VEL_V2_PRICE_MAX_DURATION', 6000 );
+define( 'TRA_VEL_V2_DECISION_CARD_MIN_TRAVELERS', 1 );
+define( 'TRA_VEL_V2_DECISION_CARD_MAX_TRAVELERS', 6 );
+define( 'TRA_VEL_V2_DECISION_CARD_DEFAULT_TRAVELERS', 2 );
 
 /**
  * The currencies this site is allowed to display, mapped to their symbol.
@@ -184,6 +200,31 @@ function tra_vel_v2_price_destination_airport( $map_state ) {
 	$airport      = isset( $destinations[ $map_state ]['airport'] ) ? (string) $destinations[ $map_state ]['airport'] : '';
 
 	return preg_match( '/^[A-Z]{3}$/', $airport ) ? $airport : '';
+}
+
+/**
+ * Resolve one IATA code back to its destination map state.
+ *
+ * The same single source of truth, read the other way round, so a page that
+ * only knows an airport code can still find the destination we hold prices
+ * for. A code that is not in that table simply has no map state here.
+ *
+ * @param string $airport Three letter IATA code.
+ * @return string Destination map state, or an empty string.
+ */
+function tra_vel_v2_price_state_for_airport( $airport ) {
+	$airport = strtoupper( trim( (string) $airport ) );
+	if ( ! preg_match( '/^[A-Z]{3}$/', $airport ) || ! function_exists( 'tra_vel_v2_seo_opportunity_destinations' ) ) {
+		return '';
+	}
+
+	foreach ( tra_vel_v2_seo_opportunity_destinations() as $map_state => $destination ) {
+		if ( isset( $destination['airport'] ) && $airport === strtoupper( (string) $destination['airport'] ) ) {
+			return sanitize_key( (string) $map_state );
+		}
+	}
+
+	return '';
 }
 
 /**
@@ -337,6 +378,14 @@ function tra_vel_v2_price_normalize_record( $record, $airport, $fetched_at, $cur
 	$gate = isset( $record['gate'] ) ? sanitize_text_field( (string) $record['gate'] ) : '';
 	$gate = function_exists( 'mb_substr' ) ? mb_substr( $gate, 0, 60 ) : substr( $gate, 0, 60 );
 
+	// Total round trip minutes. An absent or impossible value is recorded as
+	// zero, which means unknown: such a record can still be the cheapest or the
+	// non stop option, but it can never be published as the shortest one.
+	$duration = isset( $record['duration'] ) && is_numeric( $record['duration'] ) ? (int) $record['duration'] : 0;
+	if ( $duration < 0 || $duration > TRA_VEL_V2_PRICE_MAX_DURATION ) {
+		$duration = 0;
+	}
+
 	return array(
 		'price'           => $amount,
 		'currency'        => strtoupper( $currency ),
@@ -345,6 +394,7 @@ function tra_vel_v2_price_normalize_record( $record, $airport, $fetched_at, $cur
 		'return_date'     => tra_vel_v2_price_sanitize_date( isset( $record['return_at'] ) ? $record['return_at'] : '' ),
 		'airline'         => $airline,
 		'transfers'       => $transfers,
+		'duration'        => $duration,
 		'gate'            => $gate,
 		'deep_link'       => $deep_link,
 		'fetched_at'      => $fetched_at,
@@ -353,19 +403,20 @@ function tra_vel_v2_price_normalize_record( $record, $airport, $fetched_at, $cur
 }
 
 /**
- * Ask Travelpayouts for the cheapest round trip we can currently observe.
+ * Ask Travelpayouts for every round trip we can currently stand behind.
  *
- * The currency is requested upstream, never derived locally. A dollar price is
- * a separate call, not a multiplication of the shekel price.
+ * One call, one response, every trustworthy record inside it. The currency is
+ * requested upstream, never derived locally: a dollar price is a separate call,
+ * not a multiplication of the shekel price.
  *
  * Any failure returns null. The token never reaches a log, an error message or
  * a stored value.
  *
  * @param string $airport  Destination IATA code.
  * @param string $currency Lower case currency to request.
- * @return array<string,mixed>|null Normalized price, or null.
+ * @return array<int,array<string,mixed>>|null Records ordered cheapest first, or null.
  */
-function tra_vel_v2_price_fetch( $airport, $currency = TRA_VEL_V2_PRICE_DEFAULT_CURRENCY ) {
+function tra_vel_v2_price_fetch_records( $airport, $currency = TRA_VEL_V2_PRICE_DEFAULT_CURRENCY ) {
 	$token    = tra_vel_v2_travelpayouts_api_token();
 	$currency = tra_vel_v2_normalize_currency( $currency );
 	if ( '' === $token || ! preg_match( '/^[A-Z]{3}$/', (string) $airport ) ) {
@@ -378,7 +429,7 @@ function tra_vel_v2_price_fetch( $airport, $currency = TRA_VEL_V2_PRICE_DEFAULT_
 			'destination' => $airport,
 			'currency'    => $currency,
 			'sorting'     => 'price',
-			'limit'       => 3,
+			'limit'       => TRA_VEL_V2_PRICE_OPTIONS_LIMIT,
 			'one_way'     => 'false',
 			'token'       => $token,
 		),
@@ -408,7 +459,7 @@ function tra_vel_v2_price_fetch( $airport, $currency = TRA_VEL_V2_PRICE_DEFAULT_
 	}
 
 	$fetched_at = gmdate( 'c' );
-	$best       = null;
+	$records    = array();
 	// Every returned record is judged on its own. One record whose link proves
 	// a different currency, or an amount that disagrees with its own link, is
 	// dropped and the next candidate is examined. If none survive we publish
@@ -418,12 +469,68 @@ function tra_vel_v2_price_fetch( $airport, $currency = TRA_VEL_V2_PRICE_DEFAULT_
 		if ( null === $candidate ) {
 			continue;
 		}
-		if ( null === $best || $candidate['price'] < $best['price'] ) {
-			$best = $candidate;
-		}
+		$records[] = $candidate;
 	}
 
-	return $best;
+	if ( ! $records ) {
+		return null;
+	}
+
+	return tra_vel_v2_price_sort_records( $records );
+}
+
+/**
+ * Put a record set in a deterministic cheapest first order.
+ *
+ * Upstream already sorts by price, but selection must never depend on that
+ * promise, and PHP 7.4 does not guarantee a stable sort. The original position
+ * is therefore the final tiebreak, so the same response always produces the
+ * same tiers.
+ *
+ * @param array<int,array<string,mixed>> $records Normalized records.
+ * @return array<int,array<string,mixed>> Ordered records.
+ */
+function tra_vel_v2_price_sort_records( $records ) {
+	$indexed = array();
+	foreach ( array_values( $records ) as $position => $record ) {
+		$indexed[] = array( 'position' => $position, 'record' => $record );
+	}
+
+	usort(
+		$indexed,
+		static function ( $left, $right ) {
+			$by_price = (int) $left['record']['price'] <=> (int) $right['record']['price'];
+			if ( 0 !== $by_price ) {
+				return $by_price;
+			}
+			$by_transfers = (int) $left['record']['transfers'] <=> (int) $right['record']['transfers'];
+			if ( 0 !== $by_transfers ) {
+				return $by_transfers;
+			}
+
+			return $left['position'] <=> $right['position'];
+		}
+	);
+
+	return array_map(
+		static function ( $entry ) {
+			return $entry['record'];
+		},
+		$indexed
+	);
+}
+
+/**
+ * Ask Travelpayouts for the cheapest round trip we can currently observe.
+ *
+ * @param string $airport  Destination IATA code.
+ * @param string $currency Lower case currency to request.
+ * @return array<string,mixed>|null Normalized price, or null.
+ */
+function tra_vel_v2_price_fetch( $airport, $currency = TRA_VEL_V2_PRICE_DEFAULT_CURRENCY ) {
+	$records = tra_vel_v2_price_fetch_records( $airport, $currency );
+
+	return is_array( $records ) && $records ? $records[0] : null;
 }
 
 /**
@@ -508,6 +615,189 @@ function tra_vel_v2_price_currency_matches( $price, $currency ) {
 }
 
 /**
+ * Whether a cached record set can still prove the currency it is read for.
+ *
+ * The guard runs per record, not per payload. A single record that cannot
+ * prove the requested currency invalidates the whole cached set rather than
+ * being quietly skipped, because a set we cannot fully vouch for is a set we
+ * would rather refetch.
+ *
+ * @param mixed  $records  Cached payload.
+ * @param string $currency Lower case currency the caller asked for.
+ * @return bool
+ */
+function tra_vel_v2_price_records_currency_matches( $records, $currency ) {
+	if ( ! is_array( $records ) || ! $records || array_keys( $records ) !== range( 0, count( $records ) - 1 ) ) {
+		return false;
+	}
+
+	foreach ( $records as $record ) {
+		if ( ! tra_vel_v2_price_currency_matches( $record, $currency ) ) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
+/**
+ * Flag freshness across a whole record set.
+ *
+ * @param array<int,array<string,mixed>> $records Cached records.
+ * @return array<int,array<string,mixed>> Records with truthful staleness flags.
+ */
+function tra_vel_v2_price_apply_freshness_to_records( $records ) {
+	return array_map( 'tra_vel_v2_price_apply_freshness', array_values( (array) $records ) );
+}
+
+/**
+ * What one record looks like to a traveler.
+ *
+ * Two records with the same price, carrier, route shape, length and dates are
+ * the same choice as far as anybody reading the page is concerned, even when
+ * the supplier returned them as separate rows. The signature is what stops a
+ * second tier from being a relabelled copy of the first one.
+ *
+ * @param array<string,mixed> $record Normalized record.
+ * @return string Comparable signature.
+ */
+function tra_vel_v2_price_record_signature( $record ) {
+	return implode(
+		'|',
+		array(
+			(string) ( isset( $record['price'] ) ? (int) $record['price'] : 0 ),
+			(string) ( isset( $record['currency'] ) ? $record['currency'] : '' ),
+			(string) ( isset( $record['airline'] ) ? $record['airline'] : '' ),
+			(string) ( isset( $record['transfers'] ) ? (int) $record['transfers'] : 0 ),
+			(string) ( isset( $record['duration'] ) ? (int) $record['duration'] : 0 ),
+			(string) ( isset( $record['departure_date'] ) ? $record['departure_date'] : '' ),
+			(string) ( isset( $record['return_date'] ) ? $record['return_date'] : '' ),
+		)
+	);
+}
+
+/**
+ * Choose the real options a traveler can actually tell apart.
+ *
+ * Three rules and nothing else: the cheapest record is the value option, the
+ * cheapest record with no stop is the direct option, and the shortest record is
+ * the fast option. A slot with no record behind it is simply not returned, and
+ * a slot whose record would read exactly like one already chosen is dropped
+ * rather than duplicated. A record whose length upstream did not publish can
+ * never win the fast slot, because we would be ranking a number we do not have.
+ *
+ * @param array<int,array<string,mixed>> $records Normalized records, cheapest first.
+ * @return array<int,array<string,mixed>> One to three records, each carrying a tier key.
+ */
+function tra_vel_v2_price_select_options( $records ) {
+	if ( ! is_array( $records ) || ! $records ) {
+		return array();
+	}
+
+	$records = tra_vel_v2_price_sort_records( array_values( $records ) );
+
+	$direct_index = null;
+	$fast_index   = null;
+	foreach ( $records as $index => $record ) {
+		if ( 0 === (int) $record['transfers'] && ( null === $direct_index || (int) $record['price'] < (int) $records[ $direct_index ]['price'] ) ) {
+			$direct_index = $index;
+		}
+
+		$duration = isset( $record['duration'] ) ? (int) $record['duration'] : 0;
+		if ( $duration <= 0 ) {
+			continue;
+		}
+		if ( null === $fast_index ) {
+			$fast_index = $index;
+			continue;
+		}
+		$shortest = (int) $records[ $fast_index ]['duration'];
+		if ( $duration < $shortest || ( $duration === $shortest && (int) $record['price'] < (int) $records[ $fast_index ]['price'] ) ) {
+			$fast_index = $index;
+		}
+	}
+
+	$options    = array();
+	$signatures = array();
+	foreach ( array( 'value' => 0, 'direct' => $direct_index, 'fast' => $fast_index ) as $tier => $index ) {
+		if ( null === $index || ! isset( $records[ $index ] ) ) {
+			continue;
+		}
+		$signature = tra_vel_v2_price_record_signature( $records[ $index ] );
+		if ( in_array( $signature, $signatures, true ) ) {
+			continue;
+		}
+		$signatures[]      = $signature;
+		$option            = $records[ $index ];
+		$option['tier']    = $tier;
+		$options[]         = $option;
+	}
+
+	return array_slice( $options, 0, TRA_VEL_V2_PRICE_OPTIONS_MAX );
+}
+
+/**
+ * Write one upstream observation into every cache that depends on it.
+ *
+ * The headline price and the option set are two readings of the same response,
+ * so one call fills both. That is the whole reason the option set costs nothing
+ * extra: whichever surface asks first pays, and every other surface is served
+ * from the cache it just warmed.
+ *
+ * @param string                              $map_state Destination map state.
+ * @param string                              $currency  Lower case currency.
+ * @param array<int,array<string,mixed>>|null $records   Fetched records, or null on failure.
+ * @return array<int,array<string,mixed>>|null Stored records, or null.
+ */
+function tra_vel_v2_price_store_records( $map_state, $currency, $records ) {
+	$fresh_price   = tra_vel_v2_price_cache_key( TRA_VEL_V2_PRICE_TRANSIENT_PREFIX, $map_state, $currency );
+	$stale_price   = tra_vel_v2_price_cache_key( TRA_VEL_V2_PRICE_STALE_TRANSIENT_PREFIX, $map_state, $currency );
+	$fresh_options = tra_vel_v2_price_cache_key( TRA_VEL_V2_PRICE_OPTIONS_TRANSIENT_PREFIX, $map_state, $currency );
+	$stale_options = tra_vel_v2_price_cache_key( TRA_VEL_V2_PRICE_OPTIONS_STALE_TRANSIENT_PREFIX, $map_state, $currency );
+
+	if ( ! is_array( $records ) || ! $records ) {
+		set_transient( $fresh_price, TRA_VEL_V2_PRICE_UNAVAILABLE, TRA_VEL_V2_PRICE_NEGATIVE_TTL );
+		set_transient( $fresh_options, TRA_VEL_V2_PRICE_UNAVAILABLE, TRA_VEL_V2_PRICE_NEGATIVE_TTL );
+		return null;
+	}
+
+	$records = array_values( $records );
+	set_transient( $fresh_options, $records, TRA_VEL_V2_PRICE_FRESH_TTL );
+	set_transient( $stale_options, $records, TRA_VEL_V2_PRICE_STALE_TTL );
+	set_transient( $fresh_price, $records[0], TRA_VEL_V2_PRICE_FRESH_TTL );
+	set_transient( $stale_price, $records[0], TRA_VEL_V2_PRICE_STALE_TTL );
+
+	return $records;
+}
+
+/**
+ * Spend one bounded upstream call and refresh every cache it feeds.
+ *
+ * @param string $map_state Destination map state.
+ * @param string $airport   Destination IATA code.
+ * @param string $currency  Lower case currency.
+ * @return array<int,array<string,mixed>>|null Fresh records, or null.
+ */
+function tra_vel_v2_price_refresh_destination( $map_state, $airport, $currency ) {
+	return tra_vel_v2_price_store_records( $map_state, $currency, tra_vel_v2_price_fetch_records( $airport, $currency ) );
+}
+
+/**
+ * The cached record set for one destination, or null.
+ *
+ * @param string $map_state Destination map state.
+ * @param string $currency  Lower case currency.
+ * @param bool   $stale     Whether to read the seven day copy.
+ * @return array<int,array<string,mixed>>|null Records, or null.
+ */
+function tra_vel_v2_price_cached_records( $map_state, $currency, $stale = false ) {
+	$prefix  = $stale ? TRA_VEL_V2_PRICE_OPTIONS_STALE_TRANSIENT_PREFIX : TRA_VEL_V2_PRICE_OPTIONS_TRANSIENT_PREFIX;
+	$records = get_transient( tra_vel_v2_price_cache_key( $prefix, $map_state, $currency ) );
+
+	return tra_vel_v2_price_records_currency_matches( $records, $currency ) ? tra_vel_v2_price_apply_freshness_to_records( $records ) : null;
+}
+
+/**
  * The found price for one destination, or null.
  *
  * @param string      $map_state Destination map state.
@@ -529,6 +819,13 @@ function tra_vel_v2_get_destination_price( $map_state, $currency = null ) {
 		return tra_vel_v2_price_apply_freshness( $cached );
 	}
 
+	// A warm option set already contains this destination's cheapest record, so
+	// a decision card that fetched first pays for the headline price too.
+	$warm = tra_vel_v2_price_cached_records( $map_state, $currency );
+	if ( null !== $warm ) {
+		return $warm[0];
+	}
+
 	$stale = get_transient( $stale_key );
 	$stale = tra_vel_v2_price_currency_matches( $stale, $currency ) ? tra_vel_v2_price_apply_freshness( $stale ) : null;
 
@@ -536,16 +833,48 @@ function tra_vel_v2_get_destination_price( $map_state, $currency = null ) {
 		return $stale;
 	}
 
-	$price = tra_vel_v2_price_fetch( $airport, $currency );
-	if ( null === $price ) {
-		set_transient( $fresh_key, TRA_VEL_V2_PRICE_UNAVAILABLE, TRA_VEL_V2_PRICE_NEGATIVE_TTL );
-		return $stale;
+	$records = tra_vel_v2_price_refresh_destination( $map_state, $airport, $currency );
+
+	return is_array( $records ) && $records ? $records[0] : $stale;
+}
+
+/**
+ * The real option set for one destination: one, two or three genuine records.
+ *
+ * Selected from the same cached upstream response the headline price uses, so
+ * this adds no API call of its own. Returns an empty array whenever we have
+ * nothing we can prove, which is the only honest alternative to inventing a
+ * choice.
+ *
+ * @param string      $map_state Destination map state.
+ * @param string|null $currency  Currency to display, or null for this request's currency.
+ * @return array<int,array<string,mixed>> Ordered options, each carrying a tier key.
+ */
+function tra_vel_v2_get_destination_options( $map_state, $currency = null ) {
+	$map_state = sanitize_key( (string) $map_state );
+	$currency  = null === $currency ? tra_vel_v2_current_currency() : tra_vel_v2_normalize_currency( $currency );
+	$airport   = tra_vel_v2_price_destination_airport( $map_state );
+	if ( '' === $airport ) {
+		return array();
 	}
 
-	set_transient( $fresh_key, $price, TRA_VEL_V2_PRICE_FRESH_TTL );
-	set_transient( $stale_key, $price, TRA_VEL_V2_PRICE_STALE_TTL );
+	$fresh = tra_vel_v2_price_cached_records( $map_state, $currency );
+	if ( null !== $fresh ) {
+		return tra_vel_v2_price_select_options( $fresh );
+	}
 
-	return $price;
+	$stale = tra_vel_v2_price_cached_records( $map_state, $currency, true );
+	$marker = get_transient( tra_vel_v2_price_cache_key( TRA_VEL_V2_PRICE_OPTIONS_TRANSIENT_PREFIX, $map_state, $currency ) );
+	if ( TRA_VEL_V2_PRICE_UNAVAILABLE === $marker || ! tra_vel_v2_price_may_fetch() ) {
+		return null === $stale ? array() : tra_vel_v2_price_select_options( $stale );
+	}
+
+	$records = tra_vel_v2_price_refresh_destination( $map_state, $airport, $currency );
+	if ( ! is_array( $records ) || ! $records ) {
+		return null === $stale ? array() : tra_vel_v2_price_select_options( $stale );
+	}
+
+	return tra_vel_v2_price_select_options( $records );
 }
 
 /**
@@ -598,14 +927,9 @@ function tra_vel_v2_refresh_all_destination_prices() {
 		if ( '' === $airport ) {
 			continue;
 		}
-		$fresh_key = tra_vel_v2_price_cache_key( TRA_VEL_V2_PRICE_TRANSIENT_PREFIX, $map_state, $currency );
-		$price     = tra_vel_v2_price_fetch( $airport, $currency );
-		if ( null === $price ) {
-			set_transient( $fresh_key, TRA_VEL_V2_PRICE_UNAVAILABLE, TRA_VEL_V2_PRICE_NEGATIVE_TTL );
-			continue;
-		}
-		set_transient( $fresh_key, $price, TRA_VEL_V2_PRICE_FRESH_TTL );
-		set_transient( tra_vel_v2_price_cache_key( TRA_VEL_V2_PRICE_STALE_TRANSIENT_PREFIX, $map_state, $currency ), $price, TRA_VEL_V2_PRICE_STALE_TTL );
+		// One call per destination warms the headline price and the option set
+		// together, exactly as a visitor request would.
+		tra_vel_v2_price_refresh_destination( $map_state, $airport, $currency );
 	}
 }
 add_action( TRA_VEL_V2_PRICE_CRON_HOOK, 'tra_vel_v2_refresh_all_destination_prices' );
@@ -648,6 +972,7 @@ function tra_vel_v2_price_surface() {
 		|| is_page_template( 'page-destination.php' )
 		|| is_page_template( 'page-seo-opportunity.php' )
 		|| is_page_template( 'page-pillar.php' )
+		|| is_page_template( 'page-experience.php' )
 		|| is_singular( 'destination' );
 
 	/**
@@ -1121,4 +1446,290 @@ function tra_vel_v2_render_trip_cost( $map_state ) {
  */
 function tra_vel_v2_found_price_pin_label( $price ) {
 	return is_array( $price ) ? tra_vel_v2_format_found_price( $price ) : '';
+}
+
+/**
+ * The traveler facing name of each real option slot.
+ *
+ * @return array<string,string> Tier key to Hebrew label.
+ */
+function tra_vel_v2_decision_card_tier_labels() {
+	return array(
+		'value'  => __( 'הכי משתלם', 'tra-vel-v2' ),
+		'direct' => __( 'ישיר', 'tra-vel-v2' ),
+		'fast'   => __( 'הכי מהיר', 'tra-vel-v2' ),
+	);
+}
+
+/**
+ * The route shape of one option, in words a traveler uses.
+ *
+ * @param int $transfers Number of stops.
+ * @return string
+ */
+function tra_vel_v2_decision_card_stops_label( $transfers ) {
+	$transfers = max( 0, (int) $transfers );
+	if ( 0 === $transfers ) {
+		return __( 'ישיר', 'tra-vel-v2' );
+	}
+	if ( 1 === $transfers ) {
+		return __( 'עצירה אחת', 'tra-vel-v2' );
+	}
+
+	/* translators: %s: number of stops. */
+	return sprintf( __( '%s עצירות', 'tra-vel-v2' ), number_format_i18n( $transfers ) );
+}
+
+/**
+ * One calendar date as a compact day and month.
+ *
+ * Formatted straight from the stored calendar string. Converting it through a
+ * timestamp would let a site timezone move the day the supplier published.
+ *
+ * @param string $date YYYY-MM-DD.
+ * @return string Day dot month, or an empty string.
+ */
+function tra_vel_v2_decision_card_date_label( $date ) {
+	$date = tra_vel_v2_price_sanitize_date( $date );
+	if ( '' === $date ) {
+		return '';
+	}
+	$parts = explode( '-', $date );
+
+	return number_format_i18n( (int) $parts[2] ) . '.' . number_format_i18n( (int) $parts[1] );
+}
+
+/**
+ * The travel window of one option.
+ *
+ * @param array<string,mixed> $option Normalized option.
+ * @return string
+ */
+function tra_vel_v2_decision_card_dates_label( $option ) {
+	$departure = tra_vel_v2_decision_card_date_label( isset( $option['departure_date'] ) ? $option['departure_date'] : '' );
+	$return    = tra_vel_v2_decision_card_date_label( isset( $option['return_date'] ) ? $option['return_date'] : '' );
+	if ( '' === $departure ) {
+		return '';
+	}
+	if ( '' === $return ) {
+		return $departure;
+	}
+
+	/* translators: 1: outbound date, 2: return date. */
+	return sprintf( __( '%1$s עד %2$s', 'tra-vel-v2' ), $departure, $return );
+}
+
+/**
+ * One city name spelled the way it reads after a single letter prefix.
+ *
+ * Hebrew doubles an opening vav once a prefix is attached, so Warsaw is
+ * lamed plus vav vav resh, not lamed plus vav resh, which a reader would sound
+ * out as a different word entirely.
+ *
+ * @param string $city Destination name.
+ * @return string Name ready to follow a one letter prefix.
+ */
+function tra_vel_v2_decision_card_prefixed_city( $city ) {
+	$city = (string) $city;
+
+	return 0 === strpos( $city, 'ו' ) ? 'ו' . $city : $city;
+}
+
+/**
+ * Bound any traveler count to what this card is allowed to price.
+ *
+ * @param mixed $travelers Candidate count.
+ * @return int
+ */
+function tra_vel_v2_decision_card_travelers( $travelers = null ) {
+	$travelers = is_numeric( $travelers ) ? (int) $travelers : TRA_VEL_V2_DECISION_CARD_DEFAULT_TRAVELERS;
+
+	return max( TRA_VEL_V2_DECISION_CARD_MIN_TRAVELERS, min( TRA_VEL_V2_DECISION_CARD_MAX_TRAVELERS, $travelers ) );
+}
+
+/**
+ * How a total is described for one party size.
+ *
+ * @param int $travelers Traveler count.
+ * @return string
+ */
+function tra_vel_v2_decision_card_party_label( $travelers ) {
+	$travelers = tra_vel_v2_decision_card_travelers( $travelers );
+	if ( 1 === $travelers ) {
+		return __( 'לנוסע אחד', 'tra-vel-v2' );
+	}
+
+	/* translators: %s: number of travelers. */
+	return sprintf( __( 'לכל %s הנוסעים', 'tra-vel-v2' ), number_format_i18n( $travelers ) );
+}
+
+/**
+ * Everything the decision card needs, or null when we have nothing real.
+ *
+ * The whole view is computed on the server, including every total, so the card
+ * a visitor without JavaScript receives is the finished card and not a shell
+ * waiting to be filled.
+ *
+ * @param string               $map_state Destination map state.
+ * @param array<string,mixed>  $args      Optional overrides.
+ * @return array<string,mixed>|null View model, or null when no real option exists.
+ */
+function tra_vel_v2_decision_card_view( $map_state, $args = array() ) {
+	$map_state = sanitize_key( (string) $map_state );
+	if ( '' === $map_state ) {
+		return null;
+	}
+
+	$args = wp_parse_args(
+		$args,
+		array(
+			'travelers' => TRA_VEL_V2_DECISION_CARD_DEFAULT_TRAVELERS,
+			'currency'  => null,
+		)
+	);
+
+	$options = tra_vel_v2_get_destination_options( $map_state, $args['currency'] );
+	if ( ! $options ) {
+		return null;
+	}
+
+	$destinations = function_exists( 'tra_vel_v2_seo_opportunity_destinations' ) ? tra_vel_v2_seo_opportunity_destinations() : array();
+	$city         = isset( $destinations[ $map_state ]['name'] ) ? (string) $destinations[ $map_state ]['name'] : '';
+	if ( '' === $city ) {
+		return null;
+	}
+
+	$travelers = tra_vel_v2_decision_card_travelers( $args['travelers'] );
+	$labels    = tra_vel_v2_decision_card_tier_labels();
+	$symbol    = isset( $options[0]['currency_symbol'] ) && is_string( $options[0]['currency_symbol'] ) && '' !== trim( $options[0]['currency_symbol'] )
+		? trim( $options[0]['currency_symbol'] )
+		: tra_vel_v2_currency_symbol( TRA_VEL_V2_PRICE_DEFAULT_CURRENCY );
+
+	$tiers = array();
+	foreach ( $options as $option ) {
+		$unit = isset( $option['price'] ) ? (int) $option['price'] : 0;
+		$tier = isset( $option['tier'] ) ? (string) $option['tier'] : '';
+		if ( $unit <= 0 || ! isset( $labels[ $tier ] ) || empty( $option['deep_link'] ) ) {
+			continue;
+		}
+		$tiers[] = array(
+			'tier'        => $tier,
+			'label'       => $labels[ $tier ],
+			'unit'        => $unit,
+			'unit_label'  => tra_vel_v2_format_found_price( array( 'price' => $unit, 'currency_symbol' => $symbol ) ),
+			'total'       => $unit * $travelers,
+			'total_label' => tra_vel_v2_format_found_price( array( 'price' => $unit * $travelers, 'currency_symbol' => $symbol ) ),
+			'airline'     => isset( $option['airline'] ) ? (string) $option['airline'] : '',
+			'stops_label' => tra_vel_v2_decision_card_stops_label( isset( $option['transfers'] ) ? $option['transfers'] : 0 ),
+			'dates_label' => tra_vel_v2_decision_card_dates_label( $option ),
+			'cta'         => (string) $option['deep_link'],
+			'is_stale'    => ! empty( $option['is_stale'] ),
+		);
+	}
+
+	if ( ! $tiers ) {
+		return null;
+	}
+
+	return array(
+		'state'         => $map_state,
+		'city'          => $city,
+		'prefixed_city' => tra_vel_v2_decision_card_prefixed_city( $city ),
+		'origin'        => __( 'תל אביב', 'tra-vel-v2' ),
+		'symbol'        => $symbol,
+		'currency'      => isset( $options[0]['currency'] ) ? (string) $options[0]['currency'] : '',
+		'travelers'     => $travelers,
+		'min_travelers' => TRA_VEL_V2_DECISION_CARD_MIN_TRAVELERS,
+		'max_travelers' => TRA_VEL_V2_DECISION_CARD_MAX_TRAVELERS,
+		'party_label'   => tra_vel_v2_decision_card_party_label( $travelers ),
+		'party_one'     => tra_vel_v2_decision_card_party_label( 1 ),
+		/* translators: %s: number of travelers. */
+		'party_many'    => __( 'לכל %s הנוסעים', 'tra-vel-v2' ),
+		'tiers'         => $tiers,
+		'fill_lines'    => array(
+			/* translators: %s: number of travelers. */
+			sprintf( __( 'מתאימים לכם: %s נוסעים', 'tra-vel-v2' ), number_format_i18n( $travelers ) ),
+			__( 'תאריכים גמישים', 'tra-vel-v2' ),
+			/* translators: %s: destination city. */
+			sprintf( __( 'יעד: %s', 'tra-vel-v2' ), $city ),
+		),
+		'fill_count'    => $travelers,
+		'scope_note'    => tra_vel_v2_found_price_scope_note(),
+		'currency_note' => tra_vel_v2_found_price_currency_note( isset( $options[0]['currency'] ) ? $options[0]['currency'] : null ),
+		'freshness'     => tra_vel_v2_found_price_freshness( $options[0] ),
+		'cta_label'     => __( 'בחרו והמשיכו להזמנה', 'tra-vel-v2' ),
+	);
+}
+
+/**
+ * The two real places a traveler can go when we have no price to show.
+ *
+ * @param string $map_state Destination map state.
+ * @return array<string,string> Absolute same site URLs.
+ */
+function tra_vel_v2_decision_card_next_steps( $map_state ) {
+	$map_state = sanitize_key( (string) $map_state );
+
+	return array(
+		'map'     => $map_state ? add_query_arg( 'destination', $map_state, home_url( '/travel-map/' ) ) : home_url( '/travel-map/' ),
+		'planner' => $map_state ? add_query_arg( 'destination', $map_state, home_url( '/ai-planner/' ) ) : home_url( '/ai-planner/' ),
+	);
+}
+
+/**
+ * The one screen decision card, or an honest next step when we have no price.
+ *
+ * Never renders a supplier failure and never renders an empty shell. Either a
+ * visitor sees real, priced, bookable choices, or a visitor sees two working
+ * links and a plain sentence explaining why the price is missing.
+ *
+ * Deliberately schema free, exactly like every other found price surface.
+ *
+ * @param string              $map_state Destination map state.
+ * @param array<string,mixed> $args      Optional overrides.
+ * @return void
+ */
+function tra_vel_v2_render_decision_card( $map_state, $args = array() ) {
+	$view = tra_vel_v2_decision_card_view( $map_state, $args );
+	if ( null === $view ) {
+		tra_vel_v2_render_decision_card_next_step( $map_state );
+		return;
+	}
+
+	get_template_part( 'template-parts/decision-card', null, $view );
+}
+
+/**
+ * The honest state: no price yet, and two real ways forward.
+ *
+ * @param string $map_state Destination map state.
+ * @return void
+ */
+function tra_vel_v2_render_decision_card_next_step( $map_state ) {
+	$links        = tra_vel_v2_decision_card_next_steps( $map_state );
+	$destinations = function_exists( 'tra_vel_v2_seo_opportunity_destinations' ) ? tra_vel_v2_seo_opportunity_destinations() : array();
+	$state        = sanitize_key( (string) $map_state );
+	$city         = isset( $destinations[ $state ]['name'] ) ? (string) $destinations[ $state ]['name'] : '';
+	?>
+	<section class="decision-card decision-card-pending page-width" data-decision-card-pending aria-labelledby="decision-card-pending-title">
+		<div class="decision-card-head">
+			<span class="eyebrow"><?php esc_html_e( 'טיסות בלבד', 'tra-vel-v2' ); ?></span>
+			<h2 id="decision-card-pending-title">
+				<?php
+				echo esc_html(
+					$city
+						/* translators: %s: destination city. */
+						? sprintf( __( 'מתל אביב ל%s, הלוך ושוב', 'tra-vel-v2' ), tra_vel_v2_decision_card_prefixed_city( $city ) )
+						: __( 'טיסות הלוך ושוב מתל אביב', 'tra-vel-v2' )
+				);
+				?>
+			</h2>
+		</div>
+		<p class="decision-card-pending-copy"><?php esc_html_e( 'עדיין אין לנו מחיר עדכני ליעד הזה. אפשר לבדוק ישירות אצל שותף ההשוואה או לתאר לנו את החופשה ונחזור עם הצעה.', 'tra-vel-v2' ); ?></p>
+		<div class="decision-card-pending-actions">
+			<a class="decision-card-pending-primary" href="<?php echo esc_url( $links['map'] ); ?>"><?php esc_html_e( 'בדקו את היעד במפת החופשות', 'tra-vel-v2' ); ?><i data-lucide="earth" aria-hidden="true"></i></a>
+			<a class="decision-card-pending-secondary" href="<?php echo esc_url( $links['planner'] ); ?>"><?php esc_html_e( 'תארו לנו את החופשה', 'tra-vel-v2' ); ?><i data-lucide="sparkles" aria-hidden="true"></i></a>
+		</div>
+	</section>
+	<?php
 }
