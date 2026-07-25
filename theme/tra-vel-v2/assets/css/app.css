@@ -4019,6 +4019,9 @@ label[data-party-hidden="true"] { display: none !important; }
 .decision-card-head h2 { margin: 0; font-size: clamp(21px,2.4vw,30px); line-height: 1.12; letter-spacing: -.6px; }
 .decision-card-lede { margin: 0; color: #4b6268; font-size: 13px; font-weight: 600; line-height: 1.45; }
 .decision-card-fill { position: absolute; inset: 0; z-index: 2; margin: 0; padding: 20px; border-radius: 22px; background: #fff; display: grid; align-content: center; justify-items: center; gap: 12px; text-align: center; }
+/* The author display rule above outranks the hidden attribute, so the overlay
+   must be switched off explicitly or it keeps covering the booking actions. */
+.decision-card-fill[hidden] { display: none !important; }
 .decision-card-fill-line { opacity: 0; transform: translateY(var(--motion-shift-sm)); transition: opacity var(--motion-base) var(--ease-standard), transform var(--motion-base) var(--ease-standard); color: #12262c; font-size: 17px; font-weight: 800; }
 .decision-card-fill-line[data-decision-card-fill-shown="true"] { opacity: 1; transform: none; }
 .decision-card-travelers { display: flex; align-items: center; gap: 8px; }
