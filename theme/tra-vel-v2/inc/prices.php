@@ -981,6 +981,7 @@ function tra_vel_v2_price_surface() {
 		|| is_page_template( 'page-map.php' )
 		|| is_page_template( 'page-destination.php' )
 		|| is_page_template( 'page-seo-opportunity.php' )
+		|| is_page_template( 'page-cost-answer.php' )
 		|| is_page_template( 'page-pillar.php' )
 		|| is_page_template( 'page-experience.php' )
 		|| is_singular( 'destination' );
