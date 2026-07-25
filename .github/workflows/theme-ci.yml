@@ -67,6 +67,7 @@ jobs:
           php scripts/ci/validate-guide-publication-runtime.php
           php scripts/ci/validate-seo-opportunity-runtime.php
           php scripts/ci/validate-decision-card-runtime.php
+          php scripts/ci/validate-cost-answer-runtime.php
           php scripts/ci/validate-traveler-workspace-runtime.php
           php scripts/ci/validate-supplier-handoff-runtime.php
           php scripts/ci/validate-home-hero-queue-runtime.php
@@ -203,6 +204,7 @@ jobs:
           php scripts/ci/validate-guide-publication-runtime.php
           php scripts/ci/validate-seo-opportunity-runtime.php
           php scripts/ci/validate-decision-card-runtime.php
+          php scripts/ci/validate-cost-answer-runtime.php
           php scripts/ci/validate-traveler-workspace-runtime.php
           php scripts/ci/validate-supplier-handoff-runtime.php
           php scripts/ci/validate-home-hero-queue-runtime.php
