@@ -163,10 +163,55 @@ function tra_vel_v2_enqueue_assets() {
 			true
 		);
 	}
+
+	if ( tra_vel_v2_metasearch_is_enabled() ) {
+		wp_enqueue_script(
+			'tra-vel-v2-metasearch',
+			'https://tpscr.com/wl_web/main.js?wl_id=' . rawurlencode( tra_vel_v2_metasearch_id() ),
+			array(),
+			null,
+			false
+		);
+	}
 }
 add_action( 'wp_enqueue_scripts', 'tra_vel_v2_enqueue_assets' );
 
+/**
+ * Return the configured Travelpayouts White Label metasearch id.
+ *
+ * The id is stored as an option so the integration can be rotated or disabled
+ * without a release, exactly like the affiliate marker above.
+ *
+ * @return string Digits only, or an empty string when not configured.
+ */
+function tra_vel_v2_metasearch_id() {
+	$wl_id = apply_filters( 'tra_vel_v2_metasearch_id', get_option( 'tra_vel_v2_travelpayouts_wl_id', '' ) );
+	$wl_id = is_string( $wl_id ) || is_int( $wl_id ) ? trim( (string) $wl_id ) : '';
+	return preg_match( '/^[0-9]{3,12}$/', $wl_id ) ? $wl_id : '';
+}
+
+/**
+ * Whether the bookable metasearch belongs on the current request.
+ *
+ * The widget owns real availability, so it is limited to the commercial
+ * experience routes. Every other surface keeps its current behaviour.
+ *
+ * @return bool
+ */
+function tra_vel_v2_metasearch_is_enabled() {
+	if ( '' === tra_vel_v2_metasearch_id() || ! is_page_template( 'page-experience.php' ) ) {
+		return false;
+	}
+	$slug = get_post_field( 'post_name', get_queried_object_id() );
+	return (bool) apply_filters( 'tra_vel_v2_metasearch_enabled', in_array( $slug, array( 'flights', 'hotels', 'packages' ), true ), $slug );
+}
+
 function tra_vel_v2_script_attributes( $tag, $handle ) {
+	if ( 'tra-vel-v2-metasearch' === $handle ) {
+		// The White Label bundle is published as an ES module and refuses to
+		// boot when it is loaded as a classic script.
+		return str_replace( '<script ', '<script type="module" async ', str_replace( " type='text/javascript'", '', $tag ) );
+	}
 	if ( ! in_array( $handle, array( 'tra-vel-v2-app', 'tra-vel-v2-globe-3d', 'tra-vel-v2-voice-dock', 'tra-vel-v2-pillar-earth', 'tra-vel-v2-customer-trip-cockpit', 'tra-vel-v2-next-action', 'tra-vel-v2-decision-card', 'tra-vel-v2-lucide' ), true ) ) {
 		return $tag;
 	}

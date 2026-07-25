@@ -460,6 +460,17 @@ get_header();
 	<?php if ( $decision_card_surface && function_exists( 'tra_vel_v2_render_decision_card' ) ) : ?>
 		<?php tra_vel_v2_render_decision_card( $decision_card_state ); ?>
 	<?php endif; ?>
+	<?php if ( function_exists( 'tra_vel_v2_metasearch_is_enabled' ) && tra_vel_v2_metasearch_is_enabled() ) : ?>
+		<section class="experience-metasearch page-width" aria-labelledby="experience-metasearch-title">
+			<header class="experience-metasearch-heading">
+				<span class="eyebrow"><i data-lucide="scan-search"></i><?php esc_html_e( 'חיפוש והזמנה', 'tra-vel-v2' ); ?></span>
+				<h2 id="experience-metasearch-title"><?php esc_html_e( 'בחרו תאריכים וקבלו זמינות אמיתית', 'tra-vel-v2' ); ?></h2>
+				<p><?php esc_html_e( 'התוצאות מגיעות מספקי ההזמנה ומתעדכנות בזמן החיפוש. ההזמנה נסגרת אצל הספק שבחרתם.', 'tra-vel-v2' ); ?></p>
+			</header>
+			<div id="tpwl-search"></div>
+			<div id="tpwl-tickets"></div>
+		</section>
+	<?php endif; ?>
 	<section class="experience-hero">
 		<div class="page-width experience-hero-grid">
 			<div class="experience-copy"><span class="kicker"><i data-lucide="sparkles"></i><?php echo esc_html( $experience['eyebrow'] ); ?></span><h1><?php echo esc_html( $experience['title'] ); ?></h1><p><?php echo esc_html( $experience['description'] ); ?></p></div>
