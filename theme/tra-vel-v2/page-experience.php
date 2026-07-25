@@ -280,6 +280,18 @@ $flight_destination_name = isset( $destination_labels[ $flight_destination_code 
 $stay_destination_name   = isset( $destination_labels[ $stay_destination_code ] ) ? $destination_labels[ $stay_destination_code ] : $stay_destination_code;
 $requested_area           = isset( $_GET['area'] ) ? sanitize_title( wp_unslash( $_GET['area'] ) ) : '';
 $requested_area           = strlen( $requested_area ) <= 60 ? $requested_area : '';
+// The decision card prices the flight leg of this page, so the flights page
+// uses the flight destination and the flight and hotel package uses the stay
+// destination. Both resolve through the same code to map state table the rest
+// of this template already trusts.
+$decision_card_surface    = $is_flights || $is_packages;
+$decision_card_code       = $is_packages ? $stay_destination_code : $flight_destination_code;
+$decision_card_state      = isset( $destination_code_slugs[ $decision_card_code ] ) ? $destination_code_slugs[ $decision_card_code ] : '';
+if ( '' === $decision_card_state && function_exists( 'tra_vel_v2_price_state_for_airport' ) ) {
+	// Every destination we hold a price for, not only the eight this template
+	// carries its own editorial content for.
+	$decision_card_state = tra_vel_v2_price_state_for_airport( $decision_card_code );
+}
 $trip_destination_label   = isset( $destination_slug_labels[ $trip_destination ] ) ? $destination_slug_labels[ $trip_destination ] : '';
 $insurance_context_ready  = ! $trip_destination || in_array( $trip_destination, array( 'budapest', 'prague', 'vienna', 'athens', 'lisbon' ), true );
 $flight_initial_search    = 'TLV' === $requested_origin_code && 'BKK' === $flight_destination_code;
@@ -445,6 +457,9 @@ if ( $is_ai_planner ) {
 get_header();
 ?>
 <main id="main-content" class="experience-page" data-experience-kind="<?php echo esc_attr( $experience_kind ); ?>">
+	<?php if ( $decision_card_surface && function_exists( 'tra_vel_v2_render_decision_card' ) ) : ?>
+		<?php tra_vel_v2_render_decision_card( $decision_card_state ); ?>
+	<?php endif; ?>
 	<section class="experience-hero">
 		<div class="page-width experience-hero-grid">
 			<div class="experience-copy"><span class="kicker"><i data-lucide="sparkles"></i><?php echo esc_html( $experience['eyebrow'] ); ?></span><h1><?php echo esc_html( $experience['title'] ); ?></h1><p><?php echo esc_html( $experience['description'] ); ?></p></div>

@@ -5340,7 +5340,7 @@ async function searchFlights(form) {
     const noExactResult = commercialSearchResultNeedsPersonalCheck(payload);
     setExperiencePersonalCheck(form, noExactResult, 'flights');
     if (status) status.textContent = noExactResult
-      ? 'לא נמצאה כרגע התאמה מדויקת. אותם פרטים מוכנים לבדיקה אישית.'
+      ? 'אין כרגע התאמה מדויקת לפרטים האלה. אפשר לשנות פרט אחד כאן ולנסות שוב, או לבקש בדיקה אישית.'
       : `${payload.meta.result_count} אפשרויות · ${modeLabels[payload.meta.data_mode] || modeLabels.demo}${freshness}`;
     form.dataset.state = payload.meta.data_mode;
   } catch (error) {
@@ -5348,7 +5348,7 @@ async function searchFlights(form) {
     const personalCheckAvailable = commercialSearchNeedsPersonalCheck(error);
     setExperiencePersonalCheck(form, personalCheckAvailable, 'flights');
     if (status) status.textContent = personalCheckAvailable
-      ? 'לא נמצאה כרגע התאמה מדויקת. אותם פרטים מוכנים לבדיקה אישית.'
+      ? 'אין כרגע התאמה מדויקת לפרטים האלה. אפשר לשנות פרט אחד כאן ולנסות שוב, או לבקש בדיקה אישית.'
       : 'לא הצלחנו להשלים את ההשוואה. בדקו את התאריכים ונסו שוב.';
     form.dataset.state = 'error';
     console.warn(error);
@@ -5556,7 +5556,7 @@ async function searchHotels(form) {
     const noExactResult = commercialSearchResultNeedsPersonalCheck(payload);
     setExperiencePersonalCheck(form, noExactResult, 'hotels');
     if (status) status.textContent = noExactResult
-      ? 'לא נמצאה כרגע התאמה מדויקת. אותם פרטים מוכנים לבדיקה אישית.'
+      ? 'אין כרגע התאמה מדויקת לפרטים האלה. אפשר לשנות פרט אחד כאן ולנסות שוב, או לבקש בדיקה אישית.'
       : `${payload.meta.result_count} מקומות · ${payload.search.nights} לילות · ${modeLabels[payload.meta.data_mode] || modeLabels.demo}${freshness}`;
     form.dataset.state = payload.meta.data_mode;
   } catch (error) {
@@ -5565,7 +5565,7 @@ async function searchHotels(form) {
     const personalCheckAvailable = commercialSearchNeedsPersonalCheck(error);
     setExperiencePersonalCheck(form, personalCheckAvailable, 'hotels');
     if (status) status.textContent = personalCheckAvailable
-      ? 'לא נמצאה כרגע התאמה מדויקת. אותם פרטים מוכנים לבדיקה אישית.'
+      ? 'אין כרגע התאמה מדויקת לפרטים האלה. אפשר לשנות פרט אחד כאן ולנסות שוב, או לבקש בדיקה אישית.'
       : 'לא הצלחנו להשלים את השוואת המלונות. בדקו את התאריכים ונסו שוב.';
     form.dataset.state = 'error';
     console.warn(error);
@@ -5828,7 +5828,7 @@ async function searchInsuranceQuotes(form) {
     const noExactResult = commercialSearchResultNeedsPersonalCheck(payload);
     setExperiencePersonalCheck(form, noExactResult, 'insurance');
     if (status) status.textContent = noExactResult
-      ? 'לא נמצאה כרגע התאמה מדויקת. אותם פרטים מוכנים לבדיקה אישית.'
+      ? 'אין כרגע התאמה מדויקת לפרטים האלה. אפשר לשנות פרט אחד כאן ולנסות שוב, או לבקש בדיקה אישית.'
       : `${resultLabel} · ${payload.query.trip_days} ימים · ${modeLabels[payload.meta.data_mode] || modeLabels.demo}${assessment}${freshness}`;
     form.dataset.state = payload.meta.data_mode;
   } catch (error) {
@@ -5837,7 +5837,7 @@ async function searchInsuranceQuotes(form) {
     const personalCheckAvailable = commercialSearchNeedsPersonalCheck(error);
     setExperiencePersonalCheck(form, personalCheckAvailable, 'insurance');
     if (status) status.textContent = personalCheckAvailable
-      ? 'לא נמצאה כרגע התאמה מדויקת. אותם פרטים מוכנים לבדיקה אישית.'
+      ? 'אין כרגע התאמה מדויקת לפרטים האלה. אפשר לשנות פרט אחד כאן ולנסות שוב, או לבקש בדיקה אישית.'
       : 'לא הצלחנו להשלים את ההשוואה. בדקו תאריכים ונסו שוב.';
     form.dataset.state = 'error';
     console.warn(error);
@@ -6112,7 +6112,7 @@ async function searchTripPackages(form) {
     const noExactResult = commercialSearchResultNeedsPersonalCheck(payload);
     setExperiencePersonalCheck(form, noExactResult, 'packages');
     if (status) status.textContent = noExactResult
-      ? 'לא נמצאה כרגע התאמה מדויקת. אותם פרטים מוכנים לבדיקה אישית.'
+      ? 'אין כרגע התאמה מדויקת לפרטים האלה. אפשר לשנות פרט אחד כאן ולנסות שוב, או לבקש בדיקה אישית.'
       : `${payload.meta.result_count} חלופות · ${payload.trip.nights} לילות · ${priceScope} · ${modeLabels[payload.meta.data_mode] || modeLabels.demo}${freshness}`;
     form.dataset.state = payload.meta.data_mode;
   } catch (error) {
@@ -6121,7 +6121,7 @@ async function searchTripPackages(form) {
     const personalCheckAvailable = commercialSearchNeedsPersonalCheck(error);
     setExperiencePersonalCheck(form, personalCheckAvailable, 'packages');
     if (status) status.textContent = personalCheckAvailable
-      ? 'לא נמצאה כרגע התאמה מדויקת. אותם פרטים מוכנים לבדיקה אישית.'
+      ? 'אין כרגע התאמה מדויקת לפרטים האלה. אפשר לשנות פרט אחד כאן ולנסות שוב, או לבקש בדיקה אישית.'
       : 'לא הצלחנו להרכיב חלופות. בדקו תאריכים, תקציב והרכב חדרים ונסו שוב.';
     form.dataset.state = 'error';
     console.warn(error);
