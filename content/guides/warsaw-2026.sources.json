@@ -1,0 +1,424 @@
+{
+  "schemaVersion": 1,
+  "id": "warsaw-2026",
+  "locale": "he-IL",
+  "title": "ורשה",
+  "excerpt": "מדריך ורשה לישראלים: טיסה ישירה קצרה, הגעה משדה שופן, שכונות לינה לפי סגנון, העיר העתיקה וההיסטוריה היהודית, כללי שנגן ו-ETIAS, כשרות וקהילה, תקציב ומסלולים, על בסיס מקורות רשמיים ותאריך בדיקה.",
+  "author": "מערכת Tra-Vel",
+  "primaryTopic": "Warsaw travel guide for Israelis",
+  "canonicalPath": "/destinations/warsaw/",
+  "status": "editorial-review",
+  "wordTargetMin": 5000,
+  "contentPath": "content/guides/warsaw-2026.he.html",
+  "checkedAt": "2026-08-06",
+  "mapState": "warsaw",
+  "reviewer": "מערכת Tra-Vel",
+  "reviewMethod": "Prioritize official Warsaw and Poland tourism, airport operator, public transport authority, EU Schengen and ETIAS, national heritage museum, meteorological institute, and Israeli consular sources. Recheck transit routes, opening hours, entry rules, kosher availability and security guidance immediately before publication.",
+  "flightTime": "בדקו מסלול חי",
+  "dailyBudget": "נבנה לפי ההרכב",
+  "bestSeason": "אביב וסתיו להליכה",
+  "bestFor": "3 עד 5 ימים בעיר",
+  "sections": [
+    "Decision summary",
+    "Who Warsaw suits",
+    "Seasons and climate",
+    "Flights from Israel and baggage decisions",
+    "Chopin and Modlin airport transfers",
+    "Where to stay by neighborhood",
+    "Hotel and apartment vetting",
+    "Old Town, Palace of Culture and central museums",
+    "Jewish Warsaw and ghetto history",
+    "Three and five day routes",
+    "City public transport",
+    "Day trips including Krakow distance context",
+    "Daily budget by travel style",
+    "Polish food and markets",
+    "Kosher options and Jewish community",
+    "Families and accessibility",
+    "Schengen entry, ETIAS and safety",
+    "Practical tips: language, tipping, power and connectivity",
+    "Booking order",
+    "FAQ",
+    "Common mistakes",
+    "Traveler type matchmaking",
+    "Sources and methodology"
+  ],
+  "sources": [
+    {
+      "id": "go2warsaw-main",
+      "title": "Go To Warsaw, official tourist portal of the city",
+      "publisher": "Warsaw Tourist Office",
+      "url": "https://go2warsaw.pl/en/main-page/",
+      "type": "official",
+      "checkedAt": "2026-08-06",
+      "supports": ["official city tourism orientation", "events calendar", "attractions overview"]
+    },
+    {
+      "id": "go2warsaw-accessibility",
+      "title": "Accessibility declaration",
+      "publisher": "Warsaw Tourist Office",
+      "url": "https://go2warsaw.pl/en/accessibility-declaration/",
+      "type": "official",
+      "checkedAt": "2026-08-06",
+      "supports": ["accessibility standards for tourist information services"]
+    },
+    {
+      "id": "chopin-airport-transport",
+      "title": "To and from the Warsaw Chopin Airport",
+      "publisher": "Warsaw Chopin Airport (Polish Airports State Enterprise)",
+      "url": "https://lotnisko-chopina.pl/en/to-and-from-the-airport/",
+      "type": "official",
+      "checkedAt": "2026-08-06",
+      "supports": ["train, bus, taxi and ride-hailing options from Chopin Airport"]
+    },
+    {
+      "id": "wtp-airports-transport",
+      "title": "Airports transport, step by step",
+      "publisher": "Warszawski Transport Publiczny (city public transport)",
+      "url": "https://www.wtp.waw.pl/en/public-transport-step-by-step/airports-transport/",
+      "type": "official",
+      "checkedAt": "2026-08-06",
+      "supports": ["SKM rail lines to the airport", "standard city ticket validity to the airport"]
+    },
+    {
+      "id": "wtp-ticket-tariff",
+      "title": "Ticket tariff",
+      "publisher": "Warszawski Transport Publiczny (city public transport)",
+      "url": "https://www.wtp.waw.pl/en/ticket-tariff/",
+      "type": "official",
+      "checkedAt": "2026-08-06",
+      "supports": ["fare zones", "ticket types and purchase channels"]
+    },
+    {
+      "id": "ztm-about",
+      "title": "About ZTM",
+      "publisher": "ZTM Warszawa (Warsaw public transport authority)",
+      "url": "https://www.ztm.waw.pl/en/about-ztm/",
+      "type": "official",
+      "checkedAt": "2026-08-06",
+      "supports": ["role of the transport authority", "integrated metro, tram and bus network"]
+    },
+    {
+      "id": "modlin-airport-bus",
+      "title": "Bus transport to and from Warsaw Modlin Airport",
+      "publisher": "Warsaw Modlin Airport",
+      "url": "https://en.modlinairport.pl/page/bus",
+      "type": "official",
+      "checkedAt": "2026-08-06",
+      "supports": ["dedicated coach connections from Modlin to central Warsaw"]
+    },
+    {
+      "id": "poland-travel-practical",
+      "title": "Poland, practical information",
+      "publisher": "Polish Tourism Organisation (POT)",
+      "url": "https://www.poland.travel/en/poland-practical-information/",
+      "type": "official",
+      "checkedAt": "2026-08-06",
+      "supports": ["currency and general practical information for Poland"]
+    },
+    {
+      "id": "unesco-warsaw",
+      "title": "Historic Centre of Warsaw",
+      "publisher": "UNESCO World Heritage Centre",
+      "url": "https://whc.unesco.org/en/list/30/",
+      "type": "official",
+      "checkedAt": "2026-08-06",
+      "supports": ["1980 World Heritage inscription", "post-war reconstruction of the Old Town"]
+    },
+    {
+      "id": "imgw-climate",
+      "title": "Climate of Poland",
+      "publisher": "IMGW-PIB, Polish Institute of Meteorology and Water Management",
+      "url": "https://klimat.imgw.pl/en",
+      "type": "official",
+      "checkedAt": "2026-08-06",
+      "supports": ["official national meteorological authority", "climate normals"]
+    },
+    {
+      "id": "climate-data-warsaw",
+      "title": "Warsaw climate, weather by month",
+      "publisher": "Climate-Data.org",
+      "url": "https://en.climate-data.org/europe/poland/masovian-voivodeship/warsaw-4560/",
+      "type": "industry",
+      "checkedAt": "2026-08-06",
+      "supports": ["monthly average temperature figures"]
+    },
+    {
+      "id": "eu-schengen-visa-policy",
+      "title": "Visa policy",
+      "publisher": "European Commission, Migration and Home Affairs",
+      "url": "https://home-affairs.ec.europa.eu/policies/schengen/visa-policy_en",
+      "type": "official",
+      "checkedAt": "2026-08-06",
+      "supports": ["Israel on the Schengen visa-exempt list", "90 day within 180 day rule"]
+    },
+    {
+      "id": "eu-etias",
+      "title": "What is ETIAS",
+      "publisher": "European Union, Travel to Europe portal",
+      "url": "https://travel-europe.europa.eu/etias/about-etias/what-is-etias",
+      "type": "official",
+      "checkedAt": "2026-08-06",
+      "supports": ["upcoming ETIAS travel authorization requirement and timeline"]
+    },
+    {
+      "id": "israel-embassy-warsaw",
+      "title": "שגרירות ישראל בפולין",
+      "publisher": "משרד החוץ",
+      "url": "https://embassies.gov.il/poland/he",
+      "type": "official",
+      "checkedAt": "2026-08-06",
+      "supports": ["official Israeli representation in Poland"]
+    },
+    {
+      "id": "israel-embassy-warsaw-services",
+      "title": "שירותים קונסולריים",
+      "publisher": "משרד החוץ",
+      "url": "https://embassies.gov.il/poland/he/services",
+      "type": "official",
+      "checkedAt": "2026-08-06",
+      "supports": ["consular assistance", "lost passport and emergency document procedure"]
+    },
+    {
+      "id": "israel-travel-warnings",
+      "title": "Travel warnings",
+      "publisher": "Israel National Security Council",
+      "url": "https://www.gov.il/en/departments/dynamiccollectors/travel-warnings-nsc?skip=0",
+      "type": "official",
+      "checkedAt": "2026-08-06",
+      "supports": ["current Israeli security guidance by destination"]
+    },
+    {
+      "id": "polin-museum",
+      "title": "POLIN Museum of the History of Polish Jews",
+      "publisher": "POLIN Museum",
+      "url": "https://polin.pl/en/polin-museum-of-the-history-of-polish-jews",
+      "type": "official",
+      "checkedAt": "2026-08-06",
+      "supports": ["1,000 years of Polish Jewish history", "core exhibition opened 2014", "site on former ghetto ground"]
+    },
+    {
+      "id": "warsaw-rising-museum",
+      "title": "Warsaw Rising Museum, official site",
+      "publisher": "Muzeum Powstania Warszawskiego",
+      "url": "https://www.1944.pl/en",
+      "type": "official",
+      "checkedAt": "2026-08-06",
+      "supports": ["1944 Warsaw Uprising history", "photo archive and oral history collection"]
+    },
+    {
+      "id": "wilanow-palace",
+      "title": "Museum of King Jan III's Palace at Wilanow",
+      "publisher": "Muzeum Palacu Krola Jana III w Wilanowie",
+      "url": "https://www.wilanow-palac.pl/",
+      "type": "official",
+      "checkedAt": "2026-08-06",
+      "supports": ["baroque royal residence history", "palace and garden visiting hours"]
+    },
+    {
+      "id": "chopin-birthplace-museum",
+      "title": "The Birthplace of Fryderyk Chopin and Park in Zelazowa Wola",
+      "publisher": "Narodowy Instytut Fryderyka Chopina (Fryderyk Chopin Institute)",
+      "url": "https://muzeum.nifc.pl/en/muzeum/kolekcja-artykul/1027_chopins-birthplace",
+      "type": "official",
+      "checkedAt": "2026-08-06",
+      "supports": ["Chopin birthplace museum", "seasonal weekend piano recitals"]
+    },
+    {
+      "id": "kampinos-national-park",
+      "title": "Kampinos National Park, English version",
+      "publisher": "Kampinoski Park Narodowy",
+      "url": "https://kampn.gov.pl/english-version",
+      "type": "official",
+      "checkedAt": "2026-08-06",
+      "supports": ["protected forest and dune landscape near Warsaw", "UNESCO biosphere reserve status", "trail network"]
+    },
+    {
+      "id": "pkp-intercity",
+      "title": "Where to buy the ticket, online FAQ",
+      "publisher": "PKP Intercity",
+      "url": "https://www.intercity.pl/en/site/travelers-essentials/where-to-buy-the-ticket/internet/faq.html",
+      "type": "official",
+      "checkedAt": "2026-08-06",
+      "supports": ["state rail operator connecting Warsaw and Krakow"]
+    },
+    {
+      "id": "chabad-warsaw",
+      "title": "Chabad of Warsaw Poland",
+      "publisher": "Chabad Lubavitch of Poland",
+      "url": "https://chabadpoland.org/en/",
+      "type": "primary",
+      "checkedAt": "2026-08-06",
+      "supports": ["synagogue and community services in Warsaw", "visitor center"]
+    },
+    {
+      "id": "chabad-warsaw-kosher",
+      "title": "Kosher food in Warsaw Poland",
+      "publisher": "Chabad Lubavitch of Poland",
+      "url": "https://chabadpoland.org/en/food/",
+      "type": "primary",
+      "checkedAt": "2026-08-06",
+      "supports": ["kosher restaurants and catering guide for Warsaw"]
+    },
+    {
+      "id": "jewish-community-warsaw-nozyk",
+      "title": "Nozyk Synagogue",
+      "publisher": "Gmina Wyznaniowa Zydowska w Warszawie (Jewish Community of Warsaw)",
+      "url": "https://warszawa.jewish.org.pl/en/visit/warsaw/nozyk",
+      "type": "primary",
+      "checkedAt": "2026-08-06",
+      "supports": ["Nozyk Synagogue history", "seat of the Chief Rabbi of Poland", "1983 return to the community"]
+    },
+    {
+      "id": "lonely-planet-warsaw",
+      "title": "A guide to Warsaw",
+      "publisher": "Lonely Planet",
+      "url": "https://www.lonelyplanet.com/articles/guide-to-warsaw",
+      "type": "editorial",
+      "checkedAt": "2026-08-06",
+      "supports": ["neighborhood structure and character of Warsaw"]
+    },
+    {
+      "id": "ushmm-warsaw-ghetto",
+      "title": "Warsaw Ghetto Uprising",
+      "publisher": "United States Holocaust Memorial Museum, Holocaust Encyclopedia",
+      "url": "https://encyclopedia.ushmm.org/content/en/article/warsaw-ghetto-uprising",
+      "type": "editorial",
+      "checkedAt": "2026-08-06",
+      "supports": ["Warsaw ghetto establishment and scale", "1943 Warsaw Ghetto Uprising history"]
+    }
+  ],
+  "facts": [
+    {
+      "id": "warsaw-unesco-1980",
+      "claim": "UNESCO inscribed the Historic Centre of Warsaw as a World Heritage Site in 1980, recognizing its near total post-war reconstruction after more than 85 percent of the area was destroyed.",
+      "sourceIds": ["unesco-warsaw"],
+      "volatile": false
+    },
+    {
+      "id": "warsaw-ghetto-established",
+      "claim": "The Warsaw ghetto, established in October 1940, was the largest Jewish ghetto in German-occupied Europe, holding around 400,000 people at its peak.",
+      "sourceIds": ["ushmm-warsaw-ghetto"],
+      "volatile": false
+    },
+    {
+      "id": "warsaw-ghetto-uprising-1943",
+      "claim": "The Warsaw Ghetto Uprising took place in April and May 1943, led by the Jewish Combat Organization under Mordecai Anielewicz, a distinct event from the general 1944 Warsaw Uprising.",
+      "sourceIds": ["ushmm-warsaw-ghetto", "warsaw-rising-museum"],
+      "volatile": false
+    },
+    {
+      "id": "polin-museum-scope",
+      "claim": "POLIN Museum presents 1,000 years of Polish Jewish history through its core exhibition, which fully opened in 2014 on the former Warsaw ghetto site.",
+      "sourceIds": ["polin-museum"],
+      "volatile": false
+    },
+    {
+      "id": "nozyk-synagogue-history",
+      "claim": "The Nozyk Synagogue, Warsaw's only synagogue building that survived World War II largely intact, opened in 1902 and was fully returned to the Warsaw Jewish community in 1983.",
+      "sourceIds": ["jewish-community-warsaw-nozyk"],
+      "volatile": false
+    },
+    {
+      "id": "chabad-warsaw-services",
+      "claim": "Chabad of Warsaw Poland operates a synagogue, kosher food services and a visitor center, with its own published guide to kosher dining options in the city.",
+      "sourceIds": ["chabad-warsaw", "chabad-warsaw-kosher"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "chopin-airport-transfer-options",
+      "claim": "Warsaw Chopin Airport's official site and the city transport authority list SKM rail lines, direct bus routes, licensed taxis and ride hailing apps as ground transport options to the city center.",
+      "sourceIds": ["chopin-airport-transport", "wtp-airports-transport"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "modlin-airport-distance",
+      "claim": "Warsaw Modlin Airport, used mainly by budget carriers, is located well north of the city, and its official site lists dedicated coach connections to central Warsaw.",
+      "sourceIds": ["modlin-airport-bus"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "ztm-integrated-network",
+      "claim": "ZTM Warszawa coordinates an integrated network of metro, tram and bus service under the Warszawski Transport Publiczny brand, with a shared ticket valid across modes including the airport rail link.",
+      "sourceIds": ["ztm-about", "wtp-airports-transport", "wtp-ticket-tariff"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "poland-schengen-israel-exempt",
+      "claim": "The European Commission's Schengen visa policy lists Israel among the nationalities exempt from a visa for short stays of up to 90 days within any 180 day period across the Schengen area, of which Poland is a full member.",
+      "sourceIds": ["eu-schengen-visa-policy"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "etias-timeline",
+      "claim": "The European Union's official ETIAS travel authorization is expected to become a requirement for visa-exempt travelers in the last quarter of 2026, with a transitional period.",
+      "sourceIds": ["eu-etias"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "israel-embassy-warsaw-contact",
+      "claim": "The Israeli embassy in Warsaw publishes its consular services and contact details through the Ministry of Foreign Affairs embassy portal.",
+      "sourceIds": ["israel-embassy-warsaw", "israel-embassy-warsaw-services"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "security-recheck",
+      "claim": "Israeli travelers should verify Poland in the National Security Council travel warning system immediately before departure.",
+      "sourceIds": ["israel-travel-warnings"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "warsaw-climate",
+      "claim": "Official and independent climate data describe Warsaw's climate as moderately continental, with average temperatures below freezing in January and average highs roughly in the 20 to 26 degree Celsius range in July and August.",
+      "sourceIds": ["imgw-climate", "climate-data-warsaw"],
+      "volatile": false
+    },
+    {
+      "id": "wilanow-palace-history",
+      "claim": "Wilanow Palace is a baroque royal residence built for King Jan III Sobieski in the late 17th century, now operated as a state museum with published palace and garden visiting hours.",
+      "sourceIds": ["wilanow-palace"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "chopin-birthplace",
+      "claim": "The Fryderyk Chopin Institute operates the composer's birthplace museum in Zelazowa Wola, roughly an hour from Warsaw, including seasonal weekend piano recitals.",
+      "sourceIds": ["chopin-birthplace-museum"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "kampinos-park-scale",
+      "claim": "Kampinos National Park, a protected forest and dune landscape on Warsaw's northwestern edge, is recognized as a UNESCO biosphere reserve and maintains an extensive network of hiking and cycling trails.",
+      "sourceIds": ["kampinos-national-park"],
+      "volatile": false
+    },
+    {
+      "id": "warsaw-krakow-train",
+      "claim": "PKP Intercity, Poland's main state rail operator, runs frequent trains between Warsaw and Krakow, with the fastest services covering the roughly 300 kilometer route in about two and a half hours.",
+      "sourceIds": ["pkp-intercity"],
+      "volatile": true,
+      "recheckBeforePublish": true
+    },
+    {
+      "id": "warsaw-rising-museum-scope",
+      "claim": "The Warsaw Rising Museum, housed in a former tram power station in the Wola district, documents the 1944 Warsaw Uprising through photo archives, a database of participants and recorded oral history testimony.",
+      "sourceIds": ["warsaw-rising-museum"],
+      "volatile": false
+    },
+    {
+      "id": "lonely-planet-neighborhoods",
+      "claim": "Lonely Planet's guide to Warsaw organizes the city around districts including the Old Town, Southern and Northern Srodmiescie, Praga and the New Town, consistent with the neighborhood structure used throughout this guide.",
+      "sourceIds": ["lonely-planet-warsaw"],
+      "volatile": false
+    }
+  ]
+}
