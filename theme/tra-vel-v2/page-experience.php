@@ -470,6 +470,11 @@ get_header();
 	<?php if ( $decision_card_surface && function_exists( 'tra_vel_v2_render_decision_card' ) ) : ?>
 		<?php tra_vel_v2_render_decision_card( $decision_card_state ); ?>
 	<?php endif; ?>
+	<?php if ( $decision_card_surface && function_exists( 'tra_vel_v2_render_proposal' ) ) : ?>
+		<div class="trip-proposal-region page-width">
+			<?php tra_vel_v2_render_proposal( $decision_card_state ); ?>
+		</div>
+	<?php endif; ?>
 	<?php if ( $is_hotels && function_exists( 'tra_vel_v2_render_commerce_next_step' ) ) : ?>
 		<section class="experience-hotels-assist page-width" aria-label="<?php esc_attr_e( 'סיוע אישי במלון', 'tra-vel-v2' ); ?>">
 			<?php

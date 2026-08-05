@@ -123,6 +123,13 @@ $pillar_commerce = isset( $pillar_commerce_copy[ $pillar_kind ] ) ? $pillar_comm
 					<?php endforeach; ?>
 					<span class="screen-reader-text" data-globe-live role="status" aria-live="polite" aria-atomic="true"></span>
 				</div>
+				<?php if ( function_exists( 'tra_vel_v2_render_proposal' ) ) : ?>
+					<div class="trip-proposal-dock" data-trip-proposal-dock>
+						<?php foreach ( $pillar_points as $pillar_point ) : ?>
+							<?php tra_vel_v2_render_proposal( sanitize_key( $pillar_point['id'] ?? '' ), array( 'trigger' => false ) ); ?>
+						<?php endforeach; ?>
+					</div>
+				<?php endif; ?>
 				<?php tra_vel_v2_voice_dock(); ?>
 				<a class="button-link" href="<?php echo esc_url( $map_url ); ?>"><?php esc_html_e( 'עברו לתכנון מלא על המפה', 'tra-vel-v2' ); ?><i data-lucide="arrow-left"></i></a>
 			</div>
