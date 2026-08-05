@@ -262,6 +262,27 @@ function tra_vel_v2_seo_opportunity_path_from_url( $url ) {
 	return tra_vel_v2_is_seo_opportunity_path( $path ) ? $path : '';
 }
 
+/**
+ * The WordPress page templates a registry-owned canonical may render through.
+ *
+ * Release 1.39.0: page-cost-answer.php is a second reusable template for the
+ * same registry-owned route system page-seo-opportunity.php originally
+ * introduced. Every function in this file that decides whether a post's
+ * assigned template makes it the rightful owner of a registry entry reads
+ * this single list, so a route can never be protected under one template and
+ * silently 404 under the other.
+ *
+ * @return array<int,string>
+ */
+function tra_vel_v2_seo_opportunity_owner_templates() {
+	return array( 'page-seo-opportunity.php', 'page-cost-answer.php' );
+}
+
+/** Whether one post's assigned template is a registry-owned route template. */
+function tra_vel_v2_post_uses_seo_opportunity_template( $post_id ) {
+	return in_array( get_page_template_slug( $post_id ), tra_vel_v2_seo_opportunity_owner_templates(), true );
+}
+
 /** Whether the entry type and registry status permit a public page at all. */
 function tra_vel_v2_is_exposable_seo_opportunity( $entry ) {
 	return is_array( $entry )
@@ -289,14 +310,16 @@ function tra_vel_v2_get_owned_seo_opportunity( $post_id = 0 ) {
 function tra_vel_v2_seo_opportunity_identity_matches( $post_id, $entry ) {
 	return $post_id
 		&& tra_vel_v2_is_exposable_seo_opportunity( $entry )
-		&& 'page-seo-opportunity.php' === get_page_template_slug( $post_id )
+		&& tra_vel_v2_post_uses_seo_opportunity_template( $post_id )
 		&& sanitize_key( (string) get_post_meta( $post_id, '_tra_vel_seo_opportunity_id', true ) ) === ( $entry['id'] ?? '' );
 }
 
 /** Return the exact owner for the current reusable SEO template. */
 function tra_vel_v2_get_current_seo_opportunity( $post_id = 0 ) {
 	$post_id = $post_id ? (int) $post_id : (int) get_queried_object_id();
-	if ( ! $post_id || 'page-seo-opportunity.php' !== get_page_template_slug( $post_id ) ) {
+	// Template-gated to exactly the registry-owned templates, page-seo-opportunity.php
+	// or page-cost-answer.php: see tra_vel_v2_seo_opportunity_owner_templates().
+	if ( ! $post_id || ! tra_vel_v2_post_uses_seo_opportunity_template( $post_id ) ) {
 		return null;
 	}
 	return tra_vel_v2_get_owned_seo_opportunity( $post_id );
@@ -329,7 +352,7 @@ function tra_vel_v2_is_seo_opportunity_protection_candidate( $post_id, $entry = 
 	return $post_id && (
 		tra_vel_v2_is_managed_seo_opportunity( $entry )
 		|| '' !== sanitize_key( (string) get_post_meta( $post_id, '_tra_vel_seo_opportunity_id', true ) )
-		|| 'page-seo-opportunity.php' === get_page_template_slug( $post_id )
+		|| tra_vel_v2_post_uses_seo_opportunity_template( $post_id )
 	);
 }
 
@@ -563,7 +586,7 @@ function tra_vel_v2_get_seo_opportunity_publication_contract( $post_id = 0, $ent
 		'owner_evidence'   => is_array( $entry ) && $stored_owner === ( $entry['id'] ?? '' ),
 		'explicit_ready'   => (bool) $explicit_ready,
 		'published_page'   => $post_id && 'publish' === get_post_status( $post_id ),
-		'correct_template' => $post_id && 'page-seo-opportunity.php' === get_page_template_slug( $post_id ),
+		'correct_template' => $post_id && tra_vel_v2_post_uses_seo_opportunity_template( $post_id ),
 	);
 
 	if ( is_array( $entry ) && 'decision-guide' === ( $entry['pageType'] ?? '' ) ) {
@@ -964,10 +987,22 @@ function tra_vel_v2_unready_seo_opportunity_page_ids() {
 				'fields'         => 'ids',
 				'posts_per_page' => -1,
 				'no_found_rows'  => true,
-				'meta_query'     => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
-					'relation' => 'OR',
-					array( 'key' => '_tra_vel_seo_opportunity_id', 'compare' => 'EXISTS' ),
-					array( 'key' => '_wp_page_template', 'value' => 'page-seo-opportunity.php' ),
+				// The union of every registry-owner signal: explicit meta on any
+				// template, or any of the registry-owned route templates on their
+				// own (tra_vel_v2_seo_opportunity_owner_templates()), so a page
+				// missing the meta but rendering through page-cost-answer.php is
+				// still a candidate the same way page-seo-opportunity.php is.
+				'meta_query'     => array_merge( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
+					array(
+						'relation' => 'OR',
+						array( 'key' => '_tra_vel_seo_opportunity_id', 'compare' => 'EXISTS' ),
+					),
+					array_map(
+						static function ( $template_slug ) {
+							return array( 'key' => '_wp_page_template', 'value' => $template_slug );
+						},
+						tra_vel_v2_seo_opportunity_owner_templates()
+					)
 				),
 			)
 		)
