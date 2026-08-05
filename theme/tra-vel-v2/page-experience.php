@@ -283,9 +283,12 @@ $requested_area           = strlen( $requested_area ) <= 60 ? $requested_area : 
 // The decision card prices the flight leg of this page, so the flights page
 // uses the flight destination and the flight and hotel package uses the stay
 // destination. Both resolve through the same code to map state table the rest
-// of this template already trusts.
-$decision_card_surface    = $is_flights || $is_packages;
-$decision_card_code       = $is_packages ? $stay_destination_code : $flight_destination_code;
+// of this template already trusts. Theme 1.39.0 (Part E): the hotels page has
+// no hotel data source at all, so it also prices the flight leg, using the
+// same stay destination as the package page, framed as "compare the flight
+// first" instead of pretending a hotel price exists.
+$decision_card_surface    = $is_flights || $is_packages || $is_hotels;
+$decision_card_code       = ( $is_packages || $is_hotels ) ? $stay_destination_code : $flight_destination_code;
 $decision_card_state      = isset( $destination_code_slugs[ $decision_card_code ] ) ? $destination_code_slugs[ $decision_card_code ] : '';
 if ( '' === $decision_card_state && function_exists( 'tra_vel_v2_price_state_for_airport' ) ) {
 	// Every destination we hold a price for, not only the eight this template
@@ -457,8 +460,36 @@ if ( $is_ai_planner ) {
 get_header();
 ?>
 <main id="main-content" class="experience-page" data-experience-kind="<?php echo esc_attr( $experience_kind ); ?>">
+	<?php if ( $is_hotels ) : ?>
+		<section class="experience-hotels-flight-first page-width">
+			<span class="eyebrow"><?php esc_html_e( 'לפני שבוחרים מלון', 'tra-vel-v2' ); ?></span>
+			<h2><?php esc_html_e( 'השוו קודם את הטיסה', 'tra-vel-v2' ); ?></h2>
+			<p><?php esc_html_e( 'עוד אין לנו מחירי מלונות אמיתיים להציג, אז מתחילים מהחלק שכבר אפשר להשוות עכשיו: הטיסה.', 'tra-vel-v2' ); ?></p>
+		</section>
+	<?php endif; ?>
 	<?php if ( $decision_card_surface && function_exists( 'tra_vel_v2_render_decision_card' ) ) : ?>
 		<?php tra_vel_v2_render_decision_card( $decision_card_state ); ?>
+	<?php endif; ?>
+	<?php if ( $is_hotels && function_exists( 'tra_vel_v2_render_commerce_next_step' ) ) : ?>
+		<section class="experience-hotels-assist page-width" aria-label="<?php esc_attr_e( 'סיוע אישי במלון', 'tra-vel-v2' ); ?>">
+			<?php
+			tra_vel_v2_render_commerce_next_step(
+				array(
+					'affiliate_key'  => null,
+					'vertical'       => 'hotel',
+					'heading'        => __( 'המלונות בבדיקה, נשמח לעזור באופן אישי', 'tra-vel-v2' ),
+					'fallback_body'  => __( 'עדיין לא מצאנו מקור מחירי מלונות אמיתי שאפשר לעמוד מאחוריו, אז נשמח לבדוק אפשרויות איתכם ישירות ולסגור נסיעה עוד היום.', 'tra-vel-v2' ),
+					'fallback_label' => __( 'דברו איתנו על המלון בוואטסאפ', 'tra-vel-v2' ),
+					'context'        => array(
+						'destination' => $stay_destination_name,
+						'depart_date' => $checkin_default,
+						'return_date' => $checkout_default,
+						'travelers'   => $requested_adults + $requested_children,
+					),
+				)
+			);
+			?>
+		</section>
 	<?php endif; ?>
 	<?php if ( function_exists( 'tra_vel_v2_metasearch_is_enabled' ) && tra_vel_v2_metasearch_is_enabled() ) : ?>
 		<section class="experience-metasearch page-width" aria-labelledby="experience-metasearch-title">
@@ -509,6 +540,28 @@ get_header();
 				<fieldset class="insurance-addon-grid"><legend><?php esc_html_e( 'אילו נושאים לכלול בבדיקה?', 'tra-vel-v2' ); ?></legend><label><input type="checkbox" name="baggage" value="true"><span><i data-lucide="luggage"></i><?php esc_html_e( 'כבודה', 'tra-vel-v2' ); ?></span></label><label><input type="checkbox" name="cancellation" value="true"><span><i data-lucide="calendar-x"></i><?php esc_html_e( 'ביטול וקיצור', 'tra-vel-v2' ); ?></span></label><label><input type="checkbox" name="adventure_sports" value="true"><span><i data-lucide="mountain"></i><?php esc_html_e( 'ספורט אתגרי', 'tra-vel-v2' ); ?></span></label><label><input type="checkbox" name="winter_sports" value="true"><span><i data-lucide="snowflake"></i><?php esc_html_e( 'ספורט חורף', 'tra-vel-v2' ); ?></span></label><label><input type="checkbox" name="electronics" value="true"><span><i data-lucide="smartphone"></i><?php esc_html_e( 'אלקטרוניקה', 'tra-vel-v2' ); ?></span></label></fieldset>
 				<input type="hidden" name="limit" value="12"><button class="experience-submit" type="submit"><span><?php echo esc_html( $insurance_context_ready ? __( 'בדקו מה חשוב לנסיעה', 'tra-vel-v2' ) : __( 'סדרו פרטים לבדיקה אישית', 'tra-vel-v2' ) ); ?></span><i data-lucide="file-search"></i></button><small data-insurance-planning-boundary><?php esc_html_e( 'המידע מארגן נקודות לבדיקה בלבד. הוא אינו ייעוץ, המלצה, דירוג או הצעת ביטוח. הפוליסה, החיתום והמחיר אצל המבטח הם הקובעים.', 'tra-vel-v2' ); ?></small>
 			</form>
+			<?php if ( function_exists( 'tra_vel_v2_render_commerce_next_step' ) ) : ?>
+				<div class="experience-insurance-partner">
+					<?php
+					tra_vel_v2_render_commerce_next_step(
+						array(
+							'affiliate_key'  => 'ekta',
+							'vertical'       => 'insurance',
+							'heading'        => __( 'קבלו עזרה עם ביטוח הנסיעות', 'tra-vel-v2' ),
+							'enabled_body'   => __( 'ביטוח נסיעות מוצע על ידי ספק מורשה חיצוני. הפרטים והמחיר נבדקים אצל הספק.', 'tra-vel-v2' ),
+							'fallback_body'  => __( 'צוות Tra-Vel יבדוק איתכם אפשרויות ביטוח נסיעות ישירות בוואטסאפ.', 'tra-vel-v2' ),
+							'fallback_label' => __( 'קבלו הצעת ביטוח בוואטסאפ', 'tra-vel-v2' ),
+							'context'        => array(
+								'destination' => $trip_destination_label,
+								'depart_date' => $insurance_start,
+								'return_date' => $insurance_end,
+								'travelers'   => $requested_adults + $requested_children,
+							),
+						)
+					);
+					?>
+				</div>
+			<?php endif; ?>
 			<?php elseif ( $is_ai_planner ) : ?>
 			<div class="ai-planner-column">
 				<form class="experience-search ai-conversation-entry" action="" method="post" data-ai-conversation-entry data-agent-entry-form>
