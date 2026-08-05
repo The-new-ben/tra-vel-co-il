@@ -33,9 +33,16 @@ function tra_vel_v2_enqueue_assets() {
 		true
 	);
 
-	// The next-action guidance library serves the globe selection beacon and
-	// the planner chips plus idle completion, so it loads only there.
-	if ( $has_globe_surface || is_page( 'ai-planner' ) ) {
+	// The trip proposal panel opens on every surface that renders it: the
+	// globe pages carry it inside the arrival card flow, and the comparison
+	// pages carry it next to the decision card. Everything the script touches
+	// is already server-rendered, so this file adds behaviour, not data.
+	$has_proposal_surface = $has_globe_surface || is_page_template( 'page-experience.php' );
+
+	// The next-action guidance library serves the globe selection beacon, the
+	// planner chips plus idle completion, and the proposal panel's silent
+	// advance cue, so it loads only there.
+	if ( $has_proposal_surface || is_page( 'ai-planner' ) ) {
 		wp_enqueue_script(
 			'tra-vel-v2-next-action',
 			TRA_VEL_V2_URI . '/assets/js/next-action.js',
@@ -61,6 +68,19 @@ function tra_vel_v2_enqueue_assets() {
 			TRA_VEL_V2_URI . '/assets/js/voice-dock.js',
 			array(),
 			tra_vel_v2_asset_version( '/assets/js/voice-dock.js' ),
+			true
+		);
+	}
+
+	// The proposal panel is finished before it reaches the browser too. Its
+	// script only reveals, multiplies and substitutes what the server already
+	// rendered, so it loads exactly where a panel can exist and nowhere else.
+	if ( $has_proposal_surface ) {
+		wp_enqueue_script(
+			'tra-vel-v2-trip-proposal',
+			TRA_VEL_V2_URI . '/assets/js/trip-proposal.js',
+			array( 'tra-vel-v2-next-action' ),
+			tra_vel_v2_asset_version( '/assets/js/trip-proposal.js' ),
 			true
 		);
 	}
@@ -214,7 +234,7 @@ function tra_vel_v2_script_attributes( $tag, $handle ) {
 		// mount containers exist, and it then silently renders nothing.
 		return str_replace( '<script ', '<script type="module" ', str_replace( " type='text/javascript'", '', $tag ) );
 	}
-	if ( ! in_array( $handle, array( 'tra-vel-v2-app', 'tra-vel-v2-globe-3d', 'tra-vel-v2-voice-dock', 'tra-vel-v2-pillar-earth', 'tra-vel-v2-customer-trip-cockpit', 'tra-vel-v2-next-action', 'tra-vel-v2-decision-card', 'tra-vel-v2-lucide' ), true ) ) {
+	if ( ! in_array( $handle, array( 'tra-vel-v2-app', 'tra-vel-v2-globe-3d', 'tra-vel-v2-voice-dock', 'tra-vel-v2-pillar-earth', 'tra-vel-v2-customer-trip-cockpit', 'tra-vel-v2-next-action', 'tra-vel-v2-decision-card', 'tra-vel-v2-trip-proposal', 'tra-vel-v2-lucide' ), true ) ) {
 		return $tag;
 	}
 	return str_replace( ' src=', ' defer src=', $tag );

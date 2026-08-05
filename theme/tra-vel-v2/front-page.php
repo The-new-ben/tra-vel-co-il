@@ -122,6 +122,13 @@ $home_return    = $home_now->modify( '+34 days' )->format( 'Y-m-d' );
 					<?php endforeach; ?>
 					<span class="screen-reader-text" data-globe-live role="status" aria-live="polite" aria-atomic="true"></span>
 				</div>
+				<?php if ( function_exists( 'tra_vel_v2_render_proposal' ) ) : ?>
+					<div class="trip-proposal-dock" data-trip-proposal-dock>
+						<?php foreach ( array_keys( $home_found_prices ) as $proposal_state ) : ?>
+							<?php tra_vel_v2_render_proposal( $proposal_state, array( 'trigger' => false ) ); ?>
+						<?php endforeach; ?>
+					</div>
+				<?php endif; ?>
 				<div class="globe-tools"><button data-map-zoom="in" type="button" aria-label="<?php esc_attr_e( 'הגדלה', 'tra-vel-v2' ); ?>"><i data-lucide="plus"></i></button><button data-map-zoom="out" type="button" aria-label="<?php esc_attr_e( 'הקטנה', 'tra-vel-v2' ); ?>"><i data-lucide="minus"></i></button><a href="<?php echo esc_url( $map_url ); ?>" aria-label="<?php esc_attr_e( 'מפה מלאה', 'tra-vel-v2' ); ?>"><i data-lucide="maximize-2"></i></a></div>
 				<div class="home-reveal-feedback" data-home-reveal data-state="ready"><span><i data-lucide="sparkles"></i><span><small data-home-reveal-context><?php echo esc_html( $home_campaign_is_seasonal ? __( 'כיוון שמתאים לעונה', 'tra-vel-v2' ) : __( 'כיוון להתחלת החיפוש', 'tra-vel-v2' ) ); ?></small><strong data-home-reveal-status><?php esc_html_e( 'בחרו יעד או לחצו על תפתיעו אותי.', 'tra-vel-v2' ); ?></strong></span></span><button data-home-reveal-cancel type="button" hidden><?php esc_html_e( 'עצרו', 'tra-vel-v2' ); ?></button></div>
 				<?php tra_vel_v2_voice_dock(); ?>

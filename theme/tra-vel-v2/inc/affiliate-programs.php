@@ -174,7 +174,8 @@ function tra_vel_v2_affiliate_program_link( $key ) {
  *
  * @param string               $vertical One of the handoff controller's supported verticals.
  * @param array<string, mixed> $args     Optional trip context: offer_id, destination, origin,
- *                                       depart_date, return_date, travelers, budget, currency.
+ *                                       depart_date, return_date, travelers, budget, currency,
+ *                                       addons (theme 1.40.0: chosen add-on labels, no prices).
  * @return string Validated https WhatsApp URL, or an empty string when the channel is unavailable.
  */
 function tra_vel_v2_whatsapp_assisted_handoff_url( $vertical, $args = array() ) {
@@ -213,8 +214,20 @@ function tra_vel_v2_whatsapp_assisted_handoff_url( $vertical, $args = array() ) 
 			'travelers'   => 1,
 			'budget'      => 0,
 			'currency'    => 'ILS',
+			'addons'      => array(),
 		)
 	);
+
+	// Theme 1.40.0: at most four short add-on labels, each a plain sanitized
+	// string. These come from our own affiliate registry labels, never from a
+	// visitor, and never carry a number, so the message stays price free.
+	$addons = array();
+	foreach ( array_slice( (array) $args['addons'], 0, 4 ) as $addon_label ) {
+		$addon_label = substr( sanitize_text_field( (string) $addon_label ), 0, 60 );
+		if ( '' !== $addon_label ) {
+			$addons[] = $addon_label;
+		}
+	}
 
 	$context = array(
 		'vertical'    => $vertical,
@@ -226,6 +239,7 @@ function tra_vel_v2_whatsapp_assisted_handoff_url( $vertical, $args = array() ) 
 		'travelers'   => max( 1, min( 20, absint( $args['travelers'] ) ) ),
 		'budget'      => max( 0, min( 1000000, absint( $args['budget'] ) ) ),
 		'currency'    => in_array( $args['currency'], array( 'ILS', 'USD', 'EUR', 'GBP' ), true ) ? $args['currency'] : 'ILS',
+		'addons'      => $addons,
 	);
 
 	$url  = (string) call_user_func( $provider['build_url'], $context );

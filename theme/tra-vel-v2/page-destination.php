@@ -135,6 +135,9 @@ while ( have_posts() ) :
 				<p><?php echo esc_html( get_the_excerpt() ?: __( 'עונות, אזורי לינה, טיסות, מסלולים, תקציב וביטוח. כל מה שצריך לדעת לפני שבודקים מחיר.', 'tra-vel-v2' ) ); ?></p>
 				<div class="destination-actions"><a href="<?php echo esc_url( $map_url ); ?>"><i data-lucide="route"></i><?php esc_html_e( 'תכננו טיול על המפה', 'tra-vel-v2' ); ?></a><a href="<?php echo esc_url( home_url( '/ai-planner/' ) ); ?>"><i data-lucide="sparkles"></i><?php esc_html_e( 'שאלו את מתכנן החופשה', 'tra-vel-v2' ); ?></a><a href="<?php echo esc_url( home_url( '/saved/' ) ); ?>"><i data-lucide="bookmark"></i><?php esc_html_e( 'לנסיעות שמורות', 'tra-vel-v2' ); ?></a></div>
 				<?php tra_vel_v2_render_found_price( $map_state ); ?>
+				<?php if ( function_exists( 'tra_vel_v2_render_proposal' ) ) : ?>
+					<?php tra_vel_v2_render_proposal( $map_state ); ?>
+				<?php endif; ?>
 			</div>
 			<?php if ( $image_credit ) : ?><a class="destination-image-credit" href="<?php echo esc_url( $image_credit['url'] ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( $image_credit['label'] ); ?></a><?php endif; ?>
 		</section>
