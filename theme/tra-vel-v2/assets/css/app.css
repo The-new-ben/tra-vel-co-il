@@ -3973,6 +3973,39 @@ label[data-party-hidden="true"] { display: none !important; }
   .found-price-cta { transition: none !important; }
 }
 
+/* Commerce next step (theme 1.39.0). One reusable card: a real, owner
+   configured affiliate CTA when a program is enabled, or the honest owned
+   WhatsApp assisted handoff otherwise. Shared by the insurance page, the
+   four pillar hubs and the hotels page. */
+.commerce-next-step-card { max-width: 430px; display: grid; gap: 7px; justify-items: start; margin-top: 16px; padding: 15px 17px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface); box-shadow: var(--soft-shadow); text-align: start; }
+.commerce-next-step-card h3 { margin: 0; font-size: 17px; line-height: 1.3; }
+.commerce-next-step-card p { margin: 0; color: var(--muted); font-size: 13.5px; line-height: 1.55; }
+.commerce-next-step-card .commerce-next-step-cta { margin-top: 4px; }
+.pillar-next { flex-wrap: wrap; }
+.pillar-next .commerce-next-step-card { flex: 1 1 100%; }
+@media (max-width: 560px) {
+  .commerce-next-step-card { max-width: 100%; }
+}
+
+/* Insurance and hotels honest next steps (theme 1.39.0, Parts B and E). */
+.experience-insurance-partner { margin-top: 18px; }
+.experience-hotels-flight-first { margin: 0 0 18px; display: grid; gap: 6px; justify-items: start; }
+.experience-hotels-flight-first h2 { margin: 0; font-size: 26px; line-height: 1.2; }
+.experience-hotels-flight-first p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.6; }
+.experience-hotels-assist { margin-top: 20px; }
+
+/* Globe arrival card booking CTA (theme 1.39.0, Part A). Reuses the arrival
+   card's own glass styling; these children only render once the selected
+   pin carries a real, tracked deep link, and stay hidden otherwise so the
+   card falls back to its existing map and details links unchanged. */
+.globe-arrival-card-book { display: grid; gap: 5px; margin: 2px 0; padding: 9px 10px; border: 1px solid rgba(255,255,255,.22); border-radius: 11px; background: rgba(255,255,255,.08); }
+.globe-arrival-card-book[hidden] { display: none !important; }
+.globe-arrival-card-book-price { margin: 0; direction: ltr; unicode-bidi: isolate; color: var(--lime); font-size: 15px; font-weight: 900; text-align: right; }
+.globe-arrival-card-book-scope { margin: 0; color: #b9c8cc; font-size: 10.5px; line-height: 1.4; }
+.globe-arrival-card-book-cta { min-height: 40px; width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 7px 10px; border-radius: 10px; background: var(--lime); color: #24350a; font-size: 12.5px; font-weight: 900; text-decoration: none; }
+.globe-arrival-card-book-cta:hover { background: var(--lime-2); }
+.globe-arrival-card-book-cta:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+
 /* Display currency (theme 1.34.0). Three pills in the header, posted as a real
    form so the choice survives without JavaScript and never reaches a URL. */
 .currency-switcher { margin: 0; display: flex; align-items: center; }
