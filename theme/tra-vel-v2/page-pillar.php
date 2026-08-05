@@ -38,6 +38,39 @@ $pillar_points        = $pillar['points'];
 $pillar_cta_url       = add_query_arg( 'destination', $pillar['planner_destination'], $planner_url );
 $pillar_spokes        = tra_vel_v2_pillar_published_spokes( $pillar );
 $pillar_badge_heading = isset( $pillar['badge_heading'] ) ? trim( (string) $pillar['badge_heading'] ) : __( 'אזור', 'tra-vel-v2' );
+
+// Part C of theme 1.39.0: the commerce affiliate key each vertical carries
+// lives in tra_vel_v2_pillar_configs() (inc/pillars.php). The presentation
+// copy for that card is local to this template because it reads naturally
+// only next to the vertical it describes; tra_vel_v2_render_commerce_next_step()
+// itself is the single reusable renderer, shared with the insurance page.
+$pillar_commerce_copy = array(
+	'diving'       => array(
+		'vertical'       => 'activity',
+		'heading'        => __( 'פעילויות וציוד צלילה', 'tra-vel-v2' ),
+		'fallback_body'  => __( 'עדיין אין לנו קישור מאומת לפעילויות צלילה באתר הזה, אז נשמח לבדוק אפשרויות איתכם ישירות.', 'tra-vel-v2' ),
+		'fallback_label' => __( 'קבלו הצעת פעילויות בוואטסאפ', 'tra-vel-v2' ),
+	),
+	'family-tools' => array(
+		'vertical'       => 'activity',
+		'heading'        => __( 'פעילויות וכרטיסים ליעד', 'tra-vel-v2' ),
+		'fallback_body'  => __( 'עדיין אין לנו קישור מאומת לפעילויות ביעד הזה, אז נשמח לבדוק אפשרויות איתכם ישירות.', 'tra-vel-v2' ),
+		'fallback_label' => __( 'קבלו הצעת פעילויות בוואטסאפ', 'tra-vel-v2' ),
+	),
+	'conventions'  => array(
+		'vertical'       => 'transfer',
+		'heading'        => __( 'העברה משדה התעופה למלון', 'tra-vel-v2' ),
+		'fallback_body'  => __( 'עדיין אין לנו קישור מאומת להעברות בעיר הזאת, אז נשמח לבדוק אפשרויות איתכם ישירות.', 'tra-vel-v2' ),
+		'fallback_label' => __( 'קבלו הצעת העברה בוואטסאפ', 'tra-vel-v2' ),
+	),
+	'cruises'      => array(
+		'vertical'       => 'package',
+		'heading'        => __( 'תכננו את ההפלגה איתנו', 'tra-vel-v2' ),
+		'fallback_body'  => __( 'אין לנו כרגע שותף מאומת להפלגות, אז נשמח לתכנן את הקרוז איתכם באופן אישי.', 'tra-vel-v2' ),
+		'fallback_label' => __( 'דברו איתנו על הקרוז בוואטסאפ', 'tra-vel-v2' ),
+	),
+);
+$pillar_commerce = isset( $pillar_commerce_copy[ $pillar_kind ] ) ? $pillar_commerce_copy[ $pillar_kind ] : $pillar_commerce_copy['cruises'];
 ?>
 <main id="main-content" class="pillar-page" data-tra-vel-page="pillar" data-pillar-kind="<?php echo esc_attr( $pillar_kind ); ?>">
 	<header class="directory-hero pillar-hero">
@@ -53,7 +86,7 @@ $pillar_badge_heading = isset( $pillar['badge_heading'] ) ? trim( (string) $pill
 			</div>
 			<div class="compact-map pillar-globe-panel" aria-label="<?php echo esc_attr( $pillar['globe_label'] ); ?>">
 				<div class="destination-globe-toolbar"><span><i data-lucide="move-3d"></i><?php esc_html_e( 'גררו לסיבוב', 'tra-vel-v2' ); ?></span><div><button data-map-zoom="in" type="button" aria-label="<?php esc_attr_e( 'הגדלת הגלובוס', 'tra-vel-v2' ); ?>"><i data-lucide="plus"></i></button><button data-map-zoom="out" type="button" aria-label="<?php esc_attr_e( 'הקטנת הגלובוס', 'tra-vel-v2' ); ?>"><i data-lucide="minus"></i></button></div></div>
-				<div class="globe globe-webgl" data-globe-3d data-globe-pillar="true" data-globe-card-details="#pillar-sites" data-origin-latitude="32.0005" data-origin-longitude="34.8708" data-texture="<?php echo esc_url( tra_vel_v2_asset_uri( 'images/earth-blue-marble-2048.jpg' ) ); ?>" tabindex="0" role="group" aria-label="<?php echo esc_attr( $pillar['globe_label'] ); ?>">
+				<div class="globe globe-webgl" data-globe-3d data-globe-pillar="true" data-globe-card-details="#pillar-sites" data-origin-latitude="32.0005" data-origin-longitude="34.8708" data-texture="<?php echo esc_url( tra_vel_v2_asset_uri( 'images/earth-blue-marble-2048.jpg' ) ); ?>" data-book-cta-label="<?php esc_attr_e( 'בחרו והמשיכו להזמנה', 'tra-vel-v2' ); ?>" data-book-scope-note="<?php echo esc_attr( tra_vel_v2_found_price_scope_note() ); ?>" tabindex="0" role="group" aria-label="<?php echo esc_attr( $pillar['globe_label'] ); ?>">
 					<canvas data-globe-canvas aria-hidden="true"></canvas>
 					<noscript><img class="globe-noscript-image" src="<?php echo esc_url( tra_vel_v2_asset_uri( 'images/earth-blue-marble-2048.jpg' ) ); ?>" alt="<?php esc_attr_e( 'מפת עולם סטטית', 'tra-vel-v2' ); ?>"></noscript>
 					<svg class="globe-route-layer" data-globe-routes width="100%" height="100%" aria-hidden="true"><path data-globe-route></path></svg>
@@ -70,6 +103,14 @@ $pillar_badge_heading = isset( $pillar['badge_heading'] ) ? trim( (string) $pill
 						$point_badge      = isset( $pillar_point['badge'] ) ? trim( (string) $pillar_point['badge'] ) : '';
 						$point_static_x   = round( ( ( $point_longitude + 180 ) / 360 ) * 100, 3 );
 						$point_static_y   = round( ( ( 90 - $point_latitude ) / 180 ) * 100, 3 );
+						// A pillar point is a curated site, not necessarily a priced
+						// destination: only sites whose id also happens to be a real
+						// airport-mapped destination (inc/seo-opportunities.php) ever
+						// carry a price. Every other point simply has no book link,
+						// which is the honest, expected outcome for most dive sites,
+						// cruise ports and convention cities on this board.
+						$point_price     = tra_vel_v2_get_destination_price( $point_id );
+						$point_price_tag = tra_vel_v2_found_price_pin_label( $point_price );
 						if ( '' !== $point_badge ) {
 							/* translators: 1: point name, 2: region label. */
 							$point_aria = sprintf( __( '%1$s, %2$s. פתיחת פרטי היעד.', 'tra-vel-v2' ), $pillar_point['name'], $point_badge );
@@ -78,7 +119,7 @@ $pillar_badge_heading = isset( $pillar['badge_heading'] ) ? trim( (string) $pill
 							$point_aria = sprintf( __( '%1$s, רמת קושי %2$s. פתיחת פרטי האתר.', 'tra-vel-v2' ), $pillar_point['name'], tra_vel_v2_pillar_difficulty_label( $point_difficulty ) );
 						}
 						?>
-						<button class="price-pin pillar-pin" type="button" data-destination="<?php echo esc_attr( $point_id ); ?>" data-latitude="<?php echo esc_attr( $point_latitude ); ?>" data-longitude="<?php echo esc_attr( $point_longitude ); ?>" data-selection-bound="true" data-site-name="<?php echo esc_attr( $pillar_point['name'] ); ?>" style="--pin-static-x:<?php echo esc_attr( $point_static_x ); ?>%;--pin-static-y:<?php echo esc_attr( $point_static_y ); ?>%;" aria-label="<?php echo esc_attr( $point_aria ); ?>" aria-pressed="false"><span class="pillar-pin-name"><?php echo esc_html( $pillar_point['pin_label'] ); ?></span><?php if ( '' !== $point_badge ) : ?><span class="pillar-pin-badge" aria-hidden="true"><?php echo esc_html( $point_badge ); ?></span><?php else : ?><span class="pillar-pin-stars" data-difficulty="<?php echo esc_attr( $point_difficulty ); ?>" aria-hidden="true"><?php echo esc_html( tra_vel_v2_pillar_difficulty_stars( $point_difficulty ) ); ?></span><?php endif; ?></button>
+						<button class="price-pin pillar-pin" type="button" data-destination="<?php echo esc_attr( $point_id ); ?>" data-latitude="<?php echo esc_attr( $point_latitude ); ?>" data-longitude="<?php echo esc_attr( $point_longitude ); ?>" data-selection-bound="true" data-site-name="<?php echo esc_attr( $pillar_point['name'] ); ?>"<?php echo $point_price_tag ? ' data-found-price="' . esc_attr( $point_price_tag ) . '"' : ''; ?><?php echo ( $point_price_tag && ! empty( $point_price['deep_link'] ) ) ? ' data-book-link="' . esc_url( $point_price['deep_link'] ) . '"' : ''; ?> style="--pin-static-x:<?php echo esc_attr( $point_static_x ); ?>%;--pin-static-y:<?php echo esc_attr( $point_static_y ); ?>%;" aria-label="<?php echo esc_attr( $point_aria ); ?>" aria-pressed="false"><span class="pillar-pin-name"><?php echo esc_html( $pillar_point['pin_label'] ); ?></span><?php if ( '' !== $point_badge ) : ?><span class="pillar-pin-badge" aria-hidden="true"><?php echo esc_html( $point_badge ); ?></span><?php else : ?><span class="pillar-pin-stars" data-difficulty="<?php echo esc_attr( $point_difficulty ); ?>" aria-hidden="true"><?php echo esc_html( tra_vel_v2_pillar_difficulty_stars( $point_difficulty ) ); ?></span><?php endif; ?></button>
 					<?php endforeach; ?>
 					<span class="screen-reader-text" data-globe-live role="status" aria-live="polite" aria-atomic="true"></span>
 				</div>
@@ -177,6 +218,22 @@ $pillar_badge_heading = isset( $pillar['badge_heading'] ) ? trim( (string) $pill
 	<section class="section page-width experience-next pillar-next" aria-labelledby="pillar-next-step">
 		<div><span class="eyebrow"><?php esc_html_e( 'השלב הבא', 'tra-vel-v2' ); ?></span><h2 id="pillar-next-step"><?php echo esc_html( $pillar['cta_title'] ); ?></h2><p><?php echo esc_html( $pillar['cta_copy'] ); ?></p></div>
 		<a class="button-link dark-button" href="<?php echo esc_url( $pillar_cta_url ); ?>"><?php echo esc_html( $pillar['cta_label'] ); ?><i data-lucide="arrow-left"></i></a>
+		<?php if ( function_exists( 'tra_vel_v2_render_commerce_next_step' ) ) : ?>
+			<?php
+			tra_vel_v2_render_commerce_next_step(
+				array(
+					'affiliate_key'  => isset( $pillar['commerce_affiliate_key'] ) ? $pillar['commerce_affiliate_key'] : null,
+					'vertical'       => $pillar_commerce['vertical'],
+					'heading'        => $pillar_commerce['heading'],
+					'fallback_body'  => $pillar_commerce['fallback_body'],
+					'fallback_label' => $pillar_commerce['fallback_label'],
+					'context'        => array(
+						'destination' => wp_strip_all_tags( $pillar['eyebrow'] ),
+					),
+				)
+			);
+			?>
+		<?php endif; ?>
 	</section>
 </main>
 <?php get_footer(); ?>

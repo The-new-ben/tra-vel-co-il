@@ -1390,6 +1390,25 @@
       close.addEventListener('click', () => hideArrivalCard(true));
       const title = document.createElement('strong');
       const subtitle = document.createElement('small');
+      // Theme 1.39.0 (Part A): a real, priced booking step, rendered inside
+      // this same anchored card so a visitor never has to leave it to act on
+      // a price they already see. All three fields are filled from data
+      // attributes already sitting on the selected pin, so showing this adds
+      // no fetch of any kind. When the selected pin carries no book link this
+      // whole block stays hidden and the existing links below are the only
+      // way forward, unchanged.
+      const book = document.createElement('div');
+      book.className = 'globe-arrival-card-book';
+      book.hidden = true;
+      const bookPrice = document.createElement('p');
+      bookPrice.className = 'globe-arrival-card-book-price';
+      const bookScope = document.createElement('p');
+      bookScope.className = 'globe-arrival-card-book-scope';
+      const bookCta = document.createElement('a');
+      bookCta.className = 'globe-arrival-card-book-cta';
+      bookCta.target = '_blank';
+      bookCta.rel = 'sponsored nofollow noopener';
+      book.append(bookPrice, bookScope, bookCta);
       const links = document.createElement('div');
       links.className = 'globe-arrival-card-links';
       const mapLink = document.createElement('a');
@@ -1400,7 +1419,7 @@
       detailsLink.setAttribute('href', root.dataset.globeCardDetails || '#home-selection-details');
       detailsLink.textContent = 'לפרטים מתחת לגלובוס';
       links.append(mapLink, detailsLink);
-      card.append(close, title, subtitle, links);
+      card.append(close, title, subtitle, book, links);
       // The card is a UI surface, not Earth: its gestures stay off the
       // camera, the tap previews, and the dive detector.
       ['pointerdown', 'pointerup', 'dblclick'].forEach(type => {
@@ -1413,7 +1432,7 @@
       });
       root.append(card);
       arrivalCard = card;
-      arrivalCardParts = { title, subtitle, mapLink, detailsLink };
+      arrivalCardParts = { title, subtitle, mapLink, detailsLink, book, bookPrice, bookScope, bookCta };
       return card;
     }
 
@@ -1453,6 +1472,37 @@
       }
     }
 
+    // Theme 1.39.0 (Part A): fill or hide the booking block from data
+    // attributes already sitting on the selected destination pin. This reads
+    // the DOM once, synchronously, and never issues a request of its own:
+    // the pin was already rendered server side with data-found-price and
+    // data-book-link whenever prices.php has a real, tracked fare for it.
+    // The link itself is trusted exactly like the card's existing map and
+    // details links are: prices.php only ever emits data-book-link after its
+    // own esc_url_raw and allowlisted-origin checks, so nothing here repeats
+    // that validation or names the scheme it expects.
+    function renderArrivalCardBook(parts, detail) {
+      let link = '';
+      let price = '';
+      if (detail.selectionKind === 'destination' && detail.nearestDestination) {
+        const pin = root.querySelector(`.price-pin[data-destination="${CSS.escape(detail.nearestDestination)}"]`);
+        if (pin) {
+          link = String(pin.dataset.bookLink || '');
+          price = String(pin.dataset.foundPrice || '');
+        }
+      }
+      if (!link) {
+        parts.book.hidden = true;
+        parts.bookCta.removeAttribute('href');
+        return;
+      }
+      parts.bookPrice.textContent = price;
+      parts.bookScope.textContent = String(root.dataset.bookScopeNote || '');
+      parts.bookCta.setAttribute('href', link);
+      parts.bookCta.textContent = String(root.dataset.bookCtaLabel || '');
+      parts.book.hidden = false;
+    }
+
     function renderArrivalCard(detail = {}) {
       const latitude = Number(detail.latitude);
       const longitude = Number(detail.longitude);
@@ -1479,6 +1529,7 @@
         parts.subtitle.append('הנקודה נשמרה בתכנון ', coordinates);
       }
       parts.mapLink.setAttribute('href', arrivalCardMapHref(detail));
+      renderArrivalCardBook(parts, detail);
       arrivalCardPoint = { latitude, longitude };
       arrivalCardOpen = true;
       bindArrivalCardEscape();

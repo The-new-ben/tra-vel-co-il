@@ -116,7 +116,7 @@ $default_map_airport = sanitize_text_field( $default_map_data['airport']['code']
 				</nav>
 
 				<div class="world-canvas" data-map-canvas data-data-mode="loading" aria-label="<?php esc_attr_e( 'גלובוס יעדים אינטראקטיבי', 'tra-vel-v2' ); ?>">
-					<div class="globe globe-webgl" data-globe-3d data-discovery-globe data-origin-latitude="32.0005" data-origin-longitude="34.8708" data-supported-radius-km="100" data-texture="<?php echo esc_url( tra_vel_v2_asset_uri( 'images/earth-blue-marble-2048.jpg' ) ); ?>" tabindex="0" role="group" aria-label="<?php esc_attr_e( 'גלובוס תלת ממדי. גררו לסיבוב, לחצו על כל נקודה בכדור הארץ או הקישו Enter כדי לבחור את מרכז התצוגה.', 'tra-vel-v2' ); ?>">
+					<div class="globe globe-webgl" data-globe-3d data-discovery-globe data-origin-latitude="32.0005" data-origin-longitude="34.8708" data-supported-radius-km="100" data-texture="<?php echo esc_url( tra_vel_v2_asset_uri( 'images/earth-blue-marble-2048.jpg' ) ); ?>" data-book-cta-label="<?php esc_attr_e( 'בחרו והמשיכו להזמנה', 'tra-vel-v2' ); ?>" data-book-scope-note="<?php echo esc_attr( tra_vel_v2_found_price_scope_note() ); ?>" tabindex="0" role="group" aria-label="<?php esc_attr_e( 'גלובוס תלת ממדי. גררו לסיבוב, לחצו על כל נקודה בכדור הארץ או הקישו Enter כדי לבחור את מרכז התצוגה.', 'tra-vel-v2' ); ?>">
 						<canvas data-globe-canvas aria-hidden="true"></canvas>
 						<noscript><img class="globe-noscript-image" src="<?php echo esc_url( tra_vel_v2_asset_uri( 'images/earth-blue-marble-2048.jpg' ) ); ?>" alt="<?php esc_attr_e( 'מפת עולם סטטית', 'tra-vel-v2' ); ?>"></noscript>
 						<svg class="globe-route-layer" data-globe-routes width="100%" height="100%" aria-hidden="true"><path data-globe-route></path></svg>
@@ -137,7 +137,7 @@ $default_map_airport = sanitize_text_field( $default_map_data['airport']['code']
 								? sprintf( '%1$s, %2$s', $destination_city, tra_vel_v2_found_price_headline( $found_price ) )
 								: '';
 							?>
-							<button class="price-pin pin-<?php echo esc_attr( $destination_id ); ?><?php echo $is_default_destination ? ' is-active' : ''; ?>" data-destination="<?php echo esc_attr( $destination_id ); ?>" data-latitude="<?php echo esc_attr( $latitude ); ?>" data-longitude="<?php echo esc_attr( $longitude ); ?>"<?php echo $found_price_tag ? ' data-found-price="' . esc_attr( $found_price_tag ) . '"' : ''; ?><?php echo $pin_label ? ' aria-label="' . esc_attr( $pin_label ) . '"' : ''; ?> aria-pressed="<?php echo $is_default_destination ? 'true' : 'false'; ?>" type="button"><?php echo esc_html( $destination_city ); ?></button>
+							<button class="price-pin pin-<?php echo esc_attr( $destination_id ); ?><?php echo $is_default_destination ? ' is-active' : ''; ?>" data-destination="<?php echo esc_attr( $destination_id ); ?>" data-latitude="<?php echo esc_attr( $latitude ); ?>" data-longitude="<?php echo esc_attr( $longitude ); ?>"<?php echo $found_price_tag ? ' data-found-price="' . esc_attr( $found_price_tag ) . '"' : ''; ?><?php echo ( $found_price_tag && ! empty( $found_price['deep_link'] ) ) ? ' data-book-link="' . esc_url( $found_price['deep_link'] ) . '"' : ''; ?><?php echo $pin_label ? ' aria-label="' . esc_attr( $pin_label ) . '"' : ''; ?> aria-pressed="<?php echo $is_default_destination ? 'true' : 'false'; ?>" type="button"><?php echo esc_html( $destination_city ); ?></button>
 						<?php endforeach; ?>
 						<?php foreach ( $map_exploration_hubs as $exploration_hub ) :
 							$hub_id        = sanitize_key( $exploration_hub['id'] ?? '' );
