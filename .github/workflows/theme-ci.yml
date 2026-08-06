@@ -161,6 +161,7 @@ jobs:
           node scripts/ci/validate-assisted-proposal-controller-contract.mjs
           node scripts/ci/validate-assisted-proposal-admin.mjs
           node scripts/ci/validate-assisted-proposal-release-contract.mjs
+          node scripts/ci/validate-premium-planet.mjs
           node scripts/ci/validate-commercial-intent-contract.mjs
           node scripts/ci/validate-commerce-core-contract.mjs
           node scripts/ci/validate-commerce-schema-contract.mjs
@@ -268,6 +269,7 @@ jobs:
         run: |
           node --check theme/tra-vel-v2/assets/js/app.js
           node --check theme/tra-vel-v2/assets/js/globe-3d.js
+          node --check theme/tra-vel-v2/assets/js/planet-premium.js
           node --check theme/tra-vel-v2/assets/js/decision-card.js
           node --check plugin/tra-vel-agent-core/assets/admin/quote-cases.js
 

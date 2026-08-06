@@ -98,6 +98,46 @@ The globe controls place and selection only. Price, availability, savings, ratin
 
 The texture is derived from NASA Blue Marble: Next Generation imagery. The public map page links to the NASA Visible Earth source. The optimized texture is bundled with the theme, so no third-party script, tile request, token, or browser-exposed credential is required.
 
+## Premium planet (theme 1.43.0)
+
+The photorealistic upgrade streams Google Photorealistic 3D Tiles through a self-hosted CesiumJS build behind the existing pin, price, and proposal system. The legacy globe above remains the instant first paint and the permanent fallback; the premium renderer is strictly additive and fails closed to it at every stage.
+
+### Activation and grant
+
+- Nothing from the vendored Cesium build loads on first paint. A server-rendered control (Hebrew label "כדור הארץ האמיתי", 44 px target, hidden until client guards pass) appears inside every globe surface only when the `tra_vel_v2_gmp_key` option holds a value matching Google's browser-key shape; without the option the page carries no premium affordance at all.
+- A tap POSTs to `tra-vel/v2/planet/upgrade-grant` (REST nonce required). The endpoint counts a date-keyed daily counter against `tra_vel_v2_gmp_daily_cap` (default 25 grants per day, roughly 750 per month, inside the free tile-session tier) and returns the key exactly once per granted session with `Cache-Control: no-store`. Every other case is a 403. Sessions start only from that explicit tap; nothing ever auto-activates.
+- The key never appears in page HTML, localized script data, committed files, or logs. `validate-premium-planet.mjs` proves the boundary and scans every committed file for the key shape.
+
+### Client guards (all silent, all fail-closed to the legacy globe)
+
+Grant refused or unreachable; WebGL2 unavailable; Save-Data requested; the legacy globe unhealthy; the vendor script failing to load; the tileset failing to reach its first streamed tiles inside the activation timeout. A failure after activation destroys the premium widget and restores the legacy canvas exactly as it was.
+
+### Rendering and parity
+
+- The premium stage swaps into the same `.globe` panel between the legacy canvas and the DOM overlays. The legacy planet stays painted until `initialTilesLoaded` fires, so loading is a quiet chip over a living Earth, never a spinner on a void.
+- The camera opens on the exact latitude, longitude, and zoom the legacy globe was showing (via the read-only `cameraState` handoff; legacy distance d maps to height (d - 1) x 6371 km x 0.63), then flies in. Reduced motion skips the flight.
+- Every `.price-pin`, exploration hub, the origin point, the selection marker, the route curve, and the arrival card reproject through the premium camera each `postRender` frame with the same collision pass, ellipsoid occlusion culling (back-side hiding), near-LOD hub label budget, and depth scale the legacy globe runs. Pin taps publish the same `travelglobe:select` (including `pinActivated: true`), so the full-screen proposal takeover opens unchanged.
+- Free taps and double-tap dives on the premium planet resolve through the shared `resolveSelection` pipeline and publish the same selection events. The +/- zoom controls and the discovery focus flights drive the premium camera through a wrapped `traVelGlobe3D` API; while premium is active the legacy frame loop stands down behind a single guard in `draw()`.
+- Cesium's own wheel and touch interactions are allowed inside its canvas (vendor-owned); first-party theme scripts still never bind wheel, mousewheel, or touchmove listeners anywhere, and page scrolling from content outside the globe panel keeps working on touch.
+
+### Attribution
+
+Google's data attributions render through the Cesium credit display (`showCreditsOnScreen: true`) into a dedicated always-visible strip at the panel's bottom edge. No stylesheet rule may hide it; the validator asserts both.
+
+### Vendored build and trim manifest
+
+`assets/vendor/cesium/` carries CesiumJS 1.144.0 (Apache-2.0, `LICENSE.md` included), 8.2 MB on disk against the 23 MB full `Build/Cesium`. Vendor files are never modified.
+
+Kept:
+
+- `Cesium.js` (the UMD build)
+- `Workers/` complete (the chunk graph is content-hashed and interdependent; decodeDraco and transcodeKTX2 live here)
+- `ThirdParty/draco_decoder.wasm`, `ThirdParty/basis_transcoder.wasm` (compressed glTF payloads in the Google tiles)
+- `Assets/approximateTerrainHeights.json`, `Assets/Images/` (credit logos)
+- `Widgets/widgets.css`
+
+Dropped: `index.js` and `index.cjs` module builds, `Assets/Textures/` (sky box, stars, moon, lens flare, maki icons), `Assets/IAU2006_XYS/` high-precision orientation series, `ThirdParty/google-earth-dbroot-parser.js`, the KMZ zip worker pair, and `wasm_splats_bg.wasm`.
+
 ## Future map-engine boundary
 
 The native globe is the token-free production foundation. A licensed vector or terrain provider can later replace the sphere renderer without changing the destination, supplier, route, content, or commerce contracts. A provider upgrade must preserve:
@@ -106,7 +146,7 @@ The native globe is the token-free production foundation. A licensed vector or t
 - Keyboard and simple-pointer alternatives
 - Collision and zoom-level label rules
 - Supplier attribution and caching restrictions
-- No client-side secrets
+- No client-side secrets (the premium planet's referrer-restricted Maps Platform browser key is not embedded in markup or scripts; it is delivered only through the granted-session endpoint, which is the designed public shape of that key class)
 - No unverified commercial claims
 - Mobile performance budgets
 
