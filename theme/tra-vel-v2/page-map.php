@@ -158,6 +158,7 @@ $default_map_airport = sanitize_text_field( $default_map_data['airport']['code']
 							<button class="exploration-hub" data-exploration-hub="<?php echo esc_attr( $hub_id ); ?>" data-city="<?php echo esc_attr( $hub_city ); ?>" data-country="<?php echo esc_attr( $hub_country ); ?>" data-latitude="<?php echo esc_attr( $hub_latitude ); ?>" data-longitude="<?php echo esc_attr( $hub_longitude ); ?>" data-radius-km="<?php echo esc_attr( $hub_radius ); ?>" data-iata-search-code="<?php echo esc_attr( $hub_iata ); ?>" data-live-search-scopes="<?php echo esc_attr( implode( ',', $hub_scopes ) ); ?>" style="--hub-static-x:<?php echo esc_attr( $hub_static_x ); ?>%;--hub-static-y:<?php echo esc_attr( $hub_static_y ); ?>%;" aria-label="<?php echo esc_attr( $hub_label ); ?>" aria-pressed="false" type="button"><span class="exploration-hub-label"><b><?php echo esc_html( $hub_city ); ?></b><small><?php echo esc_html( $hub_country ); ?></small></span></button>
 						<?php endforeach; ?>
 						<span class="sr-only" data-globe-live role="status" aria-live="polite" aria-atomic="true"></span>
+						<?php tra_vel_v2_premium_planet_control(); ?>
 					</div>
 					<?php tra_vel_v2_voice_dock(); ?>
 				</div>

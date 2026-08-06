@@ -121,6 +121,7 @@ $home_return    = $home_now->modify( '+34 days' )->format( 'Y-m-d' );
 						<button class="exploration-hub" data-exploration-hub="<?php echo esc_attr( $hub_id ); ?>" data-city="<?php echo esc_attr( $hub_city ); ?>" data-country="<?php echo esc_attr( $hub_country ); ?>" data-latitude="<?php echo esc_attr( $hub_latitude ); ?>" data-longitude="<?php echo esc_attr( $hub_longitude ); ?>" data-radius-km="<?php echo esc_attr( $hub_radius ); ?>" data-iata-search-code="<?php echo esc_attr( $hub_iata ); ?>" data-live-search-scopes="<?php echo esc_attr( implode( ',', $hub_scopes ) ); ?>" style="--hub-static-x:<?php echo esc_attr( $hub_static_x ); ?>%;--hub-static-y:<?php echo esc_attr( $hub_static_y ); ?>%;" aria-label="<?php echo esc_attr( $hub_label ); ?>" aria-pressed="false" type="button"><span class="exploration-hub-label"><b><?php echo esc_html( $hub_city ); ?></b><small><?php echo esc_html( $hub_country ); ?></small></span></button>
 					<?php endforeach; ?>
 					<span class="screen-reader-text" data-globe-live role="status" aria-live="polite" aria-atomic="true"></span>
+					<?php tra_vel_v2_premium_planet_control(); ?>
 				</div>
 				<?php if ( function_exists( 'tra_vel_v2_render_proposal' ) ) : ?>
 					<div class="trip-proposal-dock" data-trip-proposal-dock>

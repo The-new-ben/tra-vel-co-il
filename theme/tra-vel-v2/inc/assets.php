@@ -70,6 +70,32 @@ function tra_vel_v2_enqueue_assets() {
 			tra_vel_v2_asset_version( '/assets/js/voice-dock.js' ),
 			true
 		);
+
+		// The premium planet loader ships only while the server can actually
+		// grant a session; without the key option the page carries no premium
+		// affordance at all. The loader itself is tiny: nothing from the
+		// vendored Cesium build loads before an explicit visitor activation,
+		// and the localized data below deliberately contains no key.
+		if ( function_exists( 'tra_vel_v2_planet_upgrade_available' ) && tra_vel_v2_planet_upgrade_available() ) {
+			wp_enqueue_script(
+				'tra-vel-v2-planet-premium',
+				TRA_VEL_V2_URI . '/assets/js/planet-premium.js',
+				array( 'tra-vel-v2-globe-3d' ),
+				tra_vel_v2_asset_version( '/assets/js/planet-premium.js' ),
+				true
+			);
+			wp_localize_script(
+				'tra-vel-v2-planet-premium',
+				'traVelV2Planet',
+				array(
+					'grantUrl'   => esc_url_raw( rest_url( 'tra-vel/v2/planet/upgrade-grant' ) ),
+					'nonce'      => wp_create_nonce( 'wp_rest' ),
+					'vendorBase' => TRA_VEL_V2_URI . '/assets/vendor/cesium/',
+					'script'     => TRA_VEL_V2_URI . '/assets/vendor/cesium/Cesium.js',
+					'style'      => TRA_VEL_V2_URI . '/assets/vendor/cesium/Widgets/widgets.css',
+				)
+			);
+		}
 	}
 
 	// The proposal panel is finished before it reaches the browser too. Its
@@ -234,7 +260,7 @@ function tra_vel_v2_script_attributes( $tag, $handle ) {
 		// mount containers exist, and it then silently renders nothing.
 		return str_replace( '<script ', '<script type="module" ', str_replace( " type='text/javascript'", '', $tag ) );
 	}
-	if ( ! in_array( $handle, array( 'tra-vel-v2-app', 'tra-vel-v2-globe-3d', 'tra-vel-v2-voice-dock', 'tra-vel-v2-pillar-earth', 'tra-vel-v2-customer-trip-cockpit', 'tra-vel-v2-next-action', 'tra-vel-v2-decision-card', 'tra-vel-v2-trip-proposal', 'tra-vel-v2-lucide' ), true ) ) {
+	if ( ! in_array( $handle, array( 'tra-vel-v2-app', 'tra-vel-v2-globe-3d', 'tra-vel-v2-voice-dock', 'tra-vel-v2-pillar-earth', 'tra-vel-v2-planet-premium', 'tra-vel-v2-customer-trip-cockpit', 'tra-vel-v2-next-action', 'tra-vel-v2-decision-card', 'tra-vel-v2-trip-proposal', 'tra-vel-v2-lucide' ), true ) ) {
 		return $tag;
 	}
 	return str_replace( ' src=', ' defer src=', $tag );
