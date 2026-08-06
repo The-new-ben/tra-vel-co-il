@@ -570,11 +570,18 @@
   // different lines than the run itself would have written.
   function liveCheckStepList(panel, script) {
     var section = currentTierSection(panel);
+    // Narrative honesty (theme 1.42.1): the receipt carries the answer, so it
+    // wakes on the found-flight line, never before the machine says it found
+    // one. The dormant body opacity multiplies through the tree, which keeps
+    // the step-two dates arm invisible until its receipt materializes with
+    // it. Only a panel without the found sentence wakes the receipt on the
+    // first check, exactly as 1.41.0 did. The pinned total line keeps its
+    // place in the finale beside the tier cards and the exits.
     var steps = [
       {
         text: script.checkPrices,
         kind: 'check',
-        targets: [panel.querySelector('[data-trip-proposal-party-field]'), section]
+        targets: script.flightFound ? [panel.querySelector('[data-trip-proposal-party-field]')] : [panel.querySelector('[data-trip-proposal-party-field]'), section]
       },
       {
         text: script.checkDates,
@@ -586,7 +593,7 @@
       steps.push({
         text: script.flightFound,
         kind: 'check',
-        targets: [panel.querySelector('[data-trip-proposal-total]')]
+        targets: [section]
       });
     }
     for (var index = 0; index < script.addons.length; index += 1) {

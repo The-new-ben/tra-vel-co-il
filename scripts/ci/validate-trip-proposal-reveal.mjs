@@ -539,6 +539,37 @@ const FIXTURE_TRANSCRIPT = [
 }
 
 {
+  // Narrative honesty (theme 1.42.1): the receipt is the answer, so it wakes
+  // on the found-flight line and never a step before it. The first check may
+  // only wake the party field, the found step wakes the tier section itself,
+  // and the pinned total line stays out of every typed step so it lands in
+  // the finale beside the tier cards and the exits.
+  const { api } = buildRevealHarness();
+  const fixture = buildPanelFixture({ armedAddons: 1 });
+  const script = api.liveCheckScript(fixture.panel);
+  const steps = api.liveCheckStepList(fixture.panel, script);
+  assert.ok(!steps[0].targets.includes(fixture.sectionValue), 'The first check must not wake the receipt before the flight is found.');
+  assert.ok(steps[0].targets.includes(fixture.party), 'The first check still wakes the party field.');
+  const foundStep = steps.find(step => step.text === script.flightFound);
+  assert.ok(foundStep && foundStep.targets.includes(fixture.sectionValue), 'The found-flight line is the moment the receipt materializes.');
+  for (const step of steps) {
+    assert.ok(!step.targets.includes(fixture.total), 'The total line belongs to the finale, never to a typed step.');
+  }
+
+  // Without the found sentence the 1.41.0 wake order remains: the receipt
+  // wakes on the first check, because no later step could ever reach it.
+  const legacyFixture = buildPanelFixture({ armedAddons: 1, flightFound: false });
+  const legacySteps = api.liveCheckStepList(legacyFixture.panel, api.liveCheckScript(legacyFixture.panel));
+  assert.ok(legacySteps[0].targets.includes(legacyFixture.sectionValue), 'A panel without the found sentence must still wake its receipt on the first check.');
+}
+
+{
+  // The takeover stage may not show the docked panel's corner close button:
+  // the chrome row's back pill, the backdrop and Escape own the exit there.
+  assert.ok(/\.trip-takeover-stage \.trip-proposal-close \{ display: none; \}/.test(appCssSource), 'The takeover stage must hide the docked close button.');
+}
+
+{
   // Reduced motion: the finished state, instantly, with the whole step
   // transcript written, every ring done, and no pending timers.
   const { api, timers } = buildRevealHarness({ reducedMotion: true });
@@ -580,7 +611,12 @@ const FIXTURE_TRANSCRIPT = [
 
   drainUntil(1500);
   assert.equal(fixture.party.classList.contains('is-live-armed'), true, 'The party field must pulse awake after the price sentence.');
-  assert.equal(fixture.sectionValue.classList.contains('is-live-armed'), true, 'The visible record must pulse awake with its found price.');
+  // Narrative honesty (theme 1.42.1): the receipt wakes exactly when the
+  // found-flight line lands - the third done ring - never a beat before, at
+  // any cadence the budget compressor may choose.
+  const doneRowCount = panel.querySelectorAll('[data-trip-proposal-step-row]').filter(row => row.classList.contains('is-done')).length;
+  assert.equal(fixture.sectionValue.classList.contains('is-live-armed'), doneRowCount >= 3,
+    'The receipt materializes with the found-flight line, never before the machine says it found one.');
   assert.equal(firstRow.classList.contains('is-done'), true, 'A completed step must snap its ring to done.');
   assert.equal(firstRow.classList.contains('is-spinning'), false, 'A snapped ring must stop spinning.');
 
@@ -588,8 +624,9 @@ const FIXTURE_TRANSCRIPT = [
   assert.equal(panel.getAttribute('data-trip-proposal-state'), 'ready', 'The sequence must finish on its own.');
   assert.ok(clockNow() <= 4000, 'The whole sequence must end inside the four second law.');
   assert.equal(fixture.dates.classList.contains('is-live-armed'), true, 'The dates fact must pulse awake after the dates sentence.');
+  assert.equal(fixture.sectionValue.classList.contains('is-live-armed'), true, 'The finished panel must have its receipt fully awake.');
   assert.equal(fixture.picker.classList.contains('is-live-armed'), true, 'The tier picker must wake as a field the machine filled.');
-  assert.equal(fixture.total.classList.contains('is-live-armed'), true, 'The total line must wake with the found record.');
+  assert.equal(fixture.total.classList.contains('is-live-armed'), true, 'The total line must wake in the finale.');
   assert.equal(fixture.addonRows[0].classList.contains('is-live-armed'), true, 'The armed add-on row must pulse with its verdict.');
   assert.equal(fixture.addonRows[1].classList.contains('is-live-armed'), false, 'A linkless add-on must never pulse as achieved.');
   const finalLines = panel.querySelectorAll('[data-trip-proposal-screen-line]');
