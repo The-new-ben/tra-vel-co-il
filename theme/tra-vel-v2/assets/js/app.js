@@ -1488,21 +1488,71 @@ function pinLabel(data) {
   return current && liveLayers.deals ? data.price : data.city;
 }
 
+// Theme 1.41.0: the dead-tap repair. A destination pin tap always ran the
+// discovery pipeline below, but unlike the free-tap and pillar-earth paths it
+// never published the travelglobe:select event, so on the homepage hero the
+// anchored arrival card, its compact booking step, the one-tap proposal
+// trigger, and the next-action beacon never appeared: at the globe itself the
+// tap looked completely dead. The pin's own pointerdown timestamp separates
+// pointer taps from keyboard activation, because the globe module replays
+// deferred marker taps through the synthetic marker.click() whose
+// event.detail is always 0 (the same signal pillar-earth.js already reads).
+let lastDestinationPinPointerAt = 0;
+
+function publishDestinationPinSelection(pin, viaPointer) {
+  const globeRoot = pin.closest('[data-globe-3d][data-globe-arrival="true"]');
+  if (!globeRoot) return false;
+  const latitude = Number(pin.dataset.latitude);
+  const longitude = Number(pin.dataset.longitude);
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return false;
+  globeRoot.dispatchEvent(new CustomEvent('travelglobe:select', {
+    bubbles: true,
+    detail: {
+      latitude: Number(latitude.toFixed(4)),
+      longitude: Number(longitude.toFixed(4)),
+      inputType: viaPointer ? 'pointer' : 'keyboard',
+      supported: true,
+      supportedRadiusKm: Math.max(100, Math.min(5000, Number(globeRoot.dataset.supportedRadiusKm) || 100)),
+      selectionKind: 'destination',
+      planningAction: 'open_destination',
+      nearestDestination: String(pin.dataset.destination || ''),
+      nearestLabel: String(pin.getAttribute('aria-label') || pin.textContent || '').trim(),
+      distanceKm: 0,
+      hubId: '',
+      hubCity: '',
+      hubCountry: '',
+      hubIataSearchCode: '',
+      hubLiveSearchScopes: [],
+      hubDistanceKm: null,
+      pinActivated: true
+    }
+  }));
+  return true;
+}
+
 function bindDestinationPin(pin) {
   if (!pin || pin.dataset.selectionBound === 'true') return;
   pin.dataset.selectionBound = 'true';
+  pin.addEventListener('pointerdown', () => { lastDestinationPinPointerAt = performance.now(); });
+  // The anchored card answers the tap first: the selection publishes
+  // synchronously and the heavy discovery pipeline follows two frames
+  // later, so the card can paint inside the tap's 400ms answer window
+  // instead of waiting behind the whole below-globe re-render.
   pin.addEventListener('click', event => {
     event.stopPropagation();
-    clearActiveMapEntitySelection();
-    discoveryDestinationMode = 'recommended';
-    setActivePlanningSelection({ latitude: pin.dataset.latitude, longitude: pin.dataset.longitude, destination: pin.dataset.destination, kind: 'destination' });
-    discoveryDestinationLocked = true;
-    discoverySelectedPlan = null;
-    activeRouteId = '';
-    activeRouteSelectionLocked = false;
-    setActiveDestination(pin.dataset.destination, pin, { animate: true, responseConfirmed: false, userSelected: true });
-    syncDiscoveryUrl('push');
-    hydrateDiscovery(discoveryRequestParams({ destination: pin.dataset.destination }));
+    window.setTimeout(() => {
+      clearActiveMapEntitySelection();
+      discoveryDestinationMode = 'recommended';
+      setActivePlanningSelection({ latitude: pin.dataset.latitude, longitude: pin.dataset.longitude, destination: pin.dataset.destination, kind: 'destination' });
+      discoveryDestinationLocked = true;
+      discoverySelectedPlan = null;
+      activeRouteId = '';
+      activeRouteSelectionLocked = false;
+      setActiveDestination(pin.dataset.destination, pin, { animate: true, responseConfirmed: false, userSelected: true });
+      syncDiscoveryUrl('push');
+      hydrateDiscovery(discoveryRequestParams({ destination: pin.dataset.destination }));
+    }, 40);
+    publishDestinationPinSelection(pin, event.detail !== 0 || performance.now() - lastDestinationPinPointerAt <= 1200);
   });
 }
 
@@ -2959,6 +3009,10 @@ function initGlobePointSelection() {
     const hubId = typeof detail.hubId === 'string' ? detail.hubId : '';
     const resolvedHub = detail.selectionKind === 'exploration_hub' && Boolean(explorationHubData[hubId]);
     if (globeRoot.matches('[data-home-globe]')) {
+      // Theme 1.41.0: a direct pin tap publishes its selection for the card
+      // surfaces only after bindDestinationPin already ran this exact
+      // pipeline; re-running it here would hydrate discovery twice per tap.
+      if (detail.pinActivated === true) return;
       if (detail.supported && !resolvedHub && destinationData[destinationId]) {
         const selection = setActivePlanningSelection({
           latitude: detail.latitude,
@@ -12197,6 +12251,10 @@ function initGlobeDiveStore() {
     const globeRoot = event.target?.closest?.('[data-globe-3d][data-discovery-globe]');
     if (!globeRoot) return;
     const detail = event.detail || {};
+    // Theme 1.41.0: pin activations publish for the card surfaces only; the
+    // dive store keeps its 1.40.0 behavior for them, and the tap task stays
+    // light enough for the card to paint inside its answer window.
+    if (detail.pinActivated === true) return;
     const kind = diveStorePointKind(detail);
     if (!kind) return;
     const key = diveStoreTargetKey(kind, detail);
