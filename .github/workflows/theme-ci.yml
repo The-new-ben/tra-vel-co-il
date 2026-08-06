@@ -162,6 +162,7 @@ jobs:
           node scripts/ci/validate-assisted-proposal-admin.mjs
           node scripts/ci/validate-assisted-proposal-release-contract.mjs
           node scripts/ci/validate-premium-planet.mjs
+          node scripts/ci/validate-planet-layers.mjs
           node scripts/ci/validate-commercial-intent-contract.mjs
           node scripts/ci/validate-commerce-core-contract.mjs
           node scripts/ci/validate-commerce-schema-contract.mjs
