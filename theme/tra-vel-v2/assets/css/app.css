@@ -3717,6 +3717,18 @@ label[data-party-hidden="true"] { display: none !important; }
 .home-hero .hero-arrival-stage .hero-agent-actions { margin-top: 22px; }
 .home-hero .hero-arrival-stage .hero-campaign { max-width: none; margin-top: 16px; padding: 14px 15px; }
 .home-hero .hero-arrival-stage:has(.globe-panel[data-dive-depth]) { min-height: 0; }
+/* An open proposal owns the stage (theme 1.41.0): while a panel inside the
+   Earth layer is visible the whole layer lifts above the glass hero copy,
+   so the opening reveal is never covered, and it drops back the moment the
+   panel closes. On the wide stage the overlay also keeps a readable width
+   centered over the Earth instead of stretching edge to edge. */
+.home-hero .hero-arrival-stage > .globe-panel:has(.trip-proposal:not([hidden])) { z-index: 7; }
+@media (min-width: 761px) {
+  /* The overlay header (78px, z-index 90) floats over the hero top, so the
+     open reveal starts below it: every part of the sequence stays visible
+     and tappable. */
+  .home-hero .hero-arrival-stage > .globe-panel .trip-proposal { left: auto; right: 50%; transform: translateX(50%); width: min(560px, calc(100% - 24px)); top: clamp(92px, 13vh, 136px); max-height: min(72vh, calc(100% - 112px)); }
+}
 .home-hero .hero-arrival-stage .globe-panel[data-dive-depth="1"] .globe { width: min(430px, 46vh); }
 .home-hero .hero-arrival-stage .globe-panel[data-dive-depth="2"] .globe { width: min(330px, 36vh); }
 /* The stack is full-bleed now, so the in-flow surfaces below the stage keep
@@ -4225,6 +4237,33 @@ label[data-party-hidden="true"] { display: none !important; }
 .trip-proposal-whatsapp:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
 .trip-proposal-scope { margin: 0; color: #52646a; font-size: 11.5px; font-weight: 600; line-height: 1.45; }
 .trip-proposal-freshness { margin: 0; color: #4b6268; font-size: 12px; font-weight: 700; }
+/* Opening live-check sequence (theme 1.41.0): server-authored sentences are
+   typed above the finished body, the mentioned fields pulse awake with the
+   next-action lime, and everything not yet mentioned waits dimmed. While the
+   sequence runs the body takes no taps, so the first tap can only ever skip
+   to the finished panel, never activate a control through the dim. */
+.trip-proposal-screen { display: grid; gap: 5px; min-height: 24px; }
+.trip-proposal-screen[hidden] { display: none !important; }
+.trip-proposal-screen-line { margin: 0; color: #0b1f26; font-size: 15px; font-weight: 800; line-height: 1.45; }
+.trip-proposal-screen-line[data-trip-proposal-screen-line="check"] { color: #35545c; font-weight: 700; }
+.trip-proposal-screen-line.is-typing::after { content: ''; display: inline-block; width: 2px; height: 1em; margin-inline-start: 3px; vertical-align: text-bottom; background: var(--lime-2); animation: tripProposalCaret 0.8s steps(2, start) infinite; }
+@keyframes tripProposalCaret { to { visibility: hidden; } }
+.trip-proposal[data-trip-proposal-state="checking"] .trip-proposal-body { pointer-events: none; }
+.trip-proposal[data-trip-proposal-state="checking"] .trip-proposal-body > * { opacity: .16; transition: opacity var(--motion-base) var(--ease-standard); }
+.trip-proposal[data-trip-proposal-state="checking"] .trip-proposal-body > .trip-proposal-title { opacity: 1; }
+.trip-proposal[data-trip-proposal-state="checking"] .trip-proposal-body > .is-live-armed,
+.trip-proposal[data-trip-proposal-state="checking"] .trip-proposal-body .is-live-armed { opacity: 1; }
+.trip-proposal .is-live-armed { animation: tripProposalArm 0.9s var(--ease-standard); border-radius: 13px; }
+@keyframes tripProposalArm { 0% { box-shadow: 0 0 0 0 rgba(191,233,52,.55); } 70% { box-shadow: 0 0 0 9px rgba(191,233,52,0); } 100% { box-shadow: 0 0 0 0 rgba(191,233,52,0); } }
+/* The finished choices read as one-tap decision cards: the real tiers with
+   their real fares, then the two big exits. */
+.trip-proposal[data-trip-proposal-check-prices-line] .trip-proposal-tier-choices { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 8px; }
+.trip-proposal[data-trip-proposal-check-prices-line] .trip-proposal-tier-choice { min-height: 62px; display: grid; align-content: center; justify-items: center; gap: 3px; padding: 9px 10px; border-radius: 14px; }
+.trip-proposal-tier-choice-name { font-size: 13px; font-weight: 800; }
+.trip-proposal-tier-choice-price { font-size: 15px; font-weight: 900; }
+.trip-proposal[data-trip-proposal-check-prices-line] .trip-proposal-tier-choice.is-current { box-shadow: 0 0 0 2px var(--lime-2); }
+.trip-proposal[data-trip-proposal-check-prices-line] .trip-proposal-book { min-height: 56px; font-size: 16px; border-radius: 15px; }
+.trip-proposal[data-trip-proposal-check-prices-line] .trip-proposal-whatsapp { min-height: 52px; font-size: 14.5px; border-radius: 15px; }
 /* Inside a globe panel the same markup becomes the anchored overlay next to
    the arrival card. The positioned ancestor clips and bounds it, so the
    overlay can never spill over the page or force page scroll. */
@@ -4240,10 +4279,13 @@ label[data-party-hidden="true"] { display: none !important; }
   .trip-proposal-fill { padding: 13px; border-radius: 16px; }
   .trip-proposal-fill-line { font-size: 14.5px; }
   .trip-proposal-flight-total strong { font-size: 22px; }
+  .trip-proposal-screen-line { font-size: 13.5px; }
   .globe-panel .trip-proposal,.pillar-globe-panel .trip-proposal { top: 8px; right: 8px; left: 8px; max-height: calc(100% - 16px); }
 }
 @media (prefers-reduced-motion: reduce) {
   .trip-proposal-fill { display: none; }
   .trip-proposal-fill-line { transition: none; opacity: 1; transform: none; }
   .trip-proposal,.trip-proposal * { animation: none !important; transition: none !important; }
+  .trip-proposal[data-trip-proposal-state="checking"] .trip-proposal-body > * { opacity: 1; }
+  .trip-proposal-screen-line.is-typing::after { display: none; }
 }

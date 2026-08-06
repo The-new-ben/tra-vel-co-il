@@ -35,6 +35,16 @@ defined( 'ABSPATH' ) || exit;
  * @return array<int,array<string,string>> Rows of key, label, cta_label, url.
  */
 function tra_vel_v2_proposal_addons() {
+	// Theme 1.41.0 live-check reveal: the one verdict sentence the opening
+	// sequence may type for an add-on, authored here and only for a program
+	// the registry reports live. A disabled program gets no sentence at all,
+	// so the client can never claim an add-on we cannot actually link.
+	$verdict_lines = array(
+		'insurance' => __( 'השגנו לך ביטוח.', 'tra-vel-v2' ),
+		'esim'      => __( 'השגנו לך eSIM.', 'tra-vel-v2' ),
+		'transfer'  => __( 'השגנו לך העברה.', 'tra-vel-v2' ),
+	);
+
 	$rows = array();
 	foreach ( array(
 		'insurance' => array( 'ekta', __( 'ביטוח נסיעות', 'tra-vel-v2' ) ),
@@ -44,10 +54,11 @@ function tra_vel_v2_proposal_addons() {
 		$link   = function_exists( 'tra_vel_v2_affiliate_program_link' ) ? tra_vel_v2_affiliate_program_link( $row[0] ) : array();
 		$is_live = is_array( $link ) && ! empty( $link['enabled'] ) && ! empty( $link['url'] );
 		$rows[] = array(
-			'key'       => $key,
-			'label'     => $row[1],
-			'cta_label' => $is_live && '' !== trim( (string) $link['label'] ) ? (string) $link['label'] : '',
-			'url'       => $is_live ? (string) $link['url'] : '',
+			'key'          => $key,
+			'label'        => $row[1],
+			'cta_label'    => $is_live && '' !== trim( (string) $link['label'] ) ? (string) $link['label'] : '',
+			'url'          => $is_live ? (string) $link['url'] : '',
+			'verdict_line' => $is_live && isset( $verdict_lines[ $key ] ) ? $verdict_lines[ $key ] : '',
 		);
 	}
 
@@ -147,11 +158,19 @@ function tra_vel_v2_proposal_view( $map_state ) {
 	/* translators: %s: formatted flights-only total for the whole party. */
 	$total_template = __( 'סה"כ טיסות: %s לכל הנוסעים. תוספות נסגרות ומתומחרות אצל הספקים.', 'tra-vel-v2' );
 
+	// Theme 1.41.0 live-check reveal: every sentence the opening sequence can
+	// ever type is authored here, on the server, with the city already baked
+	// in. The client only replays these bytes character by character and, in
+	// the verdict, substitutes the traveler count the same way the pinned
+	// total template already substitutes its amount. No sentence exists for
+	// data this page does not really hold.
+	$prefixed_city = tra_vel_v2_decision_card_prefixed_city( $city );
+
 	return array(
 		'state'              => $map_state,
 		'city'               => $city,
 		/* translators: %s: destination city, spelled for the ל prefix. */
-		'title'              => sprintf( __( 'ההצעה שלכם ל%s', 'tra-vel-v2' ), tra_vel_v2_decision_card_prefixed_city( $city ) ),
+		'title'              => sprintf( __( 'ההצעה שלכם ל%s', 'tra-vel-v2' ), $prefixed_city ),
 		'trigger_label'      => __( 'הצעה מלאה בקליק', 'tra-vel-v2' ),
 		'travelers'          => $travelers,
 		'min_travelers'      => TRA_VEL_V2_DECISION_CARD_MIN_TRAVELERS,
@@ -186,6 +205,13 @@ function tra_vel_v2_proposal_view( $map_state ) {
 		'wa_addons_template' => function_exists( 'tra_vel_v2_whatsapp_addons_line' ) ? tra_vel_v2_whatsapp_addons_line( array( '%s' ) ) : '',
 		'wa_travelers_lines' => $wa_travelers_lines,
 		'wa_dates_line'      => $tiers[0]['wa_dates_line'],
+		/* translators: %s: destination city, spelled for the ל prefix. */
+		'check_prices_line'  => sprintf( __( 'בודקים לך את המחירים הטובים ביותר ל%s...', 'tra-vel-v2' ), $prefixed_city ),
+		'check_dates_line'   => __( 'בודקים מתי הכי שווה לטוס...', 'tra-vel-v2' ),
+		/* translators: %s: destination city, spelled for the ל prefix. */
+		'verdict_one'        => sprintf( __( 'אתם טסים. נוסע אחד ל%s.', 'tra-vel-v2' ), $prefixed_city ),
+		/* translators: 1: traveler count placeholder, 2: destination city, spelled for the ל prefix. */
+		'verdict_many'       => sprintf( __( 'אתם טסים. %1$s נוסעים ל%2$s.', 'tra-vel-v2' ), '%s', $prefixed_city ),
 		'scope_note'         => tra_vel_v2_found_price_scope_note(),
 		'currency_note'      => tra_vel_v2_found_price_currency_note( isset( $options[0]['currency'] ) ? $options[0]['currency'] : null ),
 		'freshness'          => tra_vel_v2_found_price_freshness( $options[0] ),

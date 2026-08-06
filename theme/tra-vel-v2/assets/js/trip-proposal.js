@@ -1,13 +1,16 @@
 /**
- * Trip proposal panel behaviour (theme 1.40.0).
+ * Trip proposal panel behaviour (theme 1.40.0, opening sequence 1.41.0).
  *
  * The panel a visitor opens was finished on the server. This file adds
- * exactly five things on top of that finished markup, and nothing else:
- * a reveal (with a short honest staging sequence that reduced motion skips),
- * a traveler stepper that multiplies the fares the server printed, a switch
- * between the real flight records the server rendered, add-on toggles that
- * never touch a price, and a WhatsApp link refresh that only ever swaps
- * whole message lines the server itself authored into data attributes.
+ * behaviour on top of that finished markup, and nothing else: an opening
+ * live-check sequence that types server-authored sentences letter by letter
+ * and pulses the real fields as they come into view (any tap skips it,
+ * reduced motion never sees it, and the 1.40.0 staging reveal remains the
+ * fallback for a panel without the typed lines), a traveler stepper that
+ * multiplies the fares the server printed, a switch between the real flight
+ * records the server rendered, add-on toggles that never touch a price, and
+ * a WhatsApp link refresh that only ever swaps whole message lines the
+ * server itself authored into data attributes.
  *
  * There is no request here, no navigation, no form, and no scroll, wheel or
  * touchmove listener. The only exits are the two plain anchors the server
@@ -24,12 +27,22 @@
   var IDLE_BEACON_MS = 6000;
   var FALLBACK_MIN = 1;
   var FALLBACK_MAX = 6;
+  // Opening live-check tuning (theme 1.41.0). Letters land at the dictated
+  // ~30ms cadence; when the armed add-on verdicts make the script long, the
+  // cadence compresses so the whole sequence always ends inside the four
+  // second law, and one skip tap always ends it immediately.
+  var CHECK_CHAR_MS = 30;
+  var CHECK_MIN_CHAR_MS = 12;
+  var CHECK_SNAP_MS = 260;
+  var CHECK_FINALE_MS = 220;
+  var CHECK_TOTAL_BUDGET_MS = 3600;
   // The device intent memory stores a party style, not a number. This is the
   // same mapping app.js already uses when it writes those styles from real
   // adult and child counts, read in the opposite direction.
   var INTENT_PARTY_TRAVELERS = { couple: 2, couple_2: 4, family: 5, friends: 3 };
 
   var open = { panel: null, trigger: null, idleTimer: 0 };
+  var liveCheck = { panel: null, timers: [] };
 
   function groupAmount(amount) {
     return String(amount).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
@@ -254,6 +267,187 @@
     return !checked;
   }
 
+  // --- Opening live-check sequence (theme 1.41.0) --------------------------
+  // The finished, server-rendered proposal is already underneath. On open the
+  // panel narrates its own assembly: server-authored sentences typed letter
+  // by letter, the real fields pulsing awake as each one is mentioned, the
+  // verdict lines, and then the finished choices. Every byte that can appear
+  // came out of inc/proposal.php data attributes; the only substitution is
+  // the traveler count into the verdict template, exactly the way the pinned
+  // total template already substitutes its amount. An add-on verdict types
+  // only when the row carries both the server-authored sentence and the real
+  // supplier link, so nothing is ever claimed that cannot be linked. Any tap
+  // or key press cuts straight to the finished panel, reduced motion never
+  // sees a single frame, and every timer dies with the sequence.
+  function liveCheckDelay(callback, milliseconds) {
+    liveCheck.timers.push(window.setTimeout(callback, milliseconds));
+  }
+
+  function stopLiveCheckTimers() {
+    for (var index = 0; index < liveCheck.timers.length; index += 1) window.clearTimeout(liveCheck.timers[index]);
+    liveCheck.timers = [];
+  }
+
+  function liveCheckVerdict(panel) {
+    if (currentTravelers(panel) === 1) return String(panel.getAttribute('data-trip-proposal-verdict-one') || '');
+    var template = String(panel.getAttribute('data-trip-proposal-verdict-many') || '');
+    return template.indexOf('%s') >= 0 ? template.replace('%s', groupAmount(currentTravelers(panel))) : '';
+  }
+
+  function liveCheckAddonVerdicts(panel) {
+    var rows = panel.querySelectorAll('[data-trip-proposal-addon]');
+    var verdicts = [];
+    for (var index = 0; index < rows.length; index += 1) {
+      var text = String(rows[index].getAttribute('data-trip-proposal-addon-verdict') || '');
+      if (text && rows[index].querySelector('[data-trip-proposal-addon-link]')) verdicts.push({ text: text, row: rows[index] });
+    }
+    return verdicts;
+  }
+
+  function liveCheckScript(panel) {
+    var checkPrices = String(panel.getAttribute('data-trip-proposal-check-prices-line') || '');
+    var checkDates = String(panel.getAttribute('data-trip-proposal-check-dates-line') || '');
+    var verdict = liveCheckVerdict(panel);
+    if (!checkPrices || !checkDates || !verdict) return null;
+    return { checkPrices: checkPrices, checkDates: checkDates, verdict: verdict, addons: liveCheckAddonVerdicts(panel) };
+  }
+
+  function liveCheckCharMs(script) {
+    var totalChars = script.checkPrices.length + script.checkDates.length + script.verdict.length;
+    for (var index = 0; index < script.addons.length; index += 1) totalChars += script.addons[index].text.length;
+    var textBudget = CHECK_TOTAL_BUDGET_MS - CHECK_SNAP_MS * 2 - CHECK_FINALE_MS;
+    return Math.max(CHECK_MIN_CHAR_MS, Math.min(CHECK_CHAR_MS, Math.floor(textBudget / Math.max(1, totalChars))));
+  }
+
+  function ensureLiveCheckScreen(panel) {
+    var screen = panel.querySelector('[data-trip-proposal-screen]');
+    if (!screen) {
+      screen = document.createElement('div');
+      screen.className = 'trip-proposal-screen';
+      screen.setAttribute('data-trip-proposal-screen', 'true');
+      screen.setAttribute('aria-hidden', 'true');
+      var body = panel.querySelector('[data-trip-proposal-body]');
+      if (body && typeof panel.insertBefore === 'function') panel.insertBefore(screen, body);
+      else panel.append(screen);
+    }
+    while (screen.firstChild) screen.removeChild(screen.firstChild);
+    screen.hidden = false;
+    return screen;
+  }
+
+  function appendLiveCheckLine(screen, text, kind) {
+    var line = document.createElement('p');
+    line.className = 'trip-proposal-screen-line';
+    line.setAttribute('data-trip-proposal-screen-line', kind);
+    line.textContent = text;
+    screen.append(line);
+    return line;
+  }
+
+  function typeLiveCheckLine(screen, text, kind, charMs, done) {
+    var line = appendLiveCheckLine(screen, '', kind);
+    line.classList.add('is-typing');
+    var shown = 0;
+    var step = function () {
+      shown += 1;
+      line.textContent = text.slice(0, shown);
+      if (shown >= text.length) {
+        line.classList.remove('is-typing');
+        done();
+        return;
+      }
+      liveCheckDelay(step, charMs);
+    };
+    step();
+  }
+
+  function armLiveCheckTarget(target) {
+    if (target && target.classList) target.classList.add('is-live-armed');
+  }
+
+  function clearLiveCheckArms(panel) {
+    var armed = panel.querySelectorAll('.is-live-armed');
+    for (var index = 0; index < armed.length; index += 1) armed[index].classList.remove('is-live-armed');
+  }
+
+  // Cut to the finished state: the verdict transcript fully written, the
+  // panel ready. This is the one landing zone shared by natural completion,
+  // the skip tap, Escape, and closing the panel mid-sequence.
+  function finishLiveCheck() {
+    var panel = liveCheck.panel;
+    if (!panel) return false;
+    stopLiveCheckTimers();
+    liveCheck.panel = null;
+    var script = liveCheckScript(panel);
+    if (script) {
+      var screen = ensureLiveCheckScreen(panel);
+      appendLiveCheckLine(screen, script.verdict, 'verdict');
+      for (var index = 0; index < script.addons.length; index += 1) {
+        appendLiveCheckLine(screen, script.addons[index].text, 'verdict');
+      }
+    }
+    panel.setAttribute('data-trip-proposal-state', 'ready');
+    return true;
+  }
+
+  function runLiveCheck(panel) {
+    var script = liveCheckScript(panel);
+    if (!script) return runFill(panel);
+
+    var fill = panel.querySelector('[data-trip-proposal-fill]');
+    if (fill) fill.hidden = true;
+    if (prefersReducedMotion()) {
+      liveCheck.panel = panel;
+      finishLiveCheck();
+      return 0;
+    }
+
+    finishLiveCheck();
+    clearLiveCheckArms(panel);
+    liveCheck.panel = panel;
+    panel.setAttribute('data-trip-proposal-state', 'checking');
+    var screen = ensureLiveCheckScreen(panel);
+    var charMs = liveCheckCharMs(script);
+    var section = currentTierSection(panel);
+
+    var finale = function () {
+      armLiveCheckTarget(panel.querySelector('[data-trip-proposal-total]'));
+      armLiveCheckTarget(panel.querySelector('[data-trip-proposal-exits]'));
+      liveCheckDelay(finishLiveCheck, CHECK_FINALE_MS);
+    };
+
+    var typeAddonVerdicts = function (position) {
+      if (position >= script.addons.length) {
+        finale();
+        return;
+      }
+      typeLiveCheckLine(screen, script.addons[position].text, 'verdict', charMs, function () {
+        armLiveCheckTarget(panel.querySelector('[data-trip-proposal-addons-field]'));
+        armLiveCheckTarget(script.addons[position].row);
+        typeAddonVerdicts(position + 1);
+      });
+    };
+
+    typeLiveCheckLine(screen, script.checkPrices, 'check', charMs, function () {
+      // The found price snaps in: the real record and the party field wake.
+      armLiveCheckTarget(panel.querySelector('[data-trip-proposal-party-field]'));
+      armLiveCheckTarget(section);
+      liveCheckDelay(function () {
+        typeLiveCheckLine(screen, script.checkDates, 'check', charMs, function () {
+          // The real dates snap in, and the tier picker wakes.
+          armLiveCheckTarget(section ? section.querySelector('[data-trip-proposal-tier-dates]') : null);
+          armLiveCheckTarget(panel.querySelector('[data-trip-proposal-tier-picker]'));
+          liveCheckDelay(function () {
+            typeLiveCheckLine(screen, script.verdict, 'verdict', charMs, function () {
+              typeAddonVerdicts(0);
+            });
+          }, CHECK_SNAP_MS);
+        });
+      }, CHECK_SNAP_MS);
+    });
+    return CHECK_TOTAL_BUDGET_MS;
+  }
+
   function clearIdleBeacon() {
     if (open.idleTimer) {
       window.clearTimeout(open.idleTimer);
@@ -274,6 +468,9 @@
 
   function noteInteraction() {
     clearIdleBeacon();
+    // Any tap or key press on the panel cuts the opening sequence straight
+    // to the finished proposal; it never has to be watched twice.
+    finishLiveCheck();
   }
 
   function runFill(panel) {
@@ -331,7 +528,7 @@
       if (preset && preset !== currentTravelers(panel)) applyTravelers(panel, preset);
     }
 
-    runFill(panel);
+    runLiveCheck(panel);
     document.addEventListener('keydown', handleDocumentKeydown, true);
     if (typeof panel.focus === 'function') panel.focus();
     armIdleBeacon(panel);
@@ -345,6 +542,7 @@
     if (!panel) return false;
 
     clearIdleBeacon();
+    if (liveCheck.panel === panel) finishLiveCheck();
     document.removeEventListener('keydown', handleDocumentKeydown, true);
     panel.hidden = true;
     open.panel = null;
@@ -498,6 +696,24 @@
     current: function () {
       return open.panel;
     },
-    timings: { step: FILL_STEP_MS, hold: FILL_HOLD_MS, idle: IDLE_BEACON_MS }
+    liveCheckScript: liveCheckScript,
+    liveCheckVerdict: liveCheckVerdict,
+    liveCheckAddonVerdicts: liveCheckAddonVerdicts,
+    liveCheckCharMs: liveCheckCharMs,
+    runLiveCheck: runLiveCheck,
+    finishLiveCheck: finishLiveCheck,
+    checking: function () {
+      return liveCheck.panel;
+    },
+    timings: {
+      step: FILL_STEP_MS,
+      hold: FILL_HOLD_MS,
+      idle: IDLE_BEACON_MS,
+      charMs: CHECK_CHAR_MS,
+      minCharMs: CHECK_MIN_CHAR_MS,
+      snap: CHECK_SNAP_MS,
+      finale: CHECK_FINALE_MS,
+      budget: CHECK_TOTAL_BUDGET_MS
+    }
   };
 })();

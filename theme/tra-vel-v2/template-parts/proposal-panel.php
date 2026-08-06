@@ -51,6 +51,10 @@ $title_id = $panel_id . '-title';
 	data-trip-proposal-wa-addons-template="<?php echo esc_attr( $view['wa_addons_template'] ); ?>"
 	data-trip-proposal-wa-travelers-lines="<?php echo esc_attr( wp_json_encode( $view['wa_travelers_lines'] ) ); ?>"
 	data-trip-proposal-wa-dates-line="<?php echo esc_attr( $view['wa_dates_line'] ); ?>"
+	data-trip-proposal-check-prices-line="<?php echo esc_attr( $view['check_prices_line'] ); ?>"
+	data-trip-proposal-check-dates-line="<?php echo esc_attr( $view['check_dates_line'] ); ?>"
+	data-trip-proposal-verdict-one="<?php echo esc_attr( $view['verdict_one'] ); ?>"
+	data-trip-proposal-verdict-many="<?php echo esc_attr( $view['verdict_many'] ); ?>"
 	role="group"
 	aria-labelledby="<?php echo esc_attr( $title_id ); ?>"
 	tabindex="-1"
@@ -64,21 +68,21 @@ $title_id = $panel_id . '-title';
 	</p>
 	<div class="trip-proposal-body" data-trip-proposal-body>
 		<h3 class="trip-proposal-title" id="<?php echo esc_attr( $title_id ); ?>"><?php echo esc_html( $view['title'] ); ?></h3>
-		<div class="trip-proposal-travelers" role="group" aria-label="<?php echo esc_attr( $view['travelers_label'] ); ?>">
+		<div class="trip-proposal-travelers" data-trip-proposal-party-field role="group" aria-label="<?php echo esc_attr( $view['travelers_label'] ); ?>">
 			<span class="trip-proposal-travelers-label"><?php echo esc_html( $view['travelers_label'] ); ?></span>
 			<button class="trip-proposal-step" type="button" data-trip-proposal-step="-1" aria-label="<?php echo esc_attr( $view['step_down_label'] ); ?>"><span aria-hidden="true">&minus;</span></button>
 			<output class="trip-proposal-travelers-value" data-trip-proposal-travelers-value><?php echo esc_html( number_format_i18n( $view['travelers'] ) ); ?></output>
 			<button class="trip-proposal-step" type="button" data-trip-proposal-step="1" aria-label="<?php echo esc_attr( $view['step_up_label'] ); ?>"><span aria-hidden="true">+</span></button>
 		</div>
 		<?php if ( count( $view['tiers'] ) > 1 ) : ?>
-			<div class="trip-proposal-tier-choices" role="group" aria-label="<?php echo esc_attr( $view['tiers_heading'] ); ?>">
+			<div class="trip-proposal-tier-choices" data-trip-proposal-tier-picker role="group" aria-label="<?php echo esc_attr( $view['tiers_heading'] ); ?>">
 				<?php foreach ( $view['tiers'] as $tier_index => $tier ) : ?>
 					<button
 						type="button"
 						class="trip-proposal-tier-choice<?php echo 0 === (int) $tier_index ? ' is-current' : ''; ?>"
 						data-trip-proposal-tier-choice="<?php echo esc_attr( $tier['tier'] ); ?>"
 						aria-pressed="<?php echo 0 === (int) $tier_index ? 'true' : 'false'; ?>"
-					><?php echo esc_html( $tier['label'] ); ?></button>
+					><span class="trip-proposal-tier-choice-name"><?php echo esc_html( $tier['label'] ); ?></span><bdi class="trip-proposal-tier-choice-price" dir="ltr"><?php echo esc_html( $tier['unit_label'] ); ?></bdi></button>
 				<?php endforeach; ?>
 			</div>
 		<?php endif; ?>
@@ -104,7 +108,7 @@ $title_id = $panel_id . '-title';
 				<ul class="trip-proposal-flight-facts">
 					<li><i data-lucide="route" aria-hidden="true"></i><?php echo esc_html( $tier['stops_label'] ); ?></li>
 					<?php if ( '' !== $tier['dates_label'] ) : ?>
-						<li><i data-lucide="calendar-days" aria-hidden="true"></i><bdi dir="ltr"><?php echo esc_html( $tier['dates_label'] ); ?></bdi></li>
+						<li data-trip-proposal-tier-dates><i data-lucide="calendar-days" aria-hidden="true"></i><bdi dir="ltr"><?php echo esc_html( $tier['dates_label'] ); ?></bdi></li>
 					<?php endif; ?>
 					<?php if ( '' !== $tier['airline'] ) : ?>
 						<li><i data-lucide="plane" aria-hidden="true"></i><span><?php echo esc_html( $view['airline_label'] ); ?> <bdi dir="ltr"><?php echo esc_html( $tier['airline'] ); ?></bdi></span></li>
@@ -113,11 +117,11 @@ $title_id = $panel_id . '-title';
 			</section>
 		<?php endforeach; ?>
 		<?php if ( ! empty( $view['addons'] ) ) : ?>
-			<div class="trip-proposal-addons" role="group" aria-label="<?php echo esc_attr( $view['addons_heading'] ); ?>">
+			<div class="trip-proposal-addons" data-trip-proposal-addons-field role="group" aria-label="<?php echo esc_attr( $view['addons_heading'] ); ?>">
 				<span class="trip-proposal-addons-heading"><?php echo esc_html( $view['addons_heading'] ); ?></span>
 				<ul class="trip-proposal-addon-rows">
 					<?php foreach ( $view['addons'] as $addon ) : ?>
-						<li class="trip-proposal-addon" data-trip-proposal-addon="<?php echo esc_attr( $addon['key'] ); ?>">
+						<li class="trip-proposal-addon" data-trip-proposal-addon="<?php echo esc_attr( $addon['key'] ); ?>"<?php echo '' !== $addon['verdict_line'] ? ' data-trip-proposal-addon-verdict="' . esc_attr( $addon['verdict_line'] ) . '"' : ''; ?>>
 							<button
 								type="button"
 								class="trip-proposal-addon-toggle"
@@ -142,7 +146,7 @@ $title_id = $panel_id . '-title';
 			</div>
 		<?php endif; ?>
 		<p class="trip-proposal-total" data-trip-proposal-total aria-live="polite"><?php echo esc_html( $view['total_line'] ); ?></p>
-		<div class="trip-proposal-actions">
+		<div class="trip-proposal-actions" data-trip-proposal-exits>
 			<a class="trip-proposal-book" data-trip-proposal-book href="<?php echo esc_url( $view['tiers'][0]['deep_link'] ); ?>" target="_blank" rel="sponsored nofollow noopener"><?php echo esc_html( $view['book_label'] ); ?><i data-lucide="external-link" aria-hidden="true"></i></a>
 			<?php if ( '' !== $view['whatsapp'] ) : ?>
 				<a class="trip-proposal-whatsapp" data-trip-proposal-whatsapp href="<?php echo esc_url( $view['whatsapp'] ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( $view['whatsapp_label'] ); ?><i data-lucide="message-circle" aria-hidden="true"></i></a>
