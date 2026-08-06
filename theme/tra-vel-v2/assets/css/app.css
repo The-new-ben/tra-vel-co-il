@@ -3717,18 +3717,6 @@ label[data-party-hidden="true"] { display: none !important; }
 .home-hero .hero-arrival-stage .hero-agent-actions { margin-top: 22px; }
 .home-hero .hero-arrival-stage .hero-campaign { max-width: none; margin-top: 16px; padding: 14px 15px; }
 .home-hero .hero-arrival-stage:has(.globe-panel[data-dive-depth]) { min-height: 0; }
-/* An open proposal owns the stage (theme 1.41.0): while a panel inside the
-   Earth layer is visible the whole layer lifts above the glass hero copy,
-   so the opening reveal is never covered, and it drops back the moment the
-   panel closes. On the wide stage the overlay also keeps a readable width
-   centered over the Earth instead of stretching edge to edge. */
-.home-hero .hero-arrival-stage > .globe-panel:has(.trip-proposal:not([hidden])) { z-index: 7; }
-@media (min-width: 761px) {
-  /* The overlay header (78px, z-index 90) floats over the hero top, so the
-     open reveal starts below it: every part of the sequence stays visible
-     and tappable. */
-  .home-hero .hero-arrival-stage > .globe-panel .trip-proposal { left: auto; right: 50%; transform: translateX(50%); width: min(560px, calc(100% - 24px)); top: clamp(92px, 13vh, 136px); max-height: min(72vh, calc(100% - 112px)); }
-}
 .home-hero .hero-arrival-stage .globe-panel[data-dive-depth="1"] .globe { width: min(430px, 46vh); }
 .home-hero .hero-arrival-stage .globe-panel[data-dive-depth="2"] .globe { width: min(330px, 36vh); }
 /* The stack is full-bleed now, so the in-flow surfaces below the stage keep
@@ -3963,6 +3951,21 @@ label[data-party-hidden="true"] { display: none !important; }
 .globe-webgl .price-pin[data-found-price] { display: inline-grid; place-items: center; row-gap: 1px; line-height: 1.1; }
 .globe-webgl .price-pin[data-found-price]::before { content: attr(data-found-price); order: 1; direction: ltr; unicode-bidi: isolate; color: #3f6b00; font-size: 11px; font-weight: 900; letter-spacing: .01em; white-space: nowrap; }
 .globe-webgl .price-pin[data-found-price]:hover::before,.globe-webgl .price-pin[data-found-price].is-active::before { color: #2c4c00; }
+/* Ambient price pop (theme 1.42.0): the scheduled pin swells and glows with
+   the price tag it already shows. Scale and shadow only, on an absolutely
+   positioned pin, so the layout never moves; reduced motion never schedules
+   one and the animation block below silences any stray frame. */
+.globe-webgl .price-pin.is-price-pop { z-index: 8; animation: tripPricePop 1.5s var(--ease-standard); }
+.globe-webgl .price-pin.is-price-pop::before { color: #2c4c00; }
+@keyframes tripPricePop {
+  0% { scale: 1; box-shadow: 0 8px 22px rgba(0,0,0,.32); }
+  18% { scale: 1.22; box-shadow: 0 10px 26px rgba(0,0,0,.4), 0 0 0 7px rgba(217,255,89,.34), 0 0 22px 4px rgba(217,255,89,.4); }
+  58% { scale: 1.13; box-shadow: 0 10px 24px rgba(0,0,0,.36), 0 0 0 10px rgba(217,255,89,.12), 0 0 16px 2px rgba(217,255,89,.22); }
+  100% { scale: 1; box-shadow: 0 8px 22px rgba(0,0,0,.32); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .globe-webgl .price-pin.is-price-pop { animation: none !important; }
+}
 .found-price { max-width: 430px; display: grid; gap: 5px; justify-items: start; margin: 15px 0 0; padding: 13px 15px; border: 1px solid rgba(7,23,29,.14); border-radius: 15px; background: rgba(255,255,255,.96); box-shadow: 0 10px 26px rgba(0,0,0,.16); color: #12262c; text-align: start; }
 .found-price-headline { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 15px; }
 .found-price-headline i { width: 18px; height: 18px; flex: 0 0 auto; color: #5f8a00; }
@@ -4182,7 +4185,7 @@ label[data-party-hidden="true"] { display: none !important; }
 .trip-proposal-trigger i { width: 16px; height: 16px; }
 .trip-proposal-trigger:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
 .trip-proposal-trigger[hidden] { display: none !important; }
-.trip-proposal { position: relative; width: 100%; max-width: 560px; margin: 12px auto 0; padding: 16px 18px; border: 1px solid var(--line); border-radius: 20px; background: #fff; box-shadow: var(--soft-shadow); display: grid; gap: 11px; max-height: min(78vh, 640px); overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; text-align: start; }
+.trip-proposal { position: relative; width: 100%; max-width: 560px; margin: 12px auto 0; padding: 16px 18px; border: 1px solid var(--line); border-radius: 20px; background: #fff; box-shadow: var(--soft-shadow); display: grid; grid-auto-rows: max-content; gap: 11px; max-height: min(78vh, 640px); overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; text-align: start; }
 .trip-proposal[hidden] { display: none !important; }
 .trip-proposal:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
 .trip-proposal-close { position: absolute; top: 10px; left: 10px; z-index: 3; width: 44px; height: 44px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 12px; background: #f5f8f6; color: var(--ink); cursor: pointer; font-size: 17px; line-height: 1; }
@@ -4237,15 +4240,26 @@ label[data-party-hidden="true"] { display: none !important; }
 .trip-proposal-whatsapp:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
 .trip-proposal-scope { margin: 0; color: #52646a; font-size: 11.5px; font-weight: 600; line-height: 1.45; }
 .trip-proposal-freshness { margin: 0; color: #4b6268; font-size: 12px; font-weight: 700; }
-/* Opening live-check sequence (theme 1.41.0): server-authored sentences are
-   typed above the finished body, the mentioned fields pulse awake with the
+/* Opening live-check sequence (theme 1.41.0, staged rings 1.42.0): the
+   server-authored sentences run as work steps above the finished body. Each
+   step carries a small ring that spins while its line types and snaps to a
+   check the moment the line lands, the mentioned fields pulse awake with the
    next-action lime, and everything not yet mentioned waits dimmed. While the
    sequence runs the body takes no taps, so the first tap can only ever skip
    to the finished panel, never activate a control through the dim. */
-.trip-proposal-screen { display: grid; gap: 5px; min-height: 24px; }
+.trip-proposal-screen { display: grid; gap: 7px; min-height: 24px; }
 .trip-proposal-screen[hidden] { display: none !important; }
+.trip-proposal-step-row { display: flex; align-items: flex-start; gap: 9px; }
+.trip-proposal-step-ring { position: relative; flex: 0 0 auto; width: 17px; height: 17px; margin-top: 2px; border: 2px solid rgba(11,31,38,.16); border-radius: 50%; background: transparent; transition: background var(--motion-fast) var(--ease-standard), border-color var(--motion-fast) var(--ease-standard); }
+.trip-proposal-step-row.is-spinning .trip-proposal-step-ring { border-color: rgba(11,31,38,.14); border-top-color: #0b1f26; animation: tripStepRingSpin .7s linear infinite; }
+.trip-proposal-step-row.is-done .trip-proposal-step-ring { border-color: var(--lime-2); background: var(--lime); animation: tripStepRingSnap .3s var(--ease-confirm); }
+.trip-proposal-step-row.is-done .trip-proposal-step-ring::after { content: ''; position: absolute; top: 3px; left: 3px; width: 7px; height: 4px; border-left: 2px solid var(--ink); border-bottom: 2px solid var(--ink); transform: rotate(-45deg); }
+@keyframes tripStepRingSpin { to { transform: rotate(360deg); } }
+@keyframes tripStepRingSnap { 0% { transform: scale(.55); } 62% { transform: scale(1.22); } 100% { transform: scale(1); } }
 .trip-proposal-screen-line { margin: 0; color: #0b1f26; font-size: 15px; font-weight: 800; line-height: 1.45; }
 .trip-proposal-screen-line[data-trip-proposal-screen-line="check"] { color: #35545c; font-weight: 700; }
+/* The verdict is the last step of the run and reads like one. */
+.trip-proposal-step-row:last-child .trip-proposal-screen-line[data-trip-proposal-screen-line="verdict"] { font-size: 17px; font-weight: 900; letter-spacing: -.2px; }
 .trip-proposal-screen-line.is-typing::after { content: ''; display: inline-block; width: 2px; height: 1em; margin-inline-start: 3px; vertical-align: text-bottom; background: var(--lime-2); animation: tripProposalCaret 0.8s steps(2, start) infinite; }
 @keyframes tripProposalCaret { to { visibility: hidden; } }
 .trip-proposal[data-trip-proposal-state="checking"] .trip-proposal-body { pointer-events: none; }
@@ -4255,6 +4269,22 @@ label[data-party-hidden="true"] { display: none !important; }
 .trip-proposal[data-trip-proposal-state="checking"] .trip-proposal-body .is-live-armed { opacity: 1; }
 .trip-proposal .is-live-armed { animation: tripProposalArm 0.9s var(--ease-standard); border-radius: 13px; }
 @keyframes tripProposalArm { 0% { box-shadow: 0 0 0 0 rgba(191,233,52,.55); } 70% { box-shadow: 0 0 0 9px rgba(191,233,52,0); } 100% { box-shadow: 0 0 0 0 rgba(191,233,52,0); } }
+/* The landing (theme 1.42.0): when the run completes on its own the tier
+   cards land one by one, 120ms apart, then the rest of the finished panel
+   settles behind them. A skip, Escape or reduced motion lands instantly:
+   the instant landing carries no transition at all. */
+.trip-proposal[data-trip-proposal-state="checking"] .trip-proposal-tier-choice { opacity: 0; translate: 0 14px; }
+.trip-proposal[data-trip-proposal-landing="staged"] .trip-proposal-tier-choice { opacity: 1; translate: none; transition: opacity .38s var(--ease-confirm), translate .38s var(--ease-confirm); }
+.trip-proposal[data-trip-proposal-landing="staged"] .trip-proposal-tier-choice:nth-child(1) { transition-delay: 40ms; }
+.trip-proposal[data-trip-proposal-landing="staged"] .trip-proposal-tier-choice:nth-child(2) { transition-delay: 160ms; }
+.trip-proposal[data-trip-proposal-landing="staged"] .trip-proposal-tier-choice:nth-child(3) { transition-delay: 280ms; }
+.trip-proposal[data-trip-proposal-landing="staged"] .trip-proposal-body > * { transition: opacity .4s var(--ease-standard); }
+.trip-proposal[data-trip-proposal-landing="staged"] .trip-proposal-body > .trip-proposal-flight { transition-delay: 120ms; }
+.trip-proposal[data-trip-proposal-landing="staged"] .trip-proposal-body > .trip-proposal-addons { transition-delay: 220ms; }
+.trip-proposal[data-trip-proposal-landing="staged"] .trip-proposal-body > .trip-proposal-total { transition-delay: 300ms; }
+.trip-proposal[data-trip-proposal-landing="staged"] .trip-proposal-body > .trip-proposal-actions { transition-delay: 380ms; }
+.trip-proposal[data-trip-proposal-landing="instant"] .trip-proposal-body > *,
+.trip-proposal[data-trip-proposal-landing="instant"] .trip-proposal-tier-choice { transition: none; }
 /* The finished choices read as one-tap decision cards: the real tiers with
    their real fares, then the two big exits. */
 .trip-proposal[data-trip-proposal-check-prices-line] .trip-proposal-tier-choices { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 8px; }
@@ -4264,12 +4294,11 @@ label[data-party-hidden="true"] { display: none !important; }
 .trip-proposal[data-trip-proposal-check-prices-line] .trip-proposal-tier-choice.is-current { box-shadow: 0 0 0 2px var(--lime-2); }
 .trip-proposal[data-trip-proposal-check-prices-line] .trip-proposal-book { min-height: 56px; font-size: 16px; border-radius: 15px; }
 .trip-proposal[data-trip-proposal-check-prices-line] .trip-proposal-whatsapp { min-height: 52px; font-size: 14.5px; border-radius: 15px; }
-/* Inside a globe panel the same markup becomes the anchored overlay next to
-   the arrival card. The positioned ancestor clips and bounds it, so the
-   overlay can never spill over the page or force page scroll. */
+/* The docked panels stay invisible parts of the globe container until the
+   takeover lifts one out (theme 1.42.0). Nothing anchored to the sphere can
+   clip the open proposal anymore. */
 .pillar-globe-panel { position: relative; }
 .globe-panel .trip-proposal-dock,.pillar-globe-panel .trip-proposal-dock { display: contents; }
-.globe-panel .trip-proposal,.pillar-globe-panel .trip-proposal { position: absolute; z-index: 12; top: 12px; right: 12px; left: 12px; width: auto; max-width: none; margin: 0; max-height: calc(100% - 24px); box-shadow: 0 22px 54px rgba(0,0,0,.5); }
 .globe-arrival-card-proposal { min-height: 40px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 7px 10px; border: 1px solid var(--lime); border-radius: 10px; color: var(--ink); background: var(--lime); cursor: pointer; font: 800 12px 'Heebo',sans-serif; }
 .globe-arrival-card-proposal[hidden] { display: none !important; }
 .globe-arrival-card-proposal:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
@@ -4280,12 +4309,63 @@ label[data-party-hidden="true"] { display: none !important; }
   .trip-proposal-fill-line { font-size: 14.5px; }
   .trip-proposal-flight-total strong { font-size: 22px; }
   .trip-proposal-screen-line { font-size: 13.5px; }
-  .globe-panel .trip-proposal,.pillar-globe-panel .trip-proposal { top: 8px; right: 8px; left: 8px; max-height: calc(100% - 16px); }
 }
 @media (prefers-reduced-motion: reduce) {
   .trip-proposal-fill { display: none; }
   .trip-proposal-fill-line { transition: none; opacity: 1; transform: none; }
   .trip-proposal,.trip-proposal * { animation: none !important; transition: none !important; }
   .trip-proposal[data-trip-proposal-state="checking"] .trip-proposal-body > * { opacity: 1; }
+  .trip-proposal[data-trip-proposal-state="checking"] .trip-proposal-tier-choice { opacity: 1; translate: none; }
   .trip-proposal-screen-line.is-typing::after { display: none; }
+}
+
+/* The takeover stage (theme 1.42.0): one fixed layer over the whole page.
+   The planet dims behind a deep glass backdrop, the same server-rendered
+   panel node stands on a centered stage at full readable size, and page
+   scroll is locked with this one overflow class while it is open. No wheel
+   or touchmove listener exists anywhere in this system; the lock is pure
+   CSS and the panel keeps its own internal scroll. */
+html.is-trip-takeover-open { overflow: hidden; }
+.trip-takeover { position: fixed; inset: 0; z-index: 400; display: grid; place-items: center; padding: clamp(10px, 3.4vh, 40px) 14px; }
+.trip-takeover[hidden] { display: none !important; }
+.trip-takeover-backdrop { position: absolute; inset: 0; background: radial-gradient(130% 120% at 50% 24%, rgba(9,30,38,.78), rgba(3,10,14,.92) 70%); -webkit-backdrop-filter: blur(9px) saturate(.85); backdrop-filter: blur(9px) saturate(.85); }
+.trip-takeover-stage { position: relative; z-index: 1; width: min(640px, 100%); max-height: 100%; display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 10px; }
+.trip-takeover-chrome { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.trip-takeover-back { min-height: 44px; display: inline-flex; align-items: center; gap: 8px; padding: 9px 15px; border: 1px solid rgba(255,255,255,.26); border-radius: 99px; background: rgba(5,20,26,.55); color: #fff; cursor: pointer; font: 800 13.5px 'Heebo',sans-serif; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+.trip-takeover-back-arrow { width: 8px; height: 8px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(-45deg); }
+.trip-takeover-sound { position: relative; width: 44px; height: 44px; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.26); border-radius: 50%; background: rgba(5,20,26,.55); color: #fff; cursor: pointer; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+.trip-takeover-sound-icon { position: relative; width: 15px; height: 14px; background: currentColor; clip-path: polygon(0 32%, 38% 32%, 92% 0, 92% 100%, 38% 68%, 0 68%); }
+.trip-takeover-sound.is-muted { color: #93a6ac; }
+.trip-takeover-sound.is-muted::after { content: ''; position: absolute; width: 24px; height: 2px; border-radius: 2px; background: #fff; transform: rotate(-45deg); }
+.trip-takeover-back:focus-visible,.trip-takeover-sound:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
+.trip-takeover-stage .trip-proposal { width: 100%; max-width: none; margin: 0; max-height: min(80vh, 780px); padding: 18px 22px 20px; border: 0; border-radius: 24px; box-shadow: 0 44px 130px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.09); }
+.trip-takeover.is-open .trip-takeover-backdrop { animation: tripTakeoverFade .34s var(--ease-standard) both; }
+.trip-takeover.is-open .trip-takeover-stage { animation: tripTakeoverRise .46s var(--ease-confirm) both; }
+@keyframes tripTakeoverFade { from { opacity: 0; } }
+@keyframes tripTakeoverRise { from { opacity: 0; transform: translateY(20px) scale(.965); } }
+/* The pin acknowledgment: the tapped pin answers for ~300ms before the
+   takeover opens over it. */
+.globe-webgl .price-pin.is-proposal-pulse { z-index: 10; animation: tripPinAcknowledge .3s var(--ease-standard); }
+@keyframes tripPinAcknowledge { 0% { box-shadow: 0 0 0 0 rgba(217,255,89,.65); } 45% { scale: 1.16; } 100% { scale: 1; box-shadow: 0 0 0 14px rgba(217,255,89,0); } }
+/* Slimmed arrival card while a proposal panel exists for the selection: the
+   destination name, the found price, the start button and the map link stay,
+   everything the takeover now owns steps back. */
+.globe-arrival-card[data-trip-proposal-card-mode="takeover"] > small { display: none; }
+.globe-arrival-card[data-trip-proposal-card-mode="takeover"] .globe-arrival-card-book-scope,
+.globe-arrival-card[data-trip-proposal-card-mode="takeover"] .globe-arrival-card-book-cta { display: none; }
+.globe-arrival-card[data-trip-proposal-card-mode="takeover"] .globe-arrival-card-book { margin: 0; padding: 7px 10px; }
+.globe-arrival-card[data-trip-proposal-card-mode="takeover"] .globe-arrival-card-links a:not(:first-child) { display: none; }
+.globe-arrival-card[data-trip-proposal-card-mode="takeover"] .globe-arrival-card-proposal { min-height: 44px; font-size: 13.5px; }
+@media (max-width: 760px) {
+  /* Mobile: the stage is edge to edge, the chrome floats over the panel top,
+     and the panel owns the full height with its own internal scroll. */
+  .trip-takeover { padding: 0; place-items: stretch; }
+  .trip-takeover-stage { width: 100%; grid-template-rows: minmax(0, 1fr); gap: 0; }
+  .trip-takeover-chrome { position: absolute; z-index: 3; top: 8px; inset-inline: 10px; }
+  .trip-takeover-back { border-radius: 13px; }
+  .trip-takeover-stage .trip-proposal { max-height: none; height: 100%; border-radius: 0; padding: 64px 14px 18px; }
+  .trip-takeover-stage .trip-proposal .trip-proposal-close { top: 64px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .trip-takeover,.trip-takeover *,.globe-webgl .price-pin.is-proposal-pulse { animation: none !important; transition: none !important; }
 }

@@ -1,23 +1,36 @@
 /**
- * Trip proposal panel behaviour (theme 1.40.0, opening sequence 1.41.0).
+ * Trip proposal behaviour (theme 1.40.0, opening sequence 1.41.0, takeover
+ * stage 1.42.0).
  *
  * The panel a visitor opens was finished on the server. This file adds
- * behaviour on top of that finished markup, and nothing else: an opening
- * live-check sequence that types server-authored sentences letter by letter
- * and pulses the real fields as they come into view (any tap skips it,
- * reduced motion never sees it, and the 1.40.0 staging reveal remains the
- * fallback for a panel without the typed lines), a traveler stepper that
- * multiplies the fares the server printed, a switch between the real flight
- * records the server rendered, add-on toggles that never touch a price, and
- * a WhatsApp link refresh that only ever swaps whole message lines the
- * server itself authored into data attributes.
+ * behaviour on top of that finished markup, and nothing else. Since 1.42.0
+ * the open panel no longer sits inside the globe frame: on open the same
+ * server-rendered panel node is lifted into one full-screen takeover layer
+ * over a dimmed page, and on close it returns to the exact spot it came
+ * from. Nothing is duplicated, the panel is one node with one set of
+ * listeners wherever it stands.
+ *
+ * Inside the takeover the opening sequence stages the server-authored
+ * sentences as work steps: each line types letter by letter behind a small
+ * spinning ring that snaps to a check when the line lands, the real fields
+ * pulse awake as they are mentioned, the verdict closes the run, and then
+ * the real tier cards land one by one. Any tap skips to the finished state,
+ * reduced motion never sees a frame, and the 1.40.0 staging reveal remains
+ * the fallback for a panel without the typed lines. The traveler stepper
+ * multiplies the fares the server printed, the tier switch moves between
+ * the records the server rendered, add-on toggles never touch a price, and
+ * the WhatsApp link refresh only ever swaps whole message lines the server
+ * authored into data attributes.
  *
  * There is no request here, no navigation, no form, and no scroll, wheel or
- * touchmove listener. The only exits are the two plain anchors the server
- * rendered: the record's tracked supplier link and the owned WhatsApp
- * concierge. Nothing is ever submitted or charged from this file, and an
- * untouched open panel only ever earns a soft pulse on its primary action
- * through the shared next-action beacon.
+ * touchmove listener; the open takeover locks page scroll with one class on
+ * the document element and releases it on close. The only exits are the two
+ * plain anchors the server rendered: the record's tracked supplier link and
+ * the owned WhatsApp concierge. Nothing is ever submitted or charged from
+ * this file. The one sound this file can make is a short synthesized click,
+ * generated in code at the moment of a tap, never from a file and never on
+ * its own; reduced motion silences it and the one-tap toggle in the
+ * takeover remembers the choice on the device.
  */
 (function () {
   'use strict';
@@ -27,22 +40,35 @@
   var IDLE_BEACON_MS = 6000;
   var FALLBACK_MIN = 1;
   var FALLBACK_MAX = 6;
-  // Opening live-check tuning (theme 1.41.0). Letters land at the dictated
-  // ~30ms cadence; when the armed add-on verdicts make the script long, the
-  // cadence compresses so the whole sequence always ends inside the four
-  // second law, and one skip tap always ends it immediately.
+  // Opening live-check tuning (theme 1.41.0, staged rings 1.42.0). Letters
+  // land at the dictated ~30ms cadence and every completed step holds for a
+  // beat so its ring snap can be seen. When the armed add-on verdicts make
+  // the script long, first the cadence and then the step holds compress so
+  // the whole run always ends inside the budget, and one skip tap always
+  // ends it immediately.
   var CHECK_CHAR_MS = 30;
   var CHECK_MIN_CHAR_MS = 12;
   var CHECK_SNAP_MS = 260;
+  var CHECK_MIN_SNAP_MS = 110;
   var CHECK_FINALE_MS = 220;
   var CHECK_TOTAL_BUDGET_MS = 3600;
+  // The pin acknowledgment: a tapped pin pulses for this long before the
+  // takeover opens over the planet.
+  var PIN_PULSE_MS = 300;
+  // The synthesized tap click: total length ~32ms, gain never above 0.06.
+  var SOUND_STORAGE_KEY = 'traVelSoundMuted';
+  var SOUND_TOGGLE_LABEL = 'צלילי ממשק';
+  var TAKEOVER_BACK_LABEL = 'חזרה';
   // The device intent memory stores a party style, not a number. This is the
   // same mapping app.js already uses when it writes those styles from real
   // adult and child counts, read in the opposite direction.
   var INTENT_PARTY_TRAVELERS = { couple: 2, couple_2: 4, family: 5, friends: 3 };
 
   var open = { panel: null, trigger: null, idleTimer: 0 };
-  var liveCheck = { panel: null, timers: [] };
+  var liveCheck = { panel: null, timers: [], natural: false };
+  var takeover = { root: null, stage: null, dock: null, dockNext: null, open: false };
+  var pulse = { timer: 0, pin: null };
+  var sound = { context: null };
 
   function groupAmount(amount) {
     return String(amount).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
@@ -267,18 +293,236 @@
     return !checked;
   }
 
-  // --- Opening live-check sequence (theme 1.41.0) --------------------------
+  // --- Tap sound (theme 1.42.0) --------------------------------------------
+  // One short synthesized click, generated in code at the moment of a tap.
+  // No audio file exists, nothing plays on its own: the only call sites are
+  // the pin acknowledgment, the takeover opening, and the unmute toggle
+  // itself, all of which sit inside a user gesture. Reduced motion silences
+  // it entirely and the toggle's choice persists on the device.
+  function soundMuted() {
+    try {
+      return window.localStorage.getItem(SOUND_STORAGE_KEY) === 'true';
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function setSoundMuted(muted) {
+    try {
+      window.localStorage.setItem(SOUND_STORAGE_KEY, muted ? 'true' : 'false');
+    } catch (error) {
+      // Storage unavailable: the toggle still works for this page view.
+    }
+    syncSoundToggle();
+    return muted === true;
+  }
+
+  function tapSound(kind) {
+    if (prefersReducedMotion() || soundMuted()) return false;
+    var Context = window.AudioContext || window.webkitAudioContext;
+    if (!Context) return false;
+    try {
+      if (!sound.context) sound.context = new Context();
+      var context = sound.context;
+      if (context.state === 'suspended' && typeof context.resume === 'function') context.resume();
+      var now = context.currentTime;
+      var oscillator = context.createOscillator();
+      var gain = context.createGain();
+      oscillator.type = 'sine';
+      // Two-note signature: the pin answers bright and quick, the takeover
+      // opens a fifth lower and a touch rounder. Both stay near 30ms.
+      var frequency = kind === 'open' ? 830 : 1245;
+      oscillator.frequency.setValueAtTime(frequency, now);
+      oscillator.frequency.exponentialRampToValueAtTime(frequency * 0.6, now + 0.03);
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(0.055, now + 0.006);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.032);
+      oscillator.connect(gain);
+      gain.connect(context.destination);
+      oscillator.start(now);
+      oscillator.stop(now + 0.04);
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function syncSoundToggle() {
+    var toggle = takeover.root ? takeover.root.querySelector('[data-trip-takeover-sound]') : null;
+    if (!toggle) return;
+    var muted = soundMuted();
+    toggle.setAttribute('aria-pressed', muted ? 'false' : 'true');
+    toggle.classList.toggle('is-muted', muted);
+  }
+
+  // --- Takeover stage (theme 1.42.0) ---------------------------------------
+  // One fixed full-screen layer, built once and appended to the page body.
+  // Opening a proposal lifts the server-rendered panel node into this stage
+  // and closing puts the same node back where it stood, so every listener,
+  // every edit, and every law travels with it. Page scroll is locked with
+  // one overflow class on the document element, never with a wheel or
+  // touchmove listener, and focus cannot leave the stage while it is open.
+  function documentRootElement() {
+    return document.documentElement || null;
+  }
+
+  function lockPageScroll() {
+    var rootElement = documentRootElement();
+    if (rootElement && rootElement.classList) rootElement.classList.add('is-trip-takeover-open');
+  }
+
+  function unlockPageScroll() {
+    var rootElement = documentRootElement();
+    if (rootElement && rootElement.classList) rootElement.classList.remove('is-trip-takeover-open');
+  }
+
+  // Focusable collection that walks children directly, so keyboard trapping
+  // behaves identically in the browser and in the contract harness. A hidden
+  // subtree is skipped whole.
+  function collectFocusables(node, out) {
+    if (!node || node.hidden) return out || [];
+    var list = out || [];
+    var tag = String(node.tagName || '').toUpperCase();
+    if (tag === 'BUTTON' && node.disabled !== true) list.push(node);
+    else if (tag === 'A' && node.getAttribute && node.getAttribute('href')) list.push(node);
+    else if (node.getAttribute && node.getAttribute('tabindex') !== null && Number(node.getAttribute('tabindex')) >= 0) list.push(node);
+    var children = node.children || [];
+    for (var index = 0; index < children.length; index += 1) collectFocusables(children[index], list);
+    return list;
+  }
+
+  function handleTakeoverKeydown(event) {
+    if (event.key !== 'Tab' || !takeover.open || !takeover.root) return;
+    var focusables = collectFocusables(takeover.root, []);
+    if (!focusables.length) return;
+    var first = focusables[0];
+    var last = focusables[focusables.length - 1];
+    var active = document.activeElement;
+    if (event.shiftKey && (active === first || active === takeover.root || (open.panel && active === open.panel))) {
+      if (typeof event.preventDefault === 'function') event.preventDefault();
+      if (typeof last.focus === 'function') last.focus();
+    } else if (!event.shiftKey && active === last) {
+      if (typeof event.preventDefault === 'function') event.preventDefault();
+      if (typeof first.focus === 'function') first.focus();
+    }
+  }
+
+  function ensureTakeover() {
+    if (takeover.root) return takeover.root;
+    if (!document.body || typeof document.body.append !== 'function') return null;
+
+    var root = document.createElement('div');
+    root.className = 'trip-takeover';
+    root.setAttribute('data-trip-takeover', 'true');
+    root.setAttribute('role', 'dialog');
+    root.setAttribute('aria-modal', 'true');
+    root.hidden = true;
+
+    var backdrop = document.createElement('div');
+    backdrop.className = 'trip-takeover-backdrop';
+    backdrop.setAttribute('data-trip-takeover-backdrop', 'true');
+    backdrop.addEventListener('click', function () {
+      closePanel();
+    });
+
+    var stage = document.createElement('div');
+    stage.className = 'trip-takeover-stage';
+    stage.setAttribute('data-trip-takeover-stage', 'true');
+
+    var chrome = document.createElement('div');
+    chrome.className = 'trip-takeover-chrome';
+
+    var back = document.createElement('button');
+    back.type = 'button';
+    back.className = 'trip-takeover-back';
+    back.setAttribute('data-trip-takeover-back', 'true');
+    var backArrow = document.createElement('span');
+    backArrow.className = 'trip-takeover-back-arrow';
+    backArrow.setAttribute('aria-hidden', 'true');
+    var backText = document.createElement('span');
+    backText.textContent = TAKEOVER_BACK_LABEL;
+    back.append(backArrow, backText);
+    back.addEventListener('click', function () {
+      closePanel();
+    });
+
+    var mute = document.createElement('button');
+    mute.type = 'button';
+    mute.className = 'trip-takeover-sound';
+    mute.setAttribute('data-trip-takeover-sound', 'true');
+    mute.setAttribute('aria-label', SOUND_TOGGLE_LABEL);
+    var muteIcon = document.createElement('span');
+    muteIcon.className = 'trip-takeover-sound-icon';
+    muteIcon.setAttribute('aria-hidden', 'true');
+    mute.append(muteIcon);
+    mute.addEventListener('click', function () {
+      var next = !soundMuted();
+      setSoundMuted(next);
+      if (!next) tapSound('tap');
+    });
+
+    chrome.append(back, mute);
+    stage.append(chrome);
+    root.append(backdrop, stage);
+    root.addEventListener('keydown', handleTakeoverKeydown);
+    document.body.append(root);
+    takeover.root = root;
+    takeover.stage = stage;
+    syncSoundToggle();
+    return root;
+  }
+
+  function stageTakeover(panel) {
+    var root = ensureTakeover();
+    if (!root) return false;
+    takeover.dock = panel.parentNode || null;
+    takeover.dockNext = panel.nextSibling || null;
+    if (takeover.dock && typeof takeover.dock.removeChild === 'function') takeover.dock.removeChild(panel);
+    takeover.stage.append(panel);
+    var labelledBy = String(panel.getAttribute('aria-labelledby') || '');
+    if (labelledBy) root.setAttribute('aria-labelledby', labelledBy);
+    root.hidden = false;
+    root.classList.add('is-open');
+    takeover.open = true;
+    lockPageScroll();
+    syncSoundToggle();
+    return true;
+  }
+
+  function releaseTakeover(panel) {
+    if (!takeover.open) return false;
+    takeover.open = false;
+    unlockPageScroll();
+    if (takeover.root) {
+      takeover.root.classList.remove('is-open');
+      takeover.root.hidden = true;
+    }
+    if (panel && takeover.stage && typeof takeover.stage.removeChild === 'function' && panel.parentNode === takeover.stage) {
+      takeover.stage.removeChild(panel);
+    }
+    if (panel && takeover.dock && typeof takeover.dock.insertBefore === 'function') {
+      var anchor = takeover.dockNext && takeover.dockNext.parentNode === takeover.dock ? takeover.dockNext : null;
+      takeover.dock.insertBefore(panel, anchor);
+    }
+    takeover.dock = null;
+    takeover.dockNext = null;
+    return true;
+  }
+
+  // --- Opening live-check sequence (theme 1.41.0, staged rings 1.42.0) -----
   // The finished, server-rendered proposal is already underneath. On open the
-  // panel narrates its own assembly: server-authored sentences typed letter
-  // by letter, the real fields pulsing awake as each one is mentioned, the
-  // verdict lines, and then the finished choices. Every byte that can appear
-  // came out of inc/proposal.php data attributes; the only substitution is
-  // the traveler count into the verdict template, exactly the way the pinned
-  // total template already substitutes its amount. An add-on verdict types
-  // only when the row carries both the server-authored sentence and the real
-  // supplier link, so nothing is ever claimed that cannot be linked. Any tap
-  // or key press cuts straight to the finished panel, reduced motion never
-  // sees a single frame, and every timer dies with the sequence.
+  // panel narrates its own assembly as a run of work steps: server-authored
+  // sentences typed letter by letter, one spinning ring per step snapping to
+  // a check as its line lands, the real fields pulsing awake as each one is
+  // mentioned, the verdict, and then the finished tier cards landing one by
+  // one. Every byte that can appear came out of inc/proposal.php data
+  // attributes; the only substitution is the traveler count into the verdict
+  // template, exactly the way the pinned total template already substitutes
+  // its amount. An add-on step types only when the row carries both the
+  // server-authored sentence and the real supplier link, so nothing is ever
+  // claimed that cannot be linked. Any tap or key press cuts straight to the
+  // finished panel, reduced motion never sees a single frame, and every
+  // timer dies with the sequence.
   function liveCheckDelay(callback, milliseconds) {
     liveCheck.timers.push(window.setTimeout(callback, milliseconds));
   }
@@ -309,14 +553,76 @@
     var checkDates = String(panel.getAttribute('data-trip-proposal-check-dates-line') || '');
     var verdict = liveCheckVerdict(panel);
     if (!checkPrices || !checkDates || !verdict) return null;
-    return { checkPrices: checkPrices, checkDates: checkDates, verdict: verdict, addons: liveCheckAddonVerdicts(panel) };
+    return {
+      checkPrices: checkPrices,
+      checkDates: checkDates,
+      // The found-flight step (theme 1.42.0) is optional: a panel without
+      // the server sentence simply runs without that step.
+      flightFound: String(panel.getAttribute('data-trip-proposal-flight-found-line') || ''),
+      verdict: verdict,
+      addons: liveCheckAddonVerdicts(panel)
+    };
+  }
+
+  // The full ordered run: two checks, the found record, one achievement per
+  // armed add-on, and the verdict last. Both the animated run and the
+  // finished transcript come from this one list, so a skip can never land on
+  // different lines than the run itself would have written.
+  function liveCheckStepList(panel, script) {
+    var section = currentTierSection(panel);
+    var steps = [
+      {
+        text: script.checkPrices,
+        kind: 'check',
+        targets: [panel.querySelector('[data-trip-proposal-party-field]'), section]
+      },
+      {
+        text: script.checkDates,
+        kind: 'check',
+        targets: [section ? section.querySelector('[data-trip-proposal-tier-dates]') : null]
+      }
+    ];
+    if (script.flightFound) {
+      steps.push({
+        text: script.flightFound,
+        kind: 'check',
+        targets: [panel.querySelector('[data-trip-proposal-total]')]
+      });
+    }
+    for (var index = 0; index < script.addons.length; index += 1) {
+      steps.push({
+        text: script.addons[index].text,
+        kind: 'verdict',
+        targets: [panel.querySelector('[data-trip-proposal-addons-field]'), script.addons[index].row]
+      });
+    }
+    steps.push({ text: script.verdict, kind: 'verdict', targets: [] });
+    return steps;
+  }
+
+  // The run must always end inside the budget. The cadence compresses first,
+  // down to the readable floor, and only then the per-step holds shrink, so
+  // even the longest honest script lands in time with its rhythm intact.
+  function liveCheckPlan(script) {
+    var totalChars = script.checkPrices.length + script.checkDates.length + script.verdict.length + script.flightFound.length;
+    for (var index = 0; index < script.addons.length; index += 1) totalChars += script.addons[index].text.length;
+    totalChars = Math.max(1, totalChars);
+    var stepCount = 3 + (script.flightFound ? 1 : 0) + script.addons.length;
+    var snapCount = Math.max(1, stepCount - 1);
+    var charMs = CHECK_CHAR_MS;
+    var snapMs = CHECK_SNAP_MS;
+    if (totalChars * charMs + snapCount * snapMs + CHECK_FINALE_MS > CHECK_TOTAL_BUDGET_MS) {
+      var textBudget = CHECK_TOTAL_BUDGET_MS - snapCount * snapMs - CHECK_FINALE_MS;
+      charMs = Math.max(CHECK_MIN_CHAR_MS, Math.min(CHECK_CHAR_MS, Math.floor(textBudget / totalChars)));
+      if (totalChars * charMs + snapCount * snapMs + CHECK_FINALE_MS > CHECK_TOTAL_BUDGET_MS) {
+        snapMs = Math.max(CHECK_MIN_SNAP_MS, Math.floor((CHECK_TOTAL_BUDGET_MS - CHECK_FINALE_MS - totalChars * charMs) / snapCount));
+      }
+    }
+    return { charMs: charMs, snapMs: snapMs, steps: stepCount, totalChars: totalChars };
   }
 
   function liveCheckCharMs(script) {
-    var totalChars = script.checkPrices.length + script.checkDates.length + script.verdict.length;
-    for (var index = 0; index < script.addons.length; index += 1) totalChars += script.addons[index].text.length;
-    var textBudget = CHECK_TOTAL_BUDGET_MS - CHECK_SNAP_MS * 2 - CHECK_FINALE_MS;
-    return Math.max(CHECK_MIN_CHAR_MS, Math.min(CHECK_CHAR_MS, Math.floor(textBudget / Math.max(1, totalChars))));
+    return liveCheckPlan(script).charMs;
   }
 
   function ensureLiveCheckScreen(panel) {
@@ -335,30 +641,44 @@
     return screen;
   }
 
-  function appendLiveCheckLine(screen, text, kind) {
+  // One work step on the screen: the spinning ring and the line it narrates.
+  // The ring is a sibling of the text so the typewriter can keep writing
+  // plain textContent without ever touching it.
+  function appendLiveCheckStep(screen, kind) {
+    var row = document.createElement('div');
+    row.className = 'trip-proposal-step-row';
+    row.setAttribute('data-trip-proposal-step-row', kind);
+    var ring = document.createElement('span');
+    ring.className = 'trip-proposal-step-ring';
+    ring.setAttribute('data-trip-proposal-step-ring', 'true');
+    ring.setAttribute('aria-hidden', 'true');
     var line = document.createElement('p');
     line.className = 'trip-proposal-screen-line';
     line.setAttribute('data-trip-proposal-screen-line', kind);
-    line.textContent = text;
-    screen.append(line);
-    return line;
+    line.textContent = '';
+    row.append(ring, line);
+    screen.append(row);
+    return { row: row, line: line };
   }
 
-  function typeLiveCheckLine(screen, text, kind, charMs, done) {
-    var line = appendLiveCheckLine(screen, '', kind);
-    line.classList.add('is-typing');
+  function typeLiveCheckStep(screen, text, kind, charMs, done) {
+    var step = appendLiveCheckStep(screen, kind);
+    step.row.classList.add('is-spinning');
+    step.line.classList.add('is-typing');
     var shown = 0;
-    var step = function () {
+    var advance = function () {
       shown += 1;
-      line.textContent = text.slice(0, shown);
+      step.line.textContent = text.slice(0, shown);
       if (shown >= text.length) {
-        line.classList.remove('is-typing');
+        step.line.classList.remove('is-typing');
+        step.row.classList.remove('is-spinning');
+        step.row.classList.add('is-done');
         done();
         return;
       }
-      liveCheckDelay(step, charMs);
+      liveCheckDelay(advance, charMs);
     };
-    step();
+    advance();
   }
 
   function armLiveCheckTarget(target) {
@@ -370,22 +690,29 @@
     for (var index = 0; index < armed.length; index += 1) armed[index].classList.remove('is-live-armed');
   }
 
-  // Cut to the finished state: the verdict transcript fully written, the
-  // panel ready. This is the one landing zone shared by natural completion,
-  // the skip tap, Escape, and closing the panel mid-sequence.
+  // Cut to the finished state: the whole step transcript written with every
+  // ring already snapped, the panel ready. This is the one landing zone
+  // shared by natural completion, the skip tap, Escape, and closing the
+  // panel mid-sequence. Natural completion earns the staged tier-card
+  // landing; every other road in lands instantly.
   function finishLiveCheck() {
     var panel = liveCheck.panel;
     if (!panel) return false;
+    var natural = liveCheck.natural === true;
     stopLiveCheckTimers();
     liveCheck.panel = null;
+    liveCheck.natural = false;
     var script = liveCheckScript(panel);
     if (script) {
       var screen = ensureLiveCheckScreen(panel);
-      appendLiveCheckLine(screen, script.verdict, 'verdict');
-      for (var index = 0; index < script.addons.length; index += 1) {
-        appendLiveCheckLine(screen, script.addons[index].text, 'verdict');
+      var steps = liveCheckStepList(panel, script);
+      for (var index = 0; index < steps.length; index += 1) {
+        var built = appendLiveCheckStep(screen, steps[index].kind);
+        built.line.textContent = steps[index].text;
+        built.row.classList.add('is-done');
       }
     }
+    panel.setAttribute('data-trip-proposal-landing', natural && !prefersReducedMotion() ? 'staged' : 'instant');
     panel.setAttribute('data-trip-proposal-state', 'ready');
     return true;
   }
@@ -398,53 +725,41 @@
     if (fill) fill.hidden = true;
     if (prefersReducedMotion()) {
       liveCheck.panel = panel;
+      liveCheck.natural = false;
       finishLiveCheck();
       return 0;
     }
 
     finishLiveCheck();
     clearLiveCheckArms(panel);
+    panel.removeAttribute('data-trip-proposal-landing');
     liveCheck.panel = panel;
+    liveCheck.natural = false;
     panel.setAttribute('data-trip-proposal-state', 'checking');
     var screen = ensureLiveCheckScreen(panel);
-    var charMs = liveCheckCharMs(script);
-    var section = currentTierSection(panel);
+    var steps = liveCheckStepList(panel, script);
+    var plan = liveCheckPlan(script);
+    var position = 0;
 
     var finale = function () {
+      armLiveCheckTarget(panel.querySelector('[data-trip-proposal-tier-picker]'));
       armLiveCheckTarget(panel.querySelector('[data-trip-proposal-total]'));
       armLiveCheckTarget(panel.querySelector('[data-trip-proposal-exits]'));
+      liveCheck.natural = true;
       liveCheckDelay(finishLiveCheck, CHECK_FINALE_MS);
     };
 
-    var typeAddonVerdicts = function (position) {
-      if (position >= script.addons.length) {
-        finale();
-        return;
-      }
-      typeLiveCheckLine(screen, script.addons[position].text, 'verdict', charMs, function () {
-        armLiveCheckTarget(panel.querySelector('[data-trip-proposal-addons-field]'));
-        armLiveCheckTarget(script.addons[position].row);
-        typeAddonVerdicts(position + 1);
+    var runStep = function () {
+      var step = steps[position];
+      position += 1;
+      typeLiveCheckStep(screen, step.text, step.kind, plan.charMs, function () {
+        for (var index = 0; index < step.targets.length; index += 1) armLiveCheckTarget(step.targets[index]);
+        if (position >= steps.length) finale();
+        else liveCheckDelay(runStep, plan.snapMs);
       });
     };
 
-    typeLiveCheckLine(screen, script.checkPrices, 'check', charMs, function () {
-      // The found price snaps in: the real record and the party field wake.
-      armLiveCheckTarget(panel.querySelector('[data-trip-proposal-party-field]'));
-      armLiveCheckTarget(section);
-      liveCheckDelay(function () {
-        typeLiveCheckLine(screen, script.checkDates, 'check', charMs, function () {
-          // The real dates snap in, and the tier picker wakes.
-          armLiveCheckTarget(section ? section.querySelector('[data-trip-proposal-tier-dates]') : null);
-          armLiveCheckTarget(panel.querySelector('[data-trip-proposal-tier-picker]'));
-          liveCheckDelay(function () {
-            typeLiveCheckLine(screen, script.verdict, 'verdict', charMs, function () {
-              typeAddonVerdicts(0);
-            });
-          }, CHECK_SNAP_MS);
-        });
-      }, CHECK_SNAP_MS);
-    });
+    runStep();
     return CHECK_TOTAL_BUDGET_MS;
   }
 
@@ -512,12 +827,19 @@
   function openPanel(panel, trigger) {
     if (!panel || !panel.hidden) return false;
     if (open.panel && open.panel !== panel) closePanel({ restoreFocus: false });
+    cancelPinPulse();
 
     open.panel = panel;
     open.trigger = trigger || null;
     if (!panel.getAttribute('data-trip-proposal-server-travelers')) {
       panel.setAttribute('data-trip-proposal-server-travelers', panel.getAttribute('data-trip-proposal-travelers') || '');
     }
+    // The takeover: the same panel node is lifted out of its dock into the
+    // full-screen stage. When the page body is not available (a stripped
+    // environment) the panel simply opens where it stands, exactly as it did
+    // before the stage existed.
+    tapSound('open');
+    stageTakeover(panel);
     panel.hidden = false;
     if (trigger && typeof trigger.setAttribute === 'function') trigger.setAttribute('aria-expanded', 'true');
 
@@ -545,10 +867,40 @@
     if (liveCheck.panel === panel) finishLiveCheck();
     document.removeEventListener('keydown', handleDocumentKeydown, true);
     panel.hidden = true;
+    releaseTakeover(panel);
     open.panel = null;
     open.trigger = null;
     if (trigger && typeof trigger.setAttribute === 'function') trigger.setAttribute('aria-expanded', 'false');
     if (restoreFocus && trigger && !trigger.hidden && typeof trigger.focus === 'function') trigger.focus();
+    return true;
+  }
+
+  // The pin acknowledgment (theme 1.42.0): a tapped pin pulses for ~300ms,
+  // then the takeover opens with the pin itself as the return-focus trigger,
+  // so Escape lands the keyboard exactly where the journey began. Reduced
+  // motion opens instantly with no pulse and no sound.
+  function cancelPinPulse() {
+    if (pulse.timer) {
+      window.clearTimeout(pulse.timer);
+      pulse.timer = 0;
+    }
+    if (pulse.pin && pulse.pin.classList) pulse.pin.classList.remove('is-proposal-pulse');
+    pulse.pin = null;
+  }
+
+  function openPanelFromPin(panel, pin) {
+    if (!panel || (open.panel === panel && !panel.hidden)) return false;
+    cancelPinPulse();
+    tapSound('tap');
+    if (prefersReducedMotion() || !pin || !pin.classList) return openPanel(panel, pin || null);
+    pulse.pin = pin;
+    pin.classList.add('is-proposal-pulse');
+    pulse.timer = window.setTimeout(function () {
+      pulse.timer = 0;
+      if (pulse.pin && pulse.pin.classList) pulse.pin.classList.remove('is-proposal-pulse');
+      pulse.pin = null;
+      openPanel(panel, pin);
+    }, PIN_PULSE_MS);
     return true;
   }
 
@@ -623,8 +975,10 @@
   // The globe arrival card is built by globe-3d.js before this bubbling
   // listener runs (the same ordering contract next-action.js already relies
   // on). When the selected destination has a server-rendered proposal panel
-  // on this page, the card gains the proposal trigger next to its existing
-  // compact booking step; when it does not, the card is left untouched.
+  // on this page, the card slims to its essentials, destination, price, the
+  // start button and the map link, and a direct pin activation opens the
+  // takeover itself after the acknowledgment pulse. When no panel exists the
+  // card is left exactly as it was.
   function ensureArrivalCardTrigger(card, panel) {
     var existing = card.querySelector('[data-trip-proposal-card-trigger]');
     if (existing) {
@@ -642,13 +996,22 @@
     return button;
   }
 
+  function panelStartLabel(panel) {
+    return String(panel.getAttribute('data-trip-proposal-start-label') || panel.getAttribute('data-trip-proposal-trigger-label') || '');
+  }
+
+  function findDestinationPin(globe, destination) {
+    var id = String(destination || '');
+    if (!/^[a-z0-9_-]+$/i.test(id) || typeof globe.querySelector !== 'function') return null;
+    return globe.querySelector('.price-pin[data-destination="' + id + '"]') || globe.querySelector('[data-destination="' + id + '"]');
+  }
+
   function handleGlobeSelection(event) {
     var globe = event.target;
     var detail = event.detail || {};
     if (!globe || typeof globe.querySelector !== 'function') return;
     if (detail.selectionKind !== 'destination' || !detail.nearestDestination) return;
     var card = globe.querySelector('[data-globe-arrival-card]');
-    if (!card || card.hidden) return;
 
     var panel = null;
     var panels = document.querySelectorAll('[data-trip-proposal]');
@@ -656,18 +1019,32 @@
       if (panels[index].getAttribute('data-trip-proposal') === String(detail.nearestDestination)) panel = panels[index];
     }
     if (!panel) {
-      var stale = card.querySelector('[data-trip-proposal-card-trigger]');
-      if (stale) stale.hidden = true;
+      if (card) {
+        card.removeAttribute('data-trip-proposal-card-mode');
+        var stale = card.querySelector('[data-trip-proposal-card-trigger]');
+        if (stale) stale.hidden = true;
+      }
       return;
     }
 
-    var trigger = ensureArrivalCardTrigger(card, panel);
-    trigger.textContent = String(panel.getAttribute('data-trip-proposal-trigger-label') || '');
-    trigger.setAttribute('aria-controls', panel.id || '');
-    trigger.onclick = function () {
-      if (panel.hidden) openPanel(panel, trigger);
-      else closePanel();
-    };
+    if (card && !card.hidden) {
+      card.setAttribute('data-trip-proposal-card-mode', 'takeover');
+      var trigger = ensureArrivalCardTrigger(card, panel);
+      trigger.textContent = panelStartLabel(panel);
+      trigger.setAttribute('aria-controls', panel.id || '');
+      trigger.onclick = function () {
+        if (panel.hidden) openPanel(panel, trigger);
+        else closePanel();
+      };
+    }
+
+    // The direct pin activation is the moment the owner of the tap expects
+    // the answer, so the takeover opens from it: acknowledgment pulse on the
+    // pin, then the full-screen stage, with the pin as the focus home.
+    if (detail.pinActivated === true) {
+      var pin = findDestinationPin(globe, detail.nearestDestination);
+      openPanelFromPin(panel, pin);
+    }
   }
 
   function init() {
@@ -690,6 +1067,7 @@
     toggleAddon: toggleAddon,
     whatsappHref: whatsappHref,
     openPanel: openPanel,
+    openPanelFromPin: openPanelFromPin,
     closePanel: closePanel,
     initPanel: initPanel,
     init: init,
@@ -699,12 +1077,23 @@
     liveCheckScript: liveCheckScript,
     liveCheckVerdict: liveCheckVerdict,
     liveCheckAddonVerdicts: liveCheckAddonVerdicts,
+    liveCheckStepList: liveCheckStepList,
+    liveCheckPlan: liveCheckPlan,
     liveCheckCharMs: liveCheckCharMs,
     runLiveCheck: runLiveCheck,
     finishLiveCheck: finishLiveCheck,
     checking: function () {
       return liveCheck.panel;
     },
+    takeoverRoot: function () {
+      return takeover.root;
+    },
+    takeoverOpen: function () {
+      return takeover.open;
+    },
+    tapSound: tapSound,
+    soundMuted: soundMuted,
+    setSoundMuted: setSoundMuted,
     timings: {
       step: FILL_STEP_MS,
       hold: FILL_HOLD_MS,
@@ -712,8 +1101,10 @@
       charMs: CHECK_CHAR_MS,
       minCharMs: CHECK_MIN_CHAR_MS,
       snap: CHECK_SNAP_MS,
+      minSnap: CHECK_MIN_SNAP_MS,
       finale: CHECK_FINALE_MS,
-      budget: CHECK_TOTAL_BUDGET_MS
+      budget: CHECK_TOTAL_BUDGET_MS,
+      pinPulse: PIN_PULSE_MS
     }
   };
 })();
