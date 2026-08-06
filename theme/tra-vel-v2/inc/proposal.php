@@ -208,6 +208,13 @@ function tra_vel_v2_proposal_view( $map_state ) {
 		/* translators: %s: destination city, spelled for the ל prefix. */
 		'check_prices_line'  => sprintf( __( 'בודקים לך את המחירים הטובים ביותר ל%s...', 'tra-vel-v2' ), $prefixed_city ),
 		'check_dates_line'   => __( 'בודקים מתי הכי שווה לטוס...', 'tra-vel-v2' ),
+		// Theme 1.42.0 found-flight step: the sentence quotes the cheapest
+		// real record on this very panel, the one the tiers open on, so the
+		// claim is the fare printed right below it. No record, no sentence:
+		// this whole view already returned null without one.
+		/* translators: %s: formatted per traveler fare of the cheapest real record. */
+		'flight_found_line'  => sprintf( __( 'נמצאה טיסה: מ-%s לנוסע, הלוך ושוב.', 'tra-vel-v2' ), $tiers[0]['unit_label'] ),
+		'start_label'        => __( 'התחילו', 'tra-vel-v2' ),
 		/* translators: %s: destination city, spelled for the ל prefix. */
 		'verdict_one'        => sprintf( __( 'אתם טסים. נוסע אחד ל%s.', 'tra-vel-v2' ), $prefixed_city ),
 		/* translators: 1: traveler count placeholder, 2: destination city, spelled for the ל prefix. */
