@@ -192,7 +192,7 @@
       "cluster": "budapest",
       "parentPath": "/flights/",
       "mapState": "budapest",
-      "status": "backlog",
+      "status": "content-ready",
       "conversionAction": "בדקו את המחיר שנמצא ועברו לספק ההזמנה",
       "monetization": ["flights", "packages"]
     },
@@ -252,7 +252,7 @@
       "cluster": "prague",
       "parentPath": "/flights/",
       "mapState": "prague",
-      "status": "backlog",
+      "status": "content-ready",
       "conversionAction": "בדקו את המחיר שנמצא ועברו לספק ההזמנה",
       "monetization": ["flights", "packages"]
     },
@@ -312,7 +312,7 @@
       "cluster": "athens",
       "parentPath": "/flights/",
       "mapState": "athens",
-      "status": "backlog",
+      "status": "content-ready",
       "conversionAction": "בדקו את המחיר שנמצא ועברו לספק ההזמנה",
       "monetization": ["flights", "packages"]
     },
@@ -360,7 +360,7 @@
       "cluster": "vienna",
       "parentPath": "/flights/",
       "mapState": "vienna",
-      "status": "backlog",
+      "status": "content-ready",
       "conversionAction": "בדקו את המחיר שנמצא ועברו לספק ההזמנה",
       "monetization": ["flights", "packages"]
     },
@@ -468,7 +468,7 @@
       "cluster": "dubai",
       "parentPath": "/flights/",
       "mapState": "dubai",
-      "status": "backlog",
+      "status": "content-ready",
       "conversionAction": "בדקו את המחיר שנמצא ועברו לספק ההזמנה",
       "monetization": ["flights", "packages"]
     },
@@ -588,7 +588,7 @@
       "cluster": "tokyo",
       "parentPath": "/flights/",
       "mapState": "tokyo",
-      "status": "backlog",
+      "status": "content-ready",
       "conversionAction": "בדקו את המחיר שנמצא ועברו לספק ההזמנה",
       "monetization": ["flights", "packages"]
     },
@@ -732,7 +732,7 @@
       "cluster": "lisbon",
       "parentPath": "/flights/",
       "mapState": "lisbon",
-      "status": "backlog",
+      "status": "content-ready",
       "conversionAction": "בדקו את המחיר שנמצא ועברו לספק ההזמנה",
       "monetization": ["flights", "packages"]
     },
@@ -924,7 +924,7 @@
       "cluster": "larnaca",
       "parentPath": "/flights/",
       "mapState": "larnaca",
-      "status": "backlog",
+      "status": "content-ready",
       "conversionAction": "בדקו את המחיר שנמצא ועברו לספק ההזמנה",
       "monetization": ["flights", "packages"]
     },
@@ -948,7 +948,7 @@
       "cluster": "crete",
       "parentPath": "/flights/",
       "mapState": "crete",
-      "status": "backlog",
+      "status": "content-ready",
       "conversionAction": "בדקו את המחיר שנמצא ועברו לספק ההזמנה",
       "monetization": ["flights", "packages"]
     },
@@ -972,7 +972,7 @@
       "cluster": "warsaw",
       "parentPath": "/flights/",
       "mapState": "warsaw",
-      "status": "backlog",
+      "status": "content-ready",
       "conversionAction": "בדקו את המחיר שנמצא ועברו לספק ההזמנה",
       "monetization": ["flights", "packages"]
     },
@@ -1008,7 +1008,7 @@
       "cluster": "thailand",
       "parentPath": "/flights/",
       "mapState": "bangkok",
-      "status": "backlog",
+      "status": "content-ready",
       "conversionAction": "בדקו את המחיר שנמצא ועברו לספק ההזמנה",
       "monetization": ["flights", "packages"]
     },
