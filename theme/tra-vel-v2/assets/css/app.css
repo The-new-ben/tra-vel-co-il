@@ -4380,8 +4380,11 @@ html.is-trip-takeover-open { overflow: hidden; }
    the legacy sphere. The stage carries no z-index on purpose: it paints above
    the legacy canvas by DOM order and stays below every pin, hub, route curve
    and card, all of which own positive z-indexes. */
-.globe-premium-upgrade { position: absolute; inset-inline-start: 12px; bottom: 14px; z-index: 9; display: inline-flex; align-items: center; gap: 8px; min-width: 44px; min-height: 44px; padding: 0 16px; color: #fff; font-family: inherit; font-size: 13.5px; font-weight: 700; border: 1px solid rgba(255,255,255,.24); border-radius: 999px; background: linear-gradient(135deg, rgba(3,17,22,.86), rgba(10,46,60,.86)); box-shadow: 0 10px 26px rgba(0,0,0,.35); cursor: pointer; backdrop-filter: blur(6px); transition: border-color .2s, transform .2s; }
-.globe-premium-upgrade:hover, .globe-premium-upgrade:focus-visible { border-color: rgba(106,225,255,.75); transform: translateY(-1px); }
+.globe-premium-upgrade { position: absolute; bottom: 14px; left: 50%; transform: translate(-50%, 0); z-index: 9; display: inline-flex; align-items: center; gap: 8px; min-width: 44px; min-height: 44px; padding: 0 16px; color: #fff; font-family: inherit; font-size: 13.5px; font-weight: 700; border: 1px solid rgba(255,255,255,.24); border-radius: 999px; background: linear-gradient(135deg, rgba(3,17,22,.86), rgba(10,46,60,.86)); box-shadow: 0 10px 26px rgba(0,0,0,.35); cursor: pointer; backdrop-filter: blur(6px); transition: border-color .2s, transform .2s; }
+.globe-premium-upgrade:hover, .globe-premium-upgrade:focus-visible { border-color: rgba(106,225,255,.75); transform: translate(-50%, -1px); }
+/* The authored display would otherwise defeat the hidden attribute the
+   server ships and the guards toggle. */
+.globe-premium-upgrade[hidden] { display: none; }
 .globe-premium-upgrade i { width: 17px; height: 17px; color: var(--aqua); }
 .globe-premium-stage { position: absolute; inset: 0; opacity: 0; outline: none; }
 .is-premium-planet-streaming .globe-premium-stage { opacity: 0; }
@@ -4395,12 +4398,16 @@ html.is-trip-takeover-open { overflow: hidden; }
 @keyframes planetChipPulse { 0%, 100% { opacity: .35; scale: .8; } 50% { opacity: 1; scale: 1.15; } }
 /* Attribution is a legal surface: the Google data credits render small at the
    panel's bottom edge and are never hidden. */
-.globe-premium-credits { position: absolute; bottom: 3px; inset-inline-end: 8px; z-index: 4; max-width: 82%; direction: ltr; text-align: left; font-size: 10px; line-height: 1.3; color: rgba(255,255,255,.85); text-shadow: 0 1px 3px rgba(0,0,0,.65); pointer-events: auto; }
+.globe-premium-credits { position: absolute; bottom: 5px; left: 50%; transform: translateX(-50%); z-index: 4; width: 72%; direction: ltr; text-align: center; font-size: 10px; line-height: 1.3; color: rgba(255,255,255,.85); text-shadow: 0 1px 3px rgba(0,0,0,.65); pointer-events: auto; }
+.globe-premium-credits .cesium-widget-credits { display: block; width: 100%; }
 .globe-premium-credits .cesium-credit-logoContainer img, .globe-premium-credits img { height: 14px; vertical-align: middle; }
 .globe-premium-credits a { color: rgba(255,255,255,.85); }
 .globe-premium-credits .cesium-credit-expand-link { color: rgba(255,255,255,.85); font-size: 10px; }
 @media (max-width: 760px) {
-  .globe-premium-upgrade { bottom: 10px; inset-inline-start: 10px; font-size: 12.5px; padding: 0 13px; }
+  /* The mobile hero overlaps the circle's bottom edge, so the control moves
+     to the clear top chord of the planet. */
+  .globe-premium-upgrade { top: 12px; bottom: auto; font-size: 12.5px; padding: 0 13px; }
+  .globe-premium-chip { top: 12px; bottom: auto; }
 }
 @media (prefers-reduced-motion: reduce) {
   .globe-premium-upgrade, .globe-premium-stage, .is-premium-planet-active canvas[data-globe-canvas] { transition: none !important; }
