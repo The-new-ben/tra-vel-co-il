@@ -215,7 +215,16 @@ function transactionalEvidenceBindingErrors(entry, packet) {
   if (entry.pageType !== 'transactional-cluster') return errors;
   if (publicRegistryStatuses.has(entry.status)) {
     if (!packet) {
-      errors.push(`transactional owner with status ${entry.status} requires an exact publish-ready opportunity packet.`);
+      // The transactional dual contract separates availability from
+      // indexability: a content-ready owner resolves its route and renders
+      // real engine output while the theme's publication contract holds the
+      // page noindex until its owner-authored article lands (800 visible
+      // words, 70% Hebrew, four H2 sections, explicit readiness meta). The
+      // repo evidence packet therefore becomes mandatory only at 'live',
+      // the index-eligible release state.
+      if (entry.status === 'live') {
+        errors.push('transactional owner with status live requires an exact publish-ready opportunity packet.');
+      }
     } else {
       if (packet.ownerId !== entry.id) errors.push('opportunity packet ownerId does not match its registry owner.');
       if (packet.mapState !== entry.mapState) errors.push('registry owner and opportunity packet mapState differ.');
@@ -374,8 +383,11 @@ const transactionalReleasePacketFixture = { ownerId: 'budapest-packages', canoni
 if (transactionalEvidenceBindingErrors(transactionalReleaseOwnerFixture, transactionalReleasePacketFixture).length) {
   fail('Transactional evidence validator rejects a valid exact owner and publish-ready packet.');
 }
-if (!transactionalEvidenceBindingErrors(transactionalReleaseOwnerFixture, null).length) {
-  fail('Transactional evidence validator accepts a public owner without a repo evidence packet.');
+if (transactionalEvidenceBindingErrors(transactionalReleaseOwnerFixture, null).length) {
+  fail('Transactional evidence validator must let a content-ready owner stage its noindex route without a repo evidence packet.');
+}
+if (!transactionalEvidenceBindingErrors({ ...transactionalReleaseOwnerFixture, status: 'live' }, null).length) {
+  fail('Transactional evidence validator accepts a live owner without a repo evidence packet.');
 }
 if (!transactionalEvidenceBindingErrors({ ...transactionalReleaseOwnerFixture, status: 'backlog' }, transactionalReleasePacketFixture).length) {
   fail('Transactional evidence validator accepts a publish-ready packet for a backlog owner.');

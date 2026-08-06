@@ -52,6 +52,12 @@ if (!opportunities.length) fail('SEO registry has no decision or transactional o
 // Child opportunities go public one explicit release at a time. Every exposed
 // owner must be named here with its full repo evidence file; anything else in
 // live/content-ready status still fails the build.
+const availabilityStageFlightCost = (slug, mapState) => [`${slug}-flight-cost`, {
+  pageType: 'transactional-cluster',
+  canonicalPath: `/flights/${slug}-cost/`,
+  mapState,
+  stage: 'availability',
+}];
 const approvedExposedOwners = new Map([
   ['budapest-packages', {
     pageType: 'transactional-cluster',
@@ -59,6 +65,24 @@ const approvedExposedOwners = new Map([
     mapState: 'budapest',
     evidencePath: join(repoRoot, 'content', 'seo', 'opportunities', 'budapest-packages-2026.meta.json'),
   }],
+  // Availability-stage releases (the cost-page dual contract): each route
+  // resolves and renders its real engine output (live fare, comparison, FAQ)
+  // while the theme publication contract holds the page noindex until an
+  // owner-authored article lands. They are still named here one by one so a
+  // registry status flip alone can never expose a route without a reviewed
+  // release entry; graduating any of them to index-eligible requires its
+  // evidence packet and the 'live' registry status.
+  availabilityStageFlightCost('budapest', 'budapest'),
+  availabilityStageFlightCost('prague', 'prague'),
+  availabilityStageFlightCost('vienna', 'vienna'),
+  availabilityStageFlightCost('athens', 'athens'),
+  availabilityStageFlightCost('dubai', 'dubai'),
+  availabilityStageFlightCost('bangkok', 'bangkok'),
+  availabilityStageFlightCost('tokyo', 'tokyo'),
+  availabilityStageFlightCost('lisbon', 'lisbon'),
+  availabilityStageFlightCost('larnaca', 'larnaca'),
+  availabilityStageFlightCost('crete', 'crete'),
+  availabilityStageFlightCost('warsaw', 'warsaw'),
 ]);
 const exposedRealEntries = opportunities.filter(entry => ['live', 'content-ready'].includes(entry.status));
 const unapprovedExposed = exposedRealEntries.filter(entry => !approvedExposedOwners.has(entry.id));
@@ -72,7 +96,11 @@ for (const [ownerId, release] of approvedExposedOwners) {
   if (entry.pageType !== release.pageType || entry.canonicalPath !== release.canonicalPath || entry.mapState !== release.mapState) {
     fail(`Approved release owner ${ownerId} drifted from its released identity.`);
   }
-  if (!existsSync(release.evidencePath)) {
+  if (release.stage === 'availability') {
+    if (entry.status !== 'content-ready') {
+      fail(`Availability-stage release owner ${ownerId} must stay content-ready until its evidence packet earns it 'live'.`);
+    }
+  } else if (!existsSync(release.evidencePath)) {
     fail(`Approved release owner ${ownerId} is missing its repo evidence packet.`);
   }
 }

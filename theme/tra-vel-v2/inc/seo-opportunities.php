@@ -30,7 +30,7 @@ function tra_vel_v2_seo_opportunity_destinations() {
 		'athens'   => array( 'name' => 'אתונה', 'airport' => 'ATH', 'latitude' => '37.9838', 'longitude' => '23.7275' ),
 		'dubai'    => array( 'name' => 'דובאי', 'airport' => 'DXB', 'latitude' => '25.2048', 'longitude' => '55.2708' ),
 		'bangkok'  => array( 'name' => 'בנגקוק', 'airport' => 'BKK', 'latitude' => '13.7563', 'longitude' => '100.5018' ),
-		'tokyo'    => array( 'name' => 'טוקיו', 'airport' => '', 'latitude' => '35.6762', 'longitude' => '139.6503' ),
+		'tokyo'    => array( 'name' => 'טוקיו', 'airport' => 'TYO', 'latitude' => '35.6762', 'longitude' => '139.6503' ),
 		'lisbon'   => array( 'name' => 'ליסבון', 'airport' => 'LIS', 'latitude' => '38.7223', 'longitude' => '-9.1393' ),
 		'larnaca'  => array( 'name' => 'לרנקה', 'airport' => 'LCA', 'latitude' => '34.9003', 'longitude' => '33.6232' ),
 		'crete'    => array( 'name' => 'כרתים', 'airport' => 'HER', 'latitude' => '35.3387', 'longitude' => '25.1442' ),

@@ -264,18 +264,18 @@ assert_true( tra_vel_v2_get_seo_opportunity_publication_contract( 102, $transact
 $transaction_nodes = tra_vel_v2_seo_opportunity_schema_nodes( 102, $transaction );
 $transaction_types = array_column( $transaction_nodes, '@type' );
 assert_true( in_array( 'WebPage', $transaction_types, true ) && in_array( 'BreadcrumbList', $transaction_types, true ) && ! in_array( 'Article', $transaction_types, true ), 'transaction schema type is wrong' );
-assert_true( '' === tra_vel_v2_seo_opportunity_airport_code( 'tokyo' ), 'Tokyo retained a single-airport HND bias' );
+assert_true( 'TYO' === tra_vel_v2_seo_opportunity_airport_code( 'tokyo' ), 'Tokyo must resolve to the city-wide TYO code, never a single-airport HND bias' );
 $tokyo_flight_action = tra_vel_v2_seo_opportunity_action_url( $transaction );
 $tokyo_flight_query = array();
 parse_str( (string) wp_parse_url( $tokyo_flight_action, PHP_URL_QUERY ), $tokyo_flight_query );
-assert_true( false !== strpos( $tokyo_flight_action, '/ai-planner/' ) && 'tokyo' === ( $tokyo_flight_query['destination'] ?? '' ) && 0 === strpos( (string) ( $tokyo_flight_query['scope'] ?? '' ), 'flights' ) && false === strpos( $tokyo_flight_action, 'HND' ), 'Tokyo flight CTA is not city-wide map/planner intent' );
+assert_true( false !== strpos( $tokyo_flight_action, '/flights/' ) && 'TYO' === ( $tokyo_flight_query['destination'] ?? '' ) && false === strpos( $tokyo_flight_action, 'HND' ) && false === strpos( $tokyo_flight_action, 'NRT' ), 'Tokyo flight CTA must carry the city-wide TYO search code, never a single airport' );
 
 $package_entry = $fixture['entries'][6];
 $package_entry['status'] = 'live';
 $tokyo_package_action = tra_vel_v2_seo_opportunity_action_url( $package_entry );
 $tokyo_package_query = array();
 parse_str( (string) wp_parse_url( $tokyo_package_action, PHP_URL_QUERY ), $tokyo_package_query );
-assert_true( false !== strpos( $tokyo_package_action, '/ai-planner/' ) && 0 === strpos( (string) ( $tokyo_package_query['scope'] ?? '' ), 'packages' ), 'canonical package vertical did not control the city-wide planner scope' );
+assert_true( false !== strpos( $tokyo_package_action, '/packages/' ) && 'TYO' === ( $tokyo_package_query['destination'] ?? '' ), 'canonical package vertical did not carry the city-wide TYO search destination' );
 $plugin_graph = array(
 	array( '@type' => 'WebSite' ), array( '@type' => 'Product' ), array( '@type' => 'Offer' ), array( '@type' => 'ItemList' ), array( '@type' => 'Article' ), array( '@type' => 'WebPage', 'offers' => array() ),
 );

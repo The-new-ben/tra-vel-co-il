@@ -9,7 +9,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'TRA_VEL_V2_VERSION', '1.42.1' );
+define( 'TRA_VEL_V2_VERSION', '1.43.0' );
 define( 'TRA_VEL_V2_PATH', get_template_directory() );
 define( 'TRA_VEL_V2_URI', get_template_directory_uri() );
 
@@ -23,6 +23,7 @@ require_once TRA_VEL_V2_PATH . '/inc/pillars.php';
 require_once TRA_VEL_V2_PATH . '/inc/seo.php';
 require_once TRA_VEL_V2_PATH . '/inc/seo-opportunities.php';
 require_once TRA_VEL_V2_PATH . '/inc/prices.php';
+require_once TRA_VEL_V2_PATH . '/inc/planet.php';
 require_once TRA_VEL_V2_PATH . '/inc/affiliate-programs.php';
 require_once TRA_VEL_V2_PATH . '/inc/proposal.php';
 require_once TRA_VEL_V2_PATH . '/inc/price-history.php';

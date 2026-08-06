@@ -828,7 +828,15 @@
 
     function draw(timestamp) {
       state.frame = 0;
-      if (!state.visible || state.failed) return;
+      // Premium planet (theme 1.43.0): while the streamed photorealistic
+      // upgrade owns this panel, the legacy frame loop stands down entirely
+      // so its camera, marker declutter and idle spin cannot fight the
+      // premium renderer's own per-frame pin projection. The globe's role is
+      // unchanged: it stays the first paint underneath until real tiles are
+      // streaming, and the moment the class is removed (any premium failure
+      // restores the canvas) one requestRender resumes this loop from the
+      // exact state it paused in.
+      if (!state.visible || state.failed || root.classList.contains('is-premium-planet-active')) return;
       try {
         if (state.animation) {
           const elapsed = timestamp - state.animation.started;
@@ -1356,6 +1364,17 @@
       const change = direction === 'in' ? -0.32 : 0.32;
       animateTo(state.yaw, state.pitch, clamp(state.distance + change, 2.25, 4.8), 260);
       return true;
+    }
+
+    // Premium planet handoff (theme 1.43.0): a read-only snapshot of the
+    // current view so the streamed upgrade can open on exactly the spot the
+    // visitor was looking at. Reading it never changes any state.
+    function cameraState() {
+      return {
+        latitude: state.pitch / DEG,
+        longitude: normalizeAngle(-state.yaw) / DEG,
+        distance: state.distance
+      };
     }
 
     function setDestinations(data) {
@@ -1944,7 +1963,7 @@
     // globe without one simply keeps rescheduling into silence.
     schedulePricePop();
     requestRender();
-    return { root, focusDestination, focusHub, focusPoint, zoom, setDestinations, setExplorationHubs, clearSelection, pulseRoute, cancelMotion, requestRender, startTour, stopTour };
+    return { root, focusDestination, focusHub, focusPoint, zoom, cameraState, setDestinations, setExplorationHubs, clearSelection, pulseRoute, cancelMotion, requestRender, startTour, stopTour };
   }
 
   function initialize() {
@@ -2026,6 +2045,10 @@
     },
     requestRender() {
       controllers.forEach(controller => controller.requestRender());
+    },
+    cameraState(targetRoot = null) {
+      const controller = controllers.find(item => !targetRoot || item.root === targetRoot);
+      return controller ? controller.cameraState() : null;
     },
     resolveSelection(point, destinations = [], hubs = [], destinationRadiusKm = 100) {
       return resolveGeographicSelection(point, destinations, hubs, destinationRadiusKm);
