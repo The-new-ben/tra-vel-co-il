@@ -8,6 +8,7 @@ The production globe is a progressively enhanced travel-discovery surface. It us
 
 - `assets/js/globe-3d.js` is loaded for the front page, `page-map.php`, `page-destination.php`, `page-seo-opportunity.php`, and single destination guides (see `inc/assets.php`).
 - `earth-blue-marble-2048.jpg` is a 2048 by 1024 power-of-two texture optimized from the existing 5400 by 2700 source.
+- Since theme 1.42.0 `earth-blue-marble-4096.jpg` (4096 by 2048, JPEG quality 85 with full chroma, about 1.46 MB) is derived from the same NASA Blue Marble Next Generation 5400 by 2700 source with Lanczos resampling and no artificial upscaling. Templates declare it through `data-texture-hd`; the 2048 texture stays the instant first paint and the runtime swaps the sharper image into the same GPU texture once it decodes, guarded by `MAX_TEXTURE_SIZE` and never entering the static fallback on an upgrade failure.
 - The sphere contains 56 latitude segments and 88 longitude segments.
 - Device pixel ratio is capped at 1.75 to control mobile GPU memory and fill rate.
 - Rendering is event driven. The globe redraws after interaction, resize, selection, or focus animation instead of running a permanent animation loop. Since theme 1.24.0 one bounded exception exists: while the guarded idle spin or auto-fly tour is actually moving the camera, frames self-schedule; the moment a guard fails (globe off-screen, tab hidden, pointer down, reduced motion, or user takeover) the frame chain stops and rendering returns to purely event-driven.

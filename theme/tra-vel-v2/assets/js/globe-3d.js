@@ -36,6 +36,15 @@
   const ARRIVAL_START_WEST_OFFSET = 70 * DEG;    // the flight approaches the anchor from ~70deg of longitude west
   const ARRIVAL_DURATION_MS = 2800;
   const LONG_PRESS_SELECT_MS = 500;              // a held touch is an explicit selection: immediate, never a dive
+  // Ambient price pops (theme 1.42.0): every few seconds one random priced
+  // pin briefly swells and glows with the price tag it already carries. Pure
+  // CSS animation on the existing pin, so there is no layout shift and no
+  // sound; the scheduler skips silently while the tab is hidden, the globe
+  // is off screen, the visitor asked for reduced motion, or the proposal
+  // takeover is open, and it dies with the static fallback.
+  const PRICE_POP_MIN_DELAY_MS = 4000;
+  const PRICE_POP_MAX_DELAY_MS = 7000;
+  const PRICE_POP_DURATION_MS = 1500;
   const ARRIVAL_TIMEZONE_ANCHORS = {
     'Europe/London': { latitude: 51.5, longitude: -0.12 },
     'Europe/Paris': { latitude: 48.85, longitude: 2.35 },
@@ -56,6 +65,28 @@
 
   function shouldReduceMotion() {
     return window.matchMedia('(prefers-reduced-motion: reduce)').matches || navigator.connection?.saveData === true;
+  }
+
+  function proposalTakeoverOpen() {
+    const rootElement = document.documentElement;
+    return Boolean(rootElement && rootElement.classList && rootElement.classList.contains('is-trip-takeover-open'));
+  }
+
+  // The price-pop gate, kept pure so the contract harness can prove every
+  // pause condition without a GPU: a pop may fire only while the globe is
+  // healthy and on screen, the tab is visible, motion is welcome, and the
+  // proposal takeover is not covering the planet.
+  function pricePopEligible(environment) {
+    return environment.failed !== true
+      && environment.visible === true
+      && environment.documentVisible === true
+      && environment.reducedMotion !== true
+      && environment.takeoverOpen !== true;
+  }
+
+  function pricePopDelay(randomValue) {
+    const fraction = Number.isFinite(Number(randomValue)) ? Math.min(1, Math.max(0, Number(randomValue))) : 0;
+    return PRICE_POP_MIN_DELAY_MS + Math.round(fraction * (PRICE_POP_MAX_DELAY_MS - PRICE_POP_MIN_DELAY_MS));
   }
 
   function multiply4(a, b) {
@@ -470,6 +501,7 @@
       suppressDiveUntil: 0,
       previewTimer: 0,
       idleSpin: { lastTick: 0, resumeAt: 0, resumeTimer: 0 },
+      pricePop: { timer: 0, clearTimer: 0, active: null },
       tour: {
         active: false,
         cancelled: false,
@@ -558,12 +590,62 @@
       return Array.from(root.querySelectorAll('.exploration-hub[data-exploration-hub]'));
     }
 
+    // --- Ambient price pops (theme 1.42.0) --------------------------------
+    // One pop at a time: a random visible priced pin gains the pop class for
+    // ~1.5s, then the next pop arms 4 to 7 seconds out. Everything is CSS
+    // scale and glow on an absolutely positioned pin, so nothing shifts.
+    function clearActivePricePop() {
+      if (state.pricePop.clearTimer) window.clearTimeout(state.pricePop.clearTimer);
+      state.pricePop.clearTimer = 0;
+      if (state.pricePop.active && state.pricePop.active.classList) state.pricePop.active.classList.remove('is-price-pop');
+      state.pricePop.active = null;
+    }
+
+    function stopPricePops() {
+      if (state.pricePop.timer) window.clearTimeout(state.pricePop.timer);
+      state.pricePop.timer = 0;
+      clearActivePricePop();
+    }
+
+    function schedulePricePop() {
+      if (state.failed) return;
+      if (state.pricePop.timer) window.clearTimeout(state.pricePop.timer);
+      state.pricePop.timer = window.setTimeout(firePricePop, pricePopDelay(Math.random()));
+    }
+
+    function firePricePop() {
+      state.pricePop.timer = 0;
+      if (state.failed) return;
+      const eligible = pricePopEligible({
+        failed: state.failed,
+        visible: state.visible,
+        documentVisible: document.visibilityState === 'visible',
+        reducedMotion: shouldReduceMotion(),
+        takeoverOpen: proposalTakeoverOpen()
+      });
+      if (eligible) {
+        const candidates = markers().filter(marker => !marker.hidden
+          && marker.dataset.foundPrice
+          && !marker.classList.contains('is-active')
+          && marker !== state.pricePop.active);
+        if (candidates.length) {
+          clearActivePricePop();
+          const pick = candidates[Math.floor(Math.random() * candidates.length)];
+          pick.classList.add('is-price-pop');
+          state.pricePop.active = pick;
+          state.pricePop.clearTimer = window.setTimeout(clearActivePricePop, PRICE_POP_DURATION_MS);
+        }
+      }
+      schedulePricePop();
+    }
+
     function activateStaticFallback(error = null) {
       state.failed = true;
       state.textureReady = false;
       state.animation = null;
       state.pointer = null;
       stopTour(true);
+      stopPricePops();
       cancelPendingPreview();
       hideArrivalCard();
       if (state.idleSpin.resumeTimer) window.clearTimeout(state.idleSpin.resumeTimer);
@@ -1545,24 +1627,61 @@
       requestRender();
     }
 
+    function uploadEarthTexture(source) {
+      gl.bindTexture(gl.TEXTURE_2D, texture);
+      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, source);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.generateMipmap(gl.TEXTURE_2D);
+      const textureError = gl.getError();
+      if (textureError !== gl.NO_ERROR) throw new Error(`WebGL texture error ${textureError}.`);
+    }
+
+    // Progressive sharpening (theme 1.42.0): the 2048 texture stays the
+    // instant first paint; when the page declares data-texture-hd, the
+    // higher resolution NASA image loads in the background and replaces the
+    // texture in place once decoded. Any failure on this path keeps the
+    // already working 2048 planet: the static fallback is never entered for
+    // an optional upgrade.
+    function beginHdTextureUpgrade() {
+      const hdSource = String(root.dataset.textureHd || '');
+      if (!hdSource || state.failed) return;
+      try {
+        const maxTextureSize = Number(gl.getParameter(gl.MAX_TEXTURE_SIZE));
+        if (!Number.isFinite(maxTextureSize) || maxTextureSize < 4096) return;
+      } catch (error) {
+        return;
+      }
+      const hdImage = new Image();
+      hdImage.decoding = 'async';
+      hdImage.addEventListener('load', () => {
+        if (state.failed) return;
+        try {
+          uploadEarthTexture(hdImage);
+          requestRender();
+        } catch (error) {
+          console.warn('Tra-Vel globe kept its base texture; the sharper one could not be applied.', error);
+        }
+      }, { once: true });
+      hdImage.addEventListener('error', () => {
+        console.warn('Tra-Vel globe kept its base texture; the sharper one did not load.');
+      }, { once: true });
+      hdImage.src = hdSource;
+    }
+
     const image = new Image();
     image.decoding = 'async';
     image.addEventListener('load', () => {
       if (state.failed) return;
       try {
-        gl.bindTexture(gl.TEXTURE_2D, texture);
-        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-        gl.generateMipmap(gl.TEXTURE_2D);
-        const textureError = gl.getError();
-        if (textureError !== gl.NO_ERROR) throw new Error(`WebGL texture error ${textureError}.`);
+        uploadEarthTexture(image);
         state.textureReady = true;
         requestRender();
         root.dispatchEvent(new CustomEvent('travelglobe:ready', { bubbles: true }));
+        beginHdTextureUpgrade();
       } catch (error) {
         activateStaticFallback(error);
       }
@@ -1821,6 +1940,9 @@
         startTour();
       }, TOUR_START_DELAY_MS);
     }
+    // The ambient price pops arm on any globe that carries priced pins; a
+    // globe without one simply keeps rescheduling into silence.
+    schedulePricePop();
     requestRender();
     return { root, focusDestination, focusHub, focusPoint, zoom, setDestinations, setExplorationHubs, clearSelection, pulseRoute, cancelMotion, requestRender, startTour, stopTour };
   }
@@ -1907,6 +2029,13 @@
     },
     resolveSelection(point, destinations = [], hubs = [], destinationRadiusKm = 100) {
       return resolveGeographicSelection(point, destinations, hubs, destinationRadiusKm);
+    },
+    pricePop: {
+      eligible: pricePopEligible,
+      delay: pricePopDelay,
+      minDelayMs: PRICE_POP_MIN_DELAY_MS,
+      maxDelayMs: PRICE_POP_MAX_DELAY_MS,
+      durationMs: PRICE_POP_DURATION_MS
     }
   };
 
