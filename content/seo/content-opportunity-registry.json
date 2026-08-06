@@ -185,6 +185,18 @@
       "monetization": ["flights", "baggage"]
     },
     {
+      "id": "budapest-flight-cost",
+      "canonicalPath": "/flights/budapest-cost/",
+      "pageType": "transactional-cluster",
+      "primaryIntent": "כמה עולה טיסה לבודפשט",
+      "cluster": "budapest",
+      "parentPath": "/flights/",
+      "mapState": "budapest",
+      "status": "backlog",
+      "conversionAction": "בדקו את המחיר שנמצא ועברו לספק ההזמנה",
+      "monetization": ["flights", "packages"]
+    },
+    {
       "id": "budapest-packages",
       "canonicalPath": "/packages/budapest/",
       "pageType": "transactional-cluster",
@@ -231,6 +243,18 @@
       "status": "backlog",
       "conversionAction": "השוו דרך, כבודה, זמן ועלות מלאה",
       "monetization": ["flights", "baggage"]
+    },
+    {
+      "id": "prague-flight-cost",
+      "canonicalPath": "/flights/prague-cost/",
+      "pageType": "transactional-cluster",
+      "primaryIntent": "כמה עולה טיסה לפראג",
+      "cluster": "prague",
+      "parentPath": "/flights/",
+      "mapState": "prague",
+      "status": "backlog",
+      "conversionAction": "בדקו את המחיר שנמצא ועברו לספק ההזמנה",
+      "monetization": ["flights", "packages"]
     },
     {
       "id": "prague-packages",
@@ -281,6 +305,18 @@
       "monetization": ["flights", "baggage"]
     },
     {
+      "id": "athens-flight-cost",
+      "canonicalPath": "/flights/athens-cost/",
+      "pageType": "transactional-cluster",
+      "primaryIntent": "כמה עולה טיסה לאתונה",
+      "cluster": "athens",
+      "parentPath": "/flights/",
+      "mapState": "athens",
+      "status": "backlog",
+      "conversionAction": "בדקו את המחיר שנמצא ועברו לספק ההזמנה",
+      "monetization": ["flights", "packages"]
+    },
+    {
       "id": "athens-packages",
       "canonicalPath": "/packages/athens/",
       "pageType": "transactional-cluster",
@@ -315,6 +351,18 @@
       "status": "backlog",
       "conversionAction": "השוו מסלול, כבודה, זמן כולל ותנאי שינוי",
       "monetization": ["flights", "baggage", "assisted-quote"]
+    },
+    {
+      "id": "vienna-flight-cost",
+      "canonicalPath": "/flights/vienna-cost/",
+      "pageType": "transactional-cluster",
+      "primaryIntent": "כמה עולה טיסה לווינה",
+      "cluster": "vienna",
+      "parentPath": "/flights/",
+      "mapState": "vienna",
+      "status": "backlog",
+      "conversionAction": "בדקו את המחיר שנמצא ועברו לספק ההזמנה",
+      "monetization": ["flights", "packages"]
     },
     {
       "id": "vienna-packages",
@@ -411,6 +459,18 @@
       "status": "backlog",
       "conversionAction": "השוו מסלול, שדה, כבודה, זמן כולל ותנאי שינוי",
       "monetization": ["flights", "baggage", "assisted-quote"]
+    },
+    {
+      "id": "dubai-flight-cost",
+      "canonicalPath": "/flights/dubai-cost/",
+      "pageType": "transactional-cluster",
+      "primaryIntent": "כמה עולה טיסה לדובאי",
+      "cluster": "dubai",
+      "parentPath": "/flights/",
+      "mapState": "dubai",
+      "status": "backlog",
+      "conversionAction": "בדקו את המחיר שנמצא ועברו לספק ההזמנה",
+      "monetization": ["flights", "packages"]
     },
     {
       "id": "dubai-packages",
@@ -519,6 +579,18 @@
       "status": "backlog",
       "conversionAction": "השוו שדה נחיתה, קונקשן, כבודה, זמן כולל ותנאי שינוי",
       "monetization": ["flights", "baggage", "transfers", "assisted-quote"]
+    },
+    {
+      "id": "tokyo-flight-cost",
+      "canonicalPath": "/flights/tokyo-cost/",
+      "pageType": "transactional-cluster",
+      "primaryIntent": "כמה עולה טיסה לטוקיו",
+      "cluster": "tokyo",
+      "parentPath": "/flights/",
+      "mapState": "tokyo",
+      "status": "backlog",
+      "conversionAction": "בדקו את המחיר שנמצא ועברו לספק ההזמנה",
+      "monetization": ["flights", "packages"]
     },
     {
       "id": "tokyo-packages",
@@ -651,6 +723,18 @@
       "status": "backlog",
       "conversionAction": "השוו מסלול, קונקשן, כבודה, זמן כולל ותנאי שינוי",
       "monetization": ["flights", "baggage", "transfers", "assisted-quote"]
+    },
+    {
+      "id": "lisbon-flight-cost",
+      "canonicalPath": "/flights/lisbon-cost/",
+      "pageType": "transactional-cluster",
+      "primaryIntent": "כמה עולה טיסה לליסבון",
+      "cluster": "lisbon",
+      "parentPath": "/flights/",
+      "mapState": "lisbon",
+      "status": "backlog",
+      "conversionAction": "בדקו את המחיר שנמצא ועברו לספק ההזמנה",
+      "monetization": ["flights", "packages"]
     },
     {
       "id": "lisbon-packages",
@@ -833,6 +917,18 @@
       "monetization": ["flights", "hotels", "packages", "transfers", "insurance"]
     },
     {
+      "id": "larnaca-flight-cost",
+      "canonicalPath": "/flights/larnaca-cost/",
+      "pageType": "transactional-cluster",
+      "primaryIntent": "כמה עולה טיסה ללרנקה",
+      "cluster": "larnaca",
+      "parentPath": "/flights/",
+      "mapState": "larnaca",
+      "status": "backlog",
+      "conversionAction": "בדקו את המחיר שנמצא ועברו לספק ההזמנה",
+      "monetization": ["flights", "packages"]
+    },
+    {
       "id": "crete-guide",
       "canonicalPath": "/destinations/crete/",
       "pageType": "destination-hub",
@@ -843,6 +939,18 @@
       "status": "content-ready",
       "conversionAction": "בחרו בסיס בכרתים ותכננו מסלול, רכב ולינה",
       "monetization": ["flights", "hotels", "packages", "cars", "insurance"]
+    },
+    {
+      "id": "crete-flight-cost",
+      "canonicalPath": "/flights/crete-cost/",
+      "pageType": "transactional-cluster",
+      "primaryIntent": "כמה עולה טיסה לכרתים",
+      "cluster": "crete",
+      "parentPath": "/flights/",
+      "mapState": "crete",
+      "status": "backlog",
+      "conversionAction": "בדקו את המחיר שנמצא ועברו לספק ההזמנה",
+      "monetization": ["flights", "packages"]
     },
     {
       "id": "warsaw-guide",
@@ -891,6 +999,18 @@
       "status": "backlog",
       "conversionAction": "השוו ישיר, קונקשן, כרטיס נפרד וטיסות פנים",
       "monetization": ["flights", "baggage", "stopover-hotels"]
+    },
+    {
+      "id": "bangkok-flight-cost",
+      "canonicalPath": "/flights/bangkok-cost/",
+      "pageType": "transactional-cluster",
+      "primaryIntent": "כמה עולה טיסה לבנגקוק",
+      "cluster": "thailand",
+      "parentPath": "/flights/",
+      "mapState": "bangkok",
+      "status": "backlog",
+      "conversionAction": "בדקו את המחיר שנמצא ועברו לספק ההזמנה",
+      "monetization": ["flights", "packages"]
     },
     {
       "id": "thailand-packages",
