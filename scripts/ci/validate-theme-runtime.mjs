@@ -1972,6 +1972,15 @@ documentQueries.set('[data-home-search-progress]', home.progress);
 documentQueryLists.set('.product-tabs [role="tab"][data-product-kind]', home.tabList);
 const vmJson = expression => JSON.parse(vm.runInContext(`JSON.stringify(${expression})`, context));
 
+// These explicit October 2026 trips are future-trip fixtures, not wall-clock
+// tests. Freeze this scenario and its later restoration checks so advancing
+// calendar time does not erase dates before their assertions run.
+const actualRuntimeDate = vm.runInContext('Date', context);
+context.Date = class FixtureDate extends actualRuntimeDate {
+  constructor(...args) { super(...(args.length ? args : ['2026-09-25T12:00:00Z'])); }
+  static now() { return actualRuntimeDate.parse('2026-09-25T12:00:00Z'); }
+};
+
 home.returning.value = home.departure.value;
 for (const kind of ['package', 'packages', 'flights', 'hotels']) {
   home.form.dataset.productKind = kind;

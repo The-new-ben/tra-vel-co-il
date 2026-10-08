@@ -119,6 +119,12 @@ function tra_vel_v2_affiliate_program_link( $key ) {
 		'label'   => '',
 	);
 
+	// EKTA is withdrawn from referral surfaces. Options and overrides must
+	// never re-enable it; keep the existing assisted/planner fallbacks.
+	if ( 'ekta' === $key ) {
+		return $link;
+	}
+
 	if ( isset( $programs[ $key ] ) ) {
 		$program           = $programs[ $key ];
 		$link['label']     = isset( $program['cta_label'] ) ? (string) $program['cta_label'] : '';
