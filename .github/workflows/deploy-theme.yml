@@ -33,6 +33,11 @@ on:
         required: false
         default: ""
         type: string
+      expected_prestate_fingerprint:
+        description: Reviewed installed theme fingerprint; stop before upload if live files differ
+        required: false
+        default: ""
+        type: string
 
 permissions:
   contents: read
@@ -56,6 +61,7 @@ jobs:
           set -euo pipefail
           node scripts/ci/validate-theme.mjs
           node scripts/ci/validate-theme-runtime.mjs
+          node --test scripts/ci/validate-stay-cost-runtime.cjs
           node scripts/ci/validate-one-click-behavior.mjs
           node scripts/ci/validate-decision-card-behavior.mjs
           node scripts/ci/validate-public-copy.mjs
@@ -90,6 +96,8 @@ jobs:
           php scripts/ci/validate-traveler-workspace-runtime.php
           php scripts/ci/validate-supplier-handoff-runtime.php
           php scripts/ci/validate-home-hero-queue-runtime.php
+          php scripts/ci/validate-affiliate-program-runtime.php
+          php scripts/ci/validate-stay-shortlist-runtime.php
           php scripts/ci/validate-open-meteo-adapter.php
           bash scripts/deploy/smoke-test.sh --validate-manifest
           node --check theme/tra-vel-v2/assets/js/app.js
@@ -135,6 +143,7 @@ jobs:
       THEME_RELEASE_REQUIREMENTS_FILE: theme/tra-vel-v2/release-requirements.json
       THEME_DEPLOY_RESULT_FILE: theme-deploy-result.json
       THEME_DEPLOY_PRESTATE_FILE: theme-deploy-prestate.json
+      EXPECTED_THEME_PRESTATE_FINGERPRINT: ${{ github.event_name == 'workflow_dispatch' && inputs.expected_prestate_fingerprint || '' }}
       REQUIRE_EXISTING_THEME: true
     steps:
       - name: Check out repository scripts

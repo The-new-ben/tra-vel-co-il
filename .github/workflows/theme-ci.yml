@@ -71,6 +71,8 @@ jobs:
           php scripts/ci/validate-traveler-workspace-runtime.php
           php scripts/ci/validate-supplier-handoff-runtime.php
           php scripts/ci/validate-home-hero-queue-runtime.php
+          php scripts/ci/validate-affiliate-program-runtime.php
+          php scripts/ci/validate-stay-shortlist-runtime.php
           php scripts/ci/validate-open-meteo-adapter.php
           php scripts/ci/validate-agent-policy-runtime.php
           php scripts/ci/validate-agent-controller-runtime.php
@@ -139,6 +141,7 @@ jobs:
         run: |
           node scripts/ci/validate-theme.mjs
           node scripts/ci/validate-theme-runtime.mjs
+          node --test scripts/ci/validate-stay-cost-runtime.cjs
           node scripts/ci/validate-one-click-behavior.mjs
           node scripts/ci/validate-decision-card-behavior.mjs
           node scripts/ci/validate-public-copy.mjs
@@ -210,6 +213,8 @@ jobs:
           php scripts/ci/validate-traveler-workspace-runtime.php
           php scripts/ci/validate-supplier-handoff-runtime.php
           php scripts/ci/validate-home-hero-queue-runtime.php
+          php scripts/ci/validate-affiliate-program-runtime.php
+          php scripts/ci/validate-stay-shortlist-runtime.php
           php scripts/ci/validate-open-meteo-adapter.php
           php scripts/ci/validate-agent-policy-runtime.php
           php scripts/ci/validate-agent-controller-runtime.php

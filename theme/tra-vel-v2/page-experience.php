@@ -756,6 +756,11 @@ get_header();
 		</div>
 	</section>
 	<?php endif; ?>
+	<?php if ( $is_hotels ) : ?>
+	<section class="section" id="hotel-cost-comparison"><div class="page-width">
+		<?php echo tra_vel_v2_stay_shortlist_shortcode(); // Bundled trusted component; no user-generated HTML. ?>
+	</div></section>
+	<?php endif; ?>
 	<section class="commercial-assurance page-width" aria-label="<?php esc_attr_e( 'בדיקה אישית עם מומחה', 'tra-vel-v2' ); ?>">
 		<i data-lucide="message-circle-more"></i>
 		<div><strong><?php esc_html_e( 'רוצים שמומחה יבדוק את התוכנית?', 'tra-vel-v2' ); ?></strong><span><?php esc_html_e( 'פתחו תוכנית, השלימו את הפרטים ושלחו אותה לבדיקה אישית. שליחת התוכנית אינה חיוב או הזמנה; מחיר וזמינות יוצגו רק לאחר בדיקה מתועדת.', 'tra-vel-v2' ); ?></span></div>

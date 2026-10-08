@@ -52,7 +52,7 @@ trap 'rm -f "$RESPONSE_FILE"' EXIT
 
 echo "Checking the authenticated deployment gateway."
 bash "${SCRIPT_DIR}/get-theme-status.sh" "$RESPONSE_FILE"
-python3 - "$RESPONSE_FILE" "${THEME_DEPLOY_PRESTATE_FILE:-}" "${REQUIRE_EXISTING_THEME:-false}" "$REQUIRED_GATEWAY_VERSION" <<'PY'
+python3 - "$RESPONSE_FILE" "${THEME_DEPLOY_PRESTATE_FILE:-}" "${REQUIRE_EXISTING_THEME:-false}" "$REQUIRED_GATEWAY_VERSION" "${EXPECTED_THEME_PRESTATE_FINGERPRINT:-}" <<'PY'
 import json
 import os
 import re
@@ -62,6 +62,7 @@ data = json.load(open(sys.argv[1], encoding="utf-8"))
 prestate_target = sys.argv[2]
 require_existing = sys.argv[3] == "true"
 required_gateway_version = sys.argv[4]
+expected_prestate_fingerprint = sys.argv[5]
 semver_pattern = re.compile(r"^(\d+)\.(\d+)\.(\d+)(?:([-+])([A-Za-z0-9.-]+))?$")
 
 def version_at_least(current, minimum):
@@ -94,6 +95,11 @@ elif installed_version is not None or installed_fingerprint is not None:
     raise SystemExit("The deployment gateway returned an inconsistent installed identity.")
 if require_existing and not data["installed"]:
     raise SystemExit("This deployment path requires an existing Tra-Vel V2 release so rollback is available.")
+if expected_prestate_fingerprint:
+    if not re.fullmatch(r"[a-f0-9]{64}", expected_prestate_fingerprint):
+        raise SystemExit("The reviewed pre-deployment fingerprint is invalid.")
+    if installed_fingerprint != expected_prestate_fingerprint:
+        raise SystemExit("Live theme files differ from the reviewed baseline; refusing upload before mutation.")
 if prestate_target:
     prestate = {
         "theme": data["theme"],
