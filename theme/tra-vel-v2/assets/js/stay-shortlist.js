@@ -166,6 +166,7 @@
     if (countHotels() >= 3) return;
     const template = document.createElement('template');
     template.innerHTML = document.querySelector('#tr-stay-hotel-template').innerHTML.replaceAll('__INDEX__', '2');
+    template.content.querySelectorAll('[data-field$=".days"]').forEach(day => { day.value = value('nights'); });
     hotelInputs.append(template.content.cloneNode(true));
     hotelInputs.classList.add('has-three');
     addButton.disabled = true;
