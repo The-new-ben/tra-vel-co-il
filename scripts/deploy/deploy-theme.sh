@@ -95,11 +95,6 @@ elif installed_version is not None or installed_fingerprint is not None:
     raise SystemExit("The deployment gateway returned an inconsistent installed identity.")
 if require_existing and not data["installed"]:
     raise SystemExit("This deployment path requires an existing Tra-Vel V2 release so rollback is available.")
-if expected_prestate_fingerprint:
-    if not re.fullmatch(r"[a-f0-9]{64}", expected_prestate_fingerprint):
-        raise SystemExit("The reviewed pre-deployment fingerprint is invalid.")
-    if installed_fingerprint != expected_prestate_fingerprint:
-        raise SystemExit("Live theme files differ from the reviewed baseline; refusing upload before mutation.")
 if prestate_target:
     prestate = {
         "theme": data["theme"],
@@ -114,6 +109,11 @@ if prestate_target:
         json.dump(prestate, prestate_file, ensure_ascii=False, indent=2)
         prestate_file.write("\n")
     os.chmod(prestate_target, 0o600)
+if expected_prestate_fingerprint:
+    if not re.fullmatch(r"[a-f0-9]{64}", expected_prestate_fingerprint):
+        raise SystemExit("The reviewed pre-deployment fingerprint is invalid.")
+    if installed_fingerprint != expected_prestate_fingerprint:
+        raise SystemExit("Live theme files differ from the reviewed baseline; refusing upload before mutation.")
 PY
 
 echo "Uploading the checksum-verified Tra-Vel V2 package."
